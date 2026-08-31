@@ -1,0 +1,65 @@
+# ==========================================
+
+# SUPABASE CONFIGURATION
+
+# ==========================================
+
+# Found in Project Settings > API
+
+NEXT_PUBLIC_SUPABASE_URL=https://zdcfazkhvagrlmrjepax.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkY2ZhemtodmFncmxtcmplcGF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNzQ1MzQsImV4cCI6MjA5NjY1MDUzNH0.Ghq4znHlZiNgkZxFRt5SaRtT-5zjQuFF3V9foMs-HV4
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkY2ZhemtodmFncmxtcmplcGF4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTA3NDUzNCwiZXhwIjoyMDk2NjUwNTM0fQ.i1UT1jfmPij_CxlEIwnNk2jBXYhIEK8L-aGFgOfOfT8
+
+# ==========================================
+
+# RAZORPAY CONFIGURATION
+
+# ==========================================
+
+# Found in Settings > API Keys
+
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_live_TAWQ35LC43SnyA
+RAZORPAY_KEY_SECRET=7u15uDAHAuMmZkXZqLMCQBv6
+RAZORPAY_WEBHOOK_SECRET=Kwj_W9_kuN_Vk2f
+
+# ==========================================
+
+# VDOCIPHER CONFIGURATION
+
+# ==========================================
+
+# Used for secure streaming and dynamic watermarking
+
+VDOCIPHER_API_SECRET=3OpBe6mogtyYy1B6vmDcuhpgPrPFgGNhSGYR3vDEklFZeIrrb0OU1zV1FYjCdC8u
+
+# ==========================================
+
+# RESEND CONFIGURATION
+
+# ==========================================
+
+# Used for sending OTPs, purchase confirmations, and certificates
+
+RESEND_API_KEY=your_resend_api_key
+
+# ==========================================
+
+# POSTHOG CONFIGURATION
+
+# ==========================================
+
+# Used for event tracking and analytics
+
+NEXT_PUBLIC_POSTHOG_KEY=your_posthog_project_api_key
+NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
+
+# ==========================================
+
+# NEXT.JS CONFIGURATION
+
+# ==========================================
+
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+NODE_ENV=development
+
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_b9OJ9Xfa3Cpe8taxufHTJw_cu47j--Z
