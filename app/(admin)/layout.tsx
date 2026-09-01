@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase-server";
+import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { AdminSidebar } from "@/components/admin/Sidebar";
 
 export const metadata: Metadata = {
-  title: "IRII Admin Portal",
-  description: "IRII management and metrics dashboard.",
+  title: "Airbharath Admin Portal",
+  description: "Airbharath LMS management and metrics dashboard.",
 };
 
 export default async function AdminLayout({
@@ -13,21 +13,13 @@ export default async function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession();
 
-  if (!user) {
+  if (!session) {
     return redirect("/login");
   }
 
-  // Fetch user role
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin") {
+  if (session.role !== "admin") {
     return redirect("/dashboard");
   }
 

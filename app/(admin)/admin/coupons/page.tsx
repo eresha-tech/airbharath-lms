@@ -1,9 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
 import { Plus, Tag, Trash2, Percent, IndianRupee } from "lucide-react";
-import { createClient } from "@/lib/supabase";
 
 export default function AdminCoupons() {
   const [coupons, setCoupons] = useState<any[]>([]);
@@ -15,16 +13,17 @@ export default function AdminCoupons() {
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const supabase = createClient();
-
   const fetchCoupons = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("coupons")
-      .select("*")
-      .order("expiry_date", { ascending: true });
-    if (data) setCoupons(data);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/admin/coupons");
+      const data = await res.json();
+      if (data.coupons) setCoupons(data.coupons);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -36,114 +35,121 @@ export default function AdminCoupons() {
     if (!code || !discountValue) return;
 
     setIsSubmitting(true);
-    const { error } = await supabase.from("coupons").insert({
-      code: code.toUpperCase().trim(),
-      discount_type: discountType,
-      discount_value: parseFloat(discountValue),
-      expiry_date: expiryDate ? new Date(expiryDate).toISOString() : null,
-      usage_limit: usageLimit ? parseInt(usageLimit) : null,
-    });
+    try {
+      const res = await fetch("/api/admin/coupons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          discountType,
+          discountValue: parseFloat(discountValue),
+          expiryDate,
+          usageLimit,
+        }),
+      });
 
-    setIsSubmitting(false);
-
-    if (error) {
-      alert(error.message);
-    } else {
-      setCode("");
-      setDiscountValue("");
-      setExpiryDate("");
-      setUsageLimit("");
-      fetchCoupons();
+      if (res.ok) {
+        setCode("");
+        setDiscountValue("");
+        setExpiryDate("");
+        setUsageLimit("");
+        fetchCoupons();
+      }
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDeleteCoupon = async (id: string) => {
     if (!confirm("Are you sure you want to delete this coupon?")) return;
-    const { error } = await supabase.from("coupons").delete().eq("id", id);
-    if (error) {
-      alert(error.message);
-    } else {
-      fetchCoupons();
+    try {
+      const res = await fetch(`/api/admin/coupons?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchCoupons();
+      }
+    } catch (err: any) {
+      alert(err.message);
     }
   };
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
+    <div className="space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Coupons & Discounts</h1>
-        <p className="text-muted-foreground text-sm">Create and manage promotional discount codes for checkout.</p>
+        <h1 className="text-3xl font-bold font-instrument-serif text-[#014a62]">Coupons & Discounts</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">Create and manage promotional discount codes for checkout.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Create Coupon Form */}
         <div className="bg-card p-6 border rounded-2xl shadow-sm h-fit">
-          <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
-            <Plus className="h-5 w-5 text-primary" /> Create New Coupon
+          <h3 className="font-bold text-lg mb-6 flex items-center gap-2 font-instrument-serif text-[#014a62]">
+            <Plus className="h-5 w-5 text-[#014a62]" /> Create New Coupon
           </h3>
           <form onSubmit={handleCreateCoupon} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1">COUPON CODE</label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">COUPON CODE</label>
               <input
                 type="text"
-                placeholder="e.g. GROW50"
+                placeholder="e.g. AIRBHARATH20"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 text-sm bg-background focus:ring-1 focus:ring-primary focus:outline-none"
+                className="w-full border rounded-xl px-3 py-2 text-xs font-semibold bg-background focus:ring-1 focus:ring-[#014a62] focus:outline-none"
                 required
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1">DISCOUNT TYPE</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">DISCOUNT TYPE</label>
                 <select
                   value={discountType}
                   onChange={(e) => setDiscountType(e.target.value as any)}
-                  className="w-full border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none"
+                  className="w-full border rounded-xl px-3 py-2 text-xs font-semibold bg-background focus:outline-none"
                 >
                   <option value="percentage">Percentage (%)</option>
                   <option value="flat">Flat (₹)</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1">VALUE</label>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">VALUE</label>
                 <input
                   type="number"
                   placeholder={discountType === "percentage" ? "e.g. 10" : "e.g. 500"}
                   value={discountValue}
                   onChange={(e) => setDiscountValue(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 text-sm bg-background focus:ring-1 focus:ring-primary focus:outline-none"
+                  className="w-full border rounded-xl px-3 py-2 text-xs font-semibold bg-background focus:ring-1 focus:ring-[#014a62] focus:outline-none"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1">EXPIRY DATE (OPTIONAL)</label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">EXPIRY DATE (OPTIONAL)</label>
               <input
                 type="date"
                 value={expiryDate}
                 onChange={(e) => setExpiryDate(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 text-sm bg-background focus:ring-1 focus:ring-primary focus:outline-none"
+                className="w-full border rounded-xl px-3 py-2 text-xs font-semibold bg-background focus:ring-1 focus:ring-[#014a62] focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1">USAGE LIMIT (OPTIONAL)</label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">USAGE LIMIT (OPTIONAL)</label>
               <input
                 type="number"
                 placeholder="e.g. 100 uses"
                 value={usageLimit}
                 onChange={(e) => setUsageLimit(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 text-sm bg-background focus:ring-1 focus:ring-primary focus:outline-none"
+                className="w-full border rounded-xl px-3 py-2 text-xs font-semibold bg-background focus:ring-1 focus:ring-[#014a62] focus:outline-none"
               />
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-2 bg-primary text-primary-foreground font-semibold rounded-lg text-sm hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
+              className="w-full py-2.5 bg-[#014a62] text-white font-bold rounded-xl text-xs hover:bg-[#01374a] transition-colors shadow-sm disabled:opacity-50"
             >
               {isSubmitting ? "Creating..." : "Generate Coupon"}
             </button>
@@ -153,10 +159,10 @@ export default function AdminCoupons() {
         {/* Coupon List */}
         <div className="lg:col-span-2 bg-card border rounded-2xl shadow-sm overflow-hidden flex flex-col">
           <div className="p-6 border-b border-border">
-            <h3 className="font-bold text-lg">Active & Scheduled Coupons</h3>
+            <h3 className="font-bold text-lg font-instrument-serif text-[#014a62]">Active Coupons</h3>
           </div>
           {loading ? (
-            <div className="p-12 text-center text-muted-foreground">Loading coupon inventory...</div>
+            <div className="p-12 text-center text-muted-foreground text-xs font-semibold">Loading coupon inventory...</div>
           ) : coupons.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -172,19 +178,19 @@ export default function AdminCoupons() {
                 <tbody className="divide-y divide-border">
                   {coupons.map((coupon) => (
                     <tr key={coupon.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-6 py-4 font-mono font-bold text-sm text-foreground">
+                      <td className="px-6 py-4 font-mono font-bold text-sm text-[#014a62]">
                         {coupon.code}
                       </td>
-                      <td className="px-6 py-4 text-sm font-semibold">
+                      <td className="px-6 py-4 text-xs font-semibold">
                         <div className="flex items-center gap-1.5">
                           {coupon.discount_type === "percentage" ? (
                             <>
-                              <Percent className="h-3.5 w-3.5 text-primary" />
+                              <Percent className="h-3.5 w-3.5 text-[#014a62]" />
                               <span>{coupon.discount_value}% Off</span>
                             </>
                           ) : (
                             <>
-                              <IndianRupee className="h-3.5 w-3.5 text-primary" />
+                              <IndianRupee className="h-3.5 w-3.5 text-[#014a62]" />
                               <span>₹{coupon.discount_value} Off</span>
                             </>
                           )}
@@ -199,7 +205,7 @@ export default function AdminCoupons() {
                       <td className="px-6 py-4 text-right">
                         <button
                           onClick={() => handleDeleteCoupon(coupon.id)}
-                          className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-colors"
+                          className="text-rose-600 hover:bg-rose-50 p-2 rounded-lg transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -210,9 +216,9 @@ export default function AdminCoupons() {
               </table>
             </div>
           ) : (
-            <div className="p-12 text-center text-muted-foreground">
-              <Tag className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-              <p>No active coupon codes created yet.</p>
+            <div className="p-12 text-center text-muted-foreground bg-gray-50">
+              <Tag className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
+              <p className="text-xs font-bold">No active coupon codes created yet.</p>
             </div>
           )}
         </div>

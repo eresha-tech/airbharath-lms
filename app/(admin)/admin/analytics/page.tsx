@@ -1,96 +1,80 @@
-import { createAdminClient } from "@/lib/supabase-server";
-import { TrendingUp, Users, LineChart, PieChart, ShoppingBag } from "lucide-react";
+import { db } from "@/lib/db";
+import { modules, lessons, enrollments, progress, orders, users } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { TrendingUp, Users as UsersIcon, LineChart, PieChart, ShoppingBag } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminAnalytics() {
-  const supabase = createAdminClient();
-
-  // Fetch modules, lessons, enrollments, progress, orders, and students in parallel using Admin Client to bypass RLS
   const [
-    modulesRes,
-    lessonsRes,
-    enrollmentsRes,
-    progressRes,
-    ordersRes,
-    studentsRes
+    modulesList,
+    lessonsList,
+    enrollmentsList,
+    progressList,
+    ordersList,
+    studentsList
   ] = await Promise.all([
-    supabase.from("modules").select("id, course_id"),
-    supabase.from("lessons").select("id, module_id"),
-    supabase.from("enrollments").select("user_id, course_id"),
-    supabase.from("progress").select("user_id, lesson_id, updated_at").eq("is_completed", true),
-    supabase.from("orders").select("id, amount, status, created_at"),
-    supabase.from("users").select("id, created_at").eq("role", "student")
+    db.query.modules.findMany(),
+    db.query.lessons.findMany(),
+    db.query.enrollments.findMany(),
+    db.query.progress.findMany({ where: eq(progress.isCompleted, true) }),
+    db.query.orders.findMany(),
+    db.query.users.findMany({ where: eq(users.role, "student") }),
   ]);
 
-  const modules = modulesRes.data;
-  const lessons = lessonsRes.data;
-  const enrollments = enrollmentsRes.data;
-  const progress = progressRes.data;
-  const orders = ordersRes.data;
-  const students = studentsRes.data;
+  const totalStudents = studentsList.length;
 
-  const totalStudents = students?.length || 0;
-
-  // --- Calculations ---
-
-  // A. Monthly Growth (Revenue growth last 30 days vs 30 days before)
   const now = new Date();
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(now.getDate() - 30);
   const sixtyDaysAgo = new Date();
   sixtyDaysAgo.setDate(now.getDate() - 60);
 
-  const paidOrders = orders?.filter(o => o.status === "paid") || [];
+  const paidOrders = ordersList.filter((o: any) => o.status === "paid");
   const revLast30 = paidOrders
-    .filter(o => new Date(o.created_at) >= thirtyDaysAgo)
-    .reduce((sum, o) => sum + Number(o.amount), 0);
+    .filter((o: any) => o.createdAt && new Date(o.createdAt) >= thirtyDaysAgo)
+    .reduce((sum: number, o: any) => sum + Number(o.amount || 0), 0);
 
   const revPrev30 = paidOrders
-    .filter(o => {
-      const date = new Date(o.created_at);
-      return date >= sixtyDaysAgo && date < thirtyDaysAgo;
+    .filter((o: any) => {
+      const date = o.createdAt ? new Date(o.createdAt) : null;
+      return date && date >= sixtyDaysAgo && date < thirtyDaysAgo;
     })
-    .reduce((sum, o) => sum + Number(o.amount), 0);
+    .reduce((sum: number, o: any) => sum + Number(o.amount || 0), 0);
 
   let growthRate = 0;
   if (revPrev30 > 0) {
     growthRate = ((revLast30 - revPrev30) / revPrev30) * 100;
   } else if (revLast30 > 0) {
-    growthRate = 100; // 100% growth from 0 baseline
+    growthRate = 100;
   }
   const growthRateText = growthRate >= 0 ? `+${growthRate.toFixed(1)}%` : `${growthRate.toFixed(1)}%`;
 
-  // B. Retention Rate: Active students (completed >= 1 lesson) / Total Enrolled students
-  const uniqueStudentsWithProgress = new Set(progress?.map(p => p.user_id) || []);
+  const uniqueStudentsWithProgress = new Set(progressList.map((p: any) => p.userId));
   const activeLearnersCount = uniqueStudentsWithProgress.size;
   const retentionRate = totalStudents > 0 ? (activeLearnersCount / totalStudents) * 100 : 0.0;
 
-  // C. Refund Rate: refunded orders / total orders
-  const totalOrdersCount = orders?.length || 0;
-  const refundedOrdersCount = orders?.filter(o => o.status === "refunded").length || 0;
+  const totalOrdersCount = ordersList.length;
+  const refundedOrdersCount = ordersList.filter((o: any) => o.status === "refunded").length;
   const refundRate = totalOrdersCount > 0 ? (refundedOrdersCount / totalOrdersCount) * 100 : 0;
 
-  // D. Daily Active Learners (DAL) - Unique learners completing lessons in the last 14 days
   const dalData: { label: string; count: number }[] = [];
-  const progressList = progress || [];
 
   for (let i = 13; i >= 0; i--) {
     const d = new Date();
     d.setDate(now.getDate() - i);
     const dayLabel = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     
-    // Start/End of this day
     const startOfDay = new Date(d.setHours(0,0,0,0));
     const endOfDay = new Date(d.setHours(23,59,59,999));
 
     const uniqueUsersThisDay = new Set(
       progressList
-        .filter(p => {
-          const uDate = new Date(p.updated_at);
-          return uDate >= startOfDay && uDate <= endOfDay;
+        .filter((p: any) => {
+          const uDate = p.updatedAt ? new Date(p.updatedAt) : null;
+          return uDate && uDate >= startOfDay && uDate <= endOfDay;
         })
-        .map(p => p.user_id)
+        .map((p: any) => p.userId)
     );
 
     dalData.push({
@@ -99,49 +83,42 @@ export default async function AdminAnalytics() {
     });
   }
 
-  // If DAL values are very low, we can scale them cleanly for representation
   const maxDalCount = Math.max(...dalData.map(d => d.count), 1);
 
-  // E. Course Progress Breakdown
-  // Map module to course
   const moduleToCourse: { [key: string]: string } = {};
-  modules?.forEach(m => {
-    moduleToCourse[m.id] = m.course_id;
+  modulesList.forEach((m: any) => {
+    moduleToCourse[m.id] = m.courseId;
   });
 
-  // Map lesson to course
   const lessonToCourse: { [key: string]: string } = {};
-  lessons?.forEach(l => {
-    const cId = moduleToCourse[l.module_id];
+  lessonsList.forEach((l: any) => {
+    const cId = moduleToCourse[l.moduleId];
     if (cId) {
       lessonToCourse[l.id] = cId;
     }
   });
 
-  // Course to total lessons count
   const courseLessonsCount: { [key: string]: number } = {};
-  lessons?.forEach(l => {
-    const cId = moduleToCourse[l.module_id];
+  lessonsList.forEach((l: any) => {
+    const cId = moduleToCourse[l.moduleId];
     if (cId) {
       courseLessonsCount[cId] = (courseLessonsCount[cId] || 0) + 1;
     }
   });
 
-  // Group enrollments progress
   let completedCount = 0;
   let activeCount = 0;
   let startedCount = 0;
   let notStartedCount = 0;
 
-  const enrollmentList = enrollments || [];
-  enrollmentList.forEach(e => {
-    const total = courseLessonsCount[e.course_id] || 0;
+  enrollmentsList.forEach((e: any) => {
+    const total = courseLessonsCount[e.courseId] || 0;
     if (total === 0) {
       notStartedCount++;
       return;
     }
 
-    const completed = progressList.filter(p => p.user_id === e.user_id && lessonToCourse[p.lesson_id] === e.course_id).length;
+    const completed = progressList.filter((p: any) => p.userId === e.userId && lessonToCourse[p.lessonId] === e.courseId).length;
     const percent = Math.round((completed / total) * 100);
 
     if (percent === 100) {
@@ -155,25 +132,25 @@ export default async function AdminAnalytics() {
     }
   });
 
-  const totalEnrollmentsCount = enrollmentList.length || 1;
+  const totalEnrollmentsCount = enrollmentsList.length || 1;
   const progressBreakdown = [
     {
       label: "Completed (100%)",
       count: `${completedCount} students`,
       percent: Math.round((completedCount / totalEnrollmentsCount) * 100),
-      color: "bg-green-500"
+      color: "bg-[#014a62]"
     },
     {
       label: "Active (25%-99%)",
       count: `${activeCount} students`,
       percent: Math.round((activeCount / totalEnrollmentsCount) * 100),
-      color: "bg-primary"
+      color: "bg-cyan-600"
     },
     {
       label: "Started (1%-24%)",
       count: `${startedCount} students`,
       percent: Math.round((startedCount / totalEnrollmentsCount) * 100),
-      color: "bg-yellow-500"
+      color: "bg-amber-500"
     },
     {
       label: "Not Started (0%)",
@@ -184,52 +161,49 @@ export default async function AdminAnalytics() {
   ];
 
   return (
-    <div className="space-y-8">
-      {/* Top Section */}
+    <div className="space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Advanced Analytics</h1>
-        <p className="text-muted-foreground text-sm">Review cohort progress, visual retention charts, and revenue statistics.</p>
+        <h1 className="text-3xl font-bold font-instrument-serif text-[#014a62]">Airbharath LMS Analytics</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">Review student cohort progress, active learner trends, and revenue metrics.</p>
       </div>
 
-      {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-card p-6 border rounded-2xl shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+          <div className="h-12 w-12 rounded-xl bg-[#014a62]/10 text-[#014a62] flex items-center justify-center">
             <TrendingUp className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase">Monthly Growth</p>
-            <h3 className="text-2xl font-bold text-foreground mt-1">{growthRateText}</h3>
+            <p className="text-xs font-bold text-muted-foreground uppercase">Monthly Growth</p>
+            <h3 className="text-2xl font-bold text-[#014a62] mt-1 font-instrument-sans">{growthRateText}</h3>
           </div>
         </div>
 
         <div className="bg-card p-6 border rounded-2xl shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-            <Users className="h-6 w-6" />
+          <div className="h-12 w-12 rounded-xl bg-[#014a62]/10 text-[#014a62] flex items-center justify-center">
+            <UsersIcon className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase">Retention Rate</p>
-            <h3 className="text-2xl font-bold text-foreground mt-1">{retentionRate.toFixed(1)}%</h3>
+            <p className="text-xs font-bold text-muted-foreground uppercase">Retention Rate</p>
+            <h3 className="text-2xl font-bold text-[#014a62] mt-1 font-instrument-sans">{retentionRate.toFixed(1)}%</h3>
           </div>
         </div>
 
         <div className="bg-card p-6 border rounded-2xl shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+          <div className="h-12 w-12 rounded-xl bg-[#014a62]/10 text-[#014a62] flex items-center justify-center">
             <ShoppingBag className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase">Refund Rate</p>
-            <h3 className="text-2xl font-bold text-foreground mt-1">{refundRate.toFixed(2)}%</h3>
+            <p className="text-xs font-bold text-muted-foreground uppercase">Refund Rate</p>
+            <h3 className="text-2xl font-bold text-[#014a62] mt-1 font-instrument-sans">{refundRate.toFixed(2)}%</h3>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Retention / Engagement Chart */}
         <div className="bg-card p-6 border rounded-2xl shadow-sm space-y-6">
           <div>
-            <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
-              <LineChart className="h-5 w-5 text-primary" /> Daily Active Learners (DAL)
+            <h3 className="font-bold text-lg font-instrument-serif text-[#014a62] flex items-center gap-2">
+              <LineChart className="h-5 w-5 text-[#014a62]" /> Daily Active Learners (DAL)
             </h3>
             <p className="text-xs text-muted-foreground">Unique learners completing lessons daily over the last 14 days</p>
           </div>
@@ -238,13 +212,12 @@ export default async function AdminAnalytics() {
               const heightPercent = maxDalCount > 0 ? (data.count / maxDalCount) * 80 : 0;
               return (
                 <div key={idx} className="flex-1 flex flex-col items-center gap-1 group relative cursor-pointer">
-                  {/* Tooltip on hover */}
                   <div className="absolute bottom-full mb-2 bg-foreground text-background text-[10px] p-2 rounded shadow opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap font-bold">
                     {data.count} Active Learners
                   </div>
                   <div 
                     style={{ height: `${Math.max(heightPercent, 5)}%` }} 
-                    className="w-full bg-primary/80 rounded-t group-hover:bg-primary transition-all duration-300"
+                    className="w-full bg-[#014a62]/80 rounded-t group-hover:bg-[#014a62] transition-all duration-300"
                   />
                   <span className="text-[8px] text-muted-foreground font-bold">{data.label}</span>
                 </div>
@@ -253,13 +226,12 @@ export default async function AdminAnalytics() {
           </div>
         </div>
 
-        {/* Completion Breakdown */}
         <div className="bg-card p-6 border rounded-2xl shadow-sm space-y-6">
           <div>
-            <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
-              <PieChart className="h-5 w-5 text-primary" /> Course Progress Breakdown
+            <h3 className="font-bold text-lg font-instrument-serif text-[#014a62] flex items-center gap-2">
+              <PieChart className="h-5 w-5 text-[#014a62]" /> Course Progress Breakdown
             </h3>
-            <p className="text-xs text-muted-foreground">Status of students within structural curriculum courses</p>
+            <p className="text-xs text-muted-foreground">Status of students within Airbharath LMS courses</p>
           </div>
           <div className="space-y-4">
             {progressBreakdown.map((item, idx) => (

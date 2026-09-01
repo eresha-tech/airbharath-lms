@@ -9,13 +9,11 @@ import {
   Award, 
   Settings, 
   LogOut,
-  GraduationCap,
   Sparkles,
   Newspaper,
   Menu,
   X
 } from "lucide-react";
-import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 
 const studentMenuItems = [
@@ -29,15 +27,15 @@ const studentMenuItems = [
 export function StudentLayoutWrapper({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
-  const supabase = createClient();
   const router = useRouter();
 
   // Hide the global student sidebar inside the lesson player view
   const isLessonView = pathname.includes("/lessons/");
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
+    router.refresh();
   };
 
   const toggleSidebar = () => setIsOpen(!isOpen);
@@ -51,9 +49,9 @@ export function StudentLayoutWrapper({ children }: { children: React.ReactNode }
     <div className="min-h-screen flex bg-muted/20 flex-col md:flex-row">
       {/* Mobile Top Header (only visible on mobile/tablet) */}
       <div className="flex md:hidden items-center justify-between px-6 h-16 bg-card border-b border-border sticky top-0 z-40 w-full shrink-0">
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl text-foreground" onClick={closeSidebar}>
-          <GraduationCap className="h-6 w-6 text-primary" />
-          <span>IRII</span>
+        <Link href="/" className="flex items-center gap-2 font-bold text-xl text-[#014a62]" onClick={closeSidebar}>
+          <img src="https://assets.airbharath.in/logo.webp" alt="Airbharath LMS" className="h-8 w-auto object-contain" />
+          <span>Airbharath</span>
         </Link>
         <button
           onClick={toggleSidebar}
@@ -80,9 +78,9 @@ export function StudentLayoutWrapper({ children }: { children: React.ReactNode }
       >
         {/* Brand */}
         <div className="h-16 flex items-center px-6 border-b border-border justify-between">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl text-foreground" onClick={closeSidebar}>
-            <GraduationCap className="h-6 w-6 text-primary" />
-            <span>IRII</span>
+          <Link href="/" className="flex items-center gap-2 font-bold text-xl text-[#014a62]" onClick={closeSidebar}>
+            <img src="https://assets.airbharath.in/logo.webp" alt="Airbharath LMS" className="h-8 w-auto object-contain" />
+            <span>Airbharath</span>
           </Link>
           <button onClick={closeSidebar} className="md:hidden p-1 text-muted-foreground hover:text-foreground">
             <X className="h-5 w-5" />
@@ -90,9 +88,9 @@ export function StudentLayoutWrapper({ children }: { children: React.ReactNode }
         </div>
 
         {/* Welcome message */}
-        <div className="p-4 mx-4 my-4 bg-muted/50 rounded-xl border border-border">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Welcome Back</p>
-          <h4 className="font-bold text-sm text-foreground">Continue Learning</h4>
+        <div className="p-4 mx-4 my-4 bg-[#014a62]/10 rounded-xl border border-[#014a62]/20">
+          <p className="text-[10px] font-bold text-[#014a62] uppercase tracking-wider">Welcome Back</p>
+          <h4 className="font-bold text-sm text-[#014a62]">Airbharath Student</h4>
         </div>
 
         {/* Menu Items */}
@@ -108,7 +106,7 @@ export function StudentLayoutWrapper({ children }: { children: React.ReactNode }
                 onClick={closeSidebar}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                   isActive 
-                    ? "bg-primary text-primary-foreground" 
+                    ? "bg-[#014a62] text-white font-bold" 
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
@@ -121,8 +119,8 @@ export function StudentLayoutWrapper({ children }: { children: React.ReactNode }
 
         {/* Upgrade Card / Logout */}
         <div className="p-4 border-t border-border space-y-4">
-          <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 text-center space-y-3">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center mx-auto text-primary">
+          <div className="bg-[#014a62]/5 border border-[#014a62]/10 rounded-xl p-4 text-center space-y-3">
+            <div className="h-8 w-8 rounded-lg bg-[#014a62]/10 flex items-center justify-center mx-auto text-[#014a62]">
               <Sparkles className="h-4 w-4" />
             </div>
             <div>
@@ -149,7 +147,7 @@ export function StudentLayoutWrapper({ children }: { children: React.ReactNode }
             <Link href="/dashboard" className="text-xs md:text-sm font-semibold text-muted-foreground hover:text-foreground shrink-0">
               Dashboard
             </Link>
-            <Link href="/search/courses" className="text-xs md:text-sm font-semibold text-muted-foreground hover:text-foreground shrink-0">
+            <Link href="/my-courses" className="text-xs md:text-sm font-semibold text-muted-foreground hover:text-foreground shrink-0">
               Curriculum
             </Link>
             <Link href="/dashboard/jobs" className="text-xs md:text-sm font-semibold text-muted-foreground hover:text-foreground shrink-0">

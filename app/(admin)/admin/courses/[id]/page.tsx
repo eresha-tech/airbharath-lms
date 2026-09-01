@@ -1,50 +1,67 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { createClient } from "@/lib/supabase-server";
+import { db } from "@/lib/db";
+import { courses, modules, lessons } from "@/lib/db/schema";
+import { eq, inArray, asc } from "drizzle-orm";
 import CourseEditor from "@/components/admin/CourseEditor";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 export default async function EditCoursePage({ params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createClient();
   const { id } = await params;
 
-  // 1. Fetch Course details
-  const { data: course } = await supabase
-    .from("courses")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const courseObj = await db.query.courses.findFirst({
+    where: eq(courses.id, id),
+  });
 
-  if (!course) {
+  if (!courseObj) {
     notFound();
   }
 
-  // 2. Fetch Modules
-  const { data: modules } = await supabase
-    .from("modules")
-    .select("*")
-    .eq("course_id", id)
-    .order("order_index", { ascending: true });
+  const modulesList = await db.query.modules.findMany({
+    where: eq(modules.courseId, id),
+    orderBy: [asc(modules.orderIndex)],
+  });
 
-  // 3. Fetch Lessons
-  let lessons: any[] = [];
-  if (modules && modules.length > 0) {
-    const moduleIds = modules.map((m) => m.id);
-    const { data: fetchedLessons } = await supabase
-      .from("lessons")
-      .select("*")
-      .in("module_id", moduleIds)
-      .order("order_index", { ascending: true });
-    
-    if (fetchedLessons) {
-      lessons = fetchedLessons;
-    }
+  const moduleIds = modulesList.map((m: any) => m.id);
+
+  let lessonsList: any[] = [];
+  if (moduleIds.length > 0) {
+    lessonsList = await db.query.lessons.findMany({
+      where: inArray(lessons.moduleId, moduleIds),
+      orderBy: [asc(lessons.orderIndex)],
+    });
   }
+
+  const formattedModules = modulesList.map((m: any) => ({
+    id: m.id,
+    course_id: m.courseId,
+    title: m.title,
+    order_index: m.orderIndex,
+  }));
+
+  const formattedLessons = lessonsList.map((l: any) => ({
+    id: l.id,
+    module_id: l.moduleId,
+    title: l.title,
+    content: l.content,
+    video_url: l.videoUrl,
+    order_index: l.orderIndex,
+    is_free_preview: l.isFreePreview,
+  }));
 
   return (
     <CourseEditor 
-      course={course} 
-      initialModules={modules || []} 
-      initialLessons={lessons} 
+      course={{
+        id: courseObj.id,
+        title: courseObj.title,
+        description: courseObj.description,
+        price: Number(courseObj.price),
+        thumbnail_url: courseObj.thumbnailUrl,
+        is_published: courseObj.isPublished,
+        access_days: courseObj.accessDays,
+      }} 
+      initialModules={formattedModules} 
+      initialLessons={formattedLessons} 
     />
   );
 }

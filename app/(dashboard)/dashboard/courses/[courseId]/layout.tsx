@@ -1,7 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase-server";
+import { getSession } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { enrollments, courses, progress } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 import { Sidebar } from "@/components/dashboard/Sidebar";
+
+export const dynamic = "force-dynamic";
 
 interface CourseLayoutProps {
   children: React.ReactNode;
@@ -15,70 +19,60 @@ export default async function CourseLayout({
   params,
 }: CourseLayoutProps) {
   const { courseId } = await params;
-  const supabase = await createClient();
+  const session = await getSession();
 
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!session) {
     return redirect("/login");
   }
 
   // Check enrollment
-  const { data: enrollment } = await supabase
-    .from('enrollments')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('course_id', courseId)
-    .single();
+  const enrollmentObj = await db.query.enrollments.findFirst({
+    where: and(eq(enrollments.userId, session.id), eq(enrollments.courseId, courseId)),
+  });
 
-  if (!enrollment) {
+  if (!enrollmentObj) {
     return redirect(`/courses/${courseId}`);
   }
 
   // Fetch course data for sidebar
-  const { data: course } = await supabase
-    .from('courses')
-    .select(`
-      id,
-      title,
-      modules (
-        id,
-        title,
-        order_index,
-        lessons (
-          id,
-          title,
-          order_index
-        )
-      )
-    `)
-    .eq('id', courseId)
-    .single();
+  const courseObj = await db.query.courses.findFirst({
+    where: eq(courses.id, courseId),
+    with: {
+      modules: {
+        with: {
+          lessons: true,
+        },
+      },
+    },
+  });
 
-  if (!course) {
+  if (!courseObj) {
     return redirect("/my-courses");
   }
 
-  // Sort modules and lessons for sidebar
-  const sortedModules = course.modules?.sort((a: any, b: any) => a.order_index - b.order_index).map((module: any) => ({
-    ...module,
-    lessons: module.lessons?.sort((a: any, b: any) => a.order_index - b.order_index) || []
-  })) || [];
+  const courseModules = (courseObj.modules as any[]) || [];
+  const sortedModules = courseModules
+    .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
+    .map((mod: any) => ({
+      ...mod,
+      lessons: (mod.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0)),
+    }));
 
-  course.modules = sortedModules;
+  const formattedCourse = {
+    ...courseObj,
+    modules: sortedModules,
+  };
 
   // Fetch progress
-  const { data: progress } = await supabase
-    .from('progress')
-    .select('lesson_id')
-    .eq('user_id', user.id)
-    .eq('is_completed', true);
+  const userProgress = await db.query.progress.findMany({
+    where: and(eq(progress.userId, session.id), eq(progress.isCompleted, true)),
+  });
 
-  const completedLessonIds = progress?.map(p => p.lesson_id) || [];
+  const completedLessonIds = userProgress.map((p: any) => p.lessonId);
 
   return (
     <div className="h-full">
-      <Sidebar course={course as any} completedLessons={completedLessonIds} />
+      <Sidebar course={formattedCourse as any} completedLessons={completedLessonIds} />
       <main className="h-full lg:pt-[64px] pl-20 lg:pl-96">{children}</main>
     </div>
   );

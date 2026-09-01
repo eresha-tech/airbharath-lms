@@ -1,10 +1,14 @@
 import { redirect } from "next/navigation";
-import { createAdminClient } from "@/lib/supabase-server";
+import { db } from "@/lib/db";
+import { lessons } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { getGumletSignedUrl } from "@/lib/gumlet";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { getVdoCipherOtp } from "@/lib/vdocipher";
 import Link from "next/link";
 import { ArrowLeft, Lock } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 interface PreviewLessonPageProps {
   params: Promise<{
@@ -15,21 +19,12 @@ interface PreviewLessonPageProps {
 
 export default async function PreviewLessonPage({ params }: PreviewLessonPageProps) {
   const { courseId, lessonId } = await params;
-  // Use admin client so no auth is required to read lesson data
-  const adminSupabase = createAdminClient();
 
-  const { data: lesson } = await adminSupabase
-    .from("lessons")
-    .select("*")
-    .eq("id", lessonId)
-    .single();
+  const lessonObj = await db.query.lessons.findFirst({
+    where: eq(lessons.id, lessonId),
+  });
 
-  if (!lesson) {
-    return redirect(`/courses/${courseId}`);
-  }
-
-  // Only allow free preview lessons on this route
-  if (!lesson.is_free_preview) {
+  if (!lessonObj || !lessonObj.isFreePreview) {
     return redirect(`/courses/${courseId}`);
   }
 
@@ -37,23 +32,22 @@ export default async function PreviewLessonPage({ params }: PreviewLessonPagePro
   let vdoPlaybackInfo = "";
   let secureVideoUrl: string | null = null;
 
-  if (lesson.video_url) {
+  if (lessonObj.videoUrl) {
     try {
-      const vdoData = await getVdoCipherOtp(lesson.video_url, "preview@irii.in");
+      const vdoData = await getVdoCipherOtp(lessonObj.videoUrl, "preview@airbharath.in");
       if (vdoData) {
         vdoOtp = vdoData.otp;
         vdoPlaybackInfo = vdoData.playbackInfo;
       }
     } catch {
-      // fallback to gumlet/direct
-      secureVideoUrl = getGumletSignedUrl(lesson.video_url);
+      secureVideoUrl = getGumletSignedUrl(lessonObj.videoUrl);
     }
   }
 
   return (
     <div className="min-h-screen bg-background">
       {/* Preview Banner */}
-      <div className="w-full bg-gradient-to-r from-[#004D61] to-[#006d88] text-white py-3 px-4 text-center text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-2">
+      <div className="w-full bg-gradient-to-r from-[#014a62] to-[#01374a] text-white py-3 px-4 text-center text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-2">
         <span>🎬 You&apos;re watching a <strong>Free Preview</strong> lesson.</span>
         <Link
           href={`/courses/${courseId}`}
@@ -73,44 +67,44 @@ export default async function PreviewLessonPage({ params }: PreviewLessonPagePro
           Back to Course
         </Link>
 
-        <h1 className="text-2xl md:text-3xl font-black text-foreground mb-6">{lesson.title}</h1>
+        <h1 className="text-2xl md:text-3xl font-bold font-instrument-serif text-[#014a62] mb-6">{lessonObj.title}</h1>
 
         <div className="space-y-8">
           {/* Video */}
           {(vdoOtp || secureVideoUrl) ? (
             <VideoPlayer
               url={secureVideoUrl || undefined}
-              userEmail="preview@irii.in"
+              userEmail="preview@airbharath.in"
               vdoOtp={vdoOtp || undefined}
               vdoPlaybackInfo={vdoPlaybackInfo || undefined}
             />
-          ) : lesson.video_url ? (
+          ) : lessonObj.videoUrl ? (
             <div className="aspect-video bg-muted rounded-2xl flex items-center justify-center">
               <p className="text-sm text-muted-foreground">Video loading…</p>
             </div>
           ) : null}
 
           {/* Lesson Content */}
-          {lesson.content && (
+          {lessonObj.content && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">Lesson Notes</h2>
+              <h2 className="text-xl font-semibold mb-4 text-[#014a62] font-instrument-serif">Lesson Notes</h2>
               <div
-                className="prose prose-blue dark:prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: lesson.content }}
+                className="prose prose-blue dark:prose-invert max-w-none font-sans"
+                dangerouslySetInnerHTML={{ __html: lessonObj.content }}
               />
             </div>
           )}
 
           {/* CTA to enroll */}
-          <div className="mt-10 p-6 bg-gradient-to-br from-[#004D61]/10 to-[#006d88]/5 border border-[#004D61]/20 rounded-2xl text-center space-y-3">
-            <Lock className="h-8 w-8 text-[#004D61] mx-auto" />
-            <h3 className="text-lg font-black text-foreground">Enjoying this lesson?</h3>
-            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-              Enroll now to unlock the full course, all lessons, live projects, and your ISO-certified completion certificate.
+          <div className="mt-10 p-6 bg-[#014a62]/10 border border-[#014a62]/20 rounded-2xl text-center space-y-3">
+            <Lock className="h-8 w-8 text-[#014a62] mx-auto" />
+            <h3 className="text-lg font-bold font-instrument-serif text-[#014a62]">Enjoying this lesson?</h3>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto font-sans">
+              Enroll now to unlock the full course, all lessons, live projects, and your verified completion certificate.
             </p>
             <Link
               href={`/courses/${courseId}`}
-              className="inline-flex items-center gap-2 mt-2 px-6 py-3 bg-[#004D61] text-white font-bold rounded-xl text-sm hover:bg-[#006d88] transition-colors shadow-md"
+              className="inline-flex items-center gap-2 mt-2 px-6 py-3 bg-[#014a62] text-white font-bold rounded-xl text-xs hover:bg-[#01374a] transition-colors shadow-md"
             >
               View Enrollment Options
             </Link>

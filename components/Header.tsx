@@ -1,90 +1,53 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { BookMarkedIcon, BookOpen } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+import { BookMarkedIcon } from "lucide-react";
 import { SearchInput } from "./SearchInput";
 import { Button } from "./ui/button";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase";
 
 export default function Header() {
   const [user, setUser] = useState<any>(null);
-  const [role, setRole] = useState<string>("student");
-  const supabase = createClient();
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      if (user) {
-        const email = user.email?.toLowerCase() || "";
-        const isAdmin = email.startsWith("admin@") ||
-          email.endsWith("@irii.in") ||
-          email === "irii.edtech@gmail.com";
-        setRole(isAdmin ? "admin" : "student");
-
-        const { data: profile } = await supabase
-          .from("users")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-        if (profile?.role) {
-          setRole(profile.role);
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.user) {
+          setUser(data.user);
         }
-      }
-    };
-    getUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        const email = currentUser.email?.toLowerCase() || "";
-        const isAdmin = email.startsWith("admin@") ||
-          email.endsWith("@irii.in") ||
-          email === "irii.edtech@gmail.com";
-        setRole(isAdmin ? "admin" : "student");
-
-        const { data: profile } = await supabase
-          .from("users")
-          .select("role")
-          .eq("id", currentUser.id)
-          .single();
-        if (profile?.role) {
-          setRole(profile.role);
-        }
-      } else {
-        setRole("student");
-      }
-    });
-
-    return () => subscription.unsubscribe();
+      })
+      .catch(() => {});
   }, []);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <Link
               href="/"
-              className="flex items-center space-x-2 hover:opacity-90 transition-opacity"
+              className="flex items-center space-x-3 hover:opacity-90 transition-opacity"
             >
-              <BookOpen className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold text-foreground">
-                IRII
+              <img
+                src="https://assets.airbharath.in/logo.webp"
+                alt="Airbharath LMS"
+                className="h-9 w-auto object-contain"
+              />
+              <span className="text-xl font-bold font-instrument-serif text-[#014a62] tracking-tight">
+                Airbharath LMS
               </span>
             </Link>
 
             <SearchInput />
           </div>
 
-          <div className="flex items-center space-x-2 md:space-x-4">
+          <div className="flex items-center space-x-3 md:space-x-4">
             <nav>
               <Link
                 href="/my-courses"
-                className="flex space-x-2 items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors md:border md:border-border md:rounded-md md:px-4 md:py-2"
+                className="flex space-x-2 items-center text-sm font-medium text-foreground/80 hover:text-[#014a62] transition-colors border border-border rounded-md px-3 py-1.5"
               >
                 <BookMarkedIcon className="h-4 w-4" />
                 <span className="hidden md:block">My Courses</span>
@@ -92,11 +55,11 @@ export default function Header() {
             </nav>
 
             {user ? (
-              <Button asChild variant="default" size="default">
-                <Link href={role === "admin" ? "/admin" : "/dashboard"}>Dashboard</Link>
+              <Button asChild variant="default" className="bg-[#014a62] hover:bg-[#01374a] text-white">
+                <Link href={user.role === "admin" ? "/admin" : "/dashboard"}>Dashboard</Link>
               </Button>
             ) : (
-              <Button asChild variant="outline" size="default">
+              <Button asChild variant="outline" className="border-[#014a62] text-[#014a62] hover:bg-[#014a62]/10">
                 <Link href="/login">Sign In</Link>
               </Button>
             )}

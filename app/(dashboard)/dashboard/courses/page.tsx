@@ -1,102 +1,101 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { redirect } from "next/navigation";
-import { createClient, createAdminClient } from "@/lib/supabase-server";
+import { getSession } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { enrollments, courses, progress } from "@/lib/db/schema";
+import { eq, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 import { CourseCard } from "@/components/CourseCard";
-import { calculateCourseProgress } from "@/lib/courseProgress";
+
+export const dynamic = "force-dynamic";
 
 export default async function MyCoursesDashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession();
 
-  if (!user) {
+  if (!session) {
     return redirect("/login");
   }
 
-  const adminSupabase = createAdminClient();
+  const userEnrollments = await db.query.enrollments.findMany({
+    where: eq(enrollments.userId, session.id),
+  });
 
-  // Fetch enrolled courses with modules and lessons using admin client to bypass RLS on instructors/courses
-  const { data: enrollments } = await adminSupabase
-    .from("enrollments")
-    .select(`
-      course_id,
-      courses (
-        id,
-        title,
-        description,
-        thumbnail_url,
-        price,
-        instructor:users!instructor_id (
-          full_name,
-          avatar_url
-        ),
-        modules (
-          id,
-          lessons (
-            id
-          )
-        )
-      )
-    `)
-    .eq("user_id", user.id);
+  const courseIds = userEnrollments.map((e: any) => e.courseId);
 
-  const enrolledCourses = enrollments?.map(e => e.courses).filter(Boolean) || [];
+  const enrolledCourses = courseIds.length > 0
+    ? await db.query.courses.findMany({
+        where: inArray(courses.id, courseIds),
+        with: {
+          modules: {
+            with: {
+              lessons: true,
+            },
+          },
+        },
+      })
+    : [];
 
-  // Fetch progress for all completed lessons for this user using admin client
-  const { data: progressData } = await adminSupabase
-    .from("progress")
-    .select("lesson_id")
-    .eq("user_id", user.id)
-    .eq("is_completed", true);
+  const userProgress = await db.query.progress.findMany({
+    where: eq(progress.userId, session.id),
+  });
 
-  const completedLessonIds = progressData?.map(p => p.lesson_id) || [];
+  const completedLessonIds = new Set(userProgress.filter((p: any) => p.isCompleted).map((p: any) => p.lessonId));
 
   const coursesWithProgress = enrolledCourses.map((course: any) => {
-    const progress = calculateCourseProgress(course.modules, completedLessonIds);
-    return {
-      course,
-      progress
-    };
+    let total = 0;
+    let done = 0;
+    (course.modules as any[])?.forEach((m: any) => {
+      m.lessons?.forEach((l: any) => {
+        total++;
+        if (completedLessonIds.has(l.id)) done++;
+      });
+    });
+    const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+    return { course, percent };
   });
 
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="flex items-center gap-4">
-        <GraduationCap className="h-8 w-8 text-primary" />
+        <div className="p-3 bg-[#014a62]/10 text-[#014a62] rounded-2xl">
+          <GraduationCap className="h-8 w-8 text-[#014a62]" />
+        </div>
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">My Courses</h1>
-          <p className="text-muted-foreground text-sm mt-1">All courses you are currently enrolled in.</p>
+          <h1 className="text-3xl font-bold font-instrument-serif text-[#014a62]">My Enrolled Courses</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">All courses you are currently enrolled in on Airbharath LMS.</p>
         </div>
       </div>
 
       {enrolledCourses.length === 0 ? (
-        <div className="text-center py-16 bg-card border border-border/80 rounded-3xl p-8 shadow-sm">
-          <h2 className="text-2xl font-bold text-foreground mb-4">No enrolled courses yet</h2>
-          <p className="text-muted-foreground text-sm mb-8 max-w-md mx-auto">
-            You haven&apos;t enrolled in any courses yet. Browse our curriculum to get started!
+        <div className="text-center py-16 bg-gray-50 border border-dashed rounded-3xl p-8 space-y-4">
+          <h2 className="text-xl font-bold text-foreground">No enrolled courses yet</h2>
+          <p className="text-muted-foreground text-xs max-w-md mx-auto">
+            You haven&apos;t enrolled in any Airbharath courses. Browse our curriculum to get started!
           </p>
           <Link
-            href="/search/courses"
-            className="inline-flex items-center justify-center rounded-xl px-6 py-3 font-bold bg-primary text-primary-foreground hover:bg-primary/95 transition-all shadow-md"
+            href="/"
+            className="inline-flex items-center justify-center rounded-xl px-6 py-3 text-xs font-bold bg-[#014a62] text-white hover:bg-[#01374a] transition-all shadow-sm"
           >
             Browse Curriculum
           </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {coursesWithProgress.map((item) => {
-            if (!item || !item.course) return null;
-
-            return (
-              <CourseCard
-                key={item.course.id}
-                course={item.course}
-                progress={item.progress}
-                href={`/dashboard/courses/${item.course.id}`}
-              />
-            );
-          })}
+          {coursesWithProgress.map((item: any) => (
+            <CourseCard
+              key={item.course.id}
+              course={{
+                id: item.course.id,
+                title: item.course.title,
+                description: item.course.description,
+                thumbnailUrl: item.course.thumbnailUrl,
+                price: item.course.price,
+                accessDays: item.course.accessDays,
+              }}
+              progress={item.percent}
+              href={`/dashboard/courses/${item.course.id}`}
+            />
+          ))}
         </div>
       )}
     </div>

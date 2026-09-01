@@ -1,54 +1,60 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { createAdminClient } from "@/lib/supabase-server";
+import { db } from "@/lib/db";
+import { users, enrollments, orders, lessons, progress } from "@/lib/db/schema";
+import { desc, eq } from "drizzle-orm";
 import AdminDashboardClient from "@/components/admin/AdminDashboardClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
-  const supabase = createAdminClient();
-
-  // Fetch real data from the database in parallel using Admin Client to bypass RLS
-  const [
-    usersRes,
-    enrollmentsRes,
-    ordersRes,
-    lessonsRes,
-    progressRes
-  ] = await Promise.all([
-    supabase.from("users").select("id, full_name, email, role, created_at"),
-    supabase.from("enrollments").select("id, user_id, course_id, enrolled_at"),
-    supabase.from("orders").select(`
-      id,
-      user_id,
-      course_id,
-      amount,
-      status,
-      created_at,
-      users (
-        full_name,
-        email
-      ),
-      courses (
-        title
-      )
-    `).order("created_at", { ascending: false }),
-    supabase.from("lessons").select("*", { count: "exact", head: true }),
-    supabase.from("progress").select("*", { count: "exact", head: true }).eq("is_completed", true)
+  const [usersList, enrollmentsList, ordersList, lessonsList, progressList] = await Promise.all([
+    db.query.users.findMany(),
+    db.query.enrollments.findMany(),
+    db.query.orders.findMany({
+      with: { user: true, course: true },
+      orderBy: [desc(orders.createdAt)],
+    }),
+    db.query.lessons.findMany(),
+    db.query.progress.findMany({ where: eq(progress.isCompleted, true) }),
   ]);
 
-  const users = usersRes.data;
-  const enrollments = enrollmentsRes.data;
-  const orders = ordersRes.data;
-  const lessonsCount = lessonsRes.count;
-  const completedProgressCount = progressRes.count;
+  const formattedOrders = ordersList.map((o: any) => ({
+    id: o.id,
+    user_id: o.userId,
+    course_id: o.courseId,
+    amount: o.amount,
+    status: o.status,
+    created_at: o.createdAt,
+    users: {
+      full_name: o.user?.fullName,
+      email: o.user?.email,
+    },
+    courses: {
+      title: o.course?.title,
+    },
+  }));
+
+  const formattedUsers = usersList.map((u: any) => ({
+    id: u.id,
+    full_name: u.fullName,
+    email: u.email,
+    role: u.role,
+    created_at: u.createdAt,
+  }));
+
+  const formattedEnrollments = enrollmentsList.map((e: any) => ({
+    id: e.id,
+    user_id: e.userId,
+    course_id: e.courseId,
+    enrolled_at: e.createdAt,
+  }));
 
   return (
     <AdminDashboardClient
-      initialUsers={users || []}
-      initialEnrollments={enrollments || []}
-      initialOrders={orders || []}
-      lessonsCount={lessonsCount || 0}
-      completedProgressCount={completedProgressCount || 0}
+      initialUsers={formattedUsers}
+      initialEnrollments={formattedEnrollments}
+      initialOrders={formattedOrders}
+      lessonsCount={lessonsList.length}
+      completedProgressCount={progressList.length}
     />
   );
 }

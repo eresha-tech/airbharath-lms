@@ -294,10 +294,10 @@ export function LessonComments({ lessonId, currentUserId, currentUserName }: Les
       </div>
 
       {usingFallback && (
-        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-xl p-3.5 text-xs flex gap-2.5 items-start">
+        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-700 rounded-xl p-3.5 text-xs flex gap-2.5 items-start">
           <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
           <div>
-            <span className="font-bold">Offline/Fallback Mode:</span> Comments are currently saving locally. Admin can run the SQL migration (found in <code className="bg-amber-500/5 px-1 rounded">supabase/schema.sql</code>) to enable cloud-sync database comments.
+            <span className="font-bold font-instrument-sans">Offline Mode:</span> Comments are currently saving locally.
           </div>
         </div>
       )}

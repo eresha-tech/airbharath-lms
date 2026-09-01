@@ -1,6 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { createClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { courses, enrollments } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
+
+export const dynamic = "force-dynamic";
 
 interface CoursePageProps {
   params: Promise<{
@@ -10,52 +14,40 @@ interface CoursePageProps {
 
 export default async function CoursePage({ params }: CoursePageProps) {
   const { courseId } = await params;
-  const supabase = await createClient();
+  const session = await getSession();
 
-  // Check enrollment first
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return redirect("/login");
+  if (!session) return redirect("/login");
 
-  const { data: enrollment } = await supabase
-    .from('enrollments')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('course_id', courseId)
-    .single();
+  const enrollmentRecord = await db.query.enrollments.findFirst({
+    where: and(eq(enrollments.userId, session.id), eq(enrollments.courseId, courseId)),
+  });
 
-  if (!enrollment) {
+  if (!enrollmentRecord && session.role !== "admin") {
     return redirect(`/courses/${courseId}`);
   }
 
-  // Fetch course with ordered modules and lessons
-  const { data: course } = await supabase
-    .from('courses')
-    .select(`
-      id,
-      title,
-      modules (
-        id,
-        order_index,
-        lessons (
-          id,
-          order_index
-        )
-      )
-    `)
-    .eq('id', courseId)
-    .single();
+  const courseObj = await db.query.courses.findFirst({
+    where: eq(courses.id, courseId),
+    with: {
+      modules: {
+        with: {
+          lessons: true,
+        },
+      },
+    },
+  });
 
-  if (!course) {
-    return redirect("/");
+  if (!courseObj) {
+    return redirect("/my-courses");
   }
 
-  // Redirect to the first lesson of the first module if available
-  // Sort modules by order_index, then sort lessons within the first module
-  const sortedModules = course.modules?.sort((a: any, b: any) => a.order_index - b.order_index) || [];
+  const courseModules = (courseObj.modules as any[]) || [];
+  const sortedModules = courseModules.sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+
   if (sortedModules.length > 0) {
     const firstModule = sortedModules[0];
-    const sortedLessons = firstModule.lessons?.sort((a: any, b: any) => a.order_index - b.order_index) || [];
-    
+    const sortedLessons = (firstModule.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+
     if (sortedLessons.length > 0) {
       return redirect(
         `/dashboard/courses/${courseId}/lessons/${sortedLessons[0].id}`
@@ -64,11 +56,11 @@ export default async function CoursePage({ params }: CoursePageProps) {
   }
 
   return (
-    <div className="h-full flex items-center justify-center">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold">Welcome to {course.title}</h2>
-        <p className="text-muted-foreground">
-          This course has no content yet. Please check back later.
+    <div className="h-full flex items-center justify-center p-12">
+      <div className="text-center space-y-3">
+        <h2 className="text-2xl font-bold font-instrument-serif text-[#014a62]">Welcome to {courseObj.title}</h2>
+        <p className="text-muted-foreground text-sm">
+          Lessons for this course will be published soon.
         </p>
       </div>
     </div>

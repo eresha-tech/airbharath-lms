@@ -13,12 +13,10 @@ import {
   Briefcase, 
   Rss, 
   LogOut,
-  GraduationCap,
   Menu,
   X,
   MessageSquare
 } from "lucide-react";
-import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 
 const menuItems = [
@@ -36,12 +34,12 @@ const menuItems = [
 export function AdminSidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
-  const supabase = createClient();
   const router = useRouter();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
+    router.refresh();
   };
 
   const toggleSidebar = () => setIsOpen(!isOpen);
@@ -51,9 +49,9 @@ export function AdminSidebar() {
     <>
       {/* Mobile Top Bar */}
       <div className="flex md:hidden items-center justify-between px-6 h-16 bg-card border-b border-border sticky top-0 z-40 w-full">
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl text-foreground" onClick={closeSidebar}>
-          <GraduationCap className="h-6 w-6 text-primary" />
-          <span>IRII</span>
+        <Link href="/" className="flex items-center gap-2 font-bold text-xl text-[#014a62]" onClick={closeSidebar}>
+          <img src="https://assets.airbharath.in/logo.webp" alt="Airbharath LMS" className="h-8 w-auto object-contain" />
+          <span>Airbharath</span>
         </Link>
         <button
           onClick={toggleSidebar}
@@ -80,9 +78,9 @@ export function AdminSidebar() {
       >
         {/* Brand Header */}
         <div className="h-16 flex items-center px-6 border-b border-border justify-between">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl text-foreground" onClick={closeSidebar}>
-            <GraduationCap className="h-6 w-6 text-primary" />
-            <span>IRII</span>
+          <Link href="/" className="flex items-center gap-2 font-bold text-xl text-[#014a62]" onClick={closeSidebar}>
+            <img src="https://assets.airbharath.in/logo.webp" alt="Airbharath LMS" className="h-8 w-auto object-contain" />
+            <span>Airbharath</span>
           </Link>
           <button onClick={closeSidebar} className="md:hidden p-1 text-muted-foreground hover:text-foreground">
             <X className="h-5 w-5" />
@@ -90,9 +88,9 @@ export function AdminSidebar() {
         </div>
 
         {/* Admin Portal Welcome */}
-        <div className="p-4 mx-4 my-4 bg-muted/50 rounded-xl border border-border">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Welcome Back</p>
-          <h4 className="font-bold text-sm text-foreground">Admin Portal</h4>
+        <div className="p-4 mx-4 my-4 bg-[#014a62]/10 rounded-xl border border-[#014a62]/20">
+          <p className="text-[10px] font-bold text-[#014a62] uppercase tracking-wider">Welcome Back</p>
+          <h4 className="font-bold text-sm text-[#014a62]">Admin Portal</h4>
         </div>
 
         {/* Nav Menu */}
@@ -108,7 +106,7 @@ export function AdminSidebar() {
                 onClick={closeSidebar}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                   isActive 
-                    ? "bg-primary text-primary-foreground" 
+                    ? "bg-[#014a62] text-white font-bold" 
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >

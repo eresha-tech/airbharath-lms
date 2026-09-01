@@ -1,28 +1,27 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase-server';
+import { db } from '@/lib/db';
+import { coupons } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 export async function POST(req: Request) {
   try {
     const { code, amount } = await req.json();
-    const supabase = await createClient();
 
     if (!code) {
       return NextResponse.json({ error: 'Coupon code is required' }, { status: 400 });
     }
 
-    const { data: coupon } = await supabase
-      .from('coupons')
-      .select('*')
-      .eq('code', code.toUpperCase().trim())
-      .single();
+    const couponObj = await db.query.coupons.findFirst({
+      where: eq(coupons.code, code.toUpperCase().trim()),
+    });
 
-    if (!coupon) {
+    if (!couponObj) {
       return NextResponse.json({ error: 'Invalid coupon code' }, { status: 400 });
     }
 
     const now = new Date();
-    const isExpired = coupon.expiry_date ? new Date(coupon.expiry_date) < now : false;
-    const isLimitReached = coupon.usage_limit ? coupon.used_count >= coupon.usage_limit : false;
+    const isExpired = couponObj.expiryDate ? new Date(couponObj.expiryDate) < now : false;
+    const isLimitReached = couponObj.usageLimit ? (couponObj.usedCount || 0) >= couponObj.usageLimit : false;
 
     if (isExpired) {
       return NextResponse.json({ error: 'Coupon has expired' }, { status: 400 });
@@ -35,10 +34,10 @@ export async function POST(req: Request) {
     let discount = 0;
     let finalAmount = Number(amount);
 
-    if (coupon.discount_type === 'percentage') {
-      discount = Math.round(finalAmount * (Number(coupon.discount_value) / 100));
-    } else if (coupon.discount_type === 'flat') {
-      discount = Math.round(Number(coupon.discount_value));
+    if (couponObj.discountType === 'percentage') {
+      discount = Math.round(finalAmount * (Number(couponObj.discountValue) / 100));
+    } else if (couponObj.discountType === 'flat') {
+      discount = Math.round(Number(couponObj.discountValue));
     }
 
     finalAmount = Math.round(finalAmount - discount);
@@ -48,7 +47,7 @@ export async function POST(req: Request) {
       valid: true,
       discount,
       finalAmount,
-      code: coupon.code,
+      code: couponObj.code,
     });
   } catch (error) {
     console.error('COUPON_VALIDATE_ERROR', error);

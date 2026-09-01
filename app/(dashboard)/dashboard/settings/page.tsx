@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase';
 import { 
   User, 
   Settings as SettingsIcon, 
@@ -17,7 +15,6 @@ import {
 } from 'lucide-react';
 
 export default function SettingsPage() {
-  const supabase = createClient();
   const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'security'>('profile');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -40,22 +37,13 @@ export default function SettingsPage() {
     async function loadUserData() {
       try {
         setLoading(true);
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (authUser) {
-          setUser(authUser);
-          
-          // Get additional user profile fields
-          const { data: profile } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', authUser.id)
-            .single();
-
-          if (profile) {
-            setFullName(profile.full_name || '');
-            setAvatarUrl(profile.avatar_url || '');
-            setRole(profile.role || 'student');
-          }
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        if (data.user) {
+          setUser(data.user);
+          setFullName(data.user.fullName || '');
+          setAvatarUrl(data.user.avatarUrl || '');
+          setRole(data.user.role || 'student');
         }
       } catch (err) {
         console.error('Failed to load profile settings:', err);
@@ -88,15 +76,17 @@ export default function SettingsPage() {
     setErrorMsg('');
 
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({
-          full_name: fullName.trim(),
-          avatar_url: avatarUrl.trim(),
-        })
-        .eq('id', user.id);
+      const res = await fetch('/api/auth/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName: fullName.trim(), avatarUrl: avatarUrl.trim() }),
+      });
 
-      if (error) throw error;
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to update profile');
+      }
+
       setSuccessMsg('Your profile has been updated successfully.');
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err: any) {
@@ -125,7 +115,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[300px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#014a62]"></div>
       </div>
     );
   }
@@ -134,12 +124,12 @@ export default function SettingsPage() {
     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
       {/* Title */}
       <div>
-        <h1 className="text-3xl font-black text-foreground flex items-center gap-2">
-          <SettingsIcon className="h-8 w-8 text-primary" />
+        <h1 className="text-3xl font-bold font-instrument-serif text-[#014a62] flex items-center gap-2">
+          <SettingsIcon className="h-8 w-8 text-[#014a62]" />
           Account Settings
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Manage your student profile, security credentials, and course updates.
+          Manage your student profile, security credentials, and Airbharath LMS preferences.
         </p>
       </div>
 
@@ -150,7 +140,7 @@ export default function SettingsPage() {
             onClick={() => setActiveTab('profile')}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left ${
               activeTab === 'profile'
-                ? 'bg-primary text-primary-foreground shadow-sm'
+                ? 'bg-[#014a62] text-white shadow-sm'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             }`}
           >
@@ -162,7 +152,7 @@ export default function SettingsPage() {
             onClick={() => setActiveTab('notifications')}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left ${
               activeTab === 'notifications'
-                ? 'bg-primary text-primary-foreground shadow-sm'
+                ? 'bg-[#014a62] text-white shadow-sm'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             }`}
           >
@@ -174,7 +164,7 @@ export default function SettingsPage() {
             onClick={() => setActiveTab('security')}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left ${
               activeTab === 'security'
-                ? 'bg-primary text-primary-foreground shadow-sm'
+                ? 'bg-[#014a62] text-white shadow-sm'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             }`}
           >
@@ -188,19 +178,19 @@ export default function SettingsPage() {
           {activeTab === 'profile' && (
             <form onSubmit={handleSaveProfile} className="space-y-6">
               <div>
-                <h3 className="font-extrabold text-lg text-foreground">Profile Information</h3>
+                <h3 className="font-extrabold text-lg text-[#014a62] font-instrument-serif">Profile Information</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  This details are shared across the institute student directory and certification.
+                  These details are used across Airbharath student records and certificates.
                 </p>
               </div>
 
               {/* Avatar picture */}
               <div className="flex items-center gap-4 py-2">
-                <div className="h-16 w-16 bg-primary/10 rounded-full border border-border/80 flex items-center justify-center overflow-hidden shrink-0">
+                <div className="h-16 w-16 bg-[#014a62]/10 rounded-full border border-border/80 flex items-center justify-center overflow-hidden shrink-0">
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
                   ) : (
-                    <User className="h-8 w-8 text-primary" />
+                    <User className="h-8 w-8 text-[#014a62]" />
                   )}
                 </div>
                 <div>
@@ -217,17 +207,17 @@ export default function SettingsPage() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Enter your name"
-                    className="w-full border border-border rounded-xl px-4 py-2.5 text-xs font-semibold bg-muted/10 focus:bg-background focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                    className="w-full border border-border rounded-xl px-4 py-2.5 text-xs font-semibold bg-muted/10 focus:bg-background focus:outline-none focus:ring-1 focus:ring-[#014a62] focus:border-[#014a62] transition-all"
                     required
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Email Address</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Phone / Mobile</label>
                   <div className="relative">
                     <input
-                      type="email"
-                      value={user?.email || ''}
+                      type="text"
+                      value={user?.phone || user?.email || ''}
                       disabled
                       className="w-full border border-border rounded-xl px-4 py-2.5 text-xs font-semibold bg-muted/30 text-muted-foreground/70 cursor-not-allowed"
                     />
@@ -243,7 +233,7 @@ export default function SettingsPage() {
                   value={avatarUrl}
                   onChange={(e) => setAvatarUrl(e.target.value)}
                   placeholder="https://example.com/avatar.jpg"
-                  className="w-full border border-border rounded-xl px-4 py-2.5 text-xs font-semibold bg-muted/10 focus:bg-background focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                  className="w-full border border-border rounded-xl px-4 py-2.5 text-xs font-semibold bg-muted/10 focus:bg-background focus:outline-none focus:ring-1 focus:ring-[#014a62] focus:border-[#014a62] transition-all"
                 />
               </div>
 
@@ -264,7 +254,7 @@ export default function SettingsPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2.5 bg-primary text-primary-foreground font-bold rounded-xl text-xs hover:bg-primary/95 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+                  className="px-5 py-2.5 bg-[#014a62] text-white font-bold rounded-xl text-xs hover:bg-[#01374a] transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
                 >
                   <Save className="h-4 w-4" />
                   {saving ? 'Saving...' : 'Save Changes'}
@@ -276,49 +266,36 @@ export default function SettingsPage() {
           {activeTab === 'notifications' && (
             <div className="space-y-6">
               <div>
-                <h3 className="font-extrabold text-lg text-foreground">Notification Preferences</h3>
+                <h3 className="font-extrabold text-lg text-[#014a62] font-instrument-serif">Notification Preferences</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Configure how and when you want to receive curriculum announcements and discussions.
+                  Configure how and when you want to receive Airbharath course announcements.
                 </p>
               </div>
 
               <div className="space-y-5 py-2">
                 <div className="flex items-center justify-between p-4 bg-muted/20 border border-border/60 rounded-2xl">
                   <div>
-                    <h4 className="text-xs font-bold text-foreground">Email Updates</h4>
-                    <p className="text-[10px] text-muted-foreground">Receive updates for new modules, certification, and general news.</p>
+                    <h4 className="text-xs font-bold text-foreground">Course Updates</h4>
+                    <p className="text-[10px] text-muted-foreground">Receive updates for new modules, certification, and announcements.</p>
                   </div>
                   <input
                     type="checkbox"
                     checked={emailNotify}
                     onChange={(e) => setEmailNotify(e.target.checked)}
-                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                    className="h-4 w-4 rounded border-border text-[#014a62] focus:ring-[#014a62]"
                   />
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-muted/20 border border-border/60 rounded-2xl">
                   <div>
                     <h4 className="text-xs font-bold text-foreground">Doubt & Reply Alerts</h4>
-                    <p className="text-[10px] text-muted-foreground">Notify me via email when an admin answers my module discussion comments.</p>
+                    <p className="text-[10px] text-muted-foreground">Notify me when an instructor answers my module discussion comments.</p>
                   </div>
                   <input
                     type="checkbox"
                     checked={repliesNotify}
                     onChange={(e) => setRepliesNotify(e.target.checked)}
-                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between p-4 bg-muted/20 border border-border/60 rounded-2xl">
-                  <div>
-                    <h4 className="text-xs font-bold text-foreground">Placement & Hiring Alerts</h4>
-                    <p className="text-[10px] text-muted-foreground">Notify me as soon as a new recruitment event starts on the Job Board.</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={jobsNotify}
-                    onChange={(e) => setJobsNotify(e.target.checked)}
-                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                    className="h-4 w-4 rounded border-border text-[#014a62] focus:ring-[#014a62]"
                   />
                 </div>
               </div>
@@ -336,7 +313,7 @@ export default function SettingsPage() {
                   type="button"
                   onClick={handleSavePreferences}
                   disabled={saving}
-                  className="px-5 py-2.5 bg-primary text-primary-foreground font-bold rounded-xl text-xs hover:bg-primary/95 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+                  className="px-5 py-2.5 bg-[#014a62] text-white font-bold rounded-xl text-xs hover:bg-[#01374a] transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
                 >
                   <Save className="h-4 w-4" />
                   {saving ? 'Saving...' : 'Save Preferences'}
@@ -348,37 +325,12 @@ export default function SettingsPage() {
           {activeTab === 'security' && (
             <div className="space-y-6">
               <div>
-                <h3 className="font-extrabold text-lg text-foreground">Account Security</h3>
+                <h3 className="font-extrabold text-lg text-[#014a62] font-instrument-serif">Account Security</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Manage login keys, multi-factor settings, and student portal access.
+                  Manage login keys and student portal access settings.
                 </p>
               </div>
 
-              {/* MFA Card */}
-              <div className="flex items-start gap-4 p-4 border border-border/60 rounded-2xl bg-muted/10">
-                <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/10 text-primary shrink-0">
-                  <Fingerprint className="h-5 w-5" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold text-foreground">Multi-Factor Authenticator (MFA)</h4>
-                    <input
-                      type="checkbox"
-                      checked={twoFactor}
-                      onChange={(e) => {
-                        setTwoFactor(e.target.checked);
-                        localStorage.setItem('pref_mfa_enabled', String(e.target.checked));
-                      }}
-                      className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                    />
-                  </div>
-                  <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
-                    Protect your login with token confirmations. Recommended when accessing modules from shared campus workstations.
-                  </p>
-                </div>
-              </div>
-
-              {/* Account Metadata metadata info */}
               <div className="bg-muted/10 border border-border/60 rounded-2xl p-4 space-y-3">
                 <h4 className="text-xs font-extrabold text-foreground uppercase tracking-wider">Account Specifications</h4>
                 <div className="grid grid-cols-2 gap-y-2 text-[11px] font-semibold text-muted-foreground">
@@ -386,21 +338,7 @@ export default function SettingsPage() {
                   <div className="font-mono text-foreground">{user?.id || 'N/A'}</div>
                   
                   <div>Assigned Role:</div>
-                  <div className="text-primary capitalize">{role}</div>
-                  
-                  <div>Institution Account Created:</div>
-                  <div>{user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</div>
-                </div>
-              </div>
-
-              {/* Placement Ready state */}
-              <div className="p-4 border border-emerald-100 rounded-2xl bg-emerald-50/50 flex gap-3.5 items-start">
-                <Sparkles className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-xs font-bold text-emerald-800">Placement Hub Certification</h4>
-                  <p className="text-[10px] text-emerald-700/80 mt-1 leading-relaxed">
-                    Your account is registered as part of our placement program. Ensure your full name matches your academic documents to generate official verified certificates.
-                  </p>
+                  <div className="text-[#014a62] capitalize font-bold">{role}</div>
                 </div>
               </div>
             </div>

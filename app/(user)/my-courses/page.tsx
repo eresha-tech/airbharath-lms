@@ -1,104 +1,128 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { redirect } from "next/navigation";
-import { createClient, createAdminClient } from "@/lib/supabase-server";
+import { getSession } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { enrollments, courses, progress } from "@/lib/db/schema";
+import { eq, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 import { CourseCard } from "@/components/CourseCard";
-import { calculateCourseProgress } from "@/lib/courseProgress";
+import Header from "@/components/Header";
+import { Footer } from "@/components/Footer";
+
+export const dynamic = "force-dynamic";
 
 export default async function MyCoursesPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession();
 
-  if (!user) {
-    return redirect("/");
+  if (!session) {
+    return redirect("/login");
   }
 
-  const adminSupabase = createAdminClient();
+  let userEnrollments: any[] = [];
+  try {
+    userEnrollments = await db.query.enrollments.findMany({
+      where: eq(enrollments.userId, session.id),
+    });
+  } catch (err) {
+    console.error("Enrollment error:", err);
+  }
 
-  // Fetch enrolled courses with modules and lessons using admin client to bypass RLS on instructors/courses
-  const { data: enrollments } = await adminSupabase
-    .from('enrollments')
-    .select(`
-      course_id,
-      courses (
-        id,
-        title,
-        description,
-        thumbnail_url,
-        price,
-        instructor:users!instructor_id (
-          full_name,
-          avatar_url
-        ),
-        modules (
-          id,
-          lessons (
-            id
-          )
-        )
-      )
-    `)
-    .eq('user_id', user.id);
+  const courseIds = userEnrollments.map((e: any) => e.courseId);
 
-  const enrolledCourses = enrollments?.map(e => e.courses).filter(Boolean) || [];
+  let enrolledCourses: any[] = [];
+  if (courseIds.length > 0) {
+    try {
+      enrolledCourses = await db.query.courses.findMany({
+        where: inArray(courses.id, courseIds),
+        with: {
+          modules: {
+            with: {
+              lessons: true,
+            },
+          },
+        },
+      });
+    } catch (err) {
+      console.error("Courses error:", err);
+    }
+  }
 
-  // Fetch progress for all completed lessons for this user using admin client
-  const { data: progressData } = await adminSupabase
-    .from('progress')
-    .select('lesson_id')
-    .eq('user_id', user.id)
-    .eq('is_completed', true);
+  let userProgress: any[] = [];
+  try {
+    userProgress = await db.query.progress.findMany({
+      where: eq(progress.userId, session.id),
+    });
+  } catch (err) {
+    console.error("Progress error:", err);
+  }
 
-  const completedLessonIds = progressData?.map(p => p.lesson_id) || [];
+  const completedLessonIds = new Set(userProgress.filter((p: any) => p.isCompleted).map((p: any) => p.lessonId));
 
   const coursesWithProgress = enrolledCourses.map((course: any) => {
-    const progress = calculateCourseProgress(course.modules, completedLessonIds);
-    return {
-      course,
-      progress
-    };
+    let total = 0;
+    let done = 0;
+    (course.modules as any[])?.forEach((m: any) => {
+      m.lessons?.forEach((l: any) => {
+        total++;
+        if (completedLessonIds.has(l.id)) done++;
+      });
+    });
+    const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+    return { course, percent };
   });
 
   return (
-    <div className="h-full pt-16">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center gap-4 mb-8">
-          <GraduationCap className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">My Courses</h1>
-        </div>
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header />
 
-        {enrolledCourses.length === 0 ? (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-semibold mb-4">No courses yet</h2>
-            <p className="text-muted-foreground mb-8">
-              You haven&apos;t enrolled in any courses yet. Browse our courses
-              to get started!
-            </p>
-            <Link
-              href="/"
-              className="inline-flex items-center justify-center rounded-lg px-6 py-3 font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              Browse Courses
-            </Link>
+      <main className="flex-1 pt-24 pb-16">
+        <div className="container mx-auto px-4 max-w-6xl space-y-8">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-[#014a62]/10 text-[#014a62] rounded-2xl">
+              <GraduationCap className="h-7 w-7" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold font-instrument-serif text-[#014a62]">My Enrolled Courses</h1>
+              <p className="text-xs text-muted-foreground">Access your active learning programs on Airbharath LMS</p>
+            </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {coursesWithProgress.map((item) => {
-              if (!item || !item.course) return null;
 
-              return (
+          {enrolledCourses.length === 0 ? (
+            <div className="text-center py-16 bg-gray-50 border border-dashed rounded-3xl space-y-4">
+              <h2 className="text-xl font-bold text-foreground">No enrolled courses yet</h2>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                Explore Airbharath LMS programs to start learning today.
+              </p>
+              <Link
+                href="/"
+                className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-xs font-bold bg-[#014a62] text-white hover:bg-[#01374a] transition-all"
+              >
+                Browse Curriculum
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {coursesWithProgress.map((item: any) => (
                 <CourseCard
                   key={item.course.id}
-                  course={item.course}
-                  progress={item.progress}
+                  course={{
+                    id: item.course.id,
+                    title: item.course.title,
+                    description: item.course.description,
+                    thumbnailUrl: item.course.thumbnailUrl,
+                    price: item.course.price,
+                    accessDays: item.course.accessDays,
+                  }}
+                  progress={item.percent}
                   href={`/dashboard/courses/${item.course.id}`}
                 />
-              );
-            })}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+
+      <Footer />
     </div>
   );
 }

@@ -1,6 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
-import { createClient, createAdminClient } from "@/lib/supabase-server";
+import { getSession } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { lessonComments, users } from "@/lib/db/schema";
+import { eq, desc, and } from "drizzle-orm";
 
 export async function GET(req: Request) {
   try {
@@ -10,38 +12,23 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Missing lessonId" }, { status: 400 });
     }
 
-    const adminSupabase = createAdminClient();
-    const { data: comments, error } = await adminSupabase
-      .from("lesson_comments")
-      .select(`
-        id,
-        lesson_id,
-        user_id,
-        content,
-        parent_id,
-        created_at,
-        users (
-          full_name,
-          email,
-          role
-        )
-      `)
-      .eq("lesson_id", lessonId)
-      .order("created_at", { ascending: false });
+    const comments = await db.query.lessonComments.findMany({
+      where: eq(lessonComments.lessonId, lessonId),
+      with: {
+        user: true,
+      },
+      orderBy: [desc(lessonComments.createdAt)],
+    });
 
-    if (error) {
-      throw error;
-    }
-
-    const formattedComments = (comments || []).map((comment: any) => ({
+    const formattedComments = comments.map((comment: any) => ({
       id: comment.id,
-      lesson_id: comment.lesson_id,
-      user_id: comment.user_id,
+      lesson_id: comment.lessonId,
+      user_id: comment.userId,
       content: comment.content,
-      parent_id: comment.parent_id || null,
-      created_at: comment.created_at,
-      user_name: comment.users?.full_name || comment.users?.email || "Student",
-      user_role: comment.users?.role || "student"
+      parent_id: comment.parentId || null,
+      created_at: comment.createdAt,
+      user_name: comment.user?.fullName || comment.user?.email || "Student",
+      user_role: comment.user?.role || "student",
     }));
 
     return NextResponse.json({ comments: formattedComments });
@@ -53,10 +40,8 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    const session = await getSession();
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -65,20 +50,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
     }
 
-    const { data: comment, error } = await supabase
-      .from("lesson_comments")
-      .insert({
-        lesson_id: lessonId,
-        user_id: user.id,
+    const [comment] = await db
+      .insert(lessonComments)
+      .values({
+        lessonId,
+        userId: session.id,
         content,
-        parent_id: parentId || null
+        parentId: parentId || null,
       })
-      .select()
-      .single();
-
-    if (error) {
-      throw error;
-    }
+      .returning();
 
     return NextResponse.json({ comment });
   } catch (error) {
@@ -95,22 +75,15 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Missing commentId" }, { status: 400 });
     }
 
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    const session = await getSession();
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Delete comment ensuring ownership
-    const { error } = await supabase
-      .from("lesson_comments")
-      .delete()
-      .eq("id", commentId)
-      .eq("user_id", user.id);
-
-    if (error) {
-      throw error;
+    if (session.role === "admin") {
+      await db.delete(lessonComments).where(eq(lessonComments.id, commentId));
+    } else {
+      await db.delete(lessonComments).where(and(eq(lessonComments.id, commentId), eq(lessonComments.userId, session.id)));
     }
 
     return NextResponse.json({ success: true });

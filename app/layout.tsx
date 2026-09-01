@@ -1,21 +1,30 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Instrument_Serif, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  weight: "400",
+  subsets: ["latin"],
+});
+
+const instrumentSans = Instrument_Sans({
+  variable: "--font-instrument-sans",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "LMS SaaS Platform",
-  description: "A production-ready LMS built with Next.js and Supabase",
+  title: "Airbharath LMS - Premium Aviation & Technical Learning",
+  description: "Accelerate your learning with Airbharath LMS courses, certificates, and job opportunities.",
+  icons: {
+    icon: "https://assets.airbharath.in/logo.webp",
+  },
 };
 
 export default async function RootLayout({
@@ -26,7 +35,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} ${instrumentSerif.variable} ${instrumentSans.variable} font-sans antialiased`}
       >
         <ThemeProvider
           attribute="class"
