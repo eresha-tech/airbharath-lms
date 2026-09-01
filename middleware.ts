@@ -1,37 +1,24 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server';
+import { jwtVerify } from 'jose';
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'airbharath-lms-super-secret-jwt-key-2026'
+);
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
+  const { pathname } = request.nextUrl;
+  const token = request.cookies.get('ab_session')?.value;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
+  let sessionUser: { id: string; role: string; phone: string } | null = null;
+  if (token) {
+    try {
+      const { payload } = await jwtVerify(token, JWT_SECRET);
+      sessionUser = payload as any;
+    } catch {
+      sessionUser = null;
     }
-  )
+  }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const { pathname } = request.nextUrl
-
-  // Redirect unauthenticated users away from protected routes
   const isPublic =
     pathname === '/' ||
     pathname.startsWith('/login') ||
@@ -44,85 +31,39 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/courses') ||
     pathname.startsWith('/preview') ||
     pathname.startsWith('/pricing') ||
-    pathname.startsWith('/search')
+    pathname.startsWith('/search') ||
+    pathname.startsWith('/verify-certificate');
 
-  if (!user) {
-    // Clear cached role cookie on logout/unauthenticated
-    supabaseResponse.cookies.delete('x-user-role')
+  if (!sessionUser) {
     if (!isPublic) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      const redirectRes = NextResponse.redirect(url)
-      redirectRes.cookies.delete('x-user-role')
-      return redirectRes
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      const redirectRes = NextResponse.redirect(url);
+      redirectRes.cookies.delete('ab_session');
+      return redirectRes;
     }
-    return supabaseResponse
+    return NextResponse.next();
   }
 
-  if ((pathname.startsWith('/admin') || pathname.startsWith('/dashboard')) && user) {
-    const cachedRole = request.cookies.get('x-user-role')?.value
+  const role = sessionUser.role || 'student';
 
-    if (cachedRole) {
-      if (cachedRole === 'admin' && pathname.startsWith('/dashboard')) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/admin'
-        return NextResponse.redirect(url)
-      }
-      if (cachedRole !== 'admin' && pathname.startsWith('/admin')) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/dashboard'
-        return NextResponse.redirect(url)
-      }
-      return supabaseResponse
-    }
-
-    const { data: profile } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    const role = profile?.role || 'student'
-
-    supabaseResponse.cookies.set('x-user-role', role, {
-      maxAge: 60 * 30, // 30 minutes
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-    })
-
-    if (role === 'admin' && pathname.startsWith('/dashboard')) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/admin'
-      const res = NextResponse.redirect(url)
-      res.cookies.set('x-user-role', 'admin', {
-        maxAge: 60 * 30,
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-      })
-      return res
-    }
-
-    if (role !== 'admin' && pathname.startsWith('/admin')) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/dashboard'
-      const res = NextResponse.redirect(url)
-      res.cookies.set('x-user-role', role, {
-        maxAge: 60 * 30,
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-      })
-      return res
-    }
+  if (role === 'admin' && pathname.startsWith('/dashboard')) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/admin';
+    return NextResponse.redirect(url);
   }
 
-  return supabaseResponse
+  if (role !== 'admin' && pathname.startsWith('/admin')) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/dashboard';
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
     '/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
-}
+};
