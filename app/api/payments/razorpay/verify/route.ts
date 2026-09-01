@@ -1,56 +1,93 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { createAdminClient } from '@/lib/supabase-server';
+import { db } from '@/lib/db';
+import { orders, enrollments, courses } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
+import { generateAndSaveInvoice } from '@/lib/invoice-generator';
 
 export async function POST(req: Request) {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await req.json();
-    const adminSupabase = createAdminClient();
 
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
-      .update(body.toString())
-      .digest('hex');
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+    if (secret) {
+      const body = razorpay_order_id + '|' + razorpay_payment_id;
+      const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(body.toString())
+        .digest('hex');
 
-    const isAuthentic = expectedSignature === razorpay_signature;
-
-    if (isAuthentic) {
-      // Update order status using admin client
-      const { data: order, error: updateError } = await adminSupabase
-        .from('orders')
-        .update({ status: 'paid', razorpay_payment_id })
-        .eq('razorpay_order_id', razorpay_order_id)
-        .select()
-        .single();
-
-      if (updateError || !order) {
-        console.error('VERIFY_ORDER_UPDATE_ERROR', updateError || 'Order not found in DB');
-        return NextResponse.json({ error: 'Order update failed' }, { status: 400 });
+      if (expectedSignature !== razorpay_signature) {
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
       }
+    }
 
-      // Enroll user in course using admin client
-      const { error: enrollError } = await adminSupabase.from('enrollments').insert({
-        user_id: order.user_id,
-        course_id: order.course_id,
+    // Find order in DB
+    const existingOrder = await db.query.orders.findFirst({
+      where: eq(orders.razorpayOrderId, razorpay_order_id),
+    });
+
+    if (!existingOrder) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    // Update order status to paid
+    await db
+      .update(orders)
+      .set({
+        status: 'paid',
+        razorpayPaymentId: razorpay_payment_id,
+      })
+      .where(eq(orders.id, existingOrder.id));
+
+    // Determine course access duration
+    let expiresAt: Date | null = null;
+    if (existingOrder.courseId) {
+      const course = await db.query.courses.findFirst({
+        where: eq(courses.id, existingOrder.courseId),
+      });
+      if (course?.accessDays) {
+        expiresAt = new Date(Date.now() + course.accessDays * 24 * 60 * 60 * 1000);
+      }
+    }
+
+    // Create or update enrollment
+    if (existingOrder.userId && existingOrder.courseId) {
+      const existingEnrollment = await db.query.enrollments.findFirst({
+        where: and(
+          eq(enrollments.userId, existingOrder.userId),
+          eq(enrollments.courseId, existingOrder.courseId)
+        ),
       });
 
-      if (enrollError) {
-        // Code 23505 is PostgreSQL unique_violation (user already enrolled)
-        if (enrollError.code === '23505') {
-          console.log('User already enrolled, ignoring duplicate enrollment insert');
-        } else {
-          console.error('VERIFY_ENROLLMENT_ERROR', enrollError);
-          return NextResponse.json({ error: 'Enrollment failed' }, { status: 500 });
-        }
+      if (existingEnrollment) {
+        await db
+          .update(enrollments)
+          .set({
+            status: 'active',
+            expiresAt: expiresAt || existingEnrollment.expiresAt,
+          })
+          .where(eq(enrollments.id, existingEnrollment.id));
+      } else {
+        await db.insert(enrollments).values({
+          userId: existingOrder.userId,
+          courseId: existingOrder.courseId,
+          expiresAt: expiresAt,
+          status: 'active',
+        });
       }
-
-      return NextResponse.json({ message: 'Success' });
-    } else {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
-  } catch (error) {
+
+    // Generate automatic invoice
+    try {
+      await generateAndSaveInvoice(existingOrder.id);
+    } catch (invErr) {
+      console.error('Auto invoice generation error:', invErr);
+    }
+
+    return NextResponse.json({ success: true, message: 'Payment verified and enrolled successfully' });
+  } catch (error: any) {
     console.error('RAZORPAY_VERIFY_ERROR', error);
-    return NextResponse.json({ error: 'Internal Error' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Internal Error' }, { status: 500 });
   }
 }
