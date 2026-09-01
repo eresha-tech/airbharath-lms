@@ -158,15 +158,6 @@ export const lessonComments = pgTable('lesson_comments', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-// OTP Verification Table
-export const otps = pgTable('otps', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  phone: text('phone').notNull(),
-  otp: text('otp').notNull(),
-  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-  verified: boolean('verified').default(false).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({

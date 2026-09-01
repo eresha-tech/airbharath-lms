@@ -9,9 +9,9 @@ const db = drizzle(client, { schema });
 async function seed() {
   console.log('🌱 Seeding local database...');
 
-  // 1. Create Admin & Student User
+  // 1. Create Admin & Student Test Users
   const [adminUser] = await db.insert(schema.users).values({
-    phone: '+919999999999',
+    phone: '919876543210',
     email: 'admin@airbharath.in',
     fullName: 'Captain Vikram Singh (Admin)',
     avatarUrl: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=400',
@@ -19,7 +19,7 @@ async function seed() {
   }).onConflictDoNothing().returning();
 
   const [studentUser] = await db.insert(schema.users).values({
-    phone: '+919876543210',
+    phone: '911234567890',
     email: 'student@airbharath.in',
     fullName: 'Rahul Sharma',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
@@ -38,7 +38,7 @@ async function seed() {
     accessDays: 365,
     isPublished: true,
     instructorId: adminId,
-  }).returning();
+  }).onConflictDoNothing().returning();
 
   const [course2] = await db.insert(schema.courses).values({
     title: 'Commercial Pilot License (CPL) Meteorology & Flight Instruments',
@@ -49,7 +49,7 @@ async function seed() {
     accessDays: 730,
     isPublished: true,
     instructorId: adminId,
-  }).returning();
+  }).onConflictDoNothing().returning();
 
   // 3. Create Modules & Lessons for Course 1
   if (course1) {
@@ -57,13 +57,13 @@ async function seed() {
       courseId: course1.id,
       title: 'Module 1: Principles of Aircraft Flight & Aerodynamics',
       orderIndex: 1,
-    }).returning();
+    }).onConflictDoNothing().returning();
 
     const [mod2] = await db.insert(schema.modules).values({
       courseId: course1.id,
       title: 'Module 2: Air Navigation & Radio Aids',
       orderIndex: 2,
-    }).returning();
+    }).onConflictDoNothing().returning();
 
     if (mod1) {
       await db.insert(schema.lessons).values([
@@ -83,7 +83,7 @@ async function seed() {
           isFreePreview: false,
           orderIndex: 2,
         },
-      ]);
+      ]).onConflictDoNothing();
     }
 
     if (mod2) {
@@ -96,44 +96,17 @@ async function seed() {
           isFreePreview: false,
           orderIndex: 1,
         },
-      ]);
+      ]).onConflictDoNothing();
     }
   }
 
-  // 4. Create Sample Job Postings
-  await db.insert(schema.jobs).values([
-    {
-      title: 'Junior Flight Operations Executive',
-      company: 'Airbharath Aviation',
-      location: 'New Delhi (IGI Airport)',
-      description: 'Responsible for crew scheduling, flight dispatch coordination, and route weather monitoring.',
-      link: 'https://careers.airbharath.in/jobs/op-101',
-      postedBy: adminId,
-    },
-    {
-      title: 'Trainee Pilot - Cadet Program',
-      company: 'IndiGo Airlines Partner',
-      location: 'Gurugram / Hybrid',
-      description: 'Requirement: Minimum PPL/CPL ground school training completed with 80%+ assessment score.',
-      link: 'https://careers.airbharath.in/jobs/cadet-2026',
-      postedBy: adminId,
-    },
-  ]);
-
-  // 5. Create Sample Feed Post
-  await db.insert(schema.feedPosts).values({
-    content: '🎉 Welcome to the revamped Airbharath LMS platform! Access your aviation ground school courses, verified DGCA certificates, and job board updates right from your student dashboard.',
-    imageUrl: 'https://images.unsplash.com/photo-1519074069444-1ba4eff56022?w=800',
-    authorId: adminId,
-  });
-
-  // 6. Sample Coupon Code
+  // 4. Sample Coupon Code
   await db.insert(schema.coupons).values({
     code: 'AIRBHARATH20',
     discountType: 'percentage',
     discountValue: '20.00',
     usageLimit: 500,
-  });
+  }).onConflictDoNothing();
 
   console.log('✅ Local database seeded successfully!');
   await client.end();
