@@ -30,7 +30,7 @@ export function extractVdoCipherVideoId(input: string): string {
     // Ignore URL parse error
   }
 
-  return trimmed;
+  return "";
 }
 
 export async function getVdoCipherOtp(videoId: string, userEmail: string) {
@@ -41,8 +41,8 @@ export async function getVdoCipherOtp(videoId: string, userEmail: string) {
   }
 
   const cleanVideoId = extractVdoCipherVideoId(videoId);
-  if (!cleanVideoId) {
-    console.error("Invalid VdoCipher videoId provided.");
+  if (!cleanVideoId || !/^[a-f0-9]{32}$/i.test(cleanVideoId)) {
+    // External video URL (e.g. YouTube/Vimeo) — skip VdoCipher OTP request cleanly
     return null;
   }
 

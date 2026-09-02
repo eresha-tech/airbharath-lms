@@ -50,6 +50,12 @@ export async function POST(req: Request) {
       amount: Math.round(finalAmount * 100),
       currency: 'INR',
       receipt: `rcpt_${courseId.slice(0, 8)}_${Date.now().toString().slice(-8)}`,
+      notes: {
+        courseId: courseId,
+        courseTitle: course.title,
+        studentEmail: session.email || '',
+        studentPhone: session.phone || '',
+      },
     };
 
     const order = await razorpay.orders.create(options);

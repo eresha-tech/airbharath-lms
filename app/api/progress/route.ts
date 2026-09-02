@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { progress, courses, modules, certificates } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { generateAndSaveCertificate } from '@/lib/certificate-generator';
-import { sendEmail } from '@/lib/resend';
+import { sendMailercloudEmail } from '@/lib/mailercloud';
 
 export async function GET(request: Request) {
   try {
@@ -100,16 +100,17 @@ export async function POST(request: Request) {
               });
 
               if (session.email) {
-                await sendEmail({
+                await sendMailercloudEmail({
                   to: session.email,
+                  name: session.fullName || 'Student',
                   subject: `🎓 Your Airbharath LMS Certificate: ${courseObj?.title}`,
                   html: `
                     <div style="font-family: Arial, sans-serif; padding: 20px;">
-                      <h2 style="color: #014a62;">Congratulations ${session.fullName}!</h2>
+                      <h2 style="color: #6b3ba7;">Congratulations ${session.fullName || 'Student'}!</h2>
                       <p>You have successfully completed 100% of <strong>${courseObj?.title}</strong> on Airbharath LMS.</p>
                       <p>Your verified Certificate Code: <strong>${cert.certificateCode}</strong></p>
                       <p>You can view and verify your official certificate at:</p>
-                      <p><a href="${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/verify-certificate/${cert.certificateCode}" style="color: #014a62; font-weight: bold;">Verify Certificate</a></p>
+                      <p><a href="${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/verify-certificate/${cert.certificateCode}" style="color: #6b3ba7; font-weight: bold;">Verify Certificate</a></p>
                     </div>
                   `,
                 });
