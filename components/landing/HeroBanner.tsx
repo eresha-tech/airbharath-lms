@@ -113,7 +113,7 @@ export function HeroBanner() {
 
   return (
     <section
-      className="relative pt-24 pb-20 lg:pt-32 lg:pb-28 overflow-hidden bg-gradient-to-b from-slate-50/70 via-white to-white"
+      className="relative pt-20 pb-16 lg:pt-24 lg:pb-24 overflow-hidden bg-gradient-to-b from-slate-50/70 via-white to-white"
       aria-label="Featured courses"
       onMouseEnter={() => setIsAutoplay(false)}
       onMouseLeave={() => setIsAutoplay(true)}
