@@ -216,53 +216,33 @@ export function Sidebar({ course, completedLessons = [] }: SidebarProps) {
 
   return (
     <>
-      {/* Thin Mobile Sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-50 flex flex-col items-center w-[60px] border-r bg-background lg:hidden py-4 gap-y-4">
-        <TooltipProvider delayDuration={0}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link href="/">
-                <Button variant="ghost" size="icon" className="h-10 w-10">
-                  <Library className="h-5 w-5" />
-                </Button>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>Course Library</p>
-            </TooltipContent>
-          </Tooltip>
+      {/* Mobile Course Action Bar */}
+      <div className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 h-14 bg-white border-b border-slate-200/90 shadow-2xs">
+        <Link
+          href="/dashboard/courses"
+          className="flex items-center gap-1.5 text-xs font-bold text-[#014a62] hover:text-[#01374a] transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to My Courses</span>
+        </Link>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={toggle}
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10"
-              >
-                <ChevronRight
-                  className={cn(
-                    "h-5 w-5 transition-transform",
-                    isOpen && "rotate-180"
-                  )}
-                />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>Toggle Sidebar</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </aside>
+        <Button
+          onClick={toggle}
+          variant="outline"
+          size="sm"
+          className="text-xs font-bold border-[#014a62]/20 text-[#014a62] hover:bg-[#014a62]/10 h-8 gap-1.5 rounded-lg"
+        >
+          <Library className="h-3.5 w-3.5" />
+          <span>Course Modules ({course.modules?.length || 0})</span>
+        </Button>
+      </div>
 
-      {/* Main Sidebar - Desktop & Mobile */}
+      {/* Main Sidebar - Desktop & Mobile Drawer */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 bg-background transition-all duration-300 ease-in-out",
-          "lg:z-50 lg:block lg:w-96 lg:border-r",
-          isOpen
-            ? "w-[calc(100%-60px)] translate-x-[60px] lg:translate-x-0 lg:w-96"
-            : "translate-x-[-100%] lg:translate-x-0"
+          "fixed inset-y-0 left-0 z-50 bg-white transition-all duration-300 ease-in-out shadow-xl lg:shadow-none border-r border-slate-200",
+          "lg:w-96 lg:translate-x-0",
+          isOpen ? "w-80 translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
         <div className="h-full">
@@ -270,10 +250,10 @@ export function Sidebar({ course, completedLessons = [] }: SidebarProps) {
         </div>
       </aside>
 
-      {/* Overlay for mobile */}
+      {/* Mobile Drawer Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs lg:hidden"
           onClick={close}
         />
       )}

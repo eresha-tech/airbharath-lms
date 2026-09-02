@@ -36,7 +36,7 @@ function EnrollButton({
       .then((data) => {
         if (data?.user) setUser(data.user);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [initialUser]);
 
   const handleApplyCoupon = async () => {
@@ -176,7 +176,7 @@ function EnrollButton({
         href={`/dashboard/courses/${courseId}`}
         className="w-full rounded-xl px-6 py-3.5 font-bold bg-[#014a62] text-white hover:bg-[#01374a] transition-all h-12 flex items-center justify-center gap-2 group shadow-md"
       >
-        <span>Access Airbharath Dashboard</span>
+        <span>Access Dashboard</span>
         <CheckCircle className="w-5 h-5 group-hover:scale-110 transition-transform text-cyan-300" />
       </Link>
     );
@@ -225,10 +225,9 @@ function EnrollButton({
       <button
         type="button"
         className={`w-full rounded-xl px-6 py-3.5 font-bold transition-all duration-300 relative h-12 text-sm shadow-md
-          ${
-            isEnrolling
-              ? "bg-muted text-muted-foreground cursor-not-allowed"
-              : "bg-[#014a62] text-white hover:bg-[#01374a]"
+          ${isEnrolling
+            ? "bg-muted text-muted-foreground cursor-not-allowed"
+            : "bg-[#014a62] text-white hover:bg-[#01374a]"
           }
         `}
         disabled={isEnrolling}

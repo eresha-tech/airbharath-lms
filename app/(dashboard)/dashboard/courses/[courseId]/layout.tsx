@@ -73,7 +73,7 @@ export default async function CourseLayout({
   return (
     <div className="h-full">
       <Sidebar course={formattedCourse as any} completedLessons={completedLessonIds} />
-      <main className="h-full lg:pt-[64px] pl-20 lg:pl-96">{children}</main>
+      <main className="h-full pl-0 lg:pl-96">{children}</main>
     </div>
   );
 }

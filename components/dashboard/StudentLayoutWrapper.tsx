@@ -29,8 +29,8 @@ export function StudentLayoutWrapper({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const router = useRouter();
 
-  // Hide the global student sidebar inside the lesson player view
-  const isLessonView = pathname.includes("/lessons/");
+  // Hide the global student dashboard topbar/sidebar inside course & lesson view
+  const isCourseOrLessonView = pathname.startsWith("/dashboard/courses/") || pathname.includes("/lessons/");
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -41,7 +41,7 @@ export function StudentLayoutWrapper({ children }: { children: React.ReactNode }
   const toggleSidebar = () => setIsOpen(!isOpen);
   const closeSidebar = () => setIsOpen(false);
 
-  if (isLessonView) {
+  if (isCourseOrLessonView) {
     return <>{children}</>;
   }
 
@@ -141,21 +141,6 @@ export function StudentLayoutWrapper({ children }: { children: React.ReactNode }
 
       {/* Main Content Area */}
       <div className="pl-0 md:pl-64 flex-1 flex flex-col min-h-screen w-full">
-        {/* Navigation header matching mock */}
-        <header className="h-16 border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-30 px-4 md:px-8 flex items-center justify-between">
-          <div className="flex items-center gap-4 md:gap-6 overflow-x-auto no-scrollbar">
-            <Link href="/dashboard" className="text-xs md:text-sm font-semibold text-muted-foreground hover:text-foreground shrink-0">
-              Dashboard
-            </Link>
-            <Link href="/my-courses" className="text-xs md:text-sm font-semibold text-muted-foreground hover:text-foreground shrink-0">
-              Curriculum
-            </Link>
-            <Link href="/dashboard/jobs" className="text-xs md:text-sm font-semibold text-muted-foreground hover:text-foreground shrink-0">
-              Job Board
-            </Link>
-          </div>
-        </header>
-
         <main className="flex-1 p-4 md:p-8">{children}</main>
       </div>
     </div>

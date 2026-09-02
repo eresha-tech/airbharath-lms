@@ -34,7 +34,7 @@ export default function Header() {
               <img
                 src="https://assets.airbharath.in/logo.webp"
                 alt="Airbharath LMS"
-                className="h-9 w-auto object-contain transition-transform hover:scale-105"
+                className="h-7 sm:h-8 md:h-9 w-auto object-contain transition-transform hover:scale-105"
               />
             </Link>
 
