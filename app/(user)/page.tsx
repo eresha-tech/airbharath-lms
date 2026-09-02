@@ -1,5 +1,3 @@
-import Header from "@/components/Header";
-import { Footer } from "@/components/Footer";
 import { HeroBanner } from "@/components/landing/HeroBanner";
 import { TrustStrip } from "@/components/landing/TrustStrip";
 import { HeadlineSection } from "@/components/landing/HeadlineSection";
@@ -29,49 +27,19 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-[#014a62]/20 selection:text-[#014a62]">
-      <Header />
-
-      <main className="flex-1 pt-16">
-        {/* 1. HERO — ROTATING BANNER */}
-        <HeroBanner />
-
-        {/* 2. TRUST / CREDIBILITY STRIP */}
-        <TrustStrip />
-
-        {/* 3. MAIN HEADLINE + SUBHEADLINE + 4. CALLOUT BOX + 5. PRIMARY CTAs */}
-        <HeadlineSection />
-
-        {/* 6. CHALLENGES SECTION */}
-        <ChallengesSection />
-
-        {/* 7. SOLUTION SECTION */}
-        <SolutionSection />
-
-        {/* 8. COURSES WE OFFER */}
-        <CoursesSection dbCourses={publishedCourses} />
-
-        {/* 9. YOUR CAREER TRANSFORMATION */}
-        <TransformationMatrix />
-
-        {/* 10. EXPERT GUIDANCE SECTION */}
-        <ExpertGuidanceSection />
-
-        {/* 11. OUTCOMES SECTION */}
-        <OutcomesSection />
-
-        {/* 12. CAREER TRANSITION JOURNEY */}
-        <CareerTransitionJourney />
-
-        {/* 13. FAQ */}
-        <LandingFAQ />
-
-        {/* 14. FINAL CTA SECTION */}
-        <FinalCTA />
-      </main>
-
-      {/* 15. FOOTER */}
-      <Footer />
-    </div>
+    <>
+      <HeroBanner />
+      <TrustStrip />
+      <HeadlineSection />
+      <ChallengesSection />
+      <SolutionSection />
+      <CoursesSection dbCourses={publishedCourses} />
+      <TransformationMatrix />
+      <ExpertGuidanceSection />
+      <OutcomesSection />
+      <CareerTransitionJourney />
+      <LandingFAQ />
+      <FinalCTA />
+    </>
   );
 }

@@ -6,8 +6,6 @@ import { eq, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 import { CourseCard } from "@/components/CourseCard";
-import Header from "@/components/Header";
-import { Footer } from "@/components/Footer";
 
 export const dynamic = "force-dynamic";
 
@@ -72,10 +70,7 @@ export default async function MyCoursesPage() {
   });
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Header />
-
-      <main className="flex-1 pt-24 pb-16">
+    <main className="flex-1 pt-12 pb-16">
         <div className="container mx-auto px-4 max-w-6xl space-y-8">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-[#014a62]/10 text-[#014a62] rounded-2xl">
@@ -121,8 +116,5 @@ export default async function MyCoursesPage() {
           )}
         </div>
       </main>
-
-      <Footer />
-    </div>
   );
 }

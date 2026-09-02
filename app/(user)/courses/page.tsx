@@ -1,5 +1,3 @@
-import Header from "@/components/Header";
-import { Footer } from "@/components/Footer";
 import { db } from "@/lib/db";
 import { courses } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -95,10 +93,8 @@ export default async function CoursesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 text-slate-900 flex flex-col font-sans">
-      <Header />
-
-      <main className="flex-1 pt-24 pb-20">
+    <>
+      <main className="flex-1 pt-12 pb-20">
         
         {/* Page Header Banner */}
         <section className="bg-gradient-to-b from-[#014a62]/10 via-[#014a62]/5 to-transparent py-14 border-b border-slate-200/80">
@@ -259,13 +255,10 @@ export default async function CoursesPage() {
                 Build new capabilities without pausing your career. Certificate included upon successful completion.
               </p>
             </div>
-
           </div>
         </section>
 
       </main>
-
-      <Footer />
-    </div>
+    </>
   );
 }

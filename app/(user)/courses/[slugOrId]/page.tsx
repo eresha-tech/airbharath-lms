@@ -6,8 +6,6 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { courses, enrollments } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import Header from "@/components/Header";
-import { Footer } from "@/components/Footer";
 
 export const dynamic = "force-dynamic";
 
@@ -60,16 +58,12 @@ export default async function CoursePage({ params }: CoursePageProps) {
 
   if (!course) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Header />
-        <div className="flex-1 container mx-auto px-4 py-24 text-center">
-          <h1 className="text-4xl font-bold font-instrument-serif text-[#014a62]">Course Not Found</h1>
-          <p className="text-muted-foreground mt-2">The requested Airbharath course could not be located.</p>
-          <Link href="/" className="mt-6 inline-flex items-center justify-center rounded-xl px-6 py-3 bg-[#014a62] text-white font-bold hover:bg-[#01374a] transition-all">
-            Return to Home
-          </Link>
-        </div>
-        <Footer />
+      <div className="container mx-auto px-4 py-24 text-center min-h-[60vh] flex flex-col items-center justify-center">
+        <h1 className="text-4xl font-bold font-instrument-serif text-[#014a62]">Course Not Found</h1>
+        <p className="text-slate-600 mt-2">The requested Airbharath course could not be located.</p>
+        <Link href="/courses" className="mt-6 inline-flex items-center justify-center rounded-xl px-6 py-3 bg-[#014a62] text-white font-bold hover:bg-[#01374a] transition-all shadow-md">
+          Explore All Courses
+        </Link>
       </div>
     );
   }
@@ -96,10 +90,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
   const totalLessons = courseModules.reduce((acc: number, mod: any) => acc + (mod.lessons?.length || 0), 0) || 0;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Header />
-
-      <main className="flex-1 pt-16">
+    <main className="flex-1 pt-16">
         {/* Hero Header */}
         <div className="relative w-full overflow-hidden bg-[#014a62] text-white py-16 md:py-24">
           {course.thumbnailUrl && (
@@ -279,8 +270,5 @@ export default async function CoursePage({ params }: CoursePageProps) {
           </div>
         </div>
       </main>
-
-      <Footer />
-    </div>
   );
 }
