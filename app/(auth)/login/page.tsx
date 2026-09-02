@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Phone, Shield, ArrowRight, CheckCircle2, User, RefreshCw, Sparkles, ArrowLeft } from 'lucide-react';
+import { Phone, Shield, ArrowRight, CheckCircle2, User, RefreshCw, Sparkles, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,12 +16,25 @@ export default function LoginPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(30);
   const [message, setMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
+  // 30s Countdown timer for OTP Resend
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (step === 'otp' && resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [step, resendTimer]);
+
   // Step 1: Send OTP
-  const handleSendOTP = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendOTP = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     const cleanPhone = phone.replace(/\D/g, '');
     if (cleanPhone.length < 10) {
       setMessage('Please enter a valid 10-digit mobile number');
@@ -41,6 +54,7 @@ export default function LoginPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
 
       setStep('otp');
+      setResendTimer(30);
       setMessage('OTP sent successfully to your mobile number!');
       setIsSuccess(true);
     } catch (err: any) {
@@ -48,6 +62,32 @@ export default function LoginPage() {
       setIsSuccess(false);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Resend OTP handler
+  const handleResendOTP = async () => {
+    if (resendTimer > 0 || resendLoading) return;
+    setResendLoading(true);
+    setMessage('');
+    try {
+      const cleanPhone = phone.replace(/\D/g, '');
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: cleanPhone }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to resend OTP');
+
+      setResendTimer(30);
+      setMessage('A new OTP has been sent to your mobile number!');
+      setIsSuccess(true);
+    } catch (err: any) {
+      setMessage(err.message);
+      setIsSuccess(false);
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -128,12 +168,12 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50/70 text-slate-900 font-sans">
-      {/* Centered Production Auth Container */}
+      {/* Centered Auth Container - flex-col-reverse on mobile so Form Card is on TOP */}
       <div className="flex-1 flex items-center justify-center p-4 md:p-8">
-        <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden flex flex-col md:flex-row min-h-[580px] transition-all duration-300">
+        <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden flex flex-col-reverse md:flex-row min-h-[580px] transition-all duration-300">
           
-          {/* Left Panel - Airbharath Branding & Heritage */}
-          <div className="md:w-1/2 bg-[#014a62] text-white p-8 md:p-12 flex flex-col justify-between relative overflow-hidden">
+          {/* Left/Bottom Branding Banner */}
+          <div className="md:w-1/2 bg-[#014a62] text-white p-6 md:p-12 flex flex-col justify-between relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-[#01374a] via-[#014a62] to-[#026282] opacity-95 pointer-events-none" />
             <div className="absolute -top-32 -left-32 w-80 h-80 bg-cyan-400/20 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-teal-400/20 rounded-full blur-3xl pointer-events-none" />
@@ -142,33 +182,33 @@ export default function LoginPage() {
               <img
                 src="https://assets.airbharath.in/logo.webp"
                 alt="Airbharath LMS"
-                className="h-10 w-auto bg-white/10 p-1.5 rounded-xl border border-white/20 shadow-xs"
+                className="h-9 md:h-10 w-auto bg-white/10 p-1.5 rounded-xl border border-white/20 shadow-xs"
               />
               <div>
-                <span className="text-xl font-bold font-instrument-serif tracking-tight text-white block">
+                <span className="text-lg md:text-xl font-bold font-instrument-serif tracking-tight text-white block">
                   Airbharath LMS
                 </span>
-                <span className="text-[10px] text-cyan-200 uppercase tracking-widest font-extrabold">
+                <span className="text-[9px] md:text-[10px] text-cyan-200 uppercase tracking-widest font-extrabold">
                   Aviation &amp; Technical Excellence
                 </span>
               </div>
             </div>
 
-            <div className="relative z-10 my-10 space-y-4">
+            <div className="relative z-10 my-6 md:my-10 space-y-3 md:space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-cyan-200 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Future-Ready Skill Upgrades</span>
               </div>
 
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold font-instrument-serif leading-tight text-white">
+              <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold font-instrument-serif leading-tight text-white">
                 Learn, Certify &amp; Elevate Your Career.
               </h1>
-              <p className="text-sm text-cyan-100 leading-relaxed max-w-md font-sans">
+              <p className="text-xs md:text-sm text-cyan-100 leading-relaxed max-w-md font-sans">
                 Access industry-led courses, QR-verifiable PDF certificates, and practical technical modules all in one place.
               </p>
             </div>
 
-            <div className="relative z-10 bg-white/10 border border-white/15 rounded-2xl p-4 flex gap-4 items-center backdrop-blur-md">
+            <div className="relative z-10 bg-white/10 border border-white/15 rounded-2xl p-3.5 md:p-4 flex gap-3.5 items-center backdrop-blur-md">
               <div className="bg-[#014a62] p-2.5 rounded-xl border border-white/20 shrink-0 text-cyan-300 shadow-xs">
                 <Shield className="h-5 w-5" />
               </div>
@@ -181,17 +221,17 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Right Panel - Auth Card with shadcn UI components */}
-          <div className="md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-white">
+          {/* Right/Top Auth Input Form Panel */}
+          <div className="md:w-1/2 p-6 md:p-12 flex flex-col justify-center bg-white">
             <div className="max-w-md w-full mx-auto space-y-6">
 
               {/* STEP 1: PHONE NUMBER INPUT */}
               {step === 'phone' && (
                 <form onSubmit={handleSendOTP} className="space-y-6">
                   <div className="space-y-1">
-                    <h2 className="text-3xl font-bold font-instrument-serif text-[#014a62]">Sign In / Sign Up</h2>
+                    <h2 className="text-2xl md:text-3xl font-bold font-instrument-serif text-[#014a62]">Sign In / Sign Up</h2>
                     <p className="text-xs text-slate-500 font-medium">
-                      Enter your mobile number to receive a 4-digit OTP via SMS
+                      Enter your 10-digit mobile number to receive an OTP
                     </p>
                   </div>
 
@@ -221,8 +261,17 @@ export default function LoginPage() {
                     disabled={loading}
                     className="w-full h-12 bg-[#014a62] hover:bg-[#01374a] text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-[#014a62]/15 flex items-center justify-center gap-2"
                   >
-                    <span>{loading ? 'Sending OTP...' : 'Send OTP'}</span>
-                    {!loading && <ArrowRight className="w-4 h-4" />}
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <span>Sending OTP...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Send OTP</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
                   </Button>
                 </form>
               )}
@@ -232,7 +281,7 @@ export default function LoginPage() {
                 <form onSubmit={handleVerifyOTP} className="space-y-6">
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <h2 className="text-3xl font-bold font-instrument-serif text-[#014a62]">Enter 4-Digit OTP</h2>
+                      <h2 className="text-2xl md:text-3xl font-bold font-instrument-serif text-[#014a62]">Enter 4-Digit OTP</h2>
                       <button
                         type="button"
                         onClick={() => {
@@ -279,19 +328,38 @@ export default function LoginPage() {
                     disabled={loading || otp.length < 4}
                     className="w-full h-12 bg-[#014a62] hover:bg-[#01374a] text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-[#014a62]/15 flex items-center justify-center gap-2"
                   >
-                    <span>{loading ? 'Verifying...' : 'Verify OTP & Continue'}</span>
-                    {!loading && <ArrowRight className="w-4 h-4" />}
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <span>Verifying...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Verify OTP &amp; Continue</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
                   </Button>
 
-                  <div className="text-center">
+                  <div className="text-center pt-1">
                     <button
                       type="button"
-                      onClick={handleSendOTP}
-                      disabled={loading}
-                      className="text-xs font-semibold text-slate-500 hover:text-[#014a62] inline-flex items-center gap-1.5 transition-colors"
+                      onClick={handleResendOTP}
+                      disabled={resendTimer > 0 || resendLoading}
+                      className={`text-xs font-semibold inline-flex items-center gap-1.5 transition-colors ${
+                        resendTimer > 0 || resendLoading
+                          ? "text-slate-400 cursor-not-allowed"
+                          : "text-[#014a62] hover:underline"
+                      }`}
                     >
-                      <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-                      <span>Didn&apos;t receive code? Resend OTP</span>
+                      <RefreshCw className={`w-3.5 h-3.5 ${resendLoading ? 'animate-spin' : ''}`} />
+                      {resendLoading ? (
+                        <span>Resending...</span>
+                      ) : resendTimer > 0 ? (
+                        <span>Resend OTP in {resendTimer}s</span>
+                      ) : (
+                        <span>Didn&apos;t receive code? Resend OTP</span>
+                      )}
                     </button>
                   </div>
                 </form>
@@ -301,7 +369,7 @@ export default function LoginPage() {
               {step === 'profile' && (
                 <form onSubmit={handleCompleteProfile} className="space-y-5">
                   <div className="space-y-1">
-                    <h2 className="text-3xl font-bold font-instrument-serif text-[#014a62]">Complete Your Profile</h2>
+                    <h2 className="text-2xl md:text-3xl font-bold font-instrument-serif text-[#014a62]">Complete Your Profile</h2>
                     <p className="text-xs text-slate-500 font-medium">
                       Welcome to Airbharath LMS! Tell us your full name to get started.
                     </p>
@@ -341,8 +409,17 @@ export default function LoginPage() {
                     disabled={loading}
                     className="w-full h-12 bg-[#014a62] hover:bg-[#01374a] text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-[#014a62]/15 flex items-center justify-center gap-2"
                   >
-                    <span>{loading ? 'Saving...' : 'Complete Registration'}</span>
-                    {!loading && <ArrowRight className="w-4 h-4" />}
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Complete Registration</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
                   </Button>
                 </form>
               )}

@@ -196,7 +196,7 @@ export function HeroBanner() {
             </div>
 
             <div
-              className={`p-8 md:p-12 lg:p-14 bg-gradient-to-br ${activeSlide.gradient} flex flex-col lg:flex-row items-stretch justify-between gap-10 min-h-[440px]`}
+              className={`p-5 sm:p-8 md:p-12 lg:p-14 bg-gradient-to-br ${activeSlide.gradient} flex flex-col lg:flex-row items-stretch justify-between gap-8 lg:gap-10 min-h-[440px]`}
             >
               {/* Left Column: Copy & Details */}
               <div className="flex-1 space-y-6 flex flex-col justify-between z-10">
