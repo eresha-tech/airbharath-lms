@@ -128,8 +128,8 @@ export function HeroBanner() {
           <div className="w-full bg-slate-100 h-1.5 overflow-hidden">
             <div
               key={currentSlide}
-              className="h-full bg-[#014a62] transition-all duration-[6000ms] ease-linear"
-              style={{ width: isAutoplay ? "100%" : "0%" }}
+              className="h-full bg-[#014a62] transition-all ease-linear"
+              style={{ width: isAutoplay ? "100%" : "0%", transitionDuration: "6000ms" }}
             />
           </div>
 
