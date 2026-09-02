@@ -1,5 +1,4 @@
-import React from "react";
-import { BookOpen, Compass, Award, Rocket, ArrowDown } from "lucide-react";
+import { BookOpen, Compass, Award, Rocket } from "lucide-react";
 
 const JOURNEY_STEPS = [
   {
@@ -32,27 +31,30 @@ export function CareerTransitionJourney() {
   return (
     <section className="py-20 bg-white border-b border-gray-200/80">
       <div className="container mx-auto px-4 max-w-5xl space-y-12">
-        
+
         {/* Header */}
         <div className="text-center space-y-4 max-w-3xl mx-auto">
           <span className="text-xs font-extrabold uppercase tracking-widest text-[#014a62] bg-[#014a62]/10 px-3.5 py-1.5 rounded-full border border-[#014a62]/20">
             Strategic Path
           </span>
-          <h2 className="text-3xl md:text-5xl font-bold font-instrument-serif text-[#014a62]">
-            Your Next Career Doesn’t Have to Start With a Resignation.
+          <h2
+            className="text-3xl md:text-5xl font-bold font-instrument-serif text-[#014a62]"
+            style={{ textWrap: "balance" } as React.CSSProperties}
+          >
+            Your Next Career Doesn&rsquo;t Have to Start With a Resignation.
           </h2>
         </div>
 
-        {/* Stepper Flow Container */}
-        <div className="space-y-4">
+        {/* Stepper — ordered list for semantic step flow */}
+        <ol className="space-y-4 list-none p-0 m-0" aria-label="Career transition steps">
           {JOURNEY_STEPS.map((item, idx) => {
             const Icon = item.icon;
             return (
-              <div key={item.step} className="space-y-4">
-                <div className="bg-slate-50/80 border border-slate-200/90 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 hover:border-[#014a62]/40 transition-all hover:shadow-lg">
+              <li key={item.step}>
+                <div className="bg-slate-50/80 border border-slate-200/90 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 hover:border-[#014a62]/40 transition-colors hover:shadow-lg">
                   <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 rounded-2xl bg-[#014a62] text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-lg shadow-[#014a62]/20">
-                      <Icon className="w-7 h-7" />
+                    <div className="w-14 h-14 rounded-2xl bg-[#014a62] text-white flex items-center justify-center shrink-0 shadow-lg shadow-[#014a62]/20">
+                      <Icon className="w-7 h-7" aria-hidden="true" />
                     </div>
                     <div>
                       <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#014a62]">
@@ -69,24 +71,37 @@ export function CareerTransitionJourney() {
                   </p>
                 </div>
 
+                {/* Connector — purely decorative, respects reduced motion via CSS */}
                 {idx < JOURNEY_STEPS.length - 1 && (
-                  <div className="flex justify-center text-[#014a62]/60 py-1">
-                    <ArrowDown className="w-5 h-5 animate-bounce" />
+                  <div
+                    aria-hidden="true"
+                    className="flex justify-center text-[#014a62]/40 py-2 motion-safe:animate-bounce"
+                  >
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 5v14M5 12l7 7 7-7" />
+                    </svg>
                   </div>
                 )}
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ol>
 
         {/* Footer Banner */}
         <div className="bg-[#014a62] text-white p-6 rounded-2xl text-center space-y-1 shadow-lg">
           <p className="text-base md:text-lg font-bold font-instrument-serif text-white">
-            Don’t make a blind career switch.
+            Don&rsquo;t make a blind career switch.
           </p>
-          <p className="text-xs md:text-sm font-semibold text-cyan-200">
-            Prepare for it.
-          </p>
+          <p className="text-xs md:text-sm font-semibold text-cyan-200">Prepare for it.</p>
         </div>
 
       </div>

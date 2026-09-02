@@ -15,7 +15,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "I am an experienced Cabin Crew / aviation professional. Are these courses relevant to me?",
-    a: "Yes. If you’re looking to diversify your skill set, explore a career outside your current role or prepare for a future transition, these courses can help you build skills that may not be part of your current day-to-day work.",
+    a: "Yes. If you\u2019re looking to diversify your skill set, explore a career outside your current role or prepare for a future transition, these courses can help you build skills that may not be part of your current day-to-day work.",
   },
   {
     q: "I want to switch careers. Do I need to quit my current job first?",
@@ -31,7 +31,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Are these courses only for aviation professionals?",
-    a: "No. The courses are open to anyone looking to build practical skills. However, Air Bharath’s approach is informed by more than three decades of experience in aviation, learning and technology.",
+    a: "No. The courses are open to anyone looking to build practical skills. However, Air Bharath\u2019s approach is informed by more than three decades of experience in aviation, learning and technology.",
   },
   {
     q: "Can these courses help me switch careers?",
@@ -57,27 +57,35 @@ const FAQ_ITEMS = [
 
 export function LandingFAQ() {
   return (
-    <section id="faq" className="py-20 bg-slate-50/70 border-b border-gray-200/80">
+    <section id="faq" aria-labelledby="faq-heading" className="py-20 bg-slate-50/70 border-b border-gray-200/80">
       <div className="container mx-auto px-4 max-w-4xl space-y-10">
-        
+
         {/* Header */}
         <div className="text-center space-y-4">
           <span className="text-xs font-extrabold uppercase tracking-widest text-[#014a62] bg-[#014a62]/10 px-3.5 py-1.5 rounded-full border border-[#014a62]/20">
             Frequently Asked Questions
           </span>
-          <h2 className="text-3xl md:text-5xl font-bold font-instrument-serif text-[#014a62]">
+          <h2
+            id="faq-heading"
+            className="text-3xl md:text-5xl font-bold font-instrument-serif text-[#014a62]"
+            style={{ textWrap: "balance" } as React.CSSProperties}
+          >
             Got Questions? We Have Answers.
           </h2>
         </div>
 
-        {/* Accordion List */}
+        {/* Accordion */}
         <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl p-6 md:p-8 space-y-2">
           <Accordion type="single" collapsible className="w-full space-y-2">
             {FAQ_ITEMS.map((item, idx) => (
-              <AccordionItem key={idx} value={`item-${idx}`} className="border-b border-slate-100 last:border-b-0 py-2">
-                <AccordionTrigger className="text-left text-sm md:text-base font-bold text-[#014a62] hover:no-underline hover:text-[#01374a]">
+              <AccordionItem
+                key={idx}
+                value={`item-${idx}`}
+                className="border-b border-slate-100 last:border-b-0 py-2"
+              >
+                <AccordionTrigger className="text-left text-sm md:text-base font-bold text-[#014a62] hover:no-underline hover:text-[#01374a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#014a62] focus-visible:ring-offset-2 rounded-sm">
                   <div className="flex items-center gap-3">
-                    <HelpCircle className="w-4 h-4 text-[#014a62] shrink-0" />
+                    <HelpCircle className="w-4 h-4 text-[#014a62] shrink-0" aria-hidden="true" />
                     <span>{item.q}</span>
                   </div>
                 </AccordionTrigger>
