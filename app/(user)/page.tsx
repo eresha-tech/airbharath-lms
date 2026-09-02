@@ -1,12 +1,20 @@
-import Hero from "@/components/Hero";
-import { CourseCard } from "@/components/CourseCard";
-import { FAQSection } from "@/components/FAQSection";
-import { generateSlug } from "@/lib/slug";
+import Header from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { HeroBanner } from "@/components/landing/HeroBanner";
+import { TrustStrip } from "@/components/landing/TrustStrip";
+import { HeadlineSection } from "@/components/landing/HeadlineSection";
+import { ChallengesSection } from "@/components/landing/ChallengesSection";
+import { SolutionSection } from "@/components/landing/SolutionSection";
+import { CoursesSection } from "@/components/landing/CoursesSection";
+import { TransformationMatrix } from "@/components/landing/TransformationMatrix";
+import { ExpertGuidanceSection } from "@/components/landing/ExpertGuidanceSection";
+import { OutcomesSection } from "@/components/landing/OutcomesSection";
+import { CareerTransitionJourney } from "@/components/landing/CareerTransitionJourney";
+import { LandingFAQ } from "@/components/landing/LandingFAQ";
+import { FinalCTA } from "@/components/landing/FinalCTA";
 import { db } from "@/lib/db";
 import { courses } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import Header from "@/components/Header";
-import { Footer } from "@/components/Footer";
 
 export const dynamic = "force-dynamic";
 
@@ -17,61 +25,52 @@ export default async function Home() {
       where: eq(courses.isPublished, true),
     });
   } catch (err) {
-    console.error("DB connection error:", err);
+    console.error("DB connection error on landing page:", err);
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-[#014a62]/20 selection:text-[#014a62]">
       <Header />
 
       <main className="flex-1 pt-16">
-        <Hero />
+        {/* 1. HERO — ROTATING BANNER */}
+        <HeroBanner />
 
-        {/* Courses Section */}
-        <section id="curriculum" className="py-20 bg-gray-50/50 border-t border-border">
-          <div className="container mx-auto px-4 max-w-6xl space-y-10">
-            <div className="text-center space-y-3">
-              <span className="text-xs font-extrabold uppercase tracking-widest text-[#014a62] bg-[#014a62]/10 px-3.5 py-1 rounded-full">
-                Featured Programs
-              </span>
-              <h2 className="text-3xl md:text-5xl font-bold font-instrument-serif text-[#014a62]">
-                Airbharath Technical Courses
-              </h2>
-              <p className="text-sm md:text-base text-muted-foreground max-w-xl mx-auto font-sans">
-                Industry-oriented aviation & engineering training with QR-verifiable certification.
-              </p>
-            </div>
+        {/* 2. TRUST / CREDIBILITY STRIP */}
+        <TrustStrip />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {publishedCourses.length > 0 ? (
-                publishedCourses.map((course) => (
-                  <CourseCard
-                    key={course.id}
-                    course={{
-                      id: course.id,
-                      title: course.title,
-                      description: course.description,
-                      thumbnailUrl: course.thumbnailUrl,
-                      price: course.price,
-                      accessDays: course.accessDays,
-                    }}
-                    href={`/courses/${course.slug || generateSlug(course.title)}`}
-                  />
-                ))
-              ) : (
-                <div className="col-span-full py-16 text-center border border-dashed rounded-3xl bg-white text-muted-foreground">
-                  <p className="text-sm font-semibold">No published courses available right now.</p>
-                  <p className="text-xs text-muted-foreground mt-1">Check back soon for new Airbharath courses.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
+        {/* 3. MAIN HEADLINE + SUBHEADLINE + 4. CALLOUT BOX + 5. PRIMARY CTAs */}
+        <HeadlineSection />
 
-        {/* FAQ Section */}
-        <FAQSection />
+        {/* 6. CHALLENGES SECTION */}
+        <ChallengesSection />
+
+        {/* 7. SOLUTION SECTION */}
+        <SolutionSection />
+
+        {/* 8. COURSES WE OFFER */}
+        <CoursesSection dbCourses={publishedCourses} />
+
+        {/* 9. YOUR CAREER TRANSFORMATION */}
+        <TransformationMatrix />
+
+        {/* 10. EXPERT GUIDANCE SECTION */}
+        <ExpertGuidanceSection />
+
+        {/* 11. OUTCOMES SECTION */}
+        <OutcomesSection />
+
+        {/* 12. CAREER TRANSITION JOURNEY */}
+        <CareerTransitionJourney />
+
+        {/* 13. FAQ */}
+        <LandingFAQ />
+
+        {/* 14. FINAL CTA SECTION */}
+        <FinalCTA />
       </main>
 
+      {/* 15. FOOTER */}
       <Footer />
     </div>
   );
