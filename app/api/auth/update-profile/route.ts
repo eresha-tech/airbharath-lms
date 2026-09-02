@@ -12,8 +12,11 @@ export async function POST(req: Request) {
     }
 
     const { fullName, email } = await req.json();
-    if (!fullName) {
+    if (!fullName || !fullName.trim()) {
       return NextResponse.json({ error: 'Full name is required' }, { status: 400 });
+    }
+    if (!email || !email.trim()) {
+      return NextResponse.json({ error: 'Email address is required' }, { status: 400 });
     }
 
     const [updatedUser] = await db

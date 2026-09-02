@@ -140,6 +140,11 @@ export default function LoginPage() {
       setIsSuccess(false);
       return;
     }
+    if (!email.trim()) {
+      setMessage('Please enter your email address');
+      setIsSuccess(false);
+      return;
+    }
 
     setLoading(true);
     setMessage('');
@@ -405,7 +410,7 @@ export default function LoginPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email-input">Email Address (Optional)</Label>
+                    <Label htmlFor="email-input">Email Address *</Label>
                     <Input
                       id="email-input"
                       type="email"
@@ -413,6 +418,7 @@ export default function LoginPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="john@example.com"
                       className="h-12 text-sm font-semibold"
+                      required
                     />
                   </div>
 
