@@ -18,7 +18,7 @@ export function Footer() {
                 className="h-9 w-auto bg-white/10 p-1.5 rounded-xl border border-white/20"
               />
               <span className="text-2xl font-bold font-instrument-serif text-white">
-                Air Bharath LMS
+                Airbharath LMS
               </span>
             </Link>
 
@@ -97,10 +97,10 @@ export function Footer() {
         <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-slate-400 gap-4">
           <div className="space-y-1 text-center md:text-left">
             <p className="font-semibold text-slate-200">
-              Learn. Grow. Succeed — with Air Bharath.
+              Learn. Grow. Succeed — with Airbharath.
             </p>
             <p className="text-[11px] text-slate-500">
-              © {new Date().getFullYear()} Air Bharath LMS. All rights reserved.
+              © {new Date().getFullYear()} Airbharath LMS. All rights reserved.
             </p>
           </div>
 

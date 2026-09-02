@@ -74,7 +74,7 @@ export function ExpertGuidanceSection() {
               </div>
 
               <h3 className="text-xl font-bold font-instrument-serif text-[#014a62]">
-                Air Bharath’s 30+ Years
+                Airbharath’s 30+ Years
               </h3>
 
               <p className="text-xs md:text-sm text-slate-600 leading-relaxed font-sans font-normal">

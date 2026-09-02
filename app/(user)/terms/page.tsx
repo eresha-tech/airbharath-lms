@@ -19,7 +19,7 @@ export default function TermsPage() {
       {/* Terms Content */}
       <div className="bg-card p-8 md:p-10 rounded-3xl border border-border/80 shadow-sm space-y-8 text-xs md:text-sm leading-relaxed text-muted-foreground">
         <p className="text-foreground font-medium">
-          Welcome to IRII (INDUSTRY-READY INTERNSHIP INSTITUTE). By accessing or using our platform, you agree to these Terms & Conditions.
+          Welcome to Airbharath LMS. By accessing or using our platform, you agree to these Terms & Conditions.
         </p>
 
         <div className="space-y-4">
@@ -48,7 +48,7 @@ export default function TermsPage() {
         <div className="space-y-4">
           <h2 className="text-base font-bold text-foreground">4. Intellectual Property</h2>
           <ul className="list-disc pl-5 space-y-2">
-            <li>All course content, videos, documents, presentations, and materials are the intellectual property of IRII or its licensors.</li>
+            <li>All course content, videos, documents, presentations, and materials are the intellectual property of Airbharath LMS or its licensors.</li>
             <li>Users may not copy, distribute, record, reproduce, sell, or share course content without written permission.</li>
           </ul>
         </div>
@@ -93,19 +93,19 @@ export default function TermsPage() {
 
         <div className="space-y-4">
           <h2 className="text-base font-bold text-foreground">10. Limitation of Liability</h2>
-          <p>To the maximum extent permitted by law, IRII shall not be liable for indirect, incidental, or consequential damages arising from the use of the platform.</p>
+          <p>To the maximum extent permitted by law, Airbharath LMS shall not be liable for indirect, incidental, or consequential damages arising from the use of the platform.</p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 font-sans">
           <h2 className="text-base font-bold text-foreground">11. Governing Law</h2>
-          <p>These Terms shall be governed by the laws of India. Any disputes shall be subject to the jurisdiction of the courts of RAJNANDGAON, CHHATTISGARH.</p>
+          <p>These Terms shall be governed by the laws of India.</p>
         </div>
 
         <div className="space-y-4 border-t border-border/80 pt-6">
           <h2 className="text-base font-bold text-foreground">12. Contact Us</h2>
           <p>For questions regarding these Terms, contact:</p>
-          <p className="mt-2 text-foreground font-semibold">Email: contact@irii.in</p>
-          <p className="text-foreground font-semibold">Phone: +91-9691507331</p>
+          <p className="mt-2 text-foreground font-semibold">Airbharath LMS</p>
+          <p className="text-foreground font-semibold">Email: support@airbharath.in</p>
         </div>
       </div>
     </div>

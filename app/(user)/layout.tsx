@@ -4,8 +4,8 @@ import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "IRII - Finishing School",
-  description: "Bridge the academia-industry gap. Premium structural engineering training.",
+  title: "Airbharath LMS - Premium Aviation & Technical Learning",
+  description: "Accelerate your learning with Airbharath LMS courses, certificates, and job opportunities.",
 };
 
 export default function UserLayout({

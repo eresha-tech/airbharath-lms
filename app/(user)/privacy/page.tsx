@@ -19,7 +19,7 @@ export default function PrivacyPage() {
       {/* Privacy Content */}
       <div className="bg-card p-8 md:p-10 rounded-3xl border border-border/80 shadow-sm space-y-8 text-xs md:text-sm leading-relaxed text-muted-foreground">
         <p className="text-foreground font-medium">
-          At IRII, we value your privacy and are committed to protecting your personal information.
+          At Airbharath LMS, we value your privacy and are committed to protecting your personal information.
         </p>
 
         <div className="space-y-4">
@@ -109,10 +109,8 @@ export default function PrivacyPage() {
         <div className="space-y-4 border-t border-border/80 pt-6">
           <h2 className="text-base font-bold text-foreground">11. Contact Us</h2>
           <p>For privacy-related questions, contact:</p>
-          <p className="mt-2 text-foreground font-semibold">IRII</p>
-          <p className="text-foreground font-semibold">Email: contact@irii.in</p>
-          <p className="text-foreground font-semibold">Phone: +91-9691507331</p>
-          <p className="text-foreground font-semibold">Address: Rajnandgaon, Chhattisgarh</p>
+          <p className="mt-2 text-foreground font-semibold">Airbharath LMS</p>
+          <p className="text-foreground font-semibold">Email: support@airbharath.in</p>
         </div>
       </div>
     </div>
