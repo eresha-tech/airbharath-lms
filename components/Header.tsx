@@ -17,14 +17,14 @@ export default function Header() {
           setUser(data.user);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md backdrop-saturate-150 border-b border-slate-200/70 shadow-[0_4px_20px_-4px_rgba(1,74,98,0.08)] transition-all">
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="flex h-16 items-center justify-between gap-4">
-          
+
           {/* Left Brand + Logo */}
           <div className="flex items-center gap-8">
             <Link
@@ -37,7 +37,7 @@ export default function Header() {
                 className="h-9 w-auto object-contain"
               />
               <span className="text-xl font-bold font-instrument-serif text-[#014a62] tracking-tight">
-                Airbharath LMS
+                LMS
               </span>
             </Link>
 

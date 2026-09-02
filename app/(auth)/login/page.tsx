@@ -2,7 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Phone, Shield, ArrowRight, CheckCircle2, User } from 'lucide-react';
+import { Phone, Shield, ArrowRight, CheckCircle2, User, RefreshCw, Sparkles, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -48,10 +52,11 @@ export default function LoginPage() {
   };
 
   // Step 2: Verify OTP
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otp || otp.length < 4) {
-      setMessage('Please enter a valid OTP');
+  const handleVerifyOTP = async (e?: React.FormEvent, customOtp?: string) => {
+    if (e) e.preventDefault();
+    const otpToVerify = customOtp || otp;
+    if (!otpToVerify || otpToVerify.length < 4) {
+      setMessage('Please enter a valid 4-digit OTP');
       setIsSuccess(false);
       return;
     }
@@ -62,7 +67,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, otp }),
+        body: JSON.stringify({ phone, otp: otpToVerify }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Verification failed');
@@ -122,198 +127,232 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#fafbfc] text-[#0f172a]">
-      {/* Centered Login Card */}
+    <div className="flex flex-col min-h-screen bg-slate-50/70 text-slate-900 font-sans">
+      {/* Centered Production Auth Container */}
       <div className="flex-1 flex items-center justify-center p-4 md:p-8">
-        <div className="w-full max-w-5xl bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden flex flex-col md:flex-row min-h-[580px] transition-all duration-500">
+        <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden flex flex-col md:flex-row min-h-[580px] transition-all duration-300">
           
-          {/* Left Panel - Airbharath Branding */}
+          {/* Left Panel - Airbharath Branding & Heritage */}
           <div className="md:w-1/2 bg-[#014a62] text-white p-8 md:p-12 flex flex-col justify-between relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#01374a] via-[#014a62] to-[#026282] opacity-95 z-0" />
-            <div className="absolute -top-32 -left-32 w-80 h-80 bg-cyan-500/20 rounded-full blur-3xl z-0" />
-            <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-teal-500/20 rounded-full blur-3xl z-0" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#01374a] via-[#014a62] to-[#026282] opacity-95 pointer-events-none" />
+            <div className="absolute -top-32 -left-32 w-80 h-80 bg-cyan-400/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-teal-400/20 rounded-full blur-3xl pointer-events-none" />
 
             <div className="relative z-10 flex items-center gap-3">
               <img
                 src="https://assets.airbharath.in/logo.webp"
                 alt="Airbharath LMS"
-                className="h-10 w-auto bg-white/10 p-1.5 rounded-xl border border-white/20"
+                className="h-10 w-auto bg-white/10 p-1.5 rounded-xl border border-white/20 shadow-xs"
               />
               <div>
                 <span className="text-xl font-bold font-instrument-serif tracking-tight text-white block">
                   Airbharath LMS
                 </span>
-                <span className="text-[10px] text-cyan-200 uppercase tracking-wider font-semibold">
-                  Aviation & Technical Excellence
+                <span className="text-[10px] text-cyan-200 uppercase tracking-widest font-extrabold">
+                  Aviation &amp; Technical Excellence
                 </span>
               </div>
             </div>
 
             <div className="relative z-10 my-10 space-y-4">
-              <h1 className="text-3xl md:text-4xl font-bold font-instrument-serif leading-tight text-white">
-                Learn, Certify & Elevate Your Career.
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-cyan-200 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Future-Ready Skill Upgrades</span>
+              </div>
+
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold font-instrument-serif leading-tight text-white">
+                Learn, Certify &amp; Elevate Your Career.
               </h1>
               <p className="text-sm text-cyan-100 leading-relaxed max-w-md font-sans">
-                Access industry-led courses, QR-verifiable certificates, and hands-on technical training all in one place.
+                Access industry-led courses, QR-verifiable PDF certificates, and practical technical modules all in one place.
               </p>
             </div>
 
             <div className="relative z-10 bg-white/10 border border-white/15 rounded-2xl p-4 flex gap-4 items-center backdrop-blur-md">
-              <div className="bg-[#014a62] p-2.5 rounded-xl border border-white/20 shrink-0 text-cyan-300">
+              <div className="bg-[#014a62] p-2.5 rounded-xl border border-white/20 shrink-0 text-cyan-300 shadow-xs">
                 <Shield className="h-5 w-5" />
               </div>
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-white">Instant Mobile OTP Auth</h4>
-                <p className="text-[11px] text-cyan-100 mt-0.5">
-                  Fast, passwordless login with your mobile phone number.
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-white">Instant 4-Digit Mobile OTP</h4>
+                <p className="text-[11px] text-cyan-100 mt-0.5 font-medium">
+                  Passwordless, instant authentication using your 10-digit mobile number.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Right Panel - Auth Actions */}
+          {/* Right Panel - Auth Card with shadcn UI components */}
           <div className="md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-white">
             <div className="max-w-md w-full mx-auto space-y-6">
 
+              {/* STEP 1: PHONE NUMBER INPUT */}
               {step === 'phone' && (
                 <form onSubmit={handleSendOTP} className="space-y-6">
-                  <div>
+                  <div className="space-y-1">
                     <h2 className="text-3xl font-bold font-instrument-serif text-[#014a62]">Sign In / Sign Up</h2>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Enter your mobile number to receive an OTP via SMS
+                    <p className="text-xs text-slate-500 font-medium">
+                      Enter your mobile number to receive a 4-digit OTP via SMS
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Mobile Phone Number
-                    </label>
+                    <Label htmlFor="phone-input">Mobile Phone Number</Label>
                     <div className="relative">
-                      <div className="absolute left-3.5 top-3.5 text-xs font-bold text-muted-foreground flex items-center gap-1.5 border-r border-border pr-2.5">
+                      <div className="absolute left-3.5 top-3 text-xs font-bold text-slate-600 flex items-center gap-1.5 border-r border-slate-200 pr-2.5 z-10">
                         <span>+91</span>
                       </div>
-                      <input
+                      <Input
+                        id="phone-input"
                         type="tel"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="9876543210"
                         maxLength={10}
-                        className="w-full border border-border rounded-xl pl-16 pr-4 py-3 text-sm font-semibold bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#014a62] focus:border-[#014a62] transition-all"
+                        className="pl-16 pr-10 h-12 text-sm font-semibold"
                         required
+                        autoFocus
                       />
-                      <Phone className="absolute right-3.5 top-3.5 h-4.5 w-4.5 text-muted-foreground" />
+                      <Phone className="absolute right-3.5 top-3.5 h-4 w-4 text-slate-400" />
                     </div>
                   </div>
 
-                  <button
+                  <Button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3.5 px-4 bg-[#014a62] text-white font-bold rounded-xl text-xs hover:bg-[#01374a] transition-all shadow-md shadow-[#014a62]/10 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full h-12 bg-[#014a62] hover:bg-[#01374a] text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-[#014a62]/15 flex items-center justify-center gap-2"
                   >
                     <span>{loading ? 'Sending OTP...' : 'Send OTP'}</span>
                     {!loading && <ArrowRight className="w-4 h-4" />}
-                  </button>
+                  </Button>
                 </form>
               )}
 
+              {/* STEP 2: 4-BOX INPUT OTP WITH SHADCN */}
               {step === 'otp' && (
                 <form onSubmit={handleVerifyOTP} className="space-y-6">
-                  <div>
-                    <h2 className="text-3xl font-bold font-instrument-serif text-[#014a62]">Enter OTP</h2>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      We sent a 6-digit code to <span className="font-bold text-foreground">+91 {phone}</span>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-3xl font-bold font-instrument-serif text-[#014a62]">Enter 4-Digit OTP</h2>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStep('phone');
+                          setOtp('');
+                        }}
+                        className="text-xs font-bold text-[#014a62] hover:underline flex items-center gap-1"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <span>Edit Number</span>
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-500 font-medium">
+                      We sent a 4-digit code to <span className="font-bold text-slate-900">+91 {phone}</span>
                     </p>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                      OTP Code
-                    </label>
-                    <input
-                      type="text"
+                  {/* 4-Box InputOTP Component */}
+                  <div className="space-y-3 flex flex-col items-center justify-center py-2">
+                    <Label className="text-center">Enter 4-Digit Verification Pin</Label>
+                    
+                    <InputOTP
+                      maxLength={4}
                       value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
-                      placeholder="Enter OTP (e.g. 123456)"
-                      maxLength={6}
-                      className="w-full text-center tracking-widest text-lg border border-border rounded-xl px-4 py-3 font-mono font-bold bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#014a62] focus:border-[#014a62] transition-all"
-                      required
-                    />
+                      onChange={(value) => {
+                        setOtp(value);
+                        if (value.length === 4) {
+                          handleVerifyOTP(undefined, value);
+                        }
+                      }}
+                      autoFocus
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                      </InputOTPGroup>
+                    </InputOTP>
                   </div>
 
-                  <button
+                  <Button
                     type="submit"
-                    disabled={loading}
-                    className="w-full py-3.5 px-4 bg-[#014a62] text-white font-bold rounded-xl text-xs hover:bg-[#01374a] transition-all shadow-md shadow-[#014a62]/10 disabled:opacity-50 flex items-center justify-center gap-2"
+                    disabled={loading || otp.length < 4}
+                    className="w-full h-12 bg-[#014a62] hover:bg-[#01374a] text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-[#014a62]/15 flex items-center justify-center gap-2"
                   >
                     <span>{loading ? 'Verifying...' : 'Verify OTP & Continue'}</span>
                     {!loading && <ArrowRight className="w-4 h-4" />}
-                  </button>
+                  </Button>
 
-                  <button
-                    type="button"
-                    onClick={() => setStep('phone')}
-                    className="w-full text-center text-xs font-semibold text-muted-foreground hover:text-[#014a62]"
-                  >
-                    Change mobile number
-                  </button>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={handleSendOTP}
+                      disabled={loading}
+                      className="text-xs font-semibold text-slate-500 hover:text-[#014a62] inline-flex items-center gap-1.5 transition-colors"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                      <span>Didn&apos;t receive code? Resend OTP</span>
+                    </button>
+                  </div>
                 </form>
               )}
 
+              {/* STEP 3: PROFILE SETUP */}
               {step === 'profile' && (
                 <form onSubmit={handleCompleteProfile} className="space-y-5">
-                  <div>
+                  <div className="space-y-1">
                     <h2 className="text-3xl font-bold font-instrument-serif text-[#014a62]">Complete Your Profile</h2>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Welcome to Airbharath LMS! Tell us your name to get started.
+                    <p className="text-xs text-slate-500 font-medium">
+                      Welcome to Airbharath LMS! Tell us your full name to get started.
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Full Name *
-                    </label>
+                    <Label htmlFor="fullname-input">Full Name *</Label>
                     <div className="relative">
-                      <input
+                      <Input
+                        id="fullname-input"
                         type="text"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="John Doe"
-                        className="w-full border border-border rounded-xl px-4 py-3 pr-10 text-sm font-semibold bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#014a62] focus:border-[#014a62] transition-all"
+                        className="pr-10 h-12 text-sm font-semibold"
                         required
+                        autoFocus
                       />
-                      <User className="absolute right-3.5 top-3.5 h-4.5 w-4.5 text-muted-foreground" />
+                      <User className="absolute right-3.5 top-3.5 h-4 w-4 text-slate-400" />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Email Address (Optional)
-                    </label>
-                    <input
+                    <Label htmlFor="email-input">Email Address (Optional)</Label>
+                    <Input
+                      id="email-input"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="john@example.com"
-                      className="w-full border border-border rounded-xl px-4 py-3 text-sm font-semibold bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#014a62] focus:border-[#014a62] transition-all"
+                      className="h-12 text-sm font-semibold"
                     />
                   </div>
 
-                  <button
+                  <Button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3.5 px-4 bg-[#014a62] text-white font-bold rounded-xl text-xs hover:bg-[#01374a] transition-all shadow-md shadow-[#014a62]/10 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full h-12 bg-[#014a62] hover:bg-[#01374a] text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-[#014a62]/15 flex items-center justify-center gap-2"
                   >
                     <span>{loading ? 'Saving...' : 'Complete Registration'}</span>
                     {!loading && <ArrowRight className="w-4 h-4" />}
-                  </button>
+                  </Button>
                 </form>
               )}
 
+              {/* Alert / Notification Feedback Message */}
               {message && (
-                <div className={`p-4 rounded-xl border flex items-start gap-3 ${
+                <div className={`p-4 rounded-xl border flex items-start gap-3 transition-all ${
                   isSuccess 
-                    ? "bg-emerald-50 border-emerald-100 text-emerald-800" 
-                    : "bg-rose-50 border-rose-100 text-rose-800"
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-800" 
+                    : "bg-rose-50 border-rose-200 text-rose-800"
                 }`}>
                   {isSuccess && <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />}
                   <p className="text-xs font-semibold leading-relaxed">{message}</p>
@@ -325,7 +364,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <footer className="w-full px-6 py-6 border-t border-border/40 bg-[#fafbfc] text-center text-xs text-muted-foreground font-medium">
+      <footer className="w-full px-6 py-6 border-t border-slate-200/80 bg-white text-center text-xs text-slate-500 font-medium">
         © {new Date().getFullYear()} Airbharath LMS. All rights reserved.
       </footer>
     </div>
