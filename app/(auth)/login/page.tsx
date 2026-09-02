@@ -168,12 +168,12 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50/70 text-slate-900 font-sans">
-      {/* Centered Auth Container - flex-col-reverse on mobile so Form Card is on TOP */}
+      {/* Centered Auth Container */}
       <div className="flex-1 flex items-center justify-center p-4 md:p-8">
-        <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden flex flex-col-reverse md:flex-row min-h-[580px] transition-all duration-300">
+        <div className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden flex flex-col md:flex-row transition-all duration-300">
           
-          {/* Left/Bottom Branding Banner */}
-          <div className="md:w-1/2 bg-[#014a62] text-white p-6 md:p-12 flex flex-col justify-between relative overflow-hidden">
+          {/* Desktop Left Branding Banner (Hidden on Mobile) */}
+          <div className="hidden md:flex md:w-1/2 bg-[#014a62] text-white p-10 lg:p-12 flex-col justify-between relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-[#01374a] via-[#014a62] to-[#026282] opacity-95 pointer-events-none" />
             <div className="absolute -top-32 -left-32 w-80 h-80 bg-cyan-400/20 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-teal-400/20 rounded-full blur-3xl pointer-events-none" />
@@ -182,33 +182,33 @@ export default function LoginPage() {
               <img
                 src="https://assets.airbharath.in/logo.webp"
                 alt="Airbharath LMS"
-                className="h-9 md:h-10 w-auto bg-white/10 p-1.5 rounded-xl border border-white/20 shadow-xs"
+                className="h-10 w-auto bg-white/10 p-1.5 rounded-xl border border-white/20 shadow-xs"
               />
               <div>
-                <span className="text-lg md:text-xl font-bold font-instrument-serif tracking-tight text-white block">
+                <span className="text-xl font-bold font-instrument-serif tracking-tight text-white block">
                   Airbharath LMS
                 </span>
-                <span className="text-[9px] md:text-[10px] text-cyan-200 uppercase tracking-widest font-extrabold">
+                <span className="text-[10px] text-cyan-200 uppercase tracking-widest font-extrabold">
                   Aviation &amp; Technical Excellence
                 </span>
               </div>
             </div>
 
-            <div className="relative z-10 my-6 md:my-10 space-y-3 md:space-y-4">
+            <div className="relative z-10 my-10 space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-cyan-200 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Future-Ready Skill Upgrades</span>
               </div>
 
-              <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold font-instrument-serif leading-tight text-white">
+              <h1 className="text-3xl lg:text-4xl font-bold font-instrument-serif leading-tight text-white">
                 Learn, Certify &amp; Elevate Your Career.
               </h1>
-              <p className="text-xs md:text-sm text-cyan-100 leading-relaxed max-w-md font-sans">
+              <p className="text-sm text-cyan-100 leading-relaxed font-sans">
                 Access industry-led courses, QR-verifiable PDF certificates, and practical technical modules all in one place.
               </p>
             </div>
 
-            <div className="relative z-10 bg-white/10 border border-white/15 rounded-2xl p-3.5 md:p-4 flex gap-3.5 items-center backdrop-blur-md">
+            <div className="relative z-10 bg-white/10 border border-white/15 rounded-2xl p-4 flex gap-4 items-center backdrop-blur-md">
               <div className="bg-[#014a62] p-2.5 rounded-xl border border-white/20 shrink-0 text-cyan-300 shadow-xs">
                 <Shield className="h-5 w-5" />
               </div>
@@ -221,13 +221,25 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Right/Top Auth Input Form Panel */}
-          <div className="md:w-1/2 p-6 md:p-12 flex flex-col justify-center bg-white">
-            <div className="max-w-md w-full mx-auto space-y-6">
+          {/* Right Auth Form Panel (Compact & Concise on Mobile) */}
+          <div className="w-full md:w-1/2 p-6 md:p-12 flex flex-col justify-center bg-white">
+            <div className="max-w-sm w-full mx-auto space-y-6">
+
+              {/* Mobile Concise Header (Logo + 1-Line Subtitle) */}
+              <div className="md:hidden text-center space-y-2 pb-2">
+                <img
+                  src="https://assets.airbharath.in/logo.webp"
+                  alt="Airbharath LMS"
+                  className="h-10 w-auto mx-auto object-contain"
+                />
+                <p className="text-xs font-bold uppercase tracking-wider text-[#014a62]">
+                  Aviation &amp; Technical Excellence
+                </p>
+              </div>
 
               {/* STEP 1: PHONE NUMBER INPUT */}
               {step === 'phone' && (
-                <form onSubmit={handleSendOTP} className="space-y-6">
+                <form onSubmit={handleSendOTP} className="space-y-5">
                   <div className="space-y-1">
                     <h2 className="text-2xl md:text-3xl font-bold font-instrument-serif text-[#014a62]">Sign In / Sign Up</h2>
                     <p className="text-xs text-slate-500 font-medium">
@@ -278,7 +290,7 @@ export default function LoginPage() {
 
               {/* STEP 2: 4-BOX INPUT OTP WITH SHADCN */}
               {step === 'otp' && (
-                <form onSubmit={handleVerifyOTP} className="space-y-6">
+                <form onSubmit={handleVerifyOTP} className="space-y-5">
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <h2 className="text-2xl md:text-3xl font-bold font-instrument-serif text-[#014a62]">Enter 4-Digit OTP</h2>
@@ -369,7 +381,7 @@ export default function LoginPage() {
               {step === 'profile' && (
                 <form onSubmit={handleCompleteProfile} className="space-y-5">
                   <div className="space-y-1">
-                    <h2 className="text-2xl md:text-3xl font-bold font-instrument-serif text-[#014a62]">Complete Your Profile</h2>
+                    <h2 className="text-2xl md:text-3xl font-bold font-instrument-serif text-[#014a62]">Complete Profile</h2>
                     <p className="text-xs text-slate-500 font-medium">
                       Welcome to Airbharath LMS! Tell us your full name to get started.
                     </p>

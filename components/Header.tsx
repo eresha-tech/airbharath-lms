@@ -34,11 +34,8 @@ export default function Header() {
               <img
                 src="https://assets.airbharath.in/logo.webp"
                 alt="Airbharath LMS"
-                className="h-9 w-auto object-contain"
+                className="h-9 w-auto object-contain transition-transform hover:scale-105"
               />
-              <span className="text-xl font-bold font-instrument-serif text-[#014a62] tracking-tight">
-                LMS
-              </span>
             </Link>
 
             {/* Navbar Navigation Links */}
