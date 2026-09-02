@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Instrument_Serif, Instrument_Sans } from "next/font/google";
+import { Inter, Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -8,15 +8,16 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  weight: "400",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
-const instrumentSans = Instrument_Sans({
-  variable: "--font-instrument-sans",
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -35,7 +36,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${instrumentSerif.variable} ${instrumentSans.variable} font-sans antialiased`}
+        className={`${inter.variable} ${outfit.variable} ${plusJakarta.variable} font-sans antialiased`}
       >
         <ThemeProvider
           attribute="class"

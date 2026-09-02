@@ -12,9 +12,11 @@ export default {
       fontFamily: {
         sans: ["var(--font-inter)", "sans-serif"],
         inter: ["var(--font-inter)", "sans-serif"],
-        serif: ["var(--font-instrument-serif)", "serif"],
-        "instrument-serif": ["var(--font-instrument-serif)", "serif"],
-        "instrument-sans": ["var(--font-instrument-sans)", "sans-serif"],
+        outfit: ["var(--font-outfit)", "sans-serif"],
+        display: ["var(--font-outfit)", "sans-serif"],
+        serif: ["var(--font-outfit)", "var(--font-instrument-serif)", "sans-serif"],
+        "instrument-serif": ["var(--font-outfit)", "var(--font-instrument-serif)", "sans-serif"],
+        "instrument-sans": ["var(--font-jakarta)", "var(--font-instrument-sans)", "sans-serif"],
       },
       colors: {
         airbharath: {
