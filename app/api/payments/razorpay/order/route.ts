@@ -37,7 +37,7 @@ export async function POST(req: Request) {
         if (!isExpired && !isLimitReached) {
           if (coupon.discountType === 'percentage') {
             finalAmount = finalAmount - (finalAmount * (Number(coupon.discountValue) / 100));
-          } else if (coupon.discountType === 'flat') {
+          } else if (coupon.discountType === 'flat' || coupon.discountType === 'fixed') {
             finalAmount = finalAmount - Number(coupon.discountValue);
           }
           finalAmount = Math.round(finalAmount);

@@ -88,6 +88,12 @@ export default async function CoursesPage() {
         },
       },
     });
+
+    dbCourseList.sort((a: any, b: any) => {
+      if (a.slug === "combo-pack") return -1;
+      if (b.slug === "combo-pack") return 1;
+      return 0;
+    });
   } catch (err) {
     console.error("Failed to load courses from DB:", err);
   }

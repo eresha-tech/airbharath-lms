@@ -21,6 +21,23 @@ import { Button } from "@/components/ui/button";
 
 const HERO_SLIDES = [
   {
+    id: "combo-pack",
+    courseCode: "★ ALL-IN-ONE MASTERCLASS BUNDLE",
+    title: "All-in-One Masterclass Combo Pass (All 4 Courses)",
+    tagline: "AI Skills + Content Creation + Entrepreneurship + MS Office",
+    description:
+      "Get complete access to all 4 Airbharath certificate courses in one single combo pass. Master AI tools, video content, startup launch, and advanced Excel & PowerPoint.",
+    badge: "🔥 Best Value Pass",
+    price: "1900",
+    originalPrice: "3300",
+    image: "https://assets.airbharath.in/lms/combo.webp",
+    icon: Award,
+    gradient: "from-amber-500/15 via-[#014a62]/20 to-cyan-500/15",
+    accentBg: "bg-amber-50 text-amber-900 border-amber-300 font-extrabold",
+    slug: "combo-pack",
+    stats: "All 4 Masterclass Courses · QR Verified Certificates",
+  },
+  {
     id: "ai-skills",
     courseCode: "AIRBHARATH LMS CERTIFICATE COURSE",
     title: "AI Tools & Practical AI Skills Masterclass",

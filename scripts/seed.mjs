@@ -262,6 +262,49 @@ async function seed() {
     }
   }
 
+  // ==========================================
+  // Course 5: All-in-One 4-Course Combo Pass (₹3300 list, ₹1900 with ABCOMBO coupon)
+  // ==========================================
+  const [course5] = await db.insert(schema.courses).values({
+    title: 'All-in-One Masterclass Combo Pass (All 4 Courses)',
+    slug: 'combo-pack',
+    description: 'Get complete access to all 4 Airbharath certificate courses: AI Skills Masterclass, Content Creation Blueprint, Entrepreneurship Basics, and MS Office Productivity Suite.',
+    thumbnailUrl: 'https://assets.airbharath.in/lms/combo.webp',
+    price: '3300.00',
+    accessDays: 365,
+    isPublished: true,
+    instructorId: adminId,
+  }).returning();
+
+  if (course5) {
+    const [modCombo] = await db.insert(schema.modules).values({
+      courseId: course5.id,
+      title: 'Module 1: All 4 Masterclass Tracks Combined Access',
+      orderIndex: 1,
+    }).returning();
+
+    if (modCombo) {
+      await db.insert(schema.lessons).values([
+        {
+          moduleId: modCombo.id,
+          title: 'Lesson 1.1: Welcome to the All-in-One Airbharath Combo Pass',
+          content: '<h3>Welcome to the Full Airbharath Certificate Bundle</h3><p>Enjoy access to all AI, Content Creation, Entrepreneurship, and MS Office modules and QR-verified PDF certificates.</p>',
+          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          isFreePreview: true,
+          orderIndex: 1,
+        },
+      ]);
+    }
+  }
+
+  // ABCOMBO Auto-Applied Coupon Code (Flat ₹1400 discount -> ₹3300 - ₹1400 = ₹1900)
+  await db.insert(schema.coupons).values({
+    code: 'ABCOMBO',
+    discountType: 'flat',
+    discountValue: '1400.00',
+    usageLimit: 10000,
+  }).onConflictDoNothing();
+
   // Sample Coupon Code
   await db.insert(schema.coupons).values({
     code: 'AIRBHARATH20',
@@ -270,7 +313,7 @@ async function seed() {
     usageLimit: 500,
   }).onConflictDoNothing();
 
-  console.log('✅ Successfully seeded 4 courses (AI Skills, Content Creation, Entrepreneurship, MS Office) priced at ₹825 each!');
+  console.log('✅ Successfully seeded 4 courses (₹825) + 1 Combo Pass (₹3300 -> ₹1900 with ABCOMBO coupon)!');
   await client.end();
 }
 

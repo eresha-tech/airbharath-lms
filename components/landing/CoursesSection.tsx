@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Users, BookOpen, Sparkles, GraduationCap, Briefcase, LayoutGrid } from "lucide-react";
+import { ArrowRight, CheckCircle2, Users, BookOpen, Sparkles, GraduationCap, Briefcase, LayoutGrid, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface CoursesSectionProps {
@@ -12,6 +12,28 @@ interface CoursesSectionProps {
 const COURSES_DATA = [
   {
     code: "01",
+    id: "combo-pack",
+    title: "ALL-IN-ONE MASTERCLASS COMBO PASS (ALL 4 COURSES)",
+    subtitle: "Complete Skill Acceleration Bundle · Save ₹1,400",
+    description:
+      "Get complete access to all four Airbharath professional certificate courses in one single combo pass. Build expertise in AI tools, video content & digital marketing, startup entrepreneurship, and MS Office productivity suite.",
+    topics: [
+      "AI Skills: ChatGPT, Claude & Prompt Engineering",
+      "Content Creation: Video Editing & Personal Branding",
+      "Entrepreneurship: Startup Launch & Pitching",
+      "MS Office: Advanced Excel, Word & PowerPoint",
+      "QR-Verifiable Certificates for All 4 Programs",
+    ],
+    whoFor:
+      "Students, freshers, job seekers, working professionals, aviation crew, and aspiring entrepreneurs looking for a complete skill upgrade.",
+    icon: Award,
+    slug: "combo-pack",
+    price: "1900",
+    originalPrice: "3300",
+    image: "https://assets.airbharath.in/lms/combo.webp",
+  },
+  {
+    code: "02",
     id: "ai-skills",
     title: "AI TOOLS & PRACTICAL AI SKILLS MASTERCLASS",
     subtitle: "Don’t Just Hear About AI. Learn to Use It.",
@@ -33,7 +55,7 @@ const COURSES_DATA = [
     image: "https://assets.airbharath.in/lms/ai-skills.webp",
   },
   {
-    code: "02",
+    code: "03",
     id: "content-creation",
     title: "CONTENT CREATION & DIGITAL BRANDING BLUEPRINT",
     subtitle: "Create. Communicate. Grow.",
@@ -55,7 +77,7 @@ const COURSES_DATA = [
     image: "https://assets.airbharath.in/lms/content-creation.webp",
   },
   {
-    code: "03",
+    code: "04",
     id: "entrepreneurship",
     title: "ENTREPRENEURSHIP & STARTUP LAUNCH MASTERCLASS",
     subtitle: "Have an Idea? Learn What Comes Next.",
@@ -78,7 +100,7 @@ const COURSES_DATA = [
     image: "https://assets.airbharath.in/lms/entrepreneurship.webp",
   },
   {
-    code: "04",
+    code: "05",
     id: "ms-office",
     title: "MS OFFICE, EXCEL & BUSINESS PRODUCTIVITY SUITE",
     subtitle: "Master the Tools You Use at Work.",

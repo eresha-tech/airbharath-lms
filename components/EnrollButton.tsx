@@ -12,15 +12,17 @@ function EnrollButton({
   price,
   courseTitle,
   initialUser,
+  autoCouponCode,
 }: {
   courseId: string;
   isEnrolled: boolean;
   price: number;
   courseTitle: string;
   initialUser?: any;
+  autoCouponCode?: string;
 }) {
   const [user, setUser] = useState<any>(initialUser ?? null);
-  const [couponInput, setCouponInput] = useState("");
+  const [couponInput, setCouponInput] = useState(autoCouponCode || "");
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponError, setCouponError] = useState("");
   const [enrollError, setEnrollError] = useState("");
@@ -38,6 +40,25 @@ function EnrollButton({
       })
       .catch(() => { });
   }, [initialUser]);
+
+  useEffect(() => {
+    if (autoCouponCode && price > 0) {
+      setValidatingCoupon(true);
+      fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: autoCouponCode, amount: price }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.valid) {
+            setAppliedCoupon(data);
+          }
+        })
+        .catch(() => { })
+        .finally(() => setValidatingCoupon(false));
+    }
+  }, [autoCouponCode, price]);
 
   const handleApplyCoupon = async () => {
     if (!couponInput.trim()) return;

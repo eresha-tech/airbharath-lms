@@ -229,6 +229,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                   price={rawPrice}
                   courseTitle={course.title}
                   initialUser={session ? { id: session.id, email: session.email } : null}
+                  autoCouponCode={course.slug?.includes("combo") ? "ABCOMBO" : undefined}
                 />
 
                 {/* If user is enrolled, render Invoice Download button */}

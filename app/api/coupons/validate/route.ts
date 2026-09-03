@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 
     if (couponObj.discountType === 'percentage') {
       discount = Math.round(finalAmount * (Number(couponObj.discountValue) / 100));
-    } else if (couponObj.discountType === 'flat') {
+    } else if (couponObj.discountType === 'flat' || couponObj.discountType === 'fixed') {
       discount = Math.round(Number(couponObj.discountValue));
     }
 
