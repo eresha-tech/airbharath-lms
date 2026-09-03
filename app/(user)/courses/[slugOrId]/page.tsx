@@ -145,15 +145,9 @@ export default async function CoursePage({ params }: CoursePageProps) {
                 <span className="px-3.5 py-1 bg-cyan-400/20 text-cyan-200 rounded-full text-[11px] font-extrabold uppercase tracking-widest border border-cyan-400/30">
                   Taught by IIM Alumni
                 </span>
-                {course.accessDays ? (
-                  <span className="px-3.5 py-1 bg-amber-500/20 text-amber-300 rounded-full text-[11px] font-extrabold uppercase tracking-widest border border-amber-400/30">
-                    ⏱ {course.accessDays} Days Access
-                  </span>
-                ) : (
-                  <span className="px-3.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-[11px] font-extrabold uppercase tracking-widest border border-emerald-400/30">
-                    ♾ Lifetime Access
-                  </span>
-                )}
+                <span className="px-3.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-[11px] font-extrabold uppercase tracking-widest border border-emerald-400/30">
+                  ⚡ Self-Paced Access
+                </span>
               </div>
 
               <h1 className="text-3xl md:text-5xl font-bold font-instrument-serif text-white leading-tight">

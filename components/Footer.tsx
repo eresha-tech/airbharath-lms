@@ -3,21 +3,22 @@ import { Mail, MapPin, Award, GraduationCap, Sparkles } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="bg-slate-900 text-slate-100 py-16 border-t border-slate-800 relative overflow-hidden font-sans">
-      <div className="absolute bottom-0 left-0 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+    <footer className="bg-slate-950 text-slate-100 py-16 border-t border-slate-800/80 relative overflow-hidden font-sans">
+      <div aria-hidden="true" className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div aria-hidden="true" className="absolute top-0 right-0 w-96 h-96 bg-[#014a62]/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="container mx-auto px-4 max-w-6xl relative z-10 space-y-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
 
-          {/* Brand Info */}
-          <div className="md:col-span-2 space-y-5">
-            <Link href="/" className="flex items-center space-x-3">
+          {/* Brand Info (2 columns wide) */}
+          <div className="lg:col-span-2 space-y-5">
+            <Link href="/" className="flex items-center space-x-3 group">
               <img
                 src="https://assets.airbharath.in/logo.webp"
                 alt="Airbharath LMS"
-                className="h-9 w-auto bg-white/10 p-1.5 rounded-xl border border-white/20"
+                className="h-9 w-auto bg-white/10 p-1.5 rounded-xl border border-white/20 transition-transform group-hover:scale-105"
               />
-              <span className="text-2xl font-bold font-instrument-serif text-white">
+              <span className="text-2xl font-bold font-instrument-serif text-white tracking-tight">
                 Airbharath LMS
               </span>
             </Link>
@@ -26,38 +27,113 @@ export function Footer() {
               <h4 className="text-base font-bold font-instrument-serif text-cyan-300">
                 Learn Today. Grow Tomorrow.
               </h4>
-              <p className="text-xs md:text-sm text-slate-300 leading-relaxed max-w-md">
-                Build skills. Create possibilities. Keep growing.
+              <p className="text-xs md:text-sm text-slate-400 leading-relaxed max-w-md">
+                Practical certificate programs built for working professionals, students, creators, and entrepreneurs. Taught by IIM Alumni.
               </p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 space-y-1">
-              <span className="font-bold text-white block">Open to:</span>
-              <p className="text-slate-300">
-                Students | Job Seekers | Professionals | Aviation Professionals | Entrepreneurs
-              </p>
+            <div className="space-y-2 text-xs text-slate-400 pt-2 border-t border-slate-800/80">
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-cyan-400 shrink-0" />
+                <a href="mailto:academy@airbharath.in" className="hover:text-white transition-colors">
+                  academy@airbharath.in
+                </a>
+              </div>
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                <span>Eresha Technology Innovators Pvt. Ltd., West Patel Nagar, New Delhi 110008</span>
+              </div>
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* Programs Column */}
           <div className="space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-300">
-              Navigation
+            <h4 className="text-xs font-extrabold uppercase tracking-widest text-cyan-300">
+              Certificate Programs
             </h4>
-            <ul className="space-y-2.5 text-xs md:text-sm text-slate-300">
+            <ul className="space-y-2.5 text-xs md:text-sm text-slate-400">
               <li>
-                <Link href="#courses" className="hover:text-white transition-colors font-medium">
-                  Four Courses
+                <Link href="/courses/ai-skills" className="hover:text-white transition-colors font-medium">
+                  AI Tools Masterclass
                 </Link>
               </li>
               <li>
-                <Link href="/my-courses" className="hover:text-white transition-colors font-medium">
-                  My Enrolled Courses
+                <Link href="/courses/content-creation" className="hover:text-white transition-colors font-medium">
+                  Content Creation &amp; Branding
                 </Link>
               </li>
               <li>
-                <Link href="#faq" className="hover:text-white transition-colors font-medium">
+                <Link href="/courses/entrepreneurship" className="hover:text-white transition-colors font-medium">
+                  Entrepreneurship Basics
+                </Link>
+              </li>
+              <li>
+                <Link href="/courses/ms-office" className="hover:text-white transition-colors font-medium">
+                  MS Office Essentials
+                </Link>
+              </li>
+              <li className="pt-1">
+                <Link href="/courses" className="text-cyan-300 font-bold hover:underline inline-flex items-center gap-1">
+                  <span>View All Courses</span>
+                  <span>→</span>
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Navigation Column */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-extrabold uppercase tracking-widest text-cyan-300">
+              Platform
+            </h4>
+            <ul className="space-y-2.5 text-xs md:text-sm text-slate-400">
+              <li>
+                <Link href="/" className="hover:text-white transition-colors font-medium">
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link href="/courses" className="hover:text-white transition-colors font-medium">
+                  Courses Catalog
+                </Link>
+              </li>
+              <li>
+                <Link href="/about" className="hover:text-white transition-colors font-medium">
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link href="/dashboard/courses" className="hover:text-white transition-colors font-medium">
+                  Student Dashboard
+                </Link>
+              </li>
+              <li>
+                <Link href="/faq" className="hover:text-white transition-colors font-medium">
                   FAQ
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Support & Legal Column */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-extrabold uppercase tracking-widest text-cyan-300">
+              Support &amp; Legal
+            </h4>
+            <ul className="space-y-2.5 text-xs md:text-sm text-slate-400">
+              <li>
+                <Link href="/contact" className="hover:text-white transition-colors font-medium">
+                  Contact Support
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy" className="hover:text-white transition-colors font-medium">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="hover:text-white transition-colors font-medium">
+                  Terms &amp; Conditions
                 </Link>
               </li>
               <li>
@@ -68,48 +144,26 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Contact & Credibility */}
-          <div className="space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-300">
-              Excellence Standard
-            </h4>
-            <div className="space-y-2.5 text-xs text-slate-300">
-              <div className="flex items-center gap-2">
-                <Award className="w-4 h-4 text-cyan-400 shrink-0" />
-                <span>30+ Years Aviation & Tech Experience</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <GraduationCap className="w-4 h-4 text-cyan-400 shrink-0" />
-                <span>Taught by IIM Alumni & Practitioners</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-cyan-400 shrink-0" />
-                <a href="mailto:academy@airbharath.in" className="hover:text-white transition-colors">
-                  academy@airbharath.in
-                </a>
-              </div>
-            </div>
-          </div>
-
         </div>
 
         {/* Bottom Tagline & Copyright */}
-        <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-slate-400 gap-4">
+        <div className="border-t border-slate-800/80 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-slate-400 gap-4">
           <div className="space-y-1 text-center md:text-left">
             <p className="font-semibold text-slate-200">
-              Learn. Grow. Succeed — with Airbharath.
+              Learn. Grow. Succeed — with Airbharath LMS.
             </p>
             <p className="text-[11px] text-slate-500">
-              © {new Date().getFullYear()} Airbharath LMS. All rights reserved.
+              © {new Date().getFullYear()} Eresha Technology Innovators Pvt. Ltd. (Airbharath LMS). All rights reserved.
             </p>
           </div>
 
-          <div className="flex gap-6 text-[11px]">
+          <div className="flex items-center gap-6 text-[11px]">
             <Link href="/privacy" className="hover:text-slate-200 transition-colors">
               Privacy Policy
             </Link>
+            <span aria-hidden="true" className="text-slate-700">·</span>
             <Link href="/terms" className="hover:text-slate-200 transition-colors">
-              Terms & Conditions
+              Terms &amp; Conditions
             </Link>
           </div>
         </div>
@@ -117,3 +171,4 @@ export function Footer() {
     </footer>
   );
 }
+

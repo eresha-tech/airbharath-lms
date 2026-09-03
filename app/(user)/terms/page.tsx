@@ -12,7 +12,7 @@ export default function TermsPage() {
           Terms & Conditions
         </h1>
         <p className="text-xs md:text-sm text-muted-foreground">
-          Last Updated: June 9, 2026
+          Last Updated: September 1, 2026
         </p>
       </div>
 
@@ -105,7 +105,7 @@ export default function TermsPage() {
           <h2 className="text-base font-bold text-foreground">12. Contact Us</h2>
           <p>For questions regarding these Terms, contact:</p>
           <p className="mt-2 text-foreground font-semibold">Airbharath LMS</p>
-          <p className="text-foreground font-semibold">Email: support@airbharath.in</p>
+          <p className="text-foreground font-semibold">Email: academy@airbharath.in</p>
         </div>
       </div>
     </div>

@@ -244,7 +244,7 @@ export function CoursesSection({ dbCourses = [] }: CoursesSectionProps) {
                 <div className="space-y-2 text-xs font-medium text-slate-600">
                   <div className="flex items-center justify-between">
                     <span>Access Duration:</span>
-                    <span className="font-bold text-[#014a62]">Full Self-Paced</span>
+                    <span className="font-bold text-[#014a62]">Self-Paced Access</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Instructors:</span>
