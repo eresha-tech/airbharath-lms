@@ -93,12 +93,12 @@ async function seed() {
   }
 
   // ==========================================
-  // Course 2: Content Creation Blueprint (₹825)
+  // Course 2: Digital Marketing & Content Creation Blueprint (₹825)
   // ==========================================
   const [course2] = await db.insert(schema.courses).values({
-    title: 'Content Creation & Digital Branding Blueprint',
+    title: 'Digital Marketing & Content Creation Blueprint',
     slug: 'content-creation',
-    description: 'Learn video editing, storytelling, personal branding, short-form content growth, and social media monetization.',
+    description: 'Master modern digital marketing, SEO, social media advertising, content strategy, video creation, and online brand growth.',
     thumbnailUrl: 'https://assets.airbharath.in/lms/content-creation.webp',
     price: '825.00',
     accessDays: 365,
@@ -109,13 +109,13 @@ async function seed() {
   if (course2) {
     const [mod1] = await db.insert(schema.modules).values({
       courseId: course2.id,
-      title: 'Module 1: Storytelling & Content Strategy',
+      title: 'Module 1: Digital Marketing Strategy & Brand Positioning',
       orderIndex: 1,
     }).returning();
 
     const [mod2] = await db.insert(schema.modules).values({
       courseId: course2.id,
-      title: 'Module 2: Short-Form Video Editing Essentials',
+      title: 'Module 2: SEO, Social Media Ads & Content Creation',
       orderIndex: 2,
     }).returning();
 

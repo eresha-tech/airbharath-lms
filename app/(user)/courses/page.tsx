@@ -107,7 +107,7 @@ export default async function CoursesPage() {
           <div className="container mx-auto px-4 max-w-6xl space-y-6 text-center">
             <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#014a62]/10 border border-[#014a62]/20 text-[#014a62] text-xs font-extrabold uppercase tracking-widest">
               <GraduationCap className="w-3.5 h-3.5 text-[#014a62]" />
-              Airbharath LMS Catalog
+              Air Bharath LMS Catalog
             </span>
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-instrument-serif text-[#014a62] tracking-tight">
@@ -172,7 +172,7 @@ export default async function CoursesPage() {
                             Verified Certificate
                           </span>
                           <span className="text-xs font-extrabold text-amber-300 bg-amber-950/80 backdrop-blur-md px-3 py-1 rounded-lg border border-amber-400/40 flex items-center gap-1.5 shadow-sm">
-                            <span className="line-through text-amber-200/60 text-[10px]">₹1,999</span>
+                            <span className="line-through text-amber-200/60 text-[10px]">₹{c.slug === 'combo-pack' || Number(c.price) > 2000 ? '3,300' : '1,999'}</span>
                             <span>₹{c.price || '825'}</span>
                           </span>
                         </div>

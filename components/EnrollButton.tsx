@@ -135,7 +135,7 @@ function EnrollButton({
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: order.amount,
         currency: order.currency,
-        name: "Airbharath LMS",
+        name: "Air Bharath LMS",
         description: `Enrollment for ${courseTitle}`,
         order_id: order.id,
         handler: async function (response: any) {

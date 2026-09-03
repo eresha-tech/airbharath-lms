@@ -53,7 +53,7 @@ export default function Header() {
                 className="hover:text-[#014a62] transition-colors flex items-center gap-1"
               >
                 <Sparkles className="w-3.5 h-3.5 text-[#014a62]" />
-                <span>Why Airbharath</span>
+                <span>Why Air Bharath</span>
               </Link>
 
               <Link

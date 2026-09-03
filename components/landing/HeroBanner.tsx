@@ -26,7 +26,7 @@ const HERO_SLIDES = [
     title: "All-in-One Masterclass Combo Pass (All 4 Courses)",
     tagline: "AI Skills + Content Creation + Entrepreneurship + MS Office",
     description:
-      "Get complete access to all 4 Airbharath certificate courses in one single combo pass. Master AI tools, video content, startup launch, and advanced Excel & PowerPoint.",
+      "Get complete access to all 4 Air Bharath certificate courses in one single combo pass. Master AI tools, video content, startup launch, and advanced Excel & PowerPoint.",
     badge: "🔥 Best Value Pass",
     price: "1900",
     originalPrice: "3300",
@@ -39,7 +39,7 @@ const HERO_SLIDES = [
   },
   {
     id: "ai-skills",
-    courseCode: "AIRBHARATH LMS CERTIFICATE COURSE",
+    courseCode: "AIR BHARATH LMS CERTIFICATE COURSE",
     title: "AI Tools & Practical AI Skills Masterclass",
     tagline: "Practical AI Tools for Modern Workplace Productivity",
     description:
@@ -56,11 +56,11 @@ const HERO_SLIDES = [
   },
   {
     id: "content-creation",
-    courseCode: "AIRBHARATH LMS CERTIFICATE COURSE",
-    title: "Content Creation & Digital Branding Blueprint",
-    tagline: "Master Digital Communication & Brand Growth",
+    courseCode: "AIR BHARATH LMS CERTIFICATE COURSE",
+    title: "Digital Marketing & Content Creation Blueprint",
+    tagline: "Master Digital Marketing, Social Ads, SEO & Brand Growth",
     description:
-      "Learn to create purposeful content, video editing, social media growth, and build a powerful digital presence for yourself or your business.",
+      "Master end-to-end digital marketing: learn social media marketing, SEO basics, running targeted ads, video content creation, and online brand growth.",
     badge: "Digital Marketing",
     price: "825",
     originalPrice: "1999",
@@ -69,11 +69,11 @@ const HERO_SLIDES = [
     gradient: "from-teal-500/10 via-[#014a62]/15 to-sky-500/10",
     accentBg: "bg-teal-50 text-teal-800 border-teal-200/80",
     slug: "content-creation",
-    stats: "5 Core Modules · Real Assignments",
+    stats: "SEO · Paid Ads · Social Media Strategy",
   },
   {
     id: "entrepreneurship",
-    courseCode: "AIRBHARATH LMS CERTIFICATE COURSE",
+    courseCode: "AIR BHARATH LMS CERTIFICATE COURSE",
     title: "Entrepreneurship & Startup Launch Masterclass",
     tagline: "Turn Business Ideas into Scalable Opportunities",
     description:
@@ -90,7 +90,7 @@ const HERO_SLIDES = [
   },
   {
     id: "ms-office",
-    courseCode: "AIRBHARATH LMS CERTIFICATE COURSE",
+    courseCode: "AIR BHARATH LMS CERTIFICATE COURSE",
     title: "MS Office, Excel & Business Productivity Suite",
     tagline: "Master Word, Excel & PowerPoint Like a Pro",
     description:
@@ -296,7 +296,7 @@ export function HeroBanner() {
                       Featured Course
                     </span>
                     <span className="text-xs font-extrabold text-amber-300 bg-amber-950/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-amber-400/40 shadow-sm flex items-center gap-1">
-                      <span className="line-through text-amber-200/60 text-[10px]">₹1,999</span>
+                      <span className="line-through text-amber-200/60 text-[10px]">₹{activeSlide.originalPrice ? Number(activeSlide.originalPrice).toLocaleString("en-IN") : "1,999"}</span>
                       <span>₹{activeSlide.price || '825'}</span>
                     </span>
                   </div>
@@ -311,7 +311,7 @@ export function HeroBanner() {
                 <div className="p-6 space-y-4">
                   <p className="text-xs text-slate-600 font-medium flex items-center gap-1">
                     <BookOpen className="w-3.5 h-3.5 text-[#014a62]" aria-hidden="true" />
-                    Airbharath LMS Professional Certificate
+                    Air Bharath LMS Professional Certificate
                   </p>
 
                   <dl className="space-y-2.5 pt-2 border-t border-slate-100 text-xs font-semibold text-slate-700">

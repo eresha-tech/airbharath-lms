@@ -16,7 +16,7 @@ const COURSES_DATA = [
     title: "ALL-IN-ONE MASTERCLASS COMBO PASS (ALL 4 COURSES)",
     subtitle: "Complete Skill Acceleration Bundle · Save ₹1,400",
     description:
-      "Get complete access to all four Airbharath professional certificate courses in one single combo pass. Build expertise in AI tools, video content & digital marketing, startup entrepreneurship, and MS Office productivity suite.",
+      "Get complete access to all four Air Bharath professional certificate courses in one single combo pass. Build expertise in AI tools, video content & digital marketing, startup entrepreneurship, and MS Office productivity suite.",
     topics: [
       "AI Skills: ChatGPT, Claude & Prompt Engineering",
       "Content Creation: Video Editing & Personal Branding",
@@ -57,19 +57,19 @@ const COURSES_DATA = [
   {
     code: "03",
     id: "content-creation",
-    title: "CONTENT CREATION & DIGITAL BRANDING BLUEPRINT",
-    subtitle: "Create. Communicate. Grow.",
+    title: "DIGITAL MARKETING & CONTENT CREATION BLUEPRINT",
+    subtitle: "Master Digital Marketing, Social Ads, SEO & Brand Growth",
     description:
-      "Learn the fundamentals of creating meaningful digital content, video editing, personal branding, and understanding how creators and businesses build their presence online.",
+      "Master the end-to-end blueprint of modern digital marketing — from content strategy, search engine optimization (SEO), and paid social ads to video creation and online audience growth.",
     topics: [
-      "Content creation fundamentals",
-      "Digital marketing & branding",
-      "Social media video editing",
-      "Building a digital presence",
-      "Content strategy & growth",
+      "Social media marketing & strategy",
+      "Search Engine Optimization (SEO) fundamentals",
+      "Meta & Google ad campaign basics",
+      "Short-form video editing & branding",
+      "Lead generation & brand growth analytics",
     ],
     whoFor:
-      "Students, aspiring creators, entrepreneurs, professionals, and anyone looking to build digital communication skills.",
+      "Students, marketers, creators, business owners, and professionals looking to build high-demand digital marketing & growth capabilities.",
     icon: Sparkles,
     slug: "content-creation",
     price: "825",
@@ -250,7 +250,7 @@ export function CoursesSection({ dbCourses = [] }: CoursesSectionProps) {
                     Certificate Program
                   </span>
                   <span className="text-xs font-extrabold text-amber-300 bg-amber-950/80 backdrop-blur-md px-2 py-0.5 rounded-md border border-amber-400/40 flex items-center gap-1">
-                    <span className="line-through text-amber-200/60 text-[10px]">₹1,999</span>
+                    <span className="line-through text-amber-200/60 text-[10px]">₹{activeCourse.originalPrice ? Number(activeCourse.originalPrice).toLocaleString("en-IN") : "1,999"}</span>
                     <span>₹{activeCourse.price || '825'}</span>
                   </span>
                 </div>

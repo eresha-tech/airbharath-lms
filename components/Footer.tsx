@@ -19,7 +19,7 @@ export function Footer() {
                 className="h-9 w-auto bg-white/10 p-1.5 rounded-xl border border-white/20 transition-transform group-hover:scale-105"
               />
               <span className="text-2xl font-bold font-instrument-serif text-white tracking-tight">
-                Airbharath LMS
+                Air Bharath LMS
               </span>
             </Link>
 
@@ -150,11 +150,12 @@ export function Footer() {
         <div className="border-t border-slate-800/80 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-slate-400 gap-4">
           <div className="space-y-1 text-center md:text-left">
             <p className="font-semibold text-slate-200">
-              Learn. Grow. Succeed — with Airbharath LMS.
+              Learn. Grow. Succeed — with Air Bharath LMS.
             </p>
             <p className="text-[11px] text-slate-500">
-              © {new Date().getFullYear()} Eresha Technology Innovators Pvt. Ltd. (Airbharath LMS). All rights reserved.
+              © {new Date().getFullYear()} Eresha Technology Innovators Pvt. Ltd. (Air Bharath LMS). All rights reserved.
             </p>
+
           </div>
 
           <div className="flex items-center gap-6 text-[11px]">

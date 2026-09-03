@@ -140,7 +140,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
             <div className="lg:col-span-8 space-y-6">
               <div className="flex flex-wrap gap-2.5">
                 <span className="px-3.5 py-1 bg-white/10 text-white rounded-full text-[11px] font-extrabold uppercase tracking-widest backdrop-blur-md">
-                  Airbharath Certified Program
+                  Air Bharath Certified Program
                 </span>
                 <span className="px-3.5 py-1 bg-cyan-400/20 text-cyan-200 rounded-full text-[11px] font-extrabold uppercase tracking-widest border border-cyan-400/30">
                   Taught by IIM Alumni
@@ -155,8 +155,9 @@ export default async function CoursePage({ params }: CoursePageProps) {
               </h1>
 
               <p className="text-base md:text-lg text-cyan-100 max-w-3xl leading-relaxed font-sans font-normal">
-                {course.description || "Master practical skills with Airbharath LMS structured modules taught by IIM alumni and industry practitioners."}
+                {course.description || "Master practical skills with Air Bharath LMS structured modules taught by IIM alumni and industry practitioners."}
               </p>
+
 
               {/* Key Specs Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 pt-6 border-t border-white/15 max-w-2xl">
