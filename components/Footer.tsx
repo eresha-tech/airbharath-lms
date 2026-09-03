@@ -8,7 +8,7 @@ export function Footer() {
 
       <div className="container mx-auto px-4 max-w-6xl relative z-10 space-y-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-          
+
           {/* Brand Info */}
           <div className="md:col-span-2 space-y-5">
             <Link href="/" className="flex items-center space-x-3">
@@ -84,8 +84,8 @@ export function Footer() {
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-cyan-400 shrink-0" />
-                <a href="mailto:support@airbharath.in" className="hover:text-white transition-colors">
-                  support@airbharath.in
+                <a href="mailto:academy@airbharath.in" className="hover:text-white transition-colors">
+                  academy@airbharath.in
                 </a>
               </div>
             </div>

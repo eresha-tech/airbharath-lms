@@ -41,25 +41,25 @@ export default async function CoursePage({ params }: CoursePageProps) {
   try {
     course = isUUID
       ? await db.query.courses.findFirst({
-          where: eq(courses.id, slugOrId),
-          with: {
-            modules: {
-              with: {
-                lessons: true,
-              },
+        where: eq(courses.id, slugOrId),
+        with: {
+          modules: {
+            with: {
+              lessons: true,
             },
           },
-        })
+        },
+      })
       : await db.query.courses.findFirst({
-          where: eq(courses.slug, slugOrId),
-          with: {
-            modules: {
-              with: {
-                lessons: true,
-              },
+        where: eq(courses.slug, slugOrId),
+        with: {
+          modules: {
+            with: {
+              lessons: true,
             },
           },
-        });
+        },
+      });
   } catch (err) {
     console.error("Course fetch error:", err);
   }
@@ -96,7 +96,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
           ),
         });
       }
-    } catch {}
+    } catch { }
   }
 
   const rawPrice = Number(course.price) || 0;
@@ -109,10 +109,10 @@ export default async function CoursePage({ params }: CoursePageProps) {
 
   return (
     <main className="flex-1">
-      {/* Hero Banner Header */}
-      <div className="relative w-full overflow-hidden bg-[#014a62] text-white py-16 md:py-24">
+      {/* Hero Banner Header with Course Background Image */}
+      <div className="relative w-full overflow-hidden text-white py-16 md:py-24 bg-slate-900">
         {course.thumbnailUrl && (
-          <div className="absolute inset-0 opacity-15 mix-blend-overlay">
+          <div className="absolute inset-0 z-0">
             <Image
               src={course.thumbnailUrl}
               alt={course.title}
@@ -120,9 +120,10 @@ export default async function CoursePage({ params }: CoursePageProps) {
               className="object-cover"
               priority
             />
+            {/* Light subtle dark shade overlay */}
+            <div className="absolute inset-0 bg-slate-950/70" />
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#01374a] via-[#014a62] to-[#026282] opacity-95" />
 
         <div className="container mx-auto px-4 relative z-10 max-w-6xl space-y-6">
           <Link
@@ -134,7 +135,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
           </Link>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-            
+
             {/* Left Course Information */}
             <div className="lg:col-span-8 space-y-6">
               <div className="flex flex-wrap gap-2.5">
@@ -200,7 +201,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
             {/* Right Side Pricing & Enrollment Card */}
             <div className="lg:col-span-4 w-full">
               <Card className="bg-white text-slate-900 border-slate-200 shadow-2xl p-6 md:p-8 space-y-6">
-                
+
                 <div className="space-y-2">
                   <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest block">
                     Course Investment
