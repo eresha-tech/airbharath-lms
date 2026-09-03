@@ -47,7 +47,7 @@ function EnrollButton({
       fetch("/api/coupons/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: autoCouponCode, amount: price }),
+        body: JSON.stringify({ code: autoCouponCode, amount: price, courseId }),
       })
         .then((res) => res.json())
         .then((data) => {
@@ -58,7 +58,7 @@ function EnrollButton({
         .catch(() => { })
         .finally(() => setValidatingCoupon(false));
     }
-  }, [autoCouponCode, price]);
+  }, [autoCouponCode, price, courseId]);
 
   const handleApplyCoupon = async () => {
     if (!couponInput.trim()) return;
@@ -70,7 +70,7 @@ function EnrollButton({
       const res = await fetch("/api/coupons/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: couponInput, amount: price }),
+        body: JSON.stringify({ code: couponInput, amount: price, courseId }),
       });
       const data = await res.json();
 

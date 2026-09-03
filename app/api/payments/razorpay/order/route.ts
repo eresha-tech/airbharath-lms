@@ -25,11 +25,16 @@ export async function POST(req: Request) {
     let finalAmount = Number(course.price) || 0;
 
     if (couponCode) {
+      const cleanCode = couponCode.toUpperCase().trim();
       const coupon = await db.query.coupons.findFirst({
-        where: eq(coupons.code, couponCode.toUpperCase().trim()),
+        where: eq(coupons.code, cleanCode),
       });
 
       if (coupon) {
+        if (cleanCode === 'ABCOMBO' && course.slug !== 'combo-pack') {
+          return NextResponse.json({ error: 'This coupon code is only valid for the Combo Pass' }, { status: 400 });
+        }
+
         const now = new Date();
         const isExpired = coupon.expiryDate ? new Date(coupon.expiryDate) < now : false;
         const isLimitReached = coupon.usageLimit ? coupon.usedCount >= coupon.usageLimit : false;

@@ -1,22 +1,43 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { coupons } from '@/lib/db/schema';
+import { coupons, courses } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function POST(req: Request) {
   try {
-    const { code, amount } = await req.json();
+    const { code, amount, courseId } = await req.json();
 
     if (!code) {
       return NextResponse.json({ error: 'Coupon code is required' }, { status: 400 });
     }
 
+    const cleanCode = code.toUpperCase().trim();
+
     const couponObj = await db.query.coupons.findFirst({
-      where: eq(coupons.code, code.toUpperCase().trim()),
+      where: eq(coupons.code, cleanCode),
     });
 
     if (!couponObj) {
       return NextResponse.json({ error: 'Invalid coupon code' }, { status: 400 });
+    }
+
+    // ABCOMBO specific restriction: only valid for Combo Pass
+    if (cleanCode === 'ABCOMBO') {
+      let isCombo = false;
+      if (courseId) {
+        const targetCourse = await db.query.courses.findFirst({
+          where: eq(courses.id, courseId),
+        });
+        if (targetCourse && targetCourse.slug === 'combo-pack') {
+          isCombo = true;
+        }
+      } else if (Number(amount) >= 2000) {
+        isCombo = true;
+      }
+
+      if (!isCombo) {
+        return NextResponse.json({ error: 'This coupon code is only valid for the Combo Pass' }, { status: 400 });
+      }
     }
 
     const now = new Date();
