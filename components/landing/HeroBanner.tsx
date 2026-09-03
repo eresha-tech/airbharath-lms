@@ -28,7 +28,7 @@ const HERO_SLIDES = [
     description:
       "Learn how to practically leverage AI tools like ChatGPT, Claude & Midjourney, master prompt engineering, work 10x faster, and adapt to the evolving workplace.",
     badge: "AI & Productivity",
-    price: "699",
+    price: "825",
     originalPrice: "1999",
     image: "https://assets.airbharath.in/lms/ai-skills.webp",
     icon: GraduationCap,
@@ -45,7 +45,7 @@ const HERO_SLIDES = [
     description:
       "Learn to create purposeful content, video editing, social media growth, and build a powerful digital presence for yourself or your business.",
     badge: "Digital Marketing",
-    price: "699",
+    price: "825",
     originalPrice: "1999",
     image: "https://assets.airbharath.in/lms/content-creation.webp",
     icon: Sparkles,
@@ -62,7 +62,7 @@ const HERO_SLIDES = [
     description:
       "Have a business idea? Learn the foundational principles of entrepreneurial thinking, customer discovery, business planning, unit economics, and venture creation.",
     badge: "Venture & Business",
-    price: "699",
+    price: "825",
     originalPrice: "1999",
     image: "https://assets.airbharath.in/lms/entrepreneurship.webp",
     icon: Briefcase,
@@ -79,7 +79,7 @@ const HERO_SLIDES = [
     description:
       "Build total confidence in essential workplace digital tools — create professional documents, analyse data in spreadsheets, and design stunning presentations.",
     badge: "Workplace Tools",
-    price: "699",
+    price: "825",
     originalPrice: "1999",
     image: "https://assets.airbharath.in/lms/ms-office.webp",
     icon: LayoutGrid,
@@ -280,7 +280,7 @@ export function HeroBanner() {
                     </span>
                     <span className="text-xs font-extrabold text-amber-300 bg-amber-950/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-amber-400/40 shadow-sm flex items-center gap-1">
                       <span className="line-through text-amber-200/60 text-[10px]">₹1,999</span>
-                      <span>₹699</span>
+                      <span>₹{activeSlide.price || '825'}</span>
                     </span>
                   </div>
 

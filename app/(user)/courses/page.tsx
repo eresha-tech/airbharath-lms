@@ -167,7 +167,7 @@ export default async function CoursesPage() {
                           </span>
                           <span className="text-xs font-extrabold text-amber-300 bg-amber-950/80 backdrop-blur-md px-3 py-1 rounded-lg border border-amber-400/40 flex items-center gap-1.5 shadow-sm">
                             <span className="line-through text-amber-200/60 text-[10px]">₹1,999</span>
-                            <span>₹{c.price || '699'}</span>
+                            <span>₹{c.price || '825'}</span>
                           </span>
                         </div>
 

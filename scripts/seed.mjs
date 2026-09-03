@@ -7,7 +7,7 @@ const client = postgres(connectionString, { prepare: false });
 const db = drizzle(client, { schema });
 
 async function seed() {
-  console.log('🌱 Seeding Airbharath LMS production test courses...');
+  console.log('🌱 Seeding Airbharath LMS 4 production courses (₹825 each)...');
 
   // 1. Create Admin & Student Test Users
   const [adminUser] = await db.insert(schema.users).values({
@@ -18,127 +18,44 @@ async function seed() {
     role: 'admin',
   }).onConflictDoNothing().returning();
 
-  const [studentUser] = await db.insert(schema.users).values({
-    phone: '911234567890',
-    email: 'student@airbharath.in',
-    fullName: 'Rahul Sharma',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
-    role: 'student',
-  }).onConflictDoNothing().returning();
-
   const adminId = adminUser?.id;
 
-  // 2. Course 1: Content Creation & Digital Marketing Masterclass
+  // Clear existing records to ensure fresh 4 courses seed
+  try {
+    await client`TRUNCATE TABLE invoices, certificates, progress, orders, lessons, modules, courses CASCADE`;
+  } catch (e) {
+    // If some optional tables don't exist yet, clear main tables directly
+    await client`DELETE FROM lessons`;
+    await client`DELETE FROM modules`;
+    await client`DELETE FROM courses`;
+  }
+
+  // ==========================================
+  // Course 1: AI Skills Masterclass (₹825)
+  // ==========================================
   const [course1] = await db.insert(schema.courses).values({
-    title: 'Content Creation & Digital Marketing Masterclass',
-    slug: 'content-creation-digital-marketing',
-    description: 'Learn to craft compelling digital content, build an engaged online audience, and master organic social media growth strategies.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800',
-    price: '1499.00',
+    title: 'AI Tools & Practical AI Skills Masterclass',
+    slug: 'ai-skills',
+    description: 'Master ChatGPT, Claude, Prompt Engineering, Midjourney, and real-world AI automation workflows to 10x your productivity.',
+    thumbnailUrl: 'https://assets.airbharath.in/lms/ai-skills.webp',
+    price: '825.00',
     accessDays: 365,
     isPublished: true,
     instructorId: adminId,
-  }).onConflictDoNothing().returning();
+  }).returning();
 
   if (course1) {
     const [mod1] = await db.insert(schema.modules).values({
       courseId: course1.id,
-      title: 'Module 1: Storytelling & Content Strategy',
+      title: 'Module 1: Prompt Engineering & ChatGPT Mastery',
       orderIndex: 1,
-    }).onConflictDoNothing().returning();
+    }).returning();
 
     const [mod2] = await db.insert(schema.modules).values({
       courseId: course1.id,
-      title: 'Module 2: Video Production & Editing Essentials',
+      title: 'Module 2: AI Visuals & Media Generation',
       orderIndex: 2,
-    }).onConflictDoNothing().returning();
-
-    const [mod3] = await db.insert(schema.modules).values({
-      courseId: course1.id,
-      title: 'Module 3: Distribution & Audience Growth',
-      orderIndex: 3,
-    }).onConflictDoNothing().returning();
-
-    if (mod1) {
-      await db.insert(schema.lessons).values([
-        {
-          moduleId: mod1.id,
-          title: 'Lesson 1.1: Foundations of High-Impact Storytelling',
-          content: '<h3>Hooking Your Audience in 3 Seconds</h3><p>Learn how to craft powerful hooks, structure narratives, and hold viewer attention across video and text formats.</p>',
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          isFreePreview: true,
-          orderIndex: 1,
-        },
-        {
-          moduleId: mod1.id,
-          title: 'Lesson 1.2: Defining Your Niche & Audience Persona',
-          content: '<p>Identify your ideal audience demographic, pinpoint content pillars, and position your personal or business brand effectively.</p>',
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          isFreePreview: false,
-          orderIndex: 2,
-        },
-      ]).onConflictDoNothing();
-    }
-
-    if (mod2) {
-      await db.insert(schema.lessons).values([
-        {
-          moduleId: mod2.id,
-          title: 'Lesson 2.1: Smartphone Video Shooting & Lighting Secrets',
-          content: '<p>Master natural lighting, framing, audio capture, and smartphone camera settings for high quality video output.</p>',
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          isFreePreview: true,
-          orderIndex: 1,
-        },
-        {
-          moduleId: mod2.id,
-          title: 'Lesson 2.2: Fast Editing with CapCut & Premiere',
-          content: '<p>Step-by-step editing workflow: jump cuts, dynamic captions, background music, and B-roll layering.</p>',
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          isFreePreview: false,
-          orderIndex: 2,
-        },
-      ]).onConflictDoNothing();
-    }
-
-    if (mod3) {
-      await db.insert(schema.lessons).values([
-        {
-          moduleId: mod3.id,
-          title: 'Lesson 3.1: Algorithm Mechanics & Virality Hacks',
-          content: '<p>Understand watch time metrics, click-through rates, and algorithmic amplification on YouTube Shorts and Instagram Reels.</p>',
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          isFreePreview: false,
-          orderIndex: 1,
-        },
-      ]).onConflictDoNothing();
-    }
-  }
-
-  // 3. Course 2: AI Tools & Productivity Masterclass
-  const [course2] = await db.insert(schema.courses).values({
-    title: 'AI Tools & Workflow Automation for Professionals',
-    slug: 'ai-tools-productivity-masterclass',
-    description: 'Boost your workplace productivity by 10x using ChatGPT, Claude, Midjourney, and automated AI workflows.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1677442136019-21780efad99a?w=800',
-    price: '2499.00',
-    accessDays: 365,
-    isPublished: true,
-    instructorId: adminId,
-  }).onConflictDoNothing().returning();
-
-  if (course2) {
-    const [mod1] = await db.insert(schema.modules).values({
-      courseId: course2.id,
-      title: 'Module 1: Advanced Prompt Engineering & ChatGPT',
-      orderIndex: 1,
-    }).onConflictDoNothing().returning();
-
-    const [mod2] = await db.insert(schema.modules).values({
-      courseId: course2.id,
-      title: 'Module 2: AI Image & Visual Asset Generation',
-      orderIndex: 2,
-    }).onConflictDoNothing().returning();
+    }).returning();
 
     if (mod1) {
       await db.insert(schema.lessons).values([
@@ -158,47 +75,165 @@ async function seed() {
           isFreePreview: false,
           orderIndex: 2,
         },
-      ]).onConflictDoNothing();
+      ]);
     }
 
     if (mod2) {
       await db.insert(schema.lessons).values([
         {
           moduleId: mod2.id,
-          title: 'Lesson 2.1: Generating Commercial Graphics with Midjourney & DALL-E',
+          title: 'Lesson 2.1: Commercial Graphics with Midjourney & DALL-E',
           content: '<p>Learn camera angles, aspect ratios, style parameters, and prompt syntax for realistic AI imagery.</p>',
           videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
           isFreePreview: false,
           orderIndex: 1,
         },
-      ]).onConflictDoNothing();
+      ]);
     }
   }
 
-  // 4. Course 3: MS Excel & Data Analysis Essentials
-  const [course3] = await db.insert(schema.courses).values({
-    title: 'MS Excel & Financial Data Analysis Essentials',
-    slug: 'excel-data-analysis-essentials',
-    description: 'Master lookup formulas, pivot tables, data visualization dashboards, and financial analysis techniques.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800',
-    price: '1299.00',
+  // ==========================================
+  // Course 2: Content Creation Blueprint (₹825)
+  // ==========================================
+  const [course2] = await db.insert(schema.courses).values({
+    title: 'Content Creation & Digital Branding Blueprint',
+    slug: 'content-creation',
+    description: 'Learn video editing, storytelling, personal branding, short-form content growth, and social media monetization.',
+    thumbnailUrl: 'https://assets.airbharath.in/lms/content-creation.webp',
+    price: '825.00',
     accessDays: 365,
     isPublished: true,
     instructorId: adminId,
-  }).onConflictDoNothing().returning();
+  }).returning();
+
+  if (course2) {
+    const [mod1] = await db.insert(schema.modules).values({
+      courseId: course2.id,
+      title: 'Module 1: Storytelling & Content Strategy',
+      orderIndex: 1,
+    }).returning();
+
+    const [mod2] = await db.insert(schema.modules).values({
+      courseId: course2.id,
+      title: 'Module 2: Short-Form Video Editing Essentials',
+      orderIndex: 2,
+    }).returning();
+
+    if (mod1) {
+      await db.insert(schema.lessons).values([
+        {
+          moduleId: mod1.id,
+          title: 'Lesson 1.1: Foundations of High-Impact Storytelling',
+          content: '<h3>Hooking Your Audience in 3 Seconds</h3><p>Learn how to craft powerful hooks, structure narratives, and hold viewer attention across video and text formats.</p>',
+          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          isFreePreview: true,
+          orderIndex: 1,
+        },
+        {
+          moduleId: mod1.id,
+          title: 'Lesson 1.2: Defining Your Niche & Audience Persona',
+          content: '<p>Identify your ideal audience demographic, pinpoint content pillars, and position your personal or business brand effectively.</p>',
+          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          isFreePreview: false,
+          orderIndex: 2,
+        },
+      ]);
+    }
+
+    if (mod2) {
+      await db.insert(schema.lessons).values([
+        {
+          moduleId: mod2.id,
+          title: 'Lesson 2.1: Smartphone Video Shooting & Lighting Secrets',
+          content: '<p>Master natural lighting, framing, audio capture, and smartphone camera settings for high quality video output.</p>',
+          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          isFreePreview: true,
+          orderIndex: 1,
+        },
+      ]);
+    }
+  }
+
+  // ==========================================
+  // Course 3: Entrepreneurship & Startup Launch (₹825)
+  // ==========================================
+  const [course3] = await db.insert(schema.courses).values({
+    title: 'Entrepreneurship & Startup Launch Masterclass',
+    slug: 'entrepreneurship',
+    description: 'From business idea validation to fundraising, unit economics, marketing, and scaling your high-growth startup.',
+    thumbnailUrl: 'https://assets.airbharath.in/lms/entrepreneurship.webp',
+    price: '825.00',
+    accessDays: 365,
+    isPublished: true,
+    instructorId: adminId,
+  }).returning();
 
   if (course3) {
     const [mod1] = await db.insert(schema.modules).values({
       courseId: course3.id,
-      title: 'Module 1: High-Speed Excel Formulas & Shortcuts',
+      title: 'Module 1: Idea Validation & Market Research',
       orderIndex: 1,
-    }).onConflictDoNothing().returning();
+    }).returning();
 
     const [mod2] = await db.insert(schema.modules).values({
       courseId: course3.id,
-      title: 'Module 2: Interactive Dashboards & Pivot Tables',
+      title: 'Module 2: Building MVP & Unit Economics',
       orderIndex: 2,
-    }).onConflictDoNothing().returning();
+    }).returning();
+
+    if (mod1) {
+      await db.insert(schema.lessons).values([
+        {
+          moduleId: mod1.id,
+          title: 'Lesson 1.1: Validating Your Startup Idea Before Building',
+          content: '<h3>Customer Discovery & Problem Definition</h3><p>Learn how to interview potential customers, analyze market demand, and de-risk your business model.</p>',
+          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          isFreePreview: true,
+          orderIndex: 1,
+        },
+      ]);
+    }
+
+    if (mod2) {
+      await db.insert(schema.lessons).values([
+        {
+          moduleId: mod2.id,
+          title: 'Lesson 2.1: Calculating CAC, LTV, and Margins',
+          content: '<p>Understand Customer Acquisition Cost, Lifetime Value, gross margins, and runway management for sustainable growth.</p>',
+          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          isFreePreview: false,
+          orderIndex: 1,
+        },
+      ]);
+    }
+  }
+
+  // ==========================================
+  // Course 4: MS Office & Productivity Suite (₹825)
+  // ==========================================
+  const [course4] = await db.insert(schema.courses).values({
+    title: 'MS Office, Excel & Business Productivity Suite',
+    slug: 'ms-office',
+    description: 'Master Advanced Excel, PowerPoint presentations, Word documentation, and corporate productivity tools.',
+    thumbnailUrl: 'https://assets.airbharath.in/lms/ms-office.webp',
+    price: '825.00',
+    accessDays: 365,
+    isPublished: true,
+    instructorId: adminId,
+  }).returning();
+
+  if (course4) {
+    const [mod1] = await db.insert(schema.modules).values({
+      courseId: course4.id,
+      title: 'Module 1: Advanced Excel Formulas & Lookup Tools',
+      orderIndex: 1,
+    }).returning();
+
+    const [mod2] = await db.insert(schema.modules).values({
+      courseId: course4.id,
+      title: 'Module 2: Executive PowerPoint Presentations',
+      orderIndex: 2,
+    }).returning();
 
     if (mod1) {
       await db.insert(schema.lessons).values([
@@ -210,32 +245,24 @@ async function seed() {
           isFreePreview: true,
           orderIndex: 1,
         },
-        {
-          moduleId: mod1.id,
-          title: 'Lesson 1.2: Conditional Logic & Logical Statements (IF, AND, OR)',
-          content: '<p>Combine nested IF conditions and logical flags for complex financial calculations.</p>',
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          isFreePreview: false,
-          orderIndex: 2,
-        },
-      ]).onConflictDoNothing();
+      ]);
     }
 
     if (mod2) {
       await db.insert(schema.lessons).values([
         {
           moduleId: mod2.id,
-          title: 'Lesson 2.1: Building Executive Pivot Table Dashboards',
-          content: '<p>Create dynamic slicers, calculated fields, and interactive chart views for management reporting.</p>',
+          title: 'Lesson 2.1: Crafting Pitch Decks & Executive Slide Layouts',
+          content: '<p>Design high-converting presentation slides, data charts, and visual storytelling for boardroom meetings.</p>',
           videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
           isFreePreview: false,
           orderIndex: 1,
         },
-      ]).onConflictDoNothing();
+      ]);
     }
   }
 
-  // 5. Sample Coupon Code
+  // Sample Coupon Code
   await db.insert(schema.coupons).values({
     code: 'AIRBHARATH20',
     discountType: 'percentage',
@@ -243,7 +270,7 @@ async function seed() {
     usageLimit: 500,
   }).onConflictDoNothing();
 
-  console.log('✅ Local database successfully seeded with test courses & modules!');
+  console.log('✅ Successfully seeded 4 courses (AI Skills, Content Creation, Entrepreneurship, MS Office) priced at ₹825 each!');
   await client.end();
 }
 

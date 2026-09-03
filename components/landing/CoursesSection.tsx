@@ -28,7 +28,7 @@ const COURSES_DATA = [
       "Students, professionals, job seekers, entrepreneurs and anyone who wants to become more confident working with AI.",
     icon: GraduationCap,
     slug: "ai-skills",
-    price: "699",
+    price: "825",
     originalPrice: "1999",
     image: "https://assets.airbharath.in/lms/ai-skills.webp",
   },
@@ -50,7 +50,7 @@ const COURSES_DATA = [
       "Students, aspiring creators, entrepreneurs, professionals, and anyone looking to build digital communication skills.",
     icon: Sparkles,
     slug: "content-creation",
-    price: "699",
+    price: "825",
     originalPrice: "1999",
     image: "https://assets.airbharath.in/lms/content-creation.webp",
   },
@@ -73,7 +73,7 @@ const COURSES_DATA = [
       "Aspiring entrepreneurs, students, working professionals and anyone exploring the possibility of building something of their own.",
     icon: Briefcase,
     slug: "entrepreneurship",
-    price: "699",
+    price: "825",
     originalPrice: "1999",
     image: "https://assets.airbharath.in/lms/entrepreneurship.webp",
   },
@@ -96,7 +96,7 @@ const COURSES_DATA = [
       "Students, freshers, job seekers, and working professionals looking to strengthen their workplace productivity skills.",
     icon: LayoutGrid,
     slug: "ms-office",
-    price: "699",
+    price: "825",
     originalPrice: "1999",
     image: "https://assets.airbharath.in/lms/ms-office.webp",
   },
@@ -229,7 +229,7 @@ export function CoursesSection({ dbCourses = [] }: CoursesSectionProps) {
                   </span>
                   <span className="text-xs font-extrabold text-amber-300 bg-amber-950/80 backdrop-blur-md px-2 py-0.5 rounded-md border border-amber-400/40 flex items-center gap-1">
                     <span className="line-through text-amber-200/60 text-[10px]">₹1,999</span>
-                    <span>₹699</span>
+                    <span>₹{activeCourse.price || '825'}</span>
                   </span>
                 </div>
 
