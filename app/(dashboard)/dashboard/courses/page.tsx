@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { enrollments, courses, progress, orders } from "@/lib/db/schema";
 import { eq, inArray, and } from "drizzle-orm";
 import Link from "next/link";
-import { GraduationCap, BookOpen, Download, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
+import { GraduationCap, BookOpen, Download, ArrowRight, CheckCircle2, ShieldCheck, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -83,6 +83,28 @@ export default async function MyCoursesDashboardPage() {
           <Link href="/courses">Explore More Courses</Link>
         </Button>
       </div>
+
+      {/* Batch Schedule Announcement Notice for Enrolled Students */}
+      {enrolledCourses.length > 0 && (
+        <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/15 to-amber-500/10 border border-amber-300/80 p-5 md:p-6 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm text-slate-900">
+          <div className="flex items-start md:items-center gap-4">
+            <div className="p-3.5 bg-amber-500 text-white rounded-2xl shadow-xs shrink-0">
+              <Calendar className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-base md:text-lg text-amber-950 flex flex-wrap items-center gap-2">
+                <span>🚀 Course Schedule Notice</span>
+                <span className="text-[10px] font-extrabold uppercase bg-amber-200 text-amber-950 px-2.5 py-0.5 rounded-full border border-amber-300">
+                  Starts Sept 18, 2026
+                </span>
+              </h3>
+              <p className="text-xs md:text-sm text-amber-900/90 font-medium mt-1 leading-relaxed">
+                Full course video modules &amp; lesson materials will start and become visible on your dashboard from <strong>September 18, 2026</strong>. Get ready!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {enrolledCourses.length === 0 ? (
         <Card className="text-center py-16 bg-white border border-dashed rounded-3xl p-8 space-y-4 shadow-sm">

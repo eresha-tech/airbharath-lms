@@ -265,6 +265,10 @@ export function CoursesSection({ dbCourses = [] }: CoursesSectionProps) {
               <div className="p-6 space-y-5">
                 <div className="space-y-2 text-xs font-medium text-slate-600">
                   <div className="flex items-center justify-between">
+                    <span>Batch Starts:</span>
+                    <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[11px]">Sept 18, 2026</span>
+                  </div>
+                  <div className="flex items-center justify-between">
                     <span>Access Duration:</span>
                     <span className="font-bold text-[#014a62]">Self-Paced Access</span>
                   </div>

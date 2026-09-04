@@ -39,7 +39,6 @@ async function seed() {
     description: 'Master ChatGPT, Claude, Prompt Engineering, Midjourney, and real-world AI automation workflows to 10x your productivity.',
     thumbnailUrl: 'https://assets.airbharath.in/lms/ai-skills.webp',
     price: '825.00',
-    accessDays: 365,
     isPublished: true,
     instructorId: adminId,
   }).returning();
@@ -101,7 +100,6 @@ async function seed() {
     description: 'Master modern digital marketing, SEO, social media advertising, content strategy, video creation, and online brand growth.',
     thumbnailUrl: 'https://assets.airbharath.in/lms/content-creation.webp',
     price: '825.00',
-    accessDays: 365,
     isPublished: true,
     instructorId: adminId,
   }).returning();
@@ -163,7 +161,6 @@ async function seed() {
     description: 'From business idea validation to fundraising, unit economics, marketing, and scaling your high-growth startup.',
     thumbnailUrl: 'https://assets.airbharath.in/lms/entrepreneurship.webp',
     price: '825.00',
-    accessDays: 365,
     isPublished: true,
     instructorId: adminId,
   }).returning();
@@ -217,7 +214,6 @@ async function seed() {
     description: 'Master Advanced Excel, PowerPoint presentations, Word documentation, and corporate productivity tools.',
     thumbnailUrl: 'https://assets.airbharath.in/lms/ms-office.webp',
     price: '825.00',
-    accessDays: 365,
     isPublished: true,
     instructorId: adminId,
   }).returning();
@@ -271,7 +267,6 @@ async function seed() {
     description: 'Get complete access to all 4 Airbharath certificate courses: AI Skills Masterclass, Content Creation Blueprint, Entrepreneurship Basics, and MS Office Productivity Suite.',
     thumbnailUrl: 'https://assets.airbharath.in/lms/combo.webp',
     price: '3300.00',
-    accessDays: 365,
     isPublished: true,
     instructorId: adminId,
   }).returning();

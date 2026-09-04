@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, BookOpen, Clock, Award, ShieldCheck, CheckCircle2, Lock, FileText, Download, Sparkles, GraduationCap } from "lucide-react";
+import { ArrowLeft, BookOpen, Clock, Award, ShieldCheck, CheckCircle2, Lock, FileText, Download, Sparkles, GraduationCap, Calendar } from "lucide-react";
 import EnrollButton from "@/components/EnrollButton";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -154,12 +154,29 @@ export default async function CoursePage({ params }: CoursePageProps) {
                 {course.title}
               </h1>
 
-              <p className="text-base md:text-lg text-cyan-100 max-w-3xl leading-relaxed font-sans font-normal">
-                {course.description || "Master practical skills with Air Bharath LMS structured modules taught by IIM alumni and industry practitioners."}
-              </p>
-
+              {/* Batch Start Schedule Notice Banner */}
+              <div className="p-4 md:p-5 rounded-2xl bg-amber-500/15 border border-amber-400/35 text-amber-100 flex items-start gap-3.5 shadow-lg max-w-3xl backdrop-blur-md">
+                <div className="p-2.5 bg-amber-500/25 rounded-xl border border-amber-400/40 text-amber-300 shrink-0">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div className="space-y-1 text-xs md:text-sm">
+                  <h4 className="font-bold text-amber-300 flex flex-wrap items-center gap-2">
+                    <span>🚀 Course Schedule Notice</span>
+                    <span className="text-[10px] font-extrabold uppercase bg-amber-400/25 text-amber-200 px-2.5 py-0.5 rounded-full border border-amber-400/40">
+                      Starts Sept 18, 2026
+                    </span>
+                  </h4>
+                  <p className="text-amber-100/90 leading-relaxed font-medium">
+                    {isEnrolled
+                      ? "You are enrolled! Course video modules and lesson materials will start and become visible on your LMS Dashboard from September 18, 2026."
+                      : "Course content & video lessons will start and become accessible starting 18th September 2026. Secure your enrollment today!"
+                    }
+                  </p>
+                </div>
+              </div>
 
               {/* Key Specs Grid */}
+
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 pt-6 border-t border-white/15 max-w-2xl">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/15 text-cyan-300 shrink-0">

@@ -267,44 +267,54 @@ export async function generateAndSaveInvoice(orderId: string) {
   }).returning();
 
   // Automatic Email Invoice Dispatch
+  // Send enrollment confirmation & course start update email (replacing receipt email, as Razorpay sends payment receipt directly)
   if (user?.email) {
-    const invoiceSubject = `Airbharath LMS Tax Invoice & Receipt - ${invoiceNumber}`;
-    const invoiceHtml = `
-      <div style="font-family: 'Helvetica', sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; background: #ffffff;">
-        <div style="background-color: #6b3ba7; padding: 24px; text-align: center; color: #ffffff;">
-          <h2 style="margin: 0; font-size: 22px; font-weight: 700;">AIRBHARATH LMS</h2>
-          <p style="margin: 4px 0 0 0; font-size: 13px; color: #f3eefb;">Eresha Technology Innovators Pvt. Ltd. Tax Invoice</p>
+    const emailSubject = `🎉 Enrollment Confirmed! Course Access Starts Sept 18th - Air Bharath LMS`;
+    const emailHtml = `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; background: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <div style="background-color: #014a62; padding: 32px 24px; text-align: center; color: #ffffff;">
+          <img src="https://assets.airbharath.in/logo.webp" alt="Air Bharath LMS" style="height: 40px; margin-bottom: 12px; border-radius: 8px; background: rgba(255,255,255,0.15); padding: 4px;" />
+          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; font-family: Georgia, serif;">Air Bharath LMS</h2>
+          <p style="margin: 6px 0 0 0; font-size: 13px; color: #bae6fd; letter-spacing: 0.5px; text-transform: uppercase;">Enrollment Confirmed · Course Start Notice</p>
         </div>
-        <div style="padding: 24px; color: #334155; font-size: 14px; line-height: 1.6;">
-          <p>Dear <strong>${user.fullName || 'Student'}</strong>,</p>
-          <p>Thank you for enrolling in <strong>${course?.title || 'Airbharath Course'}</strong>! Your transaction was successful.</p>
-          
-          <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; border: 1px solid #cbd5e1;">
-            <tr style="background-color: #f8fafc; text-align: left;">
-              <th style="padding: 10px; border: 1px solid #cbd5e1;">Invoice Number</th>
-              <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold; color: #6b3ba7;">${invoiceNumber}</td>
-            </tr>
-            <tr>
-              <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: left; background-color: #f8fafc;">Course</th>
-              <td style="padding: 10px; border: 1px solid #cbd5e1;">${course?.title || 'Airbharath Course'}</td>
-            </tr>
-            <tr>
-              <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: left; background-color: #f8fafc;">Base Amount</th>
-              <td style="padding: 10px; border: 1px solid #cbd5e1;">₹${baseAmount}</td>
-            </tr>
-            <tr>
-              <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: left; background-color: #f8fafc;">18% GST</th>
-              <td style="padding: 10px; border: 1px solid #cbd5e1;">₹${gstAmount}</td>
-            </tr>
-            <tr style="background-color: #f3eefb;">
-              <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: left; color: #6b3ba7;">Grand Total Paid</th>
-              <td style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold; color: #6b3ba7; font-size: 15px;">₹${totalAmount}</td>
-            </tr>
-          </table>
 
-          <p>You can access your course anytime from your <a href="https://lms.airbharath.in/dashboard/courses" style="color: #6b3ba7; font-weight: bold;">Airbharath Learning Dashboard</a> and download your official PDF tax invoice.</p>
-          
-          <p style="margin-top: 24px;">Warm regards,<br><strong>Eresha Technology Innovators / Airbharath Team</strong><br><span style="font-size: 12px; color: #64748b;">academy@airbharath.in</span></p>
+        <div style="padding: 32px 24px; color: #334155; font-size: 15px; line-height: 1.6;">
+          <p style="font-size: 16px; margin-top: 0;">Dear <strong>${user.fullName || 'Student'}</strong>,</p>
+          <p>Congratulations! Your enrollment in <strong>${course?.title || 'Air Bharath Certificate Course'}</strong> is successfully confirmed.</p>
+
+          <div style="background-color: #f0f9ff; border: 1px solid #bae6fd; border-left: 5px solid #014a62; border-radius: 12px; padding: 20px; margin: 24px 0;">
+            <h3 style="margin: 0 0 8px 0; color: #014a62; font-size: 16px; font-weight: 700;">
+              🚀 Important Course Schedule Update
+            </h3>
+            <p style="margin: 0; color: #0369a1; font-weight: 600; font-size: 15px;">
+              Course content &amp; video lessons will start and become visible on your LMS Dashboard from <u>September 18, 2026</u>.
+            </p>
+          </div>
+
+          <p style="font-weight: 600; color: #0f172a; margin-bottom: 8px;">What happens next?</p>
+          <ul style="margin: 0 0 24px 0; padding-left: 20px; color: #475569;">
+            <li style="margin-bottom: 8px;">You can log in to your account at <a href="https://lms.airbharath.in" style="color: #014a62; font-weight: 600;">lms.airbharath.in</a> at any time.</li>
+            <li style="margin-bottom: 8px;">Your enrolled course is safely active under your <strong>Student Dashboard</strong>.</li>
+            <li style="margin-bottom: 8px;">Full access to video modules &amp; lesson materials will automatically unlock on <strong>September 18th, 2026</strong>.</li>
+          </ul>
+
+          <div style="text-align: center; margin: 32px 0 24px 0;">
+            <a href="https://lms.airbharath.in/dashboard/courses" style="background-color: #014a62; color: #ffffff; font-weight: 700; font-size: 14px; text-decoration: none; padding: 14px 28px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 6px rgba(1,74,98,0.2);">
+              Visit My Learning Dashboard →
+            </a>
+          </div>
+
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 28px 0;" />
+
+          <p style="font-size: 13px; color: #64748b; margin: 0;">
+            If you have any questions or need assistance, reach out to us at <a href="mailto:academy@airbharath.in" style="color: #014a62; font-weight: 600;">academy@airbharath.in</a>.
+          </p>
+
+          <p style="margin-top: 20px; font-size: 14px;">
+            Warm regards,<br>
+            <strong>Air Bharath LMS Team</strong><br>
+            <span style="font-size: 12px; color: #64748b;">Eresha Technology Innovators Pvt. Ltd.</span>
+          </p>
         </div>
       </div>
     `;
@@ -313,13 +323,14 @@ export async function generateAndSaveInvoice(orderId: string) {
       await sendMailercloudEmail({
         to: user.email,
         name: user.fullName || 'Student',
-        subject: invoiceSubject,
-        html: invoiceHtml,
+        subject: emailSubject,
+        html: emailHtml,
       });
     } catch (err) {
       console.warn('[Email Notice] Mailercloud dispatch skipped cleanly.');
     }
   }
+
 
   return invoiceRecord;
 }
