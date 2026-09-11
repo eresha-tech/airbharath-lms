@@ -3,11 +3,9 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { lessons, enrollments, lessonMaterials } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { getGumletSignedUrl } from "@/lib/gumlet";
-import { VideoPlayer } from "@/components/VideoPlayer";
 import { LessonCompleteButton } from "@/components/LessonCompleteButton";
-import { getVdoCipherOtp } from "@/lib/vdocipher";
 import { LessonComments } from "@/components/LessonComments";
+import { HlsPlayer } from "@/components/video-player/HlsPlayer";
 import { FileText, Download, Image as ImageIcon, Paperclip } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -50,19 +48,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
     return redirect(`/courses/${courseId}`);
   }
 
-  let vdoOtp = "";
-  let vdoPlaybackInfo = "";
-  let secureVideoUrl = null;
-
-  if (lessonObj.videoUrl) {
-    const vdoData = await getVdoCipherOtp(lessonObj.videoUrl, session.email || "student@airbharath.in");
-    if (vdoData) {
-      vdoOtp = vdoData.otp;
-      vdoPlaybackInfo = vdoData.playbackInfo;
-    } else {
-      secureVideoUrl = getGumletSignedUrl(lessonObj.videoUrl);
-    }
-  }
+  const activeVideoId = lessonObj.videoUrl || lessonObj.id;
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -72,12 +58,10 @@ export default async function LessonPage({ params }: LessonPageProps) {
 
           <div className="space-y-8">
             {/* Video Section */}
-            {(vdoOtp || secureVideoUrl) && (
-              <VideoPlayer
-                url={secureVideoUrl || undefined}
-                userEmail={session.email || "student@airbharath.in"}
-                vdoOtp={vdoOtp || undefined}
-                vdoPlaybackInfo={vdoPlaybackInfo || undefined}
+            {activeVideoId && (
+              <HlsPlayer
+                videoId={activeVideoId}
+                watermarkText={session.email || "student@airbharath.in"}
               />
             )}
 

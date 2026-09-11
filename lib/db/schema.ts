@@ -158,12 +158,38 @@ export const lessonComments = pgTable('lesson_comments', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+// Videos Table (AWS S3 + MediaConvert Pipeline)
+export const videos = pgTable('videos', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  courseId: uuid('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  lessonId: uuid('lesson_id').references(() => lessons.id, { onDelete: 'set null' }),
+  title: text('title').notNull(),
+  status: text('status').default('uploaded').notNull(), // 'uploaded' | 'processing' | 'ready' | 'failed'
+  rawS3Key: text('raw_s3_key').notNull(),
+  processedS3Prefix: text('processed_s3_prefix'),
+  durationSeconds: integer('duration_seconds'),
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// PlaybackSessions Table (Concurrent Session Tracking Audit Log)
+export const playbackSessions = pgTable('playback_sessions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  videoId: uuid('video_id').references(() => videos.id, { onDelete: 'cascade' }).notNull(),
+  startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  active: boolean('active').default(true).notNull(),
+});
+
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   enrollments: many(enrollments),
   orders: many(orders),
   certificates: many(certificates),
+  playbackSessions: many(playbackSessions),
 }));
 
 export const coursesRelations = relations(courses, ({ one, many }) => ({
@@ -173,6 +199,7 @@ export const coursesRelations = relations(courses, ({ one, many }) => ({
   }),
   modules: many(modules),
   enrollments: many(enrollments),
+  videos: many(videos),
 }));
 
 export const modulesRelations = relations(modules, ({ one, many }) => ({
@@ -190,6 +217,7 @@ export const lessonsRelations = relations(lessons, ({ one, many }) => ({
   }),
   materials: many(lessonMaterials),
   comments: many(lessonComments),
+  videos: many(videos),
 }));
 
 export const lessonMaterialsRelations = relations(lessonMaterials, ({ one }) => ({
@@ -238,3 +266,27 @@ export const feedPostsRelations = relations(feedPosts, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+export const videosRelations = relations(videos, ({ one, many }) => ({
+  course: one(courses, {
+    fields: [videos.courseId],
+    references: [courses.id],
+  }),
+  lesson: one(lessons, {
+    fields: [videos.lessonId],
+    references: [lessons.id],
+  }),
+  playbackSessions: many(playbackSessions),
+}));
+
+export const playbackSessionsRelations = relations(playbackSessions, ({ one }) => ({
+  user: one(users, {
+    fields: [playbackSessions.userId],
+    references: [users.id],
+  }),
+  video: one(videos, {
+    fields: [playbackSessions.videoId],
+    references: [videos.id],
+  }),
+}));
+

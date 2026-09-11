@@ -2,9 +2,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { lessons } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { getGumletSignedUrl } from "@/lib/gumlet";
-import { VideoPlayer } from "@/components/VideoPlayer";
-import { getVdoCipherOtp } from "@/lib/vdocipher";
+import { HlsPlayer } from "@/components/video-player/HlsPlayer";
 import Link from "next/link";
 import { ArrowLeft, Lock } from "lucide-react";
 
@@ -28,21 +26,7 @@ export default async function PreviewLessonPage({ params }: PreviewLessonPagePro
     return redirect(`/courses/${courseId}`);
   }
 
-  let vdoOtp = "";
-  let vdoPlaybackInfo = "";
-  let secureVideoUrl: string | null = null;
-
-  if (lessonObj.videoUrl) {
-    try {
-      const vdoData = await getVdoCipherOtp(lessonObj.videoUrl, "preview@airbharath.in");
-      if (vdoData) {
-        vdoOtp = vdoData.otp;
-        vdoPlaybackInfo = vdoData.playbackInfo;
-      }
-    } catch {
-      secureVideoUrl = getGumletSignedUrl(lessonObj.videoUrl);
-    }
-  }
+  const activeVideoId = lessonObj.videoUrl || lessonObj.id;
 
   return (
     <div className="min-h-screen bg-background">
@@ -71,18 +55,16 @@ export default async function PreviewLessonPage({ params }: PreviewLessonPagePro
 
         <div className="space-y-8">
           {/* Video */}
-          {(vdoOtp || secureVideoUrl) ? (
-            <VideoPlayer
-              url={secureVideoUrl || undefined}
-              userEmail="preview@airbharath.in"
-              vdoOtp={vdoOtp || undefined}
-              vdoPlaybackInfo={vdoPlaybackInfo || undefined}
+          {activeVideoId ? (
+            <HlsPlayer
+              videoId={activeVideoId}
+              watermarkText="preview@airbharath.in"
             />
-          ) : lessonObj.videoUrl ? (
+          ) : (
             <div className="aspect-video bg-muted rounded-2xl flex items-center justify-center">
-              <p className="text-sm text-muted-foreground">Video loading…</p>
+              <p className="text-sm text-muted-foreground">No video configured for this preview lesson.</p>
             </div>
-          ) : null}
+          )}
 
           {/* Lesson Content */}
           {lessonObj.content && (

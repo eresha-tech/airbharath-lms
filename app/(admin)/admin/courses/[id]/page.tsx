@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { courses, modules, lessons } from "@/lib/db/schema";
+import { courses, modules, lessons, videos } from "@/lib/db/schema";
 import { eq, inArray, asc } from "drizzle-orm";
 import CourseEditor from "@/components/admin/CourseEditor";
 import { notFound } from "next/navigation";
@@ -32,6 +32,19 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
     });
   }
 
+  // Fetch video status for each lesson (keyed by lessonId)
+  const lessonIds = lessonsList.map((l: any) => l.id);
+  const videoStatusByLessonId: Record<string, string> = {};
+  if (lessonIds.length > 0) {
+    const videoRows = await db
+      .select({ id: videos.id, lessonId: videos.lessonId, status: videos.status })
+      .from(videos)
+      .where(inArray(videos.lessonId, lessonIds));
+    for (const v of videoRows) {
+      if (v.lessonId) videoStatusByLessonId[v.lessonId] = v.status;
+    }
+  }
+
   const formattedModules = modulesList.map((m: any) => ({
     id: m.id,
     course_id: m.courseId,
@@ -45,6 +58,7 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
     title: l.title,
     content: l.content,
     video_url: l.videoUrl,
+    video_status: videoStatusByLessonId[l.id] || null,
     order_index: l.orderIndex,
     is_free_preview: l.isFreePreview,
   }));

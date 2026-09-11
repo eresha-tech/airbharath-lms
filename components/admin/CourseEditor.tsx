@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { ArrowLeft, Save, Plus, Trash2, Edit2, FileText, Video, BookOpen, Upload, ImageIcon, Paperclip, X, FileImage, ExternalLink } from "lucide-react";
+import { VideoUploader } from "@/components/admin/VideoUploader";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -34,7 +35,10 @@ export default function CourseEditor({ course, initialModules, initialLessons }:
   // Lesson Form state
   const [lessonTitle, setLessonTitle] = useState("");
   const [lessonContent, setLessonContent] = useState("");
-  const [lessonVideoUrl, setLessonVideoUrl] = useState("");
+  // lessonSavedVideoId: set by VideoUploader after a successful upload (video.id UUID)
+  const [lessonSavedVideoId, setLessonSavedVideoId] = useState<string | null>(null);
+  // lessonSavedVideoStatus: mirrors videos.status for the lesson's current video
+  const [lessonSavedVideoStatus, setLessonSavedVideoStatus] = useState<string | null>(null);
   const [lessonIsFree, setLessonIsFree] = useState(false);
   const [lessonOrder, setLessonOrder] = useState("1");
 
@@ -161,7 +165,8 @@ export default function CourseEditor({ course, initialModules, initialLessons }:
     setEditingLesson(null);
     setLessonTitle("");
     setLessonContent("");
-    setLessonVideoUrl("");
+    setLessonSavedVideoId(null);
+    setLessonSavedVideoStatus(null);
     setLessonIsFree(false);
     const moduleLessons = lessons.filter(l => l.module_id === moduleId);
     setLessonOrder(String(moduleLessons.length + 1));
@@ -174,13 +179,16 @@ export default function CourseEditor({ course, initialModules, initialLessons }:
     setActiveModuleId(lesson.module_id);
     setLessonTitle(lesson.title);
     setLessonContent(lesson.content || "");
-    setLessonVideoUrl(lesson.video_url || "");
+    setLessonSavedVideoId(lesson.video_url || null); // video_url stores the video UUID
+    setLessonSavedVideoStatus(lesson.video_status || null); // mirrors videos.status
     setLessonIsFree(lesson.is_free_preview || false);
     setLessonOrder(String(lesson.order_index));
     setShowLessonModal(true);
   };
 
   // Save Lesson (Insert or Update)
+  // Note: videoUrl is managed by the VideoUploader — upload-url API sets it server-side.
+  // We still pass it here so that if a lesson was saved before an upload, the value persists.
   const handleSaveLesson = async () => {
     if (!lessonTitle.trim()) return;
 
@@ -194,7 +202,7 @@ export default function CourseEditor({ course, initialModules, initialLessons }:
           moduleId: activeModuleId,
           title: lessonTitle.trim(),
           content: lessonContent.trim() || null,
-          videoUrl: lessonVideoUrl.trim() || null,
+          videoUrl: lessonSavedVideoId || undefined, // pass only if set (preserve existing)
           isFreePreview: lessonIsFree,
           orderIndex: parseInt(lessonOrder) || 1,
         }),
@@ -498,14 +506,26 @@ export default function CourseEditor({ course, initialModules, initialLessons }:
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-muted-foreground mb-1 uppercase tracking-wider">Video URL / VdoCipher ID</label>
-                <input
-                  type="text"
-                  placeholder="Video URL or VdoCipher ID"
-                  value={lessonVideoUrl}
-                  onChange={(e) => setLessonVideoUrl(e.target.value)}
-                  className="w-full border rounded-xl px-3 py-2 text-xs font-semibold bg-background focus:outline-none"
-                />
+                <label className="block text-[10px] font-bold text-muted-foreground mb-1 uppercase tracking-wider">Video</label>
+                {/* Video upload is only possible when editing an existing lesson (we need the lessonId) */}
+                {editingLesson?.id ? (
+                  <VideoUploader
+                    courseId={course.id}
+                    lessonId={editingLesson.id}
+                    lessonTitle={lessonTitle}
+                    existingVideoId={lessonSavedVideoId || undefined}
+                    existingStatus={lessonSavedVideoStatus || undefined}
+                    onDone={(videoId) => {
+                      setLessonSavedVideoId(videoId);
+                      // New upload in flight — status will be updated by webhook later
+                      setLessonSavedVideoStatus(null);
+                    }}
+                  />
+                ) : (
+                  <p className="text-[10px] text-muted-foreground bg-muted/40 border rounded-xl px-3 py-2.5">
+                    Save the lesson first, then reopen it to upload a video.
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
