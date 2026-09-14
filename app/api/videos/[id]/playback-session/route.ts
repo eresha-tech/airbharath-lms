@@ -4,12 +4,10 @@ import { db } from "@/lib/db";
 import { videos, lessons, enrollments, playbackSessions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import {
-  generateCloudFrontSignedCookies,
+  getCloudFrontSignedPlaybackUrl,
   acquirePlaybackSession,
   releasePlaybackSession,
 } from "@/lib/aws-video";
-
-const cloudFrontDomain = process.env.AWS_CLOUDFRONT_DOMAIN || "";
 
 export async function POST(
   req: Request,
@@ -68,9 +66,9 @@ export async function POST(
       return NextResponse.json({ error: "Access denied. Enrollment required." }, { status: 403 });
     }
 
-    // 1. Issue CloudFront Signed Cookies
+    // 1. Generate CloudFront Custom Policy Signed Playback URL
     const ttlSeconds = 7200; // 2 hours
-    const cookiesObj = generateCloudFrontSignedCookies(video.courseId, video.id, ttlSeconds);
+    const playbackUrl = getCloudFrontSignedPlaybackUrl(video.courseId, video.id, ttlSeconds);
 
     // 2. Lock concurrent session in Redis
     const { sessionId } = await acquirePlaybackSession(session.id, video.id, ttlSeconds);
@@ -85,33 +83,12 @@ export async function POST(
       active: true,
     });
 
-    const response = NextResponse.json({
-      playbackUrl: `https://${cloudFrontDomain}/${video.courseId}/${video.id}/index.m3u8`,
+    return NextResponse.json({
+      playbackUrl,
       sessionId,
       title: video.title,
       durationSeconds: video.durationSeconds,
     });
-
-    // 4. Attach CloudFront signed cookies to HTTP response if available
-    const policy = cookiesObj?.["CloudFront-Policy"];
-    const signature = cookiesObj?.["CloudFront-Signature"];
-    const keyPairId = cookiesObj?.["CloudFront-Key-Pair-Id"];
-
-    if (policy && signature && keyPairId) {
-      const cookieOptions = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax" as const,
-        path: "/",
-        maxAge: ttlSeconds,
-      };
-
-      response.cookies.set("CloudFront-Policy", policy, cookieOptions);
-      response.cookies.set("CloudFront-Signature", signature, cookieOptions);
-      response.cookies.set("CloudFront-Key-Pair-Id", keyPairId, cookieOptions);
-    }
-
-    return response;
   } catch (error: any) {
     console.error("Error creating playback session:", error);
     return NextResponse.json({ error: error.message || "Failed to create playback session" }, { status: 500 });

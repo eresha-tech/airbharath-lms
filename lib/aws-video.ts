@@ -1,6 +1,6 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { getSignedCookies } from "@aws-sdk/cloudfront-signer";
+import { getSignedUrl as getS3PresignedUrl } from "@aws-sdk/s3-request-presigner";
+import { getSignedUrl as getCloudFrontSignedUrl } from "@aws-sdk/cloudfront-signer";
 
 // Environment configurations with safe defaults
 const region = process.env.AWS_REGION || "ap-south-1";
@@ -11,7 +11,7 @@ const rawBucket = process.env.AWS_S3_RAW_BUCKET || "airbharath-lms-raw-uploads";
 const processedBucket = process.env.AWS_S3_PROCESSED_BUCKET || "airbharath-lms-processed-videos";
 
 const cloudFrontDomain = process.env.AWS_CLOUDFRONT_DOMAIN || "";
-const cloudFrontKeyPairId = process.env.AWS_CLOUDFRONT_KEY_PAIR_ID || "";
+const cloudFrontKeyPairId = (process.env.AWS_CLOUDFRONT_KEY_PAIR_ID || "").replace(/"/g, "");
 const cloudFrontPrivateKey = process.env.AWS_CLOUDFRONT_PRIVATE_KEY || "";
 
 const upstashUrl = process.env.UPSTASH_REDIS_REST_URL;
@@ -22,6 +22,26 @@ const s3Client = new S3Client({
   region,
   credentials: accessKeyId ? { accessKeyId, secretAccessKey } : undefined,
 });
+
+/**
+ * Helper to normalize CloudFront private key format (handles escaped newlines, quotes, or base64 encoding).
+ */
+function getNormalizedCloudFrontPrivateKey(): string {
+  let privateKey = cloudFrontPrivateKey;
+  if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+    privateKey = privateKey.slice(1, -1);
+  }
+  if (privateKey.includes("\\n")) {
+    privateKey = privateKey.replace(/\\n/g, "\n");
+  } else if (!privateKey.includes("-----BEGIN PRIVATE KEY-----")) {
+    try {
+      privateKey = Buffer.from(privateKey, "base64").toString("utf-8");
+    } catch {
+      // Keep original if decoding fails
+    }
+  }
+  return privateKey;
+}
 
 /**
  * Generates a pre-signed S3 PUT URL for uploading raw video directly from browser to S3.
@@ -37,44 +57,45 @@ export async function getS3UploadPresignedUrl(courseId: string, videoId: string,
     ContentType: `video/${fileExt === "mov" ? "quicktime" : "mp4"}`,
   });
 
-  const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 600 });
+  const uploadUrl = await getS3PresignedUrl(s3Client, command, { expiresIn: 600 });
 
   return { uploadUrl, s3Key };
 }
 
 /**
- * Issues CloudFront signed cookies for secured HLS adaptive streaming playback.
- * ponytail: Cookies cover all segment files under `https://{cloudFrontDomain}/{courseId}/{videoId}/*`.
+ * Generates a CloudFront Signed URL with a custom wildcard policy for secured HLS adaptive streaming.
+ * ponytail: Custom policy signs `https://{cloudFrontDomain}/{courseId}/{videoId}/*` so all manifests and TS segments are authorized.
  */
-export function generateCloudFrontSignedCookies(courseId: string, videoId: string, ttlSeconds = 7200) {
+export function getCloudFrontSignedPlaybackUrl(courseId: string, videoId: string, ttlSeconds = 7200) {
   if (!cloudFrontDomain || !cloudFrontKeyPairId || !cloudFrontPrivateKey) {
     console.warn("CloudFront domain, key pair ID, or private key is missing in environment variables.");
-    return null;
+    return `https://${cloudFrontDomain}/${courseId}/${videoId}/index.m3u8`;
   }
 
-  // Format private key if base64 encoded or string with escaped newlines
-  let privateKey = cloudFrontPrivateKey;
-  if (privateKey.includes("\\n")) {
-    privateKey = privateKey.replace(/\\n/g, "\n");
-  } else if (!privateKey.includes("-----BEGIN PRIVATE KEY-----")) {
-    try {
-      privateKey = Buffer.from(privateKey, "base64").toString("utf-8");
-    } catch {
-      // Keep original if decoding fails
-    }
-  }
-
-  const resourceUrl = `https://${cloudFrontDomain}/${courseId}/${videoId}/*`;
-  const dateLessThan = new Date(Date.now() + ttlSeconds * 1000).toISOString();
-
-  const cookies = getSignedCookies({
-    url: resourceUrl,
-    keyPairId: cloudFrontKeyPairId,
-    privateKey,
-    dateLessThan,
+  const privateKey = getNormalizedCloudFrontPrivateKey();
+  const epochEnd = Math.floor((Date.now() + ttlSeconds * 1000) / 1000);
+  const customPolicy = JSON.stringify({
+    Statement: [
+      {
+        Resource: `https://${cloudFrontDomain}/${courseId}/${videoId}/*`,
+        Condition: {
+          DateLessThan: {
+            "AWS:EpochTime": epochEnd,
+          },
+        },
+      },
+    ],
   });
 
-  return cookies;
+  const masterUrl = `https://${cloudFrontDomain}/${courseId}/${videoId}/index.m3u8`;
+  const signedPlaybackUrl = getCloudFrontSignedUrl({
+    url: masterUrl,
+    policy: customPolicy,
+    keyPairId: cloudFrontKeyPairId,
+    privateKey,
+  });
+
+  return signedPlaybackUrl;
 }
 
 /**

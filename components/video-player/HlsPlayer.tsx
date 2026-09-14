@@ -68,11 +68,47 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
     if (!video || !playbackUrl) return;
 
     if (Hls.isSupported()) {
+      let masterUrlObj: URL | null = null;
+      try {
+        masterUrlObj = new URL(playbackUrl);
+      } catch (err) {
+        console.error("Invalid playback URL:", err);
+      }
+
+      const masterHost = masterUrlObj?.host;
+      const masterSearchParams = masterUrlObj?.searchParams;
+
+      // Custom Hls loader to propagate CloudFront signed query params to child playlists and TS segments
+      class SignedUrlLoader extends (Hls.DefaultConfig.loader as any) {
+        load(context: any, config: any, callbacks: any) {
+          if (context.url && masterUrlObj && masterHost && masterSearchParams) {
+            try {
+              const u = new URL(context.url, masterUrlObj.href);
+              if (u.host === masterHost && !u.searchParams.has("Signature")) {
+                masterSearchParams.forEach((val, key) => {
+                  if (!u.searchParams.has(key)) {
+                    u.searchParams.set(key, val);
+                  }
+                });
+                context.url = u.toString();
+              }
+            } catch (err) {
+              console.error("Error attaching signed query params to HLS resource:", err);
+            }
+          }
+          return super.load(context, config, callbacks);
+        }
+      }
+
       const hls = new Hls({
-        xhrSetup: (xhr) => {
-          // ponytail: Ensure browser sends HTTP-only CloudFront signed cookies with each HLS segment request
-          xhr.withCredentials = true;
-        },
+        loader: SignedUrlLoader as any,
+        // Buffer management for smooth VOD streaming without aggressive prefetching
+        maxBufferLength: 10, // Buffer up to 10 seconds ahead
+        maxMaxBufferLength: 20, // Strict ceiling of 20 seconds ahead
+        maxBufferSize: 30 * 1000 * 1000, // 30 MB max buffer memory
+        backBufferLength: 30, // Prune buffer older than 30 seconds behind playhead
+        startFragPrefetch: false, // Do not prefetch next fragments ahead before start
+        capLevelToPlayerSize: true, // Optimize ABR resolution to player viewport size
       });
 
       hls.loadSource(playbackUrl);
@@ -98,7 +134,7 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
         }
       });
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      // Native Safari HLS support
+      // Native Safari HLS support (AVPlayer automatically resolves relative URLs)
       video.src = playbackUrl;
     }
 
