@@ -15,33 +15,48 @@ interface CoursePageProps {
   }>;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default async function CoursePage({ params }: CoursePageProps) {
   const { courseId } = await params;
   const session = await getSession();
 
   if (!session) return redirect("/login");
 
-  const enrollmentRecord = await db.query.enrollments.findFirst({
-    where: and(eq(enrollments.userId, session.id), eq(enrollments.courseId, courseId)),
-  });
+  const isUUID = UUID_REGEX.test(courseId);
 
-  if (!enrollmentRecord && session.role !== "admin") {
-    return redirect(`/courses/${courseId}`);
-  }
-
-  const courseObj = await db.query.courses.findFirst({
-    where: eq(courses.id, courseId),
-    with: {
-      modules: {
+  const courseObj = isUUID
+    ? await db.query.courses.findFirst({
+        where: eq(courses.id, courseId),
         with: {
-          lessons: true,
+          modules: {
+            with: {
+              lessons: true,
+            },
+          },
         },
-      },
-    },
-  });
+      })
+    : await db.query.courses.findFirst({
+        where: eq(courses.slug, courseId),
+        with: {
+          modules: {
+            with: {
+              lessons: true,
+            },
+          },
+        },
+      });
 
   if (!courseObj) {
     return redirect("/dashboard/courses");
+  }
+
+  const enrollmentRecord = await db.query.enrollments.findFirst({
+    where: and(eq(enrollments.userId, session.id), eq(enrollments.courseId, courseObj.id)),
+  });
+
+  if (!enrollmentRecord && session.role !== "admin") {
+    return redirect(`/courses/${courseObj.slug || courseObj.id}`);
   }
 
   const courseModules = (courseObj.modules as any[]) || [];

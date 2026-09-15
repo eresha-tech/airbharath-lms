@@ -14,6 +14,8 @@ interface CourseLayoutProps {
   }>;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default async function CourseLayout({
   children,
   params,
@@ -25,29 +27,42 @@ export default async function CourseLayout({
     return redirect("/login");
   }
 
-  // Check enrollment
-  const enrollmentObj = await db.query.enrollments.findFirst({
-    where: and(eq(enrollments.userId, session.id), eq(enrollments.courseId, courseId)),
-  });
-
-  if (!enrollmentObj) {
-    return redirect(`/courses/${courseId}`);
-  }
+  const isUUID = UUID_REGEX.test(courseId);
 
   // Fetch course data for sidebar
-  const courseObj = await db.query.courses.findFirst({
-    where: eq(courses.id, courseId),
-    with: {
-      modules: {
+  const courseObj = isUUID
+    ? await db.query.courses.findFirst({
+        where: eq(courses.id, courseId),
         with: {
-          lessons: true,
+          modules: {
+            with: {
+              lessons: true,
+            },
+          },
         },
-      },
-    },
-  });
+      })
+    : await db.query.courses.findFirst({
+        where: eq(courses.slug, courseId),
+        with: {
+          modules: {
+            with: {
+              lessons: true,
+            },
+          },
+        },
+      });
 
   if (!courseObj) {
     return redirect("/my-courses");
+  }
+
+  // Check enrollment
+  const enrollmentObj = await db.query.enrollments.findFirst({
+    where: and(eq(enrollments.userId, session.id), eq(enrollments.courseId, courseObj.id)),
+  });
+
+  if (!enrollmentObj && session.role !== "admin") {
+    return redirect(`/courses/${courseObj.slug || courseObj.id}`);
   }
 
   const courseModules = (courseObj.modules as any[]) || [];

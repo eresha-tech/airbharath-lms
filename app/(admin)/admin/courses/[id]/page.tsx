@@ -6,42 +6,71 @@ import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default async function EditCoursePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const courseObj = await db.query.courses.findFirst({
-    where: eq(courses.id, id),
-  });
+  if (!id) {
+    notFound();
+  }
+
+  const isUUID = UUID_REGEX.test(id);
+
+  let courseObj: any = null;
+  try {
+    const courseRows = isUUID
+      ? await db.select().from(courses).where(eq(courses.id, id)).limit(1)
+      : await db.select().from(courses).where(eq(courses.slug, id)).limit(1);
+    courseObj = courseRows[0] || null;
+  } catch (err) {
+    console.error("Error fetching course in EditCoursePage:", err);
+  }
 
   if (!courseObj) {
     notFound();
   }
 
-  const modulesList = await db.query.modules.findMany({
-    where: eq(modules.courseId, id),
-    orderBy: [asc(modules.orderIndex)],
-  });
+  let modulesList: any[] = [];
+  try {
+    modulesList = await db
+      .select()
+      .from(modules)
+      .where(eq(modules.courseId, courseObj.id))
+      .orderBy(asc(modules.orderIndex));
+  } catch (err) {
+    console.error("Error fetching modules in EditCoursePage:", err);
+  }
 
   const moduleIds = modulesList.map((m: any) => m.id);
 
   let lessonsList: any[] = [];
   if (moduleIds.length > 0) {
-    lessonsList = await db.query.lessons.findMany({
-      where: inArray(lessons.moduleId, moduleIds),
-      orderBy: [asc(lessons.orderIndex)],
-    });
+    try {
+      lessonsList = await db
+        .select()
+        .from(lessons)
+        .where(inArray(lessons.moduleId, moduleIds))
+        .orderBy(asc(lessons.orderIndex));
+    } catch (err) {
+      console.error("Error fetching lessons in EditCoursePage:", err);
+    }
   }
 
   // Fetch video status for each lesson (keyed by lessonId)
   const lessonIds = lessonsList.map((l: any) => l.id);
   const videoStatusByLessonId: Record<string, string> = {};
   if (lessonIds.length > 0) {
-    const videoRows = await db
-      .select({ id: videos.id, lessonId: videos.lessonId, status: videos.status })
-      .from(videos)
-      .where(inArray(videos.lessonId, lessonIds));
-    for (const v of videoRows) {
-      if (v.lessonId) videoStatusByLessonId[v.lessonId] = v.status;
+    try {
+      const videoRows = await db
+        .select({ id: videos.id, lessonId: videos.lessonId, status: videos.status })
+        .from(videos)
+        .where(inArray(videos.lessonId, lessonIds));
+      for (const v of videoRows) {
+        if (v.lessonId) videoStatusByLessonId[v.lessonId] = v.status;
+      }
+    } catch (err) {
+      console.error("Error fetching video statuses in EditCoursePage:", err);
     }
   }
 
@@ -68,11 +97,11 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
       course={{
         id: courseObj.id,
         title: courseObj.title,
-        description: courseObj.description,
-        price: Number(courseObj.price),
-        thumbnail_url: courseObj.thumbnailUrl,
-        is_published: courseObj.isPublished,
-        access_days: courseObj.accessDays,
+        description: courseObj.description || "",
+        price: Number(courseObj.price || 0),
+        thumbnail_url: courseObj.thumbnailUrl || "",
+        is_published: !!courseObj.isPublished,
+        access_days: courseObj.accessDays ?? null,
       }} 
       initialModules={formattedModules} 
       initialLessons={formattedLessons} 
