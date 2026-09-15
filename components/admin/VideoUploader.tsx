@@ -9,7 +9,7 @@ type UploadState =
   | { tag: "uploading"; file: File; progress: number }
   | { tag: "processing"; videoId: string }
   | { tag: "ready"; videoId: string }
-  | { tag: "failed"; message: string };
+  | { tag: "failed"; message: string; videoId?: string };
 
 const MAX_BYTES = 4 * 1024 * 1024 * 1024; // 4 GB — S3 single-PUT limit
 
@@ -34,12 +34,13 @@ export function VideoUploader({
 }: VideoUploaderProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const xhrRef = useRef<XMLHttpRequest | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   // Seed state from existing video if present
   const [state, setState] = useState<UploadState>(() => {
     if (existingVideoId) {
       if (existingStatus === "failed") {
-        return { tag: "failed", message: "Previous processing failed. Upload a replacement." };
+        return { tag: "failed", message: "Previous processing failed.", videoId: existingVideoId };
       }
       if (existingStatus === "ready") {
         return { tag: "ready", videoId: existingVideoId };
@@ -50,7 +51,7 @@ export function VideoUploader({
     return { tag: "idle" };
   });
 
-  // Poll video status every 5s while processing
+  // Poll video status every 10s while processing
   useEffect(() => {
     if (state.tag !== "processing") return;
     const videoId = state.videoId;
@@ -59,17 +60,21 @@ export function VideoUploader({
       try {
         const res = await fetch(`/api/admin/videos/${videoId}/status`);
         if (!res.ok) return;
-        const { status } = await res.json();
-        if (status === "ready") {
+        const data = await res.json();
+        if (data.status === "ready") {
           setState({ tag: "ready", videoId });
-        } else if (status === "failed") {
-          setState({ tag: "failed", message: "MediaConvert processing failed." });
+        } else if (data.status === "failed") {
+          setState({
+            tag: "failed",
+            message: data.errorMessage || "MediaConvert processing failed.",
+            videoId,
+          });
         }
         // uploaded / processing: keep polling
       } catch {
         // network blip — keep polling
       }
-    }, 5000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [state.tag === "processing" ? state.videoId : null]); // re-run only when videoId changes
@@ -157,6 +162,28 @@ export function VideoUploader({
       onDone(videoId);
     } catch (err: any) {
       setState({ tag: "failed", message: err.message || "Upload failed" });
+    }
+  }
+
+  async function retryTranscode(targetVideoId: string) {
+    setIsRetrying(true);
+    try {
+      const res = await fetch(`/api/admin/videos/${targetVideoId}/retranscode`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to trigger retranscode");
+      }
+      setState({ tag: "processing", videoId: targetVideoId });
+    } catch (err: any) {
+      setState({
+        tag: "failed",
+        message: err.message || "Failed to retry transcoding.",
+        videoId: targetVideoId,
+      });
+    } finally {
+      setIsRetrying(false);
     }
   }
 
@@ -312,22 +339,53 @@ export function VideoUploader({
   }
 
   // failed
+  const targetVideoId = s.videoId || existingVideoId;
+
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 text-xs">
         <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
-        <div className="flex-1">
-          <p className="font-bold text-red-700">Upload failed</p>
-          <p className="text-red-500 text-[10px] mt-0.5">{s.message}</p>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-red-700">Processing Failed</p>
+          <p className="text-red-500 text-[10px] mt-0.5 break-words">{s.message}</p>
         </div>
       </div>
-      <button
-        type="button"
-        onClick={reset}
-        className="w-full flex items-center justify-center gap-1.5 py-2 border rounded-xl text-xs font-bold hover:bg-background"
-      >
-        <RefreshCw className="h-3.5 w-3.5" /> Try Again
-      </button>
+      <div className="flex gap-2">
+        {targetVideoId && (
+          <button
+            type="button"
+            disabled={isRetrying}
+            onClick={() => retryTranscode(targetVideoId)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#014a62] text-white font-bold rounded-xl text-xs hover:bg-[#01374a] transition-colors disabled:opacity-50"
+          >
+            {isRetrying ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Retrying…
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-3.5 w-3.5" /> Retry Transcode
+              </>
+            )}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={pickFile}
+          className={`${
+            targetVideoId ? "flex-1" : "w-full"
+          } flex items-center justify-center gap-1.5 py-2 border rounded-xl text-xs font-bold hover:bg-background text-foreground transition-colors`}
+        >
+          <Upload className="h-3.5 w-3.5" /> Replace Video
+        </button>
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="video/mp4,video/quicktime"
+        className="hidden"
+        onChange={onFileChange}
+      />
     </div>
   );
 }

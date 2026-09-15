@@ -16,7 +16,11 @@ export async function GET(
   const { id } = await params;
 
   const [video] = await db
-    .select({ id: videos.id, status: videos.status })
+    .select({
+      id: videos.id,
+      status: videos.status,
+      errorMessage: videos.errorMessage,
+    })
     .from(videos)
     .where(eq(videos.id, id))
     .limit(1);
@@ -25,5 +29,8 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ status: video.status });
+  return NextResponse.json({
+    status: video.status,
+    errorMessage: video.errorMessage,
+  });
 }
