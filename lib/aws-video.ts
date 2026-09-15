@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectsCommand, ListObjectsV2Command, ListObjectsV2CommandOutput } from "@aws-sdk/client-s3";
 import { getSignedUrl as getS3PresignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getSignedUrl as getCloudFrontSignedUrl } from "@aws-sdk/cloudfront-signer";
 
@@ -7,8 +7,8 @@ const region = process.env.AWS_REGION || "ap-south-1";
 const accessKeyId = process.env.AWS_ACCESS_KEY_ID || "";
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || "";
 
-const rawBucket = process.env.AWS_S3_RAW_BUCKET || "airbharath-lms-raw-uploads";
-const processedBucket = process.env.AWS_S3_PROCESSED_BUCKET || "airbharath-lms-processed-videos";
+export const rawBucket = process.env.AWS_S3_RAW_BUCKET || "airbharath-lms-raw-uploads";
+export const processedBucket = process.env.AWS_S3_PROCESSED_BUCKET || "airbharath-lms-processed-videos";
 
 const cloudFrontDomain = process.env.AWS_CLOUDFRONT_DOMAIN || "";
 const cloudFrontKeyPairId = (process.env.AWS_CLOUDFRONT_KEY_PAIR_ID || "").replace(/"/g, "");
@@ -18,10 +18,56 @@ const upstashUrl = process.env.UPSTASH_REDIS_REST_URL;
 const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 
 // Initialize clients lazily or with credentials if present
-const s3Client = new S3Client({
+export const s3Client = new S3Client({
   region,
   credentials: accessKeyId ? { accessKeyId, secretAccessKey } : undefined,
 });
+
+/**
+ * Recursively deletes all objects under a given S3 bucket and prefix in batches of up to 1,000.
+ * Handles pagination using IsTruncated and ContinuationToken until the prefix is empty.
+ * Returns cleanly if 0 objects exist or prefix does not exist.
+ */
+export async function deleteS3Folder(bucket: string, prefix: string): Promise<void> {
+  if (!prefix) return;
+  const normalizedPrefix = prefix.endsWith("/") ? prefix : `${prefix}/`;
+
+  let isTruncated = true;
+  let continuationToken: string | undefined = undefined;
+
+  while (isTruncated) {
+    const listRes: ListObjectsV2CommandOutput = await s3Client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: normalizedPrefix,
+        ContinuationToken: continuationToken,
+      })
+    );
+
+    const objects = listRes.Contents || [];
+    if (objects.length > 0) {
+      const deleteKeys = objects
+        .map((obj: { Key?: string }) => obj.Key)
+        .filter((key: string | undefined): key is string => Boolean(key))
+        .map((Key: string) => ({ Key }));
+
+      if (deleteKeys.length > 0) {
+        await s3Client.send(
+          new DeleteObjectsCommand({
+            Bucket: bucket,
+            Delete: {
+              Objects: deleteKeys,
+              Quiet: true,
+            },
+          })
+        );
+      }
+    }
+
+    isTruncated = Boolean(listRes.IsTruncated);
+    continuationToken = listRes.NextContinuationToken;
+  }
+}
 
 /**
  * Helper to normalize CloudFront private key format (handles escaped newlines, quotes, or base64 encoding).

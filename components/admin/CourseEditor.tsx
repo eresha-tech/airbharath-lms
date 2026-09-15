@@ -520,6 +520,17 @@ export default function CourseEditor({ course, initialModules, initialLessons }:
                       // New upload in flight — status will be updated by webhook later
                       setLessonSavedVideoStatus(null);
                     }}
+                    onDelete={() => {
+                      setLessonSavedVideoId(null);
+                      setLessonSavedVideoStatus(null);
+                      setLessons((prev) =>
+                        prev.map((l) =>
+                          l.id === editingLesson.id
+                            ? { ...l, video_url: null, video_status: null }
+                            : l
+                        )
+                      );
+                    }}
                   />
                 ) : (
                   <p className="text-[10px] text-muted-foreground bg-muted/40 border rounded-xl px-3 py-2.5">

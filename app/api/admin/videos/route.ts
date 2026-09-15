@@ -1,20 +1,10 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { videos } from "@/lib/db/schema";
+import { videos, lessons } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { S3Client, DeleteObjectCommand, DeleteObjectsCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
-
-const region = process.env.AWS_REGION || "ap-south-1";
-const accessKeyId = process.env.AWS_ACCESS_KEY_ID || "";
-const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || "";
-const rawBucket = process.env.AWS_S3_RAW_BUCKET || "airbharath-lms-raw-uploads";
-const processedBucket = process.env.AWS_S3_PROCESSED_BUCKET || "airbharath-lms-processed-videos";
-
-const s3Client = new S3Client({
-  region,
-  credentials: accessKeyId ? { accessKeyId, secretAccessKey } : undefined,
-});
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { s3Client, rawBucket, processedBucket, deleteS3Folder } from "@/lib/aws-video";
 
 export async function GET(req: Request) {
   try {
@@ -50,40 +40,61 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Video not found" }, { status: 404 });
     }
 
-    // Delete raw S3 object if present
-    if (video.rawS3Key) {
-      try {
-        await s3Client.send(new DeleteObjectCommand({ Bucket: rawBucket, Key: video.rawS3Key }));
-      } catch (err) {
-        console.warn("Failed to delete raw S3 object:", err);
-      }
+    // Determine target S3 keys/prefixes with canonical fallbacks
+    const rawKey = video.rawS3Key || `raw-uploads/${video.courseId}/${video.id}.mp4`;
+    const processedPrefix = video.processedS3Prefix || `${video.courseId}/${video.id}/`;
+
+    // 1. Delete raw S3 object
+    try {
+      await s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: rawBucket,
+          Key: rawKey,
+        })
+      );
+    } catch (s3RawError: any) {
+      console.error(`Failed to delete raw S3 object (${rawKey}) for video ${videoId}:`, s3RawError);
+      return NextResponse.json(
+        { error: "Failed to delete raw video file from storage. Database record preserved for retry." },
+        { status: 500 }
+      );
     }
 
-    // Delete processed HLS S3 objects if present
-    if (video.processedS3Prefix) {
-      try {
-        const listed = await s3Client.send(
-          new ListObjectsV2Command({ Bucket: processedBucket, Prefix: video.processedS3Prefix })
-        );
-        if (listed.Contents && listed.Contents.length > 0) {
-          await s3Client.send(
-            new DeleteObjectsCommand({
-              Bucket: processedBucket,
-              Delete: { Objects: listed.Contents.map((obj) => ({ Key: obj.Key })) },
-            })
-          );
-        }
-      } catch (err) {
-        console.warn("Failed to delete processed S3 objects:", err);
-      }
+    // 2. Delete complete processed HLS folder with pagination handling
+    try {
+      await deleteS3Folder(processedBucket, processedPrefix);
+    } catch (s3ProcessedError: any) {
+      console.error(`Failed to delete processed S3 folder (${processedPrefix}) for video ${videoId}:`, s3ProcessedError);
+      return NextResponse.json(
+        { error: "Failed to delete processed HLS files from storage. Database record preserved for retry." },
+        { status: 500 }
+      );
     }
 
-    // Delete record from DB
+    // 3. Clear lesson videoUrl pointer if any lesson references this video
+    try {
+      await db
+        .update(lessons)
+        .set({ videoUrl: null })
+        .where(eq(lessons.videoUrl, videoId));
+    } catch (lessonClearError: any) {
+      console.error(`Failed to clear videoUrl in lessons for video ${videoId}:`, lessonClearError);
+      return NextResponse.json(
+        { error: "Failed to unlink video from lessons. Database record preserved for retry." },
+        { status: 500 }
+      );
+    }
+
+    // 4. Delete record from videos table
     await db.delete(videos).where(eq(videos.id, videoId));
 
-    return NextResponse.json({ success: true, message: "Video deleted successfully" });
+    return NextResponse.json({
+      success: true,
+      message: "Video and associated storage files deleted successfully",
+    });
   } catch (error: any) {
     console.error("Error deleting video:", error);
     return NextResponse.json({ error: error.message || "Failed to delete video" }, { status: 500 });
   }
 }
+
