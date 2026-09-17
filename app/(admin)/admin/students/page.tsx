@@ -18,13 +18,13 @@ export default async function AdminStudents() {
   const enrollmentsList = await db.query.enrollments.findMany();
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-foreground font-instrument-serif text-[#014a62]">
-          Students Directory & Course Access
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-outfit">
+          Student Directory & Access Management
         </h1>
-        <p className="text-muted-foreground text-sm">
-          Enroll students directly into courses, manage active enrollments, and extend course durations.
+        <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
+          Manage registered students, manually grant course enrollments, and extend validity periods.
         </p>
       </div>
 

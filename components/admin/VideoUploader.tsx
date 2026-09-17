@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Upload, AlertCircle, Loader2, RefreshCw, Film, CheckCircle2, Trash2 } from "lucide-react";
+import {
+  Upload,
+  AlertCircle,
+  Loader2,
+  RefreshCw,
+  Film,
+  CheckCircle2,
+  Trash2,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type UploadState =
   | { tag: "idle" }
@@ -52,7 +62,6 @@ export function VideoUploader({
       if (existingStatus === "ready") {
         return { tag: "ready", videoId: existingVideoId };
       }
-      // uploaded / processing / undefined — show as processing (Lambda may still be running)
       return { tag: "processing", videoId: existingVideoId };
     }
     return { tag: "idle" };
@@ -79,7 +88,6 @@ export function VideoUploader({
             videoId: processingVideoId,
           });
         }
-        // uploaded / processing: keep polling
       } catch {
         // network blip — keep polling
       }
@@ -98,11 +106,11 @@ export function VideoUploader({
     if (!file) return;
 
     if (!file.type.includes("mp4") && !file.type.includes("quicktime")) {
-      setState({ tag: "failed", message: "Only MP4 files are supported." });
+      setState({ tag: "failed", message: "Only MP4 and MOV files are supported." });
       return;
     }
     if (file.size > MAX_BYTES) {
-      setState({ tag: "failed", message: "File exceeds 4 GB limit." });
+      setState({ tag: "failed", message: "File exceeds 4 GB single-upload limit." });
       return;
     }
 
@@ -166,7 +174,7 @@ export function VideoUploader({
         xhr.send(file);
       });
 
-      // 3. S3 ObjectCreated → Lambda → MediaConvert (automatic)
+      // 3. S3 ObjectCreated triggers transcoding pipeline
       setState({ tag: "processing", videoId });
       onDone(videoId);
     } catch (err: any) {
@@ -214,7 +222,7 @@ export function VideoUploader({
 
       setShowDeleteModal(false);
       reset();
-      setDeleteSuccessMsg("Video and associated files deleted successfully.");
+      setDeleteSuccessMsg("Video and associated transcoding assets deleted successfully.");
       onDelete?.();
     } catch (err: any) {
       console.error("Error deleting video:", err);
@@ -237,74 +245,77 @@ export function VideoUploader({
       ? state.videoId || existingVideoId
       : existingVideoId;
 
-  // ── Render ────────────────────────────────────────────────────────────────
   const s = state;
 
   return (
-    <div className="space-y-2">
-      {/* Confirmation Dialog Modal */}
+    <div className="space-y-3">
+      {/* Delete Confirmation Modal */}
       {showDeleteModal && targetVideoId && (
-        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-card text-card-foreground w-full max-w-md border rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-card text-card-foreground w-full max-w-md border border-border/80 rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 rounded-full shrink-0">
+              <div className="p-3 bg-destructive/10 text-destructive rounded-xl shrink-0">
                 <Trash2 className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-bold text-base text-foreground">Delete this video?</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">This action cannot be undone.</p>
+                <h3 className="font-bold text-base text-foreground font-outfit">Delete Lesson Video?</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">This action is irreversible.</p>
               </div>
             </div>
 
             <p className="text-xs text-muted-foreground leading-relaxed">
-              This will permanently delete the video, its processed HLS files, and the database record. This action cannot be undone.
+              This will permanently delete the private source video, all generated HLS adaptive streams, and the database video record.
             </p>
 
             {deleteError && (
-              <div className="flex items-start gap-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl p-3 text-xs text-red-700 dark:text-red-300">
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-red-600" />
+              <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 rounded-xl p-3 text-xs text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span className="flex-1 break-words">{deleteError}</span>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-2">
-              <button
+            <div className="flex justify-end gap-2.5 pt-2">
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 disabled={isDeleting}
                 onClick={() => {
                   setShowDeleteModal(false);
                   setDeleteError(null);
                 }}
-                className="px-4 py-2 border rounded-xl text-xs font-bold hover:bg-muted/40 transition-colors disabled:opacity-50"
+                className="rounded-xl text-xs font-semibold"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="destructive"
+                size="sm"
                 disabled={isDeleting}
                 onClick={() => handleDelete(targetVideoId)}
-                className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white font-bold rounded-xl text-xs hover:bg-red-700 transition-colors disabled:opacity-50 shadow-sm"
+                className="rounded-xl text-xs font-bold gap-1.5 shadow-sm"
               >
                 {isDeleting ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Deleting...
+                    <span>Deleting...</span>
                   </>
                 ) : (
                   <>
                     <Trash2 className="h-3.5 w-3.5" />
-                    Delete Video
+                    <span>Delete Video</span>
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Delete Success Alert (Dismissible) */}
+      {/* Delete Success Alert */}
       {deleteSuccessMsg && (
-        <div className="flex items-center justify-between gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 text-xs text-emerald-700">
+        <div className="flex items-center justify-between gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2 text-xs text-emerald-700 dark:text-emerald-400">
           <div className="flex items-center gap-1.5 font-medium truncate">
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
             <span className="truncate">{deleteSuccessMsg}</span>
@@ -312,23 +323,29 @@ export function VideoUploader({
           <button
             type="button"
             onClick={() => setDeleteSuccessMsg(null)}
-            className="text-emerald-700 hover:text-emerald-900 text-xs font-bold px-1 shrink-0"
+            className="hover:opacity-80 p-0.5 text-muted-foreground"
+            aria-label="Dismiss"
           >
-            ×
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
 
-      {/* State-specific UI */}
+      {/* State: Idle */}
       {s.tag === "idle" && (
-        <>
+        <div>
           <button
             type="button"
             onClick={pickFile}
-            className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#014a62]/30 rounded-xl py-4 text-xs font-bold text-[#014a62] hover:bg-[#014a62]/5 transition-colors"
+            className="w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed border-primary/30 hover:border-primary/60 bg-muted/20 hover:bg-primary/5 rounded-2xl py-6 px-4 text-xs font-semibold text-primary transition-all group cursor-pointer"
           >
-            <Upload className="h-4 w-4" />
-            Upload Video
+            <div className="h-10 w-10 rounded-xl bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
+              <Upload className="h-5 w-5 text-primary" />
+            </div>
+            <span className="font-bold text-foreground">Click to Upload Video Lesson</span>
+            <span className="text-[10px] text-muted-foreground">
+              MP4 or MOV up to 4 GB • AWS S3 & HLS Transcoding Pipeline
+            </span>
           </button>
           <input
             ref={fileRef}
@@ -337,33 +354,42 @@ export function VideoUploader({
             className="hidden"
             onChange={onFileChange}
           />
-        </>
+        </div>
       )}
 
+      {/* State: Selected */}
       {s.tag === "selected" && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-xs text-foreground bg-muted/40 border rounded-xl px-3 py-2">
-            <Film className="h-4 w-4 text-[#014a62] shrink-0" />
-            <span className="truncate flex-1 font-semibold">{s.file.name}</span>
-            <span className="text-muted-foreground shrink-0 tabular-nums">
-              {(s.file.size / 1024 / 1024).toFixed(1)} MB
-            </span>
+        <div className="space-y-3 bg-muted/20 border border-border/80 rounded-2xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <Film className="h-4 w-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-foreground truncate">{s.file.name}</p>
+              <p className="text-[10px] text-muted-foreground tabular-nums mt-0.5">
+                {(s.file.size / 1024 / 1024).toFixed(1)} MB
+              </p>
+            </div>
           </div>
           <div className="flex gap-2">
-            <button
+            <Button
               type="button"
+              size="sm"
               onClick={() => startUpload(s.file)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#014a62] text-white font-bold rounded-xl text-xs hover:bg-[#01374a] transition-colors"
+              className="flex-1 rounded-xl text-xs font-bold gap-1.5"
             >
-              <Upload className="h-3.5 w-3.5" /> Start Upload
-            </button>
-            <button
+              <Upload className="h-3.5 w-3.5" />
+              Start Direct S3 Upload
+            </Button>
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={reset}
-              className="px-3 py-2 border rounded-xl text-xs font-bold hover:bg-background"
+              className="rounded-xl text-xs font-semibold"
             >
               Cancel
-            </button>
+            </Button>
           </div>
           <input
             ref={fileRef}
@@ -375,60 +401,86 @@ export function VideoUploader({
         </div>
       )}
 
+      {/* State: Uploading */}
       {s.tag === "uploading" && (
-        <div className="space-y-2">
+        <div className="space-y-3 bg-muted/20 border border-border/80 rounded-2xl p-4">
           <div className="flex justify-between text-xs font-semibold text-foreground">
-            <span className="flex items-center gap-1.5 truncate">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-[#014a62] shrink-0" />
+            <span className="flex items-center gap-2 truncate">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />
               <span className="truncate">Uploading {s.file.name}</span>
             </span>
-            <span className="text-[#014a62] tabular-nums shrink-0 ml-2">{s.progress}%</span>
+            <span className="text-primary font-bold tabular-nums shrink-0 ml-2">{s.progress}%</span>
           </div>
-          <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+          <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
             <div
-              className="bg-[#014a62] h-1.5 rounded-full transition-all duration-300"
+              className="bg-primary h-2 rounded-full transition-all duration-300"
               style={{ width: `${s.progress}%` }}
             />
           </div>
-          <button
-            type="button"
-            onClick={reset}
-            className="text-[10px] text-muted-foreground hover:text-foreground underline"
-          >
-            Cancel upload
-          </button>
+          <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+            <span>Direct multipart to AWS S3</span>
+            <button
+              type="button"
+              onClick={reset}
+              className="hover:text-destructive underline"
+            >
+              Cancel upload
+            </button>
+          </div>
         </div>
       )}
 
+      {/* State: Processing */}
       {s.tag === "processing" && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 text-xs">
-            <Loader2 className="h-4 w-4 animate-spin text-blue-600 shrink-0" />
+        <div className="space-y-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="h-9 w-9 rounded-xl bg-blue-500/20 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+              <Loader2 className="h-4 w-4 animate-spin" />
+            </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-blue-700">Processing video…</p>
-              <p className="text-blue-500 text-[10px] mt-0.5 font-mono truncate">{s.videoId}</p>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-blue-700 dark:text-blue-400 font-outfit">
+                  Transcoding HLS Video…
+                </span>
+                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-blue-500/20 text-blue-700 dark:text-blue-300">
+                  MediaConvert
+                </span>
+              </div>
+              <p className="text-[10px] text-muted-foreground font-mono truncate mt-1">
+                Asset ID: {s.videoId}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Generating 1080p, 720p, 480p adaptive bitrate streams. Auto-refreshing status.
+              </p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <button
+
+          <div className="flex gap-2 pt-1">
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               disabled={isDeleting}
               onClick={pickFile}
-              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 border rounded-xl text-[10px] font-bold text-muted-foreground hover:bg-muted/30 transition-colors disabled:opacity-50"
+              className="flex-1 rounded-xl text-xs font-semibold gap-1.5 text-muted-foreground hover:text-foreground"
             >
-              <RefreshCw className="h-3 w-3" /> Replace Video
-            </button>
-            <button
+              <RefreshCw className="h-3 w-3" />
+              Replace Video
+            </Button>
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               disabled={isDeleting}
               onClick={() => {
                 setDeleteError(null);
                 setShowDeleteModal(true);
               }}
-              className="flex items-center justify-center gap-1 px-3 py-1.5 border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl text-[10px] font-bold transition-colors disabled:opacity-50"
+              className="rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10 border-destructive/20 gap-1.5"
             >
-              <Trash2 className="h-3 w-3" /> Delete Video
-            </button>
+              <Trash2 className="h-3 w-3" />
+              Delete
+            </Button>
           </div>
           <input
             ref={fileRef}
@@ -440,35 +492,57 @@ export function VideoUploader({
         </div>
       )}
 
+      {/* State: Ready */}
       {s.tag === "ready" && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 text-xs">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+        <div className="space-y-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="h-9 w-9 rounded-xl bg-emerald-500/20 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-emerald-700">Video ready</p>
-              <p className="text-emerald-500 text-[10px] mt-0.5 font-mono truncate">{s.videoId}</p>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 font-outfit">
+                  Video Transcoded & Ready
+                </span>
+                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                  HLS Secure
+                </span>
+              </div>
+              <p className="text-[10px] text-muted-foreground font-mono truncate mt-1">
+                Asset ID: {s.videoId}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Ready for encrypted multi-bitrate classroom playback.
+              </p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <button
+
+          <div className="flex gap-2 pt-1">
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               disabled={isDeleting}
               onClick={pickFile}
-              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 border rounded-xl text-[10px] font-bold text-muted-foreground hover:bg-muted/30 transition-colors disabled:opacity-50"
+              className="flex-1 rounded-xl text-xs font-semibold gap-1.5 text-muted-foreground hover:text-foreground"
             >
-              <RefreshCw className="h-3 w-3" /> Replace Video
-            </button>
-            <button
+              <RefreshCw className="h-3 w-3" />
+              Replace Video
+            </Button>
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               disabled={isDeleting}
               onClick={() => {
                 setDeleteError(null);
                 setShowDeleteModal(true);
               }}
-              className="flex items-center justify-center gap-1 px-3 py-1.5 border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl text-[10px] font-bold transition-colors disabled:opacity-50"
+              className="rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10 border-destructive/20 gap-1.5"
             >
-              <Trash2 className="h-3 w-3" /> Delete Video
-            </button>
+              <Trash2 className="h-3 w-3" />
+              Delete
+            </Button>
           </div>
           <input
             ref={fileRef}
@@ -480,54 +554,70 @@ export function VideoUploader({
         </div>
       )}
 
+      {/* State: Failed */}
       {s.tag === "failed" && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 text-xs">
-            <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
+        <div className="space-y-3 bg-destructive/10 border border-destructive/20 rounded-2xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="h-9 w-9 rounded-xl bg-destructive/20 text-destructive flex items-center justify-center shrink-0 mt-0.5">
+              <AlertCircle className="h-4 w-4" />
+            </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-red-700">Processing Failed</p>
-              <p className="text-red-500 text-[10px] mt-0.5 break-words">{s.message}</p>
+              <span className="text-xs font-bold text-destructive font-outfit">
+                Processing or Upload Failed
+              </span>
+              <p className="text-[10px] text-destructive/80 break-words mt-1">
+                {s.message}
+              </p>
             </div>
           </div>
-          <div className="flex gap-2">
+
+          <div className="flex gap-2 pt-1">
             {targetVideoId && (
-              <button
+              <Button
                 type="button"
+                size="sm"
                 disabled={isRetrying || isDeleting}
                 onClick={() => retryTranscode(targetVideoId)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#014a62] text-white font-bold rounded-xl text-xs hover:bg-[#01374a] transition-colors disabled:opacity-50"
+                className="flex-1 rounded-xl text-xs font-bold gap-1.5"
               >
                 {isRetrying ? (
                   <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Retrying…
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Retrying…</span>
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="h-3.5 w-3.5" /> Retry Transcode
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    <span>Retry Transcode</span>
                   </>
                 )}
-              </button>
+              </Button>
             )}
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               disabled={isDeleting}
               onClick={pickFile}
-              className={`${targetVideoId ? "flex-1" : "w-full"} flex items-center justify-center gap-1.5 py-2 border rounded-xl text-xs font-bold hover:bg-background text-foreground transition-colors disabled:opacity-50`}
+              className={`${targetVideoId ? "flex-1" : "w-full"} rounded-xl text-xs font-semibold gap-1.5`}
             >
-              <Upload className="h-3.5 w-3.5" /> Replace Video
-            </button>
+              <Upload className="h-3.5 w-3.5" />
+              <span>Replace File</span>
+            </Button>
             {targetVideoId && (
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 disabled={isDeleting}
                 onClick={() => {
                   setDeleteError(null);
                   setShowDeleteModal(true);
                 }}
-                className="flex items-center justify-center gap-1 px-3 py-2 border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl text-xs font-bold transition-colors disabled:opacity-50"
+                className="rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10 border-destructive/20"
               >
-                <Trash2 className="h-3.5 w-3.5" /> Delete Video
-              </button>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
             )}
           </div>
           <input
@@ -542,4 +632,3 @@ export function VideoUploader({
     </div>
   );
 }
-

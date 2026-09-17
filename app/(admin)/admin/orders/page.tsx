@@ -33,8 +33,12 @@ export default async function AdminOrders() {
   return (
     <div className="space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold font-instrument-serif text-[#014a62]">Transaction & Order History</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Monitor all Razorpay payments, purchases, and tax invoices.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-outfit">
+          Orders & Payment Transactions
+        </h1>
+        <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
+          Monitor Razorpay transaction logs, payment verifications, and student purchase history.
+        </p>
       </div>
 
       <OrdersTable initialOrders={formattedOrders} />

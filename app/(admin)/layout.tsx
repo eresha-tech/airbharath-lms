@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { AdminSidebar } from "@/components/admin/Sidebar";
+import { SidebarProvider } from "@/components/providers/sidebar-provider";
+import { AdminLayoutWrapper } from "@/components/admin/AdminLayoutWrapper";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Airbharath Admin Portal",
-  description: "Airbharath LMS management and metrics dashboard.",
+  description: "Airbharath LMS management, curriculum, and metrics dashboard.",
 };
 
 export default async function AdminLayout({
@@ -26,11 +27,9 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-muted/20">
-      <AdminSidebar />
-      <div className="pl-0 md:pl-64 min-h-screen flex flex-col">
-        <main className="flex-1 p-4 md:p-8">{children}</main>
-      </div>
-    </div>
+    <SidebarProvider>
+      <AdminLayoutWrapper>{children}</AdminLayoutWrapper>
+    </SidebarProvider>
   );
 }
+

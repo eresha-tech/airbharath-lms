@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Megaphone, Trash2, Image as ImageIcon, Send } from "lucide-react";
+import { Megaphone, Trash2, Image as ImageIcon, Send, Sparkles, Rss } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function AdminFeed() {
   const [posts, setPosts] = useState<any[]>([]);
@@ -43,9 +46,12 @@ export default function AdminFeed() {
         setContent("");
         setImageUrl("");
         fetchPosts();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Failed to post announcement");
       }
     } catch (err: any) {
-      alert(err.message);
+      alert(err.message || "Failed to post announcement");
     } finally {
       setIsSubmitting(false);
     }
@@ -59,115 +65,150 @@ export default function AdminFeed() {
         fetchPosts();
       }
     } catch (err: any) {
-      alert(err.message);
+      alert(err.message || "Failed to delete post");
     }
   };
 
   return (
     <div className="space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold font-instrument-serif text-[#014a62]">Activity Feed Broadcast</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Post announcements and bulletins to student notice boards.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-outfit">
+          Broadcast & Notice Feed
+        </h1>
+        <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
+          Post general bulletins, syllabus release notes, and seminar alerts to the student community.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Create Broadcast Form */}
-        <div className="bg-card p-6 border rounded-2xl shadow-sm h-fit">
-          <h3 className="font-bold text-lg mb-6 flex items-center gap-2 font-instrument-serif text-[#014a62]">
-            <Megaphone className="h-5 w-5 text-[#014a62]" /> Create Announcement
-          </h3>
-          <form onSubmit={handleCreatePost} className="space-y-4">
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">ANNOUNCEMENT TEXT</label>
-              <textarea
-                placeholder="Share updates, links, or notice details here..."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={5}
-                className="w-full border rounded-xl px-3 py-2 text-xs font-semibold bg-background focus:ring-1 focus:ring-[#014a62] focus:outline-none"
-                required
-              />
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-start">
+        {/* Create Broadcast Card */}
+        <Card className="rounded-2xl border-border/80 shadow-2xs">
+          <CardHeader className="pb-4 border-b border-border/60">
+            <CardTitle className="text-sm font-bold font-outfit text-foreground flex items-center gap-2">
+              <Megaphone className="h-4 w-4 text-primary" />
+              <span>Create Announcement</span>
+            </CardTitle>
+          </CardHeader>
 
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">ATTACH IMAGE URL (OPTIONAL)</label>
-              <div className="relative">
-                <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input
-                  type="url"
-                  placeholder="https://images.unsplash.com/photo..."
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  className="w-full border rounded-xl pl-10 pr-3 py-2 text-xs font-semibold bg-background focus:ring-1 focus:ring-[#014a62] focus:outline-none"
+          <CardContent className="pt-5">
+            <form onSubmit={handleCreatePost} className="space-y-4">
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Announcement Text
+                </label>
+                <textarea
+                  placeholder="Share live lecture schedules, aerodynamic design updates, or links..."
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  rows={5}
+                  className="w-full border border-input rounded-xl px-3 py-2 text-xs sm:text-sm font-medium bg-background focus:outline-none focus:ring-2 focus:ring-primary leading-relaxed"
+                  required
                 />
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-2.5 bg-[#014a62] text-white font-bold rounded-xl text-xs hover:bg-[#01374a] transition-colors shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <Send className="h-4 w-4" />
-              {isSubmitting ? "Broadcasting..." : "Post Announcement"}
-            </button>
-          </form>
-        </div>
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Attached Image URL (Optional)
+                </label>
+                <div className="relative">
+                  <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="url"
+                    placeholder="https://images.unsplash.com/..."
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    className="w-full border border-input rounded-xl pl-9 pr-3 py-2 text-xs font-mono bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
 
-        {/* Feed Posts List */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-card p-6 border rounded-2xl shadow-sm">
-            <h3 className="font-bold text-lg font-instrument-serif text-[#014a62]">Broadcast History</h3>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full rounded-xl text-xs font-bold gap-2 shadow-sm"
+              >
+                <Send className="h-3.5 w-3.5" />
+                <span>{isSubmitting ? "Broadcasting..." : "Publish Announcement"}</span>
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Broadcast Feed List */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold font-outfit text-foreground">
+              Broadcast History ({posts.length})
+            </h3>
           </div>
+
           {loading ? (
-            <div className="p-12 text-center text-muted-foreground bg-card border rounded-2xl shadow-sm text-xs font-semibold">
+            <Card className="rounded-2xl border-border/80 p-16 text-center text-xs text-muted-foreground">
               Loading announcement feed...
-            </div>
+            </Card>
           ) : posts.length > 0 ? (
             posts.map((post) => (
-              <div key={post.id} className="bg-card p-6 border rounded-2xl shadow-sm flex flex-col gap-4">
-                <div className="flex justify-between items-start">
+              <Card
+                key={post.id}
+                className="rounded-2xl border-border/80 shadow-2xs p-5 sm:p-6 space-y-4 hover:border-border transition-colors"
+              >
+                <div className="flex justify-between items-start gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 bg-[#014a62]/10 rounded-full flex items-center justify-center font-bold text-[#014a62] uppercase">
-                      {post.author?.full_name?.charAt(0) || "A"}
-                    </div>
+                    <Avatar className="h-9 w-9 border border-border/60">
+                      <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                        {post.author?.full_name?.charAt(0) || "A"}
+                      </AvatarFallback>
+                    </Avatar>
                     <div>
-                      <h4 className="font-bold text-sm text-foreground">
+                      <h4 className="font-bold text-xs sm:text-sm text-foreground font-outfit">
                         {post.author?.full_name || "Airbharath Team"}
                       </h4>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(post.created_at).toLocaleString()}
+                      <p className="text-[11px] text-muted-foreground">
+                        {new Date(post.created_at).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </p>
                     </div>
                   </div>
-                  <button
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => handleDeletePost(post.id)}
-                    className="text-rose-600 hover:bg-rose-50 p-2 rounded-lg transition-colors"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg shrink-0"
+                    title="Delete Announcement"
                   >
                     <Trash2 className="h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
 
-                <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap font-sans">
+                <div className="text-xs sm:text-sm text-foreground leading-relaxed whitespace-pre-wrap font-sans">
                   {post.content}
                 </div>
 
                 {post.image_url && (
-                  <div className="rounded-xl overflow-hidden border max-h-[300px]">
+                  <div className="rounded-xl overflow-hidden border border-border/60 max-h-[320px] bg-muted">
                     <img
                       src={post.image_url}
-                      alt="Announcement Attachment"
+                      alt="Attachment"
                       className="w-full h-full object-cover"
                     />
                   </div>
                 )}
-              </div>
+              </Card>
             ))
           ) : (
-            <div className="p-12 text-center text-muted-foreground bg-gray-50 border border-dashed rounded-3xl">
-              <Megaphone className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
-              <p className="text-xs font-bold">No announcements broadcasted yet.</p>
-            </div>
+            <Card className="rounded-2xl border border-dashed border-border/80 p-16 text-center text-muted-foreground bg-muted/10">
+              <Megaphone className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
+              <p className="text-sm font-semibold text-foreground">No broadcast notices yet</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Post notices to announce live sessions, syllabus updates, or platform news.
+              </p>
+            </Card>
           )}
         </div>
       </div>

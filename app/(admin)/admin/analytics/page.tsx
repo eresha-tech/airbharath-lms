@@ -1,7 +1,9 @@
 import { db } from "@/lib/db";
 import { modules, lessons, enrollments, progress, orders, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { TrendingUp, Users as UsersIcon, LineChart, PieChart, ShoppingBag } from "lucide-react";
+import { TrendingUp, Users as UsersIcon, LineChart, PieChart, ShoppingBag, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +14,7 @@ export default async function AdminAnalytics() {
     enrollmentsList,
     progressList,
     ordersList,
-    studentsList
+    studentsList,
   ] = await Promise.all([
     db.query.modules.findMany(),
     db.query.lessons.findMany(),
@@ -64,9 +66,9 @@ export default async function AdminAnalytics() {
     const d = new Date();
     d.setDate(now.getDate() - i);
     const dayLabel = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    
-    const startOfDay = new Date(d.setHours(0,0,0,0));
-    const endOfDay = new Date(d.setHours(23,59,59,999));
+
+    const startOfDay = new Date(d.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(d.setHours(23, 59, 59, 999));
 
     const uniqueUsersThisDay = new Set(
       progressList
@@ -79,11 +81,11 @@ export default async function AdminAnalytics() {
 
     dalData.push({
       label: dayLabel,
-      count: uniqueUsersThisDay.size
+      count: uniqueUsersThisDay.size,
     });
   }
 
-  const maxDalCount = Math.max(...dalData.map(d => d.count), 1);
+  const maxDalCount = Math.max(...dalData.map((d) => d.count), 1);
 
   const moduleToCourse: { [key: string]: string } = {};
   modulesList.forEach((m: any) => {
@@ -118,7 +120,9 @@ export default async function AdminAnalytics() {
       return;
     }
 
-    const completed = progressList.filter((p: any) => p.userId === e.userId && lessonToCourse[p.lessonId] === e.courseId).length;
+    const completed = progressList.filter(
+      (p: any) => p.userId === e.userId && lessonToCourse[p.lessonId] === e.courseId
+    ).length;
     const percent = Math.round((completed / total) * 100);
 
     if (percent === 100) {
@@ -135,118 +139,172 @@ export default async function AdminAnalytics() {
   const totalEnrollmentsCount = enrollmentsList.length || 1;
   const progressBreakdown = [
     {
-      label: "Completed (100%)",
+      label: "Fully Completed (100%)",
       count: `${completedCount} students`,
       percent: Math.round((completedCount / totalEnrollmentsCount) * 100),
-      color: "bg-[#014a62]"
+      color: "bg-primary",
     },
     {
-      label: "Active (25%-99%)",
+      label: "Active Progression (25% - 99%)",
       count: `${activeCount} students`,
       percent: Math.round((activeCount / totalEnrollmentsCount) * 100),
-      color: "bg-cyan-600"
+      color: "bg-emerald-600",
     },
     {
-      label: "Started (1%-24%)",
+      label: "Early Stage (1% - 24%)",
       count: `${startedCount} students`,
       percent: Math.round((startedCount / totalEnrollmentsCount) * 100),
-      color: "bg-amber-500"
+      color: "bg-amber-500",
     },
     {
-      label: "Not Started (0%)",
+      label: "Not Yet Started (0%)",
       count: `${notStartedCount} students`,
       percent: Math.round((notStartedCount / totalEnrollmentsCount) * 100),
-      color: "bg-muted-foreground"
-    }
+      color: "bg-muted-foreground/40",
+    },
   ];
 
   return (
     <div className="space-y-8 animate-fade-in">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold font-instrument-serif text-[#014a62]">Airbharath LMS Analytics</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Review student cohort progress, active learner trends, and revenue metrics.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-outfit">
+          Deep Cohort Analytics
+        </h1>
+        <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
+          Review student cohort completion rates, daily active learners, and revenue growth.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-card p-6 border rounded-2xl shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-xl bg-[#014a62]/10 text-[#014a62] flex items-center justify-center">
-            <TrendingUp className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase">Monthly Growth</p>
-            <h3 className="text-2xl font-bold text-[#014a62] mt-1 font-instrument-sans">{growthRateText}</h3>
-          </div>
-        </div>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+        <Card className="rounded-2xl border-border/80 shadow-2xs">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+              Monthly Revenue Growth
+            </span>
+            <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+              <TrendingUp className="h-4 w-4" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-outfit">
+              {growthRateText}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">vs preceding 30-day window</p>
+          </CardContent>
+        </Card>
 
-        <div className="bg-card p-6 border rounded-2xl shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-xl bg-[#014a62]/10 text-[#014a62] flex items-center justify-center">
-            <UsersIcon className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase">Retention Rate</p>
-            <h3 className="text-2xl font-bold text-[#014a62] mt-1 font-instrument-sans">{retentionRate.toFixed(1)}%</h3>
-          </div>
-        </div>
+        <Card className="rounded-2xl border-border/80 shadow-2xs">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+              Student Retention Rate
+            </span>
+            <div className="h-8 w-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+              <UsersIcon className="h-4 w-4" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-600 font-outfit">
+              {retentionRate.toFixed(1)}%
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {activeLearnersCount} of {totalStudents} students actively learning
+            </p>
+          </CardContent>
+        </Card>
 
-        <div className="bg-card p-6 border rounded-2xl shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-xl bg-[#014a62]/10 text-[#014a62] flex items-center justify-center">
-            <ShoppingBag className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase">Refund Rate</p>
-            <h3 className="text-2xl font-bold text-[#014a62] mt-1 font-instrument-sans">{refundRate.toFixed(2)}%</h3>
-          </div>
-        </div>
+        <Card className="rounded-2xl border-border/80 shadow-2xs">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+              Refund Request Rate
+            </span>
+            <div className="h-8 w-8 rounded-xl bg-muted text-muted-foreground flex items-center justify-center">
+              <ShoppingBag className="h-4 w-4" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-outfit">
+              {refundRate.toFixed(2)}%
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {refundedOrdersCount} refund claims recorded
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-card p-6 border rounded-2xl shadow-sm space-y-6">
-          <div>
-            <h3 className="font-bold text-lg font-instrument-serif text-[#014a62] flex items-center gap-2">
-              <LineChart className="h-5 w-5 text-[#014a62]" /> Daily Active Learners (DAL)
-            </h3>
-            <p className="text-xs text-muted-foreground">Unique learners completing lessons daily over the last 14 days</p>
-          </div>
-          <div className="h-64 flex items-end justify-between gap-3 border-b border-l border-border pb-2 pl-2">
-            {dalData.map((data, idx) => {
-              const heightPercent = maxDalCount > 0 ? (data.count / maxDalCount) * 80 : 0;
-              return (
-                <div key={idx} className="flex-1 flex flex-col items-center gap-1 group relative cursor-pointer">
-                  <div className="absolute bottom-full mb-2 bg-foreground text-background text-[10px] p-2 rounded shadow opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap font-bold">
-                    {data.count} Active Learners
+      {/* Analytics Visualizations */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+        {/* Daily Active Learners (DAL) */}
+        <Card className="rounded-2xl border-border/80 shadow-2xs">
+          <CardHeader className="pb-3 border-b border-border/60">
+            <CardTitle className="text-base font-bold font-outfit text-foreground flex items-center gap-2">
+              <LineChart className="h-4 w-4 text-primary" />
+              <span>Daily Active Learners (Last 14 Days)</span>
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Unique students completing syllabus lessons daily
+            </p>
+          </CardHeader>
+
+          <CardContent className="pt-6">
+            <div className="h-60 sm:h-64 flex items-end justify-between gap-1.5 sm:gap-2.5 border-b border-l border-border/60 pb-2 pl-2">
+              {dalData.map((data, idx) => {
+                const heightPercent = maxDalCount > 0 ? (data.count / maxDalCount) * 85 : 0;
+                return (
+                  <div
+                    key={idx}
+                    className="flex-1 flex flex-col items-center justify-end h-full gap-1 group relative cursor-pointer"
+                  >
+                    <div className="absolute bottom-full mb-2 bg-foreground text-background text-[10px] p-2 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 whitespace-nowrap font-bold">
+                      {data.count} Active {data.count === 1 ? "Learner" : "Learners"}
+                    </div>
+                    <div
+                      style={{ height: `${Math.max(heightPercent, 4)}%` }}
+                      className="w-full bg-primary/80 group-hover:bg-primary rounded-t-sm transition-all duration-300"
+                    />
+                    <span className="text-[8px] sm:text-[9px] text-muted-foreground font-semibold truncate w-full text-center">
+                      {data.label.split(" ")[1]}
+                    </span>
                   </div>
-                  <div 
-                    style={{ height: `${Math.max(heightPercent, 5)}%` }} 
-                    className="w-full bg-[#014a62]/80 rounded-t group-hover:bg-[#014a62] transition-all duration-300"
-                  />
-                  <span className="text-[8px] text-muted-foreground font-bold">{data.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="bg-card p-6 border rounded-2xl shadow-sm space-y-6">
-          <div>
-            <h3 className="font-bold text-lg font-instrument-serif text-[#014a62] flex items-center gap-2">
-              <PieChart className="h-5 w-5 text-[#014a62]" /> Course Progress Breakdown
-            </h3>
-            <p className="text-xs text-muted-foreground">Status of students within Airbharath LMS courses</p>
-          </div>
-          <div className="space-y-4">
+        {/* Course Progress Breakdown */}
+        <Card className="rounded-2xl border-border/80 shadow-2xs">
+          <CardHeader className="pb-3 border-b border-border/60">
+            <CardTitle className="text-base font-bold font-outfit text-foreground flex items-center gap-2">
+              <PieChart className="h-4 w-4 text-primary" />
+              <span>Cohort Progress Distribution</span>
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Completion distribution across all enrolled students
+            </p>
+          </CardHeader>
+
+          <CardContent className="pt-6 space-y-5">
             {progressBreakdown.map((item, idx) => (
-              <div key={idx} className="space-y-1">
+              <div key={idx} className="space-y-1.5">
                 <div className="flex justify-between text-xs font-semibold text-foreground">
                   <span>{item.label}</span>
-                  <span>{item.percent}% ({item.count})</span>
+                  <span className="tabular-nums">
+                    {item.percent}% <span className="text-muted-foreground">({item.count})</span>
+                  </span>
                 </div>
                 <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                  <div className={`h-full ${item.color} transition-all duration-500`} style={{ width: `${item.percent}%` }} />
+                  <div
+                    className={`h-full ${item.color} rounded-full transition-all duration-500`}
+                    style={{ width: `${item.percent}%` }}
+                  />
                 </div>
               </div>
             ))}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

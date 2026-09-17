@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Tag, Trash2, Percent, IndianRupee } from "lucide-react";
+import { Plus, Tag, Trash2, Percent, IndianRupee, Sparkles, Calendar, Layers } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export default function AdminCoupons() {
   const [coupons, setCoupons] = useState<any[]>([]);
@@ -40,7 +43,7 @@ export default function AdminCoupons() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          code,
+          code: code.trim().toUpperCase(),
           discountType,
           discountValue: parseFloat(discountValue),
           expiryDate,
@@ -54,9 +57,12 @@ export default function AdminCoupons() {
         setExpiryDate("");
         setUsageLimit("");
         fetchCoupons();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Failed to create coupon");
       }
     } catch (err: any) {
-      alert(err.message);
+      alert(err.message || "Failed to create coupon");
     } finally {
       setIsSubmitting(false);
     }
@@ -70,158 +76,201 @@ export default function AdminCoupons() {
         fetchCoupons();
       }
     } catch (err: any) {
-      alert(err.message);
+      alert(err.message || "Failed to delete coupon");
     }
   };
 
   return (
     <div className="space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold font-instrument-serif text-[#014a62]">Coupons & Discounts</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Create and manage promotional discount codes for checkout.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-outfit">
+          Coupons & Discounts
+        </h1>
+        <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
+          Generate promotional discount codes, manage redemption limits, and track usage.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Create Coupon Form */}
-        <div className="bg-card p-6 border rounded-2xl shadow-sm h-fit">
-          <h3 className="font-bold text-lg mb-6 flex items-center gap-2 font-instrument-serif text-[#014a62]">
-            <Plus className="h-5 w-5 text-[#014a62]" /> Create New Coupon
-          </h3>
-          <form onSubmit={handleCreateCoupon} className="space-y-4">
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">COUPON CODE</label>
-              <input
-                type="text"
-                placeholder="e.g. AIRBHARATH20"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="w-full border rounded-xl px-3 py-2 text-xs font-semibold bg-background focus:ring-1 focus:ring-[#014a62] focus:outline-none"
-                required
-              />
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-start">
+        {/* Create Coupon Form Card */}
+        <Card className="rounded-2xl border-border/80 shadow-2xs">
+          <CardHeader className="pb-4 border-b border-border/60">
+            <CardTitle className="text-sm font-bold font-outfit text-foreground flex items-center gap-2">
+              <Plus className="h-4 w-4 text-primary" />
+              <span>Create New Coupon</span>
+            </CardTitle>
+          </CardHeader>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">DISCOUNT TYPE</label>
-                <select
-                  value={discountType}
-                  onChange={(e) => setDiscountType(e.target.value as any)}
-                  className="w-full border rounded-xl px-3 py-2 text-xs font-semibold bg-background focus:outline-none"
-                >
-                  <option value="percentage">Percentage (%)</option>
-                  <option value="flat">Flat (₹)</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">VALUE</label>
+          <CardContent className="pt-5">
+            <form onSubmit={handleCreateCoupon} className="space-y-4">
+              {/* Code */}
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Coupon Code
+                </label>
                 <input
-                  type="number"
-                  placeholder={discountType === "percentage" ? "e.g. 10" : "e.g. 500"}
-                  value={discountValue}
-                  onChange={(e) => setDiscountValue(e.target.value)}
-                  className="w-full border rounded-xl px-3 py-2 text-xs font-semibold bg-background focus:ring-1 focus:ring-[#014a62] focus:outline-none"
+                  type="text"
+                  placeholder="e.g. AIRBHARATH20"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  className="w-full border border-input rounded-xl px-3 py-2 text-xs font-bold font-mono uppercase bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                   required
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">EXPIRY DATE (OPTIONAL)</label>
-              <input
-                type="date"
-                value={expiryDate}
-                onChange={(e) => setExpiryDate(e.target.value)}
-                className="w-full border rounded-xl px-3 py-2 text-xs font-semibold bg-background focus:ring-1 focus:ring-[#014a62] focus:outline-none"
-              />
-            </div>
+              {/* Discount Type and Value */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Type
+                  </label>
+                  <select
+                    value={discountType}
+                    onChange={(e) => setDiscountType(e.target.value as any)}
+                    className="w-full border border-input rounded-xl px-2.5 py-2 text-xs font-semibold bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="percentage">Percentage (%)</option>
+                    <option value="flat">Flat (₹)</option>
+                  </select>
+                </div>
 
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">USAGE LIMIT (OPTIONAL)</label>
-              <input
-                type="number"
-                placeholder="e.g. 100 uses"
-                value={usageLimit}
-                onChange={(e) => setUsageLimit(e.target.value)}
-                className="w-full border rounded-xl px-3 py-2 text-xs font-semibold bg-background focus:ring-1 focus:ring-[#014a62] focus:outline-none"
-              />
-            </div>
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Value
+                  </label>
+                  <input
+                    type="number"
+                    placeholder={discountType === "percentage" ? "15" : "500"}
+                    value={discountValue}
+                    onChange={(e) => setDiscountValue(e.target.value)}
+                    className="w-full border border-input rounded-xl px-3 py-2 text-xs font-semibold bg-background focus:outline-none focus:ring-2 focus:ring-primary tabular-nums"
+                    required
+                  />
+                </div>
+              </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-2.5 bg-[#014a62] text-white font-bold rounded-xl text-xs hover:bg-[#01374a] transition-colors shadow-sm disabled:opacity-50"
-            >
-              {isSubmitting ? "Creating..." : "Generate Coupon"}
-            </button>
-          </form>
-        </div>
+              {/* Expiry Date */}
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Expiry Date (Optional)
+                </label>
+                <input
+                  type="date"
+                  value={expiryDate}
+                  onChange={(e) => setExpiryDate(e.target.value)}
+                  className="w-full border border-input rounded-xl px-3 py-2 text-xs font-medium bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
 
-        {/* Coupon List */}
-        <div className="lg:col-span-2 bg-card border rounded-2xl shadow-sm overflow-hidden flex flex-col">
-          <div className="p-6 border-b border-border">
-            <h3 className="font-bold text-lg font-instrument-serif text-[#014a62]">Active Coupons</h3>
-          </div>
-          {loading ? (
-            <div className="p-12 text-center text-muted-foreground text-xs font-semibold">Loading coupon inventory...</div>
-          ) : coupons.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-muted/50 border-b border-border text-[10px] font-bold text-muted-foreground tracking-wider uppercase">
-                    <th className="px-6 py-4">Code</th>
-                    <th className="px-6 py-4">Discount</th>
-                    <th className="px-6 py-4">Usage</th>
-                    <th className="px-6 py-4">Expires</th>
-                    <th className="px-6 py-4 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {coupons.map((coupon) => (
-                    <tr key={coupon.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-6 py-4 font-mono font-bold text-sm text-[#014a62]">
-                        {coupon.code}
-                      </td>
-                      <td className="px-6 py-4 text-xs font-semibold">
-                        <div className="flex items-center gap-1.5">
-                          {coupon.discount_type === "percentage" ? (
-                            <>
-                              <Percent className="h-3.5 w-3.5 text-[#014a62]" />
-                              <span>{coupon.discount_value}% Off</span>
-                            </>
-                          ) : (
-                            <>
-                              <IndianRupee className="h-3.5 w-3.5 text-[#014a62]" />
-                              <span>₹{coupon.discount_value} Off</span>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-xs text-muted-foreground">
-                        {coupon.used_count} / {coupon.usage_limit || "∞"} used
-                      </td>
-                      <td className="px-6 py-4 text-xs text-muted-foreground">
-                        {coupon.expiry_date ? new Date(coupon.expiry_date).toLocaleDateString() : "Never"}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => handleDeleteCoupon(coupon.id)}
-                          className="text-rose-600 hover:bg-rose-50 p-2 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </td>
+              {/* Usage Limit */}
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Usage Limit (Optional)
+                </label>
+                <input
+                  type="number"
+                  placeholder="e.g. 100 uses"
+                  value={usageLimit}
+                  onChange={(e) => setUsageLimit(e.target.value)}
+                  className="w-full border border-input rounded-xl px-3 py-2 text-xs font-medium bg-background focus:outline-none focus:ring-2 focus:ring-primary tabular-nums"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full rounded-xl text-xs font-bold shadow-sm"
+              >
+                {isSubmitting ? "Creating..." : "Generate Coupon Code"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Coupons List Table Card */}
+        <Card className="lg:col-span-2 rounded-2xl border-border/80 shadow-2xs overflow-hidden">
+          <CardHeader className="pb-4 border-b border-border/60">
+            <CardTitle className="text-sm font-bold font-outfit text-foreground flex items-center justify-between">
+              <span>Active Coupon Inventory</span>
+              <span className="text-xs font-semibold text-muted-foreground">
+                {coupons.length} {coupons.length === 1 ? "coupon" : "coupons"}
+              </span>
+            </CardTitle>
+          </CardHeader>
+
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="p-16 text-center text-xs font-medium text-muted-foreground">
+                Loading coupon inventory...
+              </div>
+            ) : coupons.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-muted/30 border-b border-border/60 text-[11px] font-bold text-muted-foreground tracking-wider uppercase">
+                      <th className="px-6 py-3.5">Code</th>
+                      <th className="px-6 py-3.5">Discount</th>
+                      <th className="px-6 py-3.5">Redemptions</th>
+                      <th className="px-6 py-3.5">Expiration</th>
+                      <th className="px-6 py-3.5 text-right">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="p-12 text-center text-muted-foreground bg-gray-50">
-              <Tag className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
-              <p className="text-xs font-bold">No active coupon codes created yet.</p>
-            </div>
-          )}
-        </div>
+                  </thead>
+                  <tbody className="divide-y divide-border/60">
+                    {coupons.map((coupon) => (
+                      <tr key={coupon.id} className="hover:bg-muted/20 transition-colors">
+                        <td className="px-6 py-4">
+                          <span className="font-mono font-bold text-xs sm:text-sm text-primary bg-primary/10 px-2 py-1 rounded-lg border border-primary/20">
+                            {coupon.code}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-xs font-bold text-foreground">
+                          {coupon.discount_type === "percentage" ? (
+                            <span className="inline-flex items-center gap-1 text-emerald-600 font-bold">
+                              <Percent className="h-3.5 w-3.5" />
+                              {coupon.discount_value}% Off
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-emerald-600 font-bold">
+                              <IndianRupee className="h-3.5 w-3.5" />
+                              {coupon.discount_value} Flat Off
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-xs font-medium text-muted-foreground">
+                          {coupon.used_count || 0} / {coupon.usage_limit || "∞"} redeemed
+                        </td>
+                        <td className="px-6 py-4 text-xs text-muted-foreground font-medium">
+                          {coupon.expiry_date
+                            ? new Date(coupon.expiry_date).toLocaleDateString()
+                            : "No expiry"}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteCoupon(coupon.id)}
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                            title="Delete Coupon"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-16 text-center text-muted-foreground">
+                <Tag className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
+                <p className="text-sm font-semibold text-foreground">No active coupons</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Create a new promotional code using the form on the left.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

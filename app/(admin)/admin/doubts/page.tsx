@@ -1,17 +1,24 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { 
-  MessageSquare, 
-  Search, 
-  Trash2, 
-  CornerDownRight, 
-  CheckCircle2, 
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  MessageSquare,
+  Search,
+  Trash2,
+  CornerDownRight,
+  CheckCircle2,
   HelpCircle,
   ExternalLink,
-  MessageSquareDashed
+  MessageSquareDashed,
+  Send,
+  User,
+  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface Comment {
   id: string;
@@ -37,7 +44,7 @@ export default function AdminDoubtsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [usingFallback, setUsingFallback] = useState(false);
 
-  // Fetch all comments (admin view)
+  // Fetch all comments
   const fetchAllComments = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -54,8 +61,7 @@ export default function AdminDoubtsPage() {
     } catch (err) {
       console.warn("Using localStorage scanner fallback for Admin doubts:", err);
       setUsingFallback(true);
-      
-      // Scan all localStorage keys starting with irii_comments_
+
       const localComments: Comment[] = [];
       if (typeof window !== "undefined") {
         for (let i = 0; i < localStorage.length; i++) {
@@ -68,8 +74,8 @@ export default function AdminDoubtsPage() {
                 localComments.push({
                   ...item,
                   lesson_title: item.lesson_title || `Lesson #${lessonId.slice(0, 6)}`,
-                  course_title: item.course_title || "Demo Course",
-                  course_id: item.course_id || "demo"
+                  course_title: item.course_title || "Technical Course",
+                  course_id: item.course_id || "demo",
                 });
               });
             } catch (e) {
@@ -78,8 +84,9 @@ export default function AdminDoubtsPage() {
           }
         }
       }
-      // Sort all comments descending
-      localComments.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      localComments.sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
       setComments(localComments);
     } finally {
       setIsLoading(false);
@@ -96,7 +103,7 @@ export default function AdminDoubtsPage() {
     if (!replyText.trim()) return;
 
     setIsSubmitting(true);
-    const text = replyText;
+    const text = replyText.trim();
     setReplyText("");
     setReplyToId(null);
 
@@ -104,15 +111,15 @@ export default function AdminDoubtsPage() {
     const newReply: Comment = {
       id: tempId,
       lesson_id: parentComment.lesson_id,
-      user_id: "admin", // Placeholder or dynamic if needed
+      user_id: "admin",
       content: text,
       parent_id: parentComment.id,
       created_at: new Date().toISOString(),
-      user_name: "Instructor (Admin)",
+      user_name: "Lead Instructor (Admin)",
       user_role: "admin",
       lesson_title: parentComment.lesson_title,
       course_title: parentComment.course_title,
-      course_id: parentComment.course_id
+      course_id: parentComment.course_id,
     };
 
     if (usingFallback) {
@@ -132,7 +139,7 @@ export default function AdminDoubtsPage() {
           body: JSON.stringify({
             lessonId: parentComment.lesson_id,
             content: text,
-            parentId: parentComment.id
+            parentId: parentComment.id,
           }),
         });
 
@@ -142,7 +149,6 @@ export default function AdminDoubtsPage() {
         await fetchAllComments();
       } catch (err) {
         console.error("Error saving reply:", err);
-        // Fallback local save
         const storageKey = `irii_comments_${parentComment.lesson_id}`;
         const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
         const updated = [newReply, ...existing];
@@ -159,11 +165,10 @@ export default function AdminDoubtsPage() {
   const handleDeleteComment = async (comment: Comment) => {
     if (!confirm("Are you sure you want to delete this comment?")) return;
 
-    // Helper to delete recursively from local list
     const deleteRecursive = (list: Comment[], targetId: string): Comment[] => {
-      const childrenIds = list.filter(c => c.parent_id === targetId).map(c => c.id);
-      let updated = list.filter(c => c.id !== targetId);
-      childrenIds.forEach(childId => {
+      const childrenIds = list.filter((c) => c.parent_id === targetId).map((c) => c.id);
+      let updated = list.filter((c) => c.id !== targetId);
+      childrenIds.forEach((childId) => {
         updated = deleteRecursive(updated, childId);
       });
       return updated;
@@ -187,7 +192,6 @@ export default function AdminDoubtsPage() {
         await fetchAllComments();
       } catch (err) {
         console.error("Error deleting comment:", err);
-        // Fallback local delete
         const storageKey = `irii_comments_${comment.lesson_id}`;
         const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
         const updated = deleteRecursive(existing, comment.id);
@@ -198,108 +202,133 @@ export default function AdminDoubtsPage() {
     }
   };
 
-  // Filter computations
-  const getCommentReplies = (parentId: string) => {
-    return comments.filter(c => c.parent_id === parentId);
-  };
+  const getCommentReplies = useCallback(
+    (parentId: string) => {
+      return comments.filter((c) => c.parent_id === parentId);
+    },
+    [comments]
+  );
 
-  const topLevelDoubts = comments.filter(c => !c.parent_id);
+  const topLevelDoubts = comments.filter((c) => !c.parent_id);
 
-  const filteredDoubts = topLevelDoubts.filter(doubt => {
-    const matchesSearch = 
-      doubt.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doubt.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (doubt.course_title && doubt.course_title.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (doubt.lesson_title && doubt.lesson_title.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredDoubts = useMemo(() => {
+    return topLevelDoubts.filter((doubt) => {
+      const term = searchTerm.toLowerCase();
+      const matchesSearch =
+        doubt.content.toLowerCase().includes(term) ||
+        doubt.user_name.toLowerCase().includes(term) ||
+        (doubt.course_title && doubt.course_title.toLowerCase().includes(term)) ||
+        (doubt.lesson_title && doubt.lesson_title.toLowerCase().includes(term));
 
-    const replies = getCommentReplies(doubt.id);
-    const matchesUnresolved = !filterUnresolved || replies.length === 0;
+      const replies = getCommentReplies(doubt.id);
+      const matchesUnresolved = !filterUnresolved || replies.length === 0;
 
-    return matchesSearch && matchesUnresolved;
-  });
+      return matchesSearch && matchesUnresolved;
+    });
+  }, [topLevelDoubts, searchTerm, filterUnresolved, getCommentReplies]);
 
   const totalDoubtsCount = topLevelDoubts.length;
-  const unresolvedDoubtsCount = topLevelDoubts.filter(d => getCommentReplies(d.id).length === 0).length;
+  const unresolvedDoubtsCount = topLevelDoubts.filter(
+    (d) => getCommentReplies(d.id).length === 0
+  ).length;
   const resolvedDoubtsCount = totalDoubtsCount - unresolvedDoubtsCount;
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto">
-      {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-foreground">Student Doubts & Questions</h1>
-          <p className="text-muted-foreground text-xs md:text-sm mt-1">
-            Answer questions, resolve conceptual doubts, and moderate discussion boards.
-          </p>
-        </div>
+    <div className="space-y-8 animate-fade-in">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-outfit">
+          Student Doubts & QA Moderation
+        </h1>
+        <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
+          Answer student questions, resolve technical inquiries, and moderate course discussions.
+        </p>
       </div>
 
+      {/* KPI Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+        <Card className="rounded-2xl border-border/80 shadow-2xs">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+              Total Questions
+            </span>
+            <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+              <MessageSquare className="h-4 w-4" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-outfit">
+              {totalDoubtsCount}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">Submitted student inquiries</p>
+          </CardContent>
+        </Card>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-card border border-border/80 p-6 rounded-2xl flex items-center justify-between shadow-sm">
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Questions</p>
-            <h3 className="text-3xl font-black mt-2 text-foreground">{totalDoubtsCount}</h3>
-          </div>
-          <div className="h-12 w-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-            <MessageSquare className="h-6 w-6" />
-          </div>
-        </div>
+        <Card className="rounded-2xl border-border/80 shadow-2xs">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+              Pending Response
+            </span>
+            <div className="h-8 w-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+              <HelpCircle className="h-4 w-4" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-amber-600 font-outfit">
+              {unresolvedDoubtsCount}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">Awaiting instructor reply</p>
+          </CardContent>
+        </Card>
 
-        <div className="bg-card border border-border/80 p-6 rounded-2xl flex items-center justify-between shadow-sm">
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Unresolved Doubts</p>
-            <h3 className="text-3xl font-black mt-2 text-amber-500">{unresolvedDoubtsCount}</h3>
-          </div>
-          <div className="h-12 w-12 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500">
-            <HelpCircle className="h-6 w-6" />
-          </div>
-        </div>
-
-        <div className="bg-card border border-border/80 p-6 rounded-2xl flex items-center justify-between shadow-sm">
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Resolved Questions</p>
-            <h3 className="text-3xl font-black mt-2 text-emerald-500">{resolvedDoubtsCount}</h3>
-          </div>
-          <div className="h-12 w-12 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500">
-            <CheckCircle2 className="h-6 w-6" />
-          </div>
-        </div>
+        <Card className="rounded-2xl border-border/80 shadow-2xs">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+              Resolved Answers
+            </span>
+            <div className="h-8 w-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-600 font-outfit">
+              {resolvedDoubtsCount}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">Answered by instructors</p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Filter and search toolbar */}
-      <div className="bg-card border border-border/80 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
-        <div className="relative w-full md:max-w-md">
+      {/* Filter Toolbar */}
+      <Card className="rounded-2xl border-border/80 shadow-2xs p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search doubts, students, courses, or modules..."
+            placeholder="Search questions by student, course, or lesson content..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-muted/40 border border-border/80 rounded-xl pl-10 pr-4 py-2 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+            className="pl-10 pr-4 py-2 w-full border border-input rounded-xl bg-background text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
-        <div className="flex items-center gap-4 w-full md:w-auto shrink-0 justify-end">
-          <label className="flex items-center gap-2 text-xs font-bold text-foreground cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={filterUnresolved}
-              onChange={(e) => setFilterUnresolved(e.target.checked)}
-              className="rounded border-border text-primary focus:ring-primary h-4 w-4"
-            />
-            <span>Show Unresolved Only</span>
-          </label>
-        </div>
-      </div>
+        <label className="flex items-center gap-2.5 text-xs font-semibold text-foreground cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={filterUnresolved}
+            onChange={(e) => setFilterUnresolved(e.target.checked)}
+            className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+          />
+          <span>Show Unresolved Only</span>
+        </label>
+      </Card>
 
       {/* Doubts Threaded List */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {isLoading ? (
           <div className="space-y-4">
-            <div className="h-28 bg-card border rounded-2xl animate-pulse" />
-            <div className="h-28 bg-card border rounded-2xl animate-pulse" />
+            <div className="h-32 bg-card border border-border/80 rounded-2xl animate-pulse" />
+            <div className="h-32 bg-card border border-border/80 rounded-2xl animate-pulse" />
           </div>
         ) : filteredDoubts.length > 0 ? (
           filteredDoubts.map((doubt) => {
@@ -307,17 +336,24 @@ export default function AdminDoubtsPage() {
             const showReplyInput = replyToId === doubt.id;
 
             return (
-              <div 
+              <Card
                 key={doubt.id}
-                className="bg-card border border-border/80 rounded-2xl p-6 shadow-sm space-y-4 hover:border-border transition-colors"
+                className="rounded-2xl border-border/80 shadow-2xs p-5 sm:p-6 space-y-4 hover:border-border transition-colors"
               >
-                {/* Doubt Meta info header */}
-                <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border/60 pb-3">
+                {/* Doubt Header */}
+                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/60 pb-3.5">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-black text-foreground">{doubt.user_name}</span>
-                      <span className="text-[10px] text-muted-foreground">•</span>
-                      <span className="text-[10px] text-muted-foreground">
+                      <Avatar className="h-6 w-6">
+                        <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold">
+                          {doubt.user_name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs font-bold text-foreground font-outfit">
+                        {doubt.user_name}
+                      </span>
+                      <span className="text-muted-foreground text-xs">•</span>
+                      <span className="text-[11px] text-muted-foreground">
                         {new Date(doubt.created_at).toLocaleDateString(undefined, {
                           month: "short",
                           day: "numeric",
@@ -327,81 +363,94 @@ export default function AdminDoubtsPage() {
                         })}
                       </span>
                     </div>
-                    
-                    <div className="flex items-center gap-2 text-[10px] font-bold text-primary">
-                      <span>{doubt.course_title}</span>
-                      <span>/</span>
-                      <span className="text-muted-foreground">{doubt.lesson_title}</span>
+
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-primary">
+                      <span>{doubt.course_title || "Course"}</span>
+                      <span className="text-muted-foreground">/</span>
+                      <span className="text-muted-foreground font-normal">
+                        {doubt.lesson_title || "Lesson"}
+                      </span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {doubt.course_id && (
-                      <Link 
+                    {doubt.course_id && doubt.lesson_id && (
+                      <Link
                         href={`/dashboard/courses/${doubt.course_id}/lessons/${doubt.lesson_id}`}
                         target="_blank"
-                        className="p-1.5 text-muted-foreground hover:text-primary transition-colors hover:bg-muted rounded-lg border border-border/40 text-[10px] font-bold flex items-center gap-1"
-                        title="View lesson content"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border/80 text-[10px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                       >
-                        <ExternalLink className="h-3 w-3" /> View Lesson
+                        <span>View Lesson</span>
+                        <ExternalLink className="h-3 w-3" />
                       </Link>
                     )}
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => handleDeleteComment(doubt)}
-                      className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent"
-                      title="Delete doubt"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                      title="Delete Question"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
                 {/* Content */}
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-foreground whitespace-pre-wrap leading-relaxed">
-                    {doubt.content}
-                  </p>
-                </div>
+                <p className="text-xs sm:text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                  {doubt.content}
+                </p>
 
-                {/* Action panel & Reply Toggle */}
-                <div className="flex items-center gap-4 pt-1">
+                {/* Reply Action Toggle */}
+                <div className="flex items-center justify-between pt-1">
                   <button
                     onClick={() => {
                       setReplyToId(doubt.id);
                       setReplyText("");
                     }}
-                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1.5"
+                    className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-1.5"
                   >
-                    <CornerDownRight className="h-3.5 w-3.5" /> Reply to student
+                    <CornerDownRight className="h-3.5 w-3.5" />
+                    <span>Reply as Instructor</span>
                   </button>
 
-                  <span className="text-[10px] text-muted-foreground font-semibold">
-                    {replies.length === 0 ? "⚠️ Unresolved" : `✅ ${replies.length} replies`}
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                      replies.length === 0
+                        ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                        : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                    }`}
+                  >
+                    {replies.length === 0 ? "Awaiting Reply" : `${replies.length} Replies`}
                   </span>
                 </div>
 
-                {/* Sub-replies threads */}
+                {/* Nested Thread Replies */}
                 {replies.length > 0 && (
-                  <div className="bg-muted/30 border border-border/40 rounded-xl p-4 mt-2 space-y-4">
+                  <div className="bg-muted/30 border border-border/60 rounded-xl p-4 space-y-3 mt-2">
                     {replies.map((reply) => (
-                      <div key={reply.id} className="flex gap-3 items-start border-b border-border/20 last:border-0 pb-3 last:pb-0">
-                        <div className="h-6 w-6 rounded-md bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-[10px] shrink-0 uppercase">
+                      <div
+                        key={reply.id}
+                        className="flex gap-3 items-start border-b border-border/40 last:border-0 pb-3 last:pb-0"
+                      >
+                        <div className="h-6 w-6 rounded-md bg-primary/20 text-primary flex items-center justify-center font-bold text-[10px] shrink-0 uppercase">
                           {reply.user_name.charAt(0)}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[11px] font-bold text-foreground">
+                              <span className="text-xs font-bold text-foreground">
                                 {reply.user_name}
                               </span>
                               {reply.user_role === "admin" && (
-                                <span className="px-1.5 py-0.5 bg-[#004D61]/10 text-[#004D61] border border-[#004D61]/25 rounded text-[8px] font-black uppercase tracking-wider">
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 bg-primary/10 text-primary rounded text-[9px] font-bold uppercase">
+                                  <ShieldCheck className="h-2.5 w-2.5" />
                                   Instructor
                                 </span>
                               )}
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-[9px] text-muted-foreground">
+                              <span className="text-[10px] text-muted-foreground">
                                 {new Date(reply.created_at).toLocaleDateString(undefined, {
                                   month: "short",
                                   day: "numeric",
@@ -409,15 +458,17 @@ export default function AdminDoubtsPage() {
                                   minute: "2-digit",
                                 })}
                               </span>
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => handleDeleteComment(reply)}
-                                className="text-muted-foreground hover:text-red-500 p-0.5 rounded transition-colors"
+                                className="h-6 w-6 text-muted-foreground hover:text-destructive rounded"
                               >
                                 <Trash2 className="h-3 w-3" />
-                              </button>
+                              </Button>
                             </div>
                           </div>
-                          <p className="text-xs text-muted-foreground leading-relaxed mt-0.5 whitespace-pre-wrap">
+                          <p className="text-xs text-muted-foreground leading-relaxed mt-1 whitespace-pre-wrap">
                             {reply.content}
                           </p>
                         </div>
@@ -428,9 +479,9 @@ export default function AdminDoubtsPage() {
 
                 {/* Reply Input Form */}
                 {showReplyInput && (
-                  <form 
-                    onSubmit={(e) => handlePostReply(e, doubt)} 
-                    className="flex gap-2 items-center bg-muted/40 border border-border/60 rounded-xl p-2 mt-2"
+                  <form
+                    onSubmit={(e) => handlePostReply(e, doubt)}
+                    className="flex gap-2 items-center bg-muted/40 border border-primary/30 rounded-xl p-2 mt-2"
                   >
                     <input
                       type="text"
@@ -438,39 +489,42 @@ export default function AdminDoubtsPage() {
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
                       disabled={isSubmitting}
-                      className="flex-1 bg-transparent border-0 focus:outline-none focus:ring-0 text-xs font-semibold px-2 py-1.5"
+                      className="flex-1 bg-transparent border-0 focus:outline-none text-xs sm:text-sm font-medium px-2 py-1"
                       autoFocus
                     />
-                    <button
+                    <Button
                       type="submit"
+                      size="sm"
                       disabled={!replyText.trim() || isSubmitting}
-                      className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-bold transition-all disabled:opacity-50"
+                      className="rounded-lg text-xs font-bold gap-1.5"
                     >
-                      Post Answer
-                    </button>
-                    <button
+                      <Send className="h-3.5 w-3.5" />
+                      <span>Post Answer</span>
+                    </Button>
+                    <Button
                       type="button"
+                      variant="outline"
+                      size="sm"
                       onClick={() => setReplyToId(null)}
-                      className="px-3 py-1.5 rounded-lg bg-card text-muted-foreground border border-border/80 hover:bg-muted text-xs font-bold transition-all"
+                      className="rounded-lg text-xs font-semibold"
                     >
                       Cancel
-                    </button>
+                    </Button>
                   </form>
                 )}
-              </div>
+              </Card>
             );
           })
         ) : (
-          <div className="bg-card border border-border/80 rounded-2xl p-12 text-center text-muted-foreground shadow-sm">
-            <MessageSquareDashed className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-            <h3 className="text-base font-bold text-foreground">No Doubts Found</h3>
-            <p className="text-xs max-w-sm mx-auto mt-1">
-              {searchTerm 
-                ? "No questions match your current search query or active filters." 
-                : "Great job! All student questions have been answered or no questions have been asked yet."
-              }
+          <Card className="rounded-2xl border-border/80 shadow-2xs p-16 text-center text-muted-foreground">
+            <MessageSquareDashed className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+            <h3 className="text-sm font-bold text-foreground">No questions found</h3>
+            <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+              {searchTerm
+                ? "No questions match your current search query or active filter."
+                : "All student questions have been answered or no doubts have been submitted yet."}
             </p>
-          </div>
+          </Card>
         )}
       </div>
     </div>

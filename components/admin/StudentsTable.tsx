@@ -1,8 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { Search, User, PlusCircle, Calendar, Clock, CheckCircle2 } from "lucide-react";
+import { useState, useMemo } from "react";
+import {
+  Search,
+  User,
+  PlusCircle,
+  Calendar,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  GraduationCap,
+  Users,
+  ShieldAlert,
+  Sparkles,
+  Phone,
+  Mail,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface Student {
   id: string;
@@ -52,13 +69,25 @@ export default function StudentsTable({
   const [targetEnrollment, setTargetEnrollment] = useState<Enrollment | null>(null);
   const [additionalDays, setAdditionalDays] = useState("30");
 
-  const filteredStudents = initialStudents.filter((student) => {
+  const filteredStudents = useMemo(() => {
     const term = searchTerm.toLowerCase();
-    const name = (student.full_name || "").toLowerCase();
-    const email = (student.email || "").toLowerCase();
-    const phone = (student.phone || "").toLowerCase();
-    return name.includes(term) || email.includes(term) || phone.includes(term);
-  });
+    return initialStudents.filter((student) => {
+      const name = (student.full_name || "").toLowerCase();
+      const email = (student.email || "").toLowerCase();
+      const phone = (student.phone || "").toLowerCase();
+      return name.includes(term) || email.includes(term) || phone.includes(term);
+    });
+  }, [initialStudents, searchTerm]);
+
+  const activeEnrollmentsCount = useMemo(() => {
+    const now = new Date();
+    return enrollmentsList.filter((e) => !e.expiresAt || new Date(e.expiresAt) >= now).length;
+  }, [enrollmentsList]);
+
+  const expiredEnrollmentsCount = useMemo(() => {
+    const now = new Date();
+    return enrollmentsList.filter((e) => e.expiresAt && new Date(e.expiresAt) < now).length;
+  }, [enrollmentsList]);
 
   const handleEnrollStudent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,17 +105,21 @@ export default function StudentsTable({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.error || "Failed to enroll student");
 
       if (data.enrollment) {
         setEnrollmentsList((prev) => [
-          ...prev.filter((e) => !(e.userId === data.enrollment.userId && e.courseId === data.enrollment.courseId)),
+          ...prev.filter(
+            (e) => !(e.userId === data.enrollment.userId && e.courseId === data.enrollment.courseId)
+          ),
           {
             id: data.enrollment.id,
             userId: data.enrollment.userId,
             courseId: data.enrollment.courseId,
             enrolledAt: new Date(data.enrollment.enrolledAt).toISOString(),
-            expiresAt: data.enrollment.expiresAt ? new Date(data.enrollment.expiresAt).toISOString() : null,
+            expiresAt: data.enrollment.expiresAt
+              ? new Date(data.enrollment.expiresAt).toISOString()
+              : null,
             status: data.enrollment.status,
           },
         ]);
@@ -117,7 +150,7 @@ export default function StudentsTable({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.error || "Failed to extend duration");
 
       if (data.enrollment) {
         setEnrollmentsList((prev) =>
@@ -125,7 +158,9 @@ export default function StudentsTable({
             item.id === data.enrollment.id
               ? {
                   ...item,
-                  expiresAt: data.enrollment.expiresAt ? new Date(data.enrollment.expiresAt).toISOString() : null,
+                  expiresAt: data.enrollment.expiresAt
+                    ? new Date(data.enrollment.expiresAt).toISOString()
+                    : null,
                   status: data.enrollment.status,
                 }
               : item
@@ -142,83 +177,185 @@ export default function StudentsTable({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Action Header */}
-      <div className="bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-6">
+      {/* KPI Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        <Card className="rounded-2xl border-border/80 shadow-2xs">
+          <CardHeader className="pb-2">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+              Total Students
+            </span>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-outfit">
+              {initialStudents.length}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">Registered learner accounts</p>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-border/80 shadow-2xs">
+          <CardHeader className="pb-2">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+              Total Enrollments
+            </span>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-primary font-outfit">
+              {enrollmentsList.length}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">Course seat assignments</p>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-border/80 shadow-2xs">
+          <CardHeader className="pb-2">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+              Active Access
+            </span>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-600 font-outfit">
+              {activeEnrollmentsCount}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">Valid classroom access</p>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-border/80 shadow-2xs">
+          <CardHeader className="pb-2">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+              Expired Seats
+            </span>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-rose-600 font-outfit">
+              {expiredEnrollmentsCount}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">Access expired</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Action Toolbar */}
+      <Card className="rounded-2xl border-border/80 shadow-2xs p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search by name, email, or mobile..."
+            placeholder="Search by student name, email, or mobile..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2.5 w-full border rounded-xl bg-background text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#014a62]"
+            className="pl-10 pr-4 py-2 w-full border border-input rounded-xl bg-background text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
         <Button
           type="button"
-          onClick={() => setIsEnrollModalOpen(true)}
-          className="bg-[#014a62] hover:bg-[#01374a] text-white font-bold text-xs gap-2 rounded-xl"
+          onClick={() => {
+            setSelectedStudentId("");
+            setSelectedCourseId("");
+            setCustomDays("");
+            setIsEnrollModalOpen(true);
+          }}
+          className="rounded-xl text-xs font-bold gap-2 shadow-sm shrink-0"
         >
-          <PlusCircle className="w-4 h-4" />
-          Add Student to Course
+          <PlusCircle className="h-4 w-4" />
+          <span>Manual Course Enrollment</span>
         </Button>
-      </div>
+      </Card>
 
-      {/* Table */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+      {/* Students Data Table */}
+      <Card className="rounded-2xl border-border/80 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50 border-b border-border text-[10px] font-bold text-muted-foreground tracking-wider uppercase">
-                <th className="px-6 py-4">Student</th>
-                <th className="px-6 py-4">Mobile / Email</th>
-                <th className="px-6 py-4">Enrolled Courses</th>
+              <tr className="bg-muted/30 border-b border-border/60 text-[11px] font-bold text-muted-foreground tracking-wider uppercase">
+                <th className="px-6 py-4">Student Profile</th>
+                <th className="px-6 py-4">Contact Info</th>
+                <th className="px-6 py-4">Enrolled Courses & Status</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-border/60">
               {filteredStudents.length > 0 ? (
                 filteredStudents.map((student) => {
                   const studentEnrollments = enrollmentsList.filter((e) => e.userId === student.id);
+                  const initials = student.full_name
+                    ? student.full_name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .substring(0, 2)
+                        .toUpperCase()
+                    : "ST";
+
                   return (
                     <tr key={student.id} className="hover:bg-muted/20 transition-colors">
+                      {/* Profile */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-full bg-[#014a62]/10 flex items-center justify-center shrink-0 text-[#014a62]">
-                            <User className="h-4 w-4" />
-                          </div>
-                          <div>
-                            <span className="font-bold text-sm text-foreground block">
+                          <Avatar className="h-9 w-9 border border-border/60">
+                            <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                              {initials}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <span className="font-bold text-xs sm:text-sm text-foreground block font-outfit truncate">
                               {student.full_name || "Student"}
                             </span>
-                            <span className="text-[10px] text-muted-foreground">Joined {new Date(student.created_at).toLocaleDateString()}</span>
+                            <span className="text-[10px] text-muted-foreground">
+                              Joined {new Date(student.created_at).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
                       </td>
 
-                      <td className="px-6 py-4 text-xs font-semibold text-muted-foreground">
-                        <div>{student.phone ? `+91 ${student.phone}` : "No phone"}</div>
-                        <div className="text-[11px] text-muted-foreground/80">{student.email || ""}</div>
+                      {/* Contact Info */}
+                      <td className="px-6 py-4 text-xs font-medium text-muted-foreground">
+                        <div className="flex items-center gap-1.5 text-foreground font-semibold">
+                          <Phone className="h-3 w-3 text-muted-foreground" />
+                          <span>{student.phone ? `+91 ${student.phone}` : "No mobile"}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-0.5 truncate">
+                          <Mail className="h-3 w-3 text-muted-foreground" />
+                          <span>{student.email || "No email"}</span>
+                        </div>
                       </td>
 
+                      {/* Enrolled Courses */}
                       <td className="px-6 py-4">
                         {studentEnrollments.length > 0 ? (
-                          <div className="space-y-2">
+                          <div className="space-y-1.5 max-w-sm">
                             {studentEnrollments.map((enr) => {
                               const course = courses.find((c) => c.id === enr.courseId);
-                              const isExpired = enr.expiresAt && new Date(enr.expiresAt) < new Date();
+                              const isExpired =
+                                enr.expiresAt && new Date(enr.expiresAt) < new Date();
+
                               return (
-                                <div key={enr.id} className="flex items-center justify-between gap-2 bg-gray-50 p-2 rounded-lg border text-xs">
-                                  <div>
-                                    <span className="font-bold text-[#014a62] block line-clamp-1">{course?.title || "Course"}</span>
-                                    <span className="text-[10px] text-muted-foreground">
-                                      Expires: {enr.expiresAt ? new Date(enr.expiresAt).toLocaleDateString() : "Lifetime"}
+                                <div
+                                  key={enr.id}
+                                  className="flex items-center justify-between gap-2 bg-muted/40 p-2 rounded-xl border border-border/60 text-xs"
+                                >
+                                  <div className="min-w-0">
+                                    <span className="font-semibold text-foreground block truncate text-[11px]">
+                                      {course?.title || "Course"}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground block">
+                                      Expires:{" "}
+                                      {enr.expiresAt
+                                        ? new Date(enr.expiresAt).toLocaleDateString()
+                                        : "Lifetime"}
                                     </span>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isExpired ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <span
+                                      className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full uppercase ${
+                                        isExpired
+                                          ? "bg-rose-500/10 text-rose-700 dark:text-rose-400"
+                                          : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                                      }`}
+                                    >
                                       {isExpired ? "Expired" : "Active"}
                                     </span>
                                     <button
@@ -227,7 +364,7 @@ export default function StudentsTable({
                                         setTargetEnrollment(enr);
                                         setIsExtendModalOpen(true);
                                       }}
-                                      className="text-[10px] font-bold text-[#014a62] hover:underline bg-[#014a62]/10 px-2 py-1 rounded-md"
+                                      className="text-[10px] font-bold text-primary hover:underline bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded-md transition-colors"
                                     >
                                       Extend
                                     </button>
@@ -237,10 +374,13 @@ export default function StudentsTable({
                             })}
                           </div>
                         ) : (
-                          <span className="text-xs text-muted-foreground italic">No active enrollments</span>
+                          <span className="text-xs text-muted-foreground italic">
+                            No enrolled courses
+                          </span>
                         )}
                       </td>
 
+                      {/* Actions */}
                       <td className="px-6 py-4 text-right">
                         <Button
                           type="button"
@@ -248,11 +388,14 @@ export default function StudentsTable({
                           size="sm"
                           onClick={() => {
                             setSelectedStudentId(student.id);
+                            setSelectedCourseId("");
+                            setCustomDays("");
                             setIsEnrollModalOpen(true);
                           }}
-                          className="text-xs font-bold text-[#014a62] border-[#014a62]"
+                          className="rounded-xl text-xs font-semibold gap-1.5 hover:bg-primary hover:text-primary-foreground transition-colors"
                         >
-                          + Enroll Course
+                          <PlusCircle className="h-3.5 w-3.5" />
+                          <span>Enroll Course</span>
                         </Button>
                       </td>
                     </tr>
@@ -260,29 +403,47 @@ export default function StudentsTable({
                 })
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-sm text-muted-foreground">
-                    No students found matching your search.
+                  <td colSpan={4} className="text-center py-16 text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
+                    <p className="text-sm font-semibold text-foreground">No students match search query</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Try searching with a different name, email, or mobile number.
+                    </p>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       {/* Direct Enrollment Modal */}
       {isEnrollModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <h3 className="text-xl font-bold font-instrument-serif text-[#014a62]">Add Student directly to Course</h3>
-            
-            <form onSubmit={handleEnrollStudent} className="space-y-4">
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-card text-card-foreground rounded-2xl p-6 max-w-md w-full border border-border/80 shadow-2xl space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <GraduationCap className="h-4 w-4" />
+              </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase text-muted-foreground mb-1">Select Student</label>
+                <h3 className="text-base font-bold font-outfit text-foreground">
+                  Manual Course Enrollment
+                </h3>
+                <p className="text-[11px] text-muted-foreground">
+                  Assign a course directly to any registered student.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleEnrollStudent} className="space-y-4 pt-1">
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Select Student
+                </label>
                 <select
                   value={selectedStudentId}
                   onChange={(e) => setSelectedStudentId(e.target.value)}
-                  className="w-full border rounded-xl p-3 text-xs font-semibold"
+                  className="w-full border border-input rounded-xl p-2.5 text-xs font-semibold bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                   required
                 >
                   <option value="">-- Choose Student --</option>
@@ -294,12 +455,14 @@ export default function StudentsTable({
                 </select>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold uppercase text-muted-foreground mb-1">Select Course</label>
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Select Course
+                </label>
                 <select
                   value={selectedCourseId}
                   onChange={(e) => setSelectedCourseId(e.target.value)}
-                  className="w-full border rounded-xl p-3 text-xs font-semibold"
+                  className="w-full border border-input rounded-xl p-2.5 text-xs font-semibold bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                   required
                 >
                   <option value="">-- Choose Course --</option>
@@ -311,22 +474,35 @@ export default function StudentsTable({
                 </select>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold uppercase text-muted-foreground mb-1">Custom Access Duration (Days)</label>
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Custom Access Duration (Days)
+                </label>
                 <input
                   type="number"
-                  placeholder="Leave empty for course default"
+                  placeholder="Leave blank for course default"
                   value={customDays}
                   onChange={(e) => setCustomDays(e.target.value)}
-                  className="w-full border rounded-xl p-3 text-xs font-semibold"
+                  className="w-full border border-input rounded-xl px-3 py-2 text-xs font-medium bg-background focus:outline-none focus:ring-2 focus:ring-primary tabular-nums"
                 />
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={() => setIsEnrollModalOpen(false)} className="flex-1">
+              <div className="flex gap-2.5 pt-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEnrollModalOpen(false)}
+                  className="flex-1 rounded-xl text-xs font-semibold"
+                >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading} className="flex-1 bg-[#014a62] hover:bg-[#01374a] text-white">
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={loading}
+                  className="flex-1 rounded-xl text-xs font-bold shadow-sm"
+                >
                   {loading ? "Enrolling..." : "Enroll Student"}
                 </Button>
               </div>
@@ -337,29 +513,54 @@ export default function StudentsTable({
 
       {/* Extend Duration Modal */}
       {isExtendModalOpen && targetEnrollment && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <h3 className="text-xl font-bold font-instrument-serif text-[#014a62]">Extend Course Access Duration</h3>
-            
-            <form onSubmit={handleExtendAccess} className="space-y-4">
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-card text-card-foreground rounded-2xl p-6 max-w-md w-full border border-border/80 shadow-2xl space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <Clock className="h-4 w-4" />
+              </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase text-muted-foreground mb-1">Add Additional Days</label>
+                <h3 className="text-base font-bold font-outfit text-foreground">
+                  Extend Course Duration
+                </h3>
+                <p className="text-[11px] text-muted-foreground">
+                  Add additional days to current student enrollment validity.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleExtendAccess} className="space-y-4 pt-1">
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Additional Days to Add
+                </label>
                 <input
                   type="number"
                   placeholder="e.g. 30"
                   value={additionalDays}
                   onChange={(e) => setAdditionalDays(e.target.value)}
-                  className="w-full border rounded-xl p-3 text-xs font-semibold"
+                  className="w-full border border-input rounded-xl px-3 py-2 text-xs font-semibold bg-background focus:outline-none focus:ring-2 focus:ring-primary tabular-nums"
                   required
                 />
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={() => setIsExtendModalOpen(false)} className="flex-1">
+              <div className="flex gap-2.5 pt-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsExtendModalOpen(false)}
+                  className="flex-1 rounded-xl text-xs font-semibold"
+                >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading} className="flex-1 bg-[#014a62] hover:bg-[#01374a] text-white">
-                  {loading ? "Extending..." : "Extend Duration"}
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={loading}
+                  className="flex-1 rounded-xl text-xs font-bold shadow-sm"
+                >
+                  {loading ? "Extending..." : "Extend Validity"}
                 </Button>
               </div>
             </form>
