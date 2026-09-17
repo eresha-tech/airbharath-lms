@@ -1,12 +1,12 @@
 import { db } from "@/lib/db";
-import { users, enrollments, orders, lessons, progress } from "@/lib/db/schema";
+import { users, enrollments, orders, lessons, progress, modules } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import AdminDashboardClient from "@/components/admin/AdminDashboardClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
-  const [usersList, enrollmentsList, ordersList, lessonsList, progressList] = await Promise.all([
+  const [usersList, enrollmentsList, ordersList, lessonsList, progressList, modulesList] = await Promise.all([
     db.query.users.findMany(),
     db.query.enrollments.findMany(),
     db.query.orders.findMany({
@@ -15,7 +15,35 @@ export default async function AdminDashboard() {
     }),
     db.query.lessons.findMany(),
     db.query.progress.findMany({ where: eq(progress.isCompleted, true) }),
+    db.query.modules.findMany(),
   ]);
+
+  // Map modules to courses
+  const moduleToCourse: Record<string, string> = {};
+  modulesList.forEach((m: any) => {
+    moduleToCourse[m.id] = m.courseId;
+  });
+
+  // Calculate actual lesson count per course
+  const courseLessonCounts: Record<string, number> = {};
+  const lessonToCourse: Record<string, string> = {};
+  lessonsList.forEach((l: any) => {
+    const cId = moduleToCourse[l.moduleId];
+    if (cId) {
+      lessonToCourse[l.id] = cId;
+      courseLessonCounts[cId] = (courseLessonCounts[cId] || 0) + 1;
+    }
+  });
+
+  // Calculate completed lessons per user per course
+  const enrollmentCompletions: Record<string, number> = {};
+  progressList.forEach((p: any) => {
+    const cId = lessonToCourse[p.lessonId];
+    if (cId) {
+      const key = `${p.userId}_${cId}`;
+      enrollmentCompletions[key] = (enrollmentCompletions[key] || 0) + 1;
+    }
+  });
 
   const formattedOrders = ordersList.map((o: any) => ({
     id: o.id,
@@ -53,8 +81,8 @@ export default async function AdminDashboard() {
       initialUsers={formattedUsers}
       initialEnrollments={formattedEnrollments}
       initialOrders={formattedOrders}
-      lessonsCount={lessonsList.length}
-      completedProgressCount={progressList.length}
+      courseLessonCounts={courseLessonCounts}
+      enrollmentCompletions={enrollmentCompletions}
     />
   );
 }

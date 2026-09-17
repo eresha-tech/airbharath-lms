@@ -26,16 +26,16 @@ interface AdminDashboardClientProps {
   initialUsers: any[];
   initialEnrollments: any[];
   initialOrders: any[];
-  lessonsCount: number;
-  completedProgressCount: number;
+  courseLessonCounts?: Record<string, number>;
+  enrollmentCompletions?: Record<string, number>;
 }
 
 export default function AdminDashboardClient({
   initialUsers = [],
   initialEnrollments = [],
   initialOrders = [],
-  lessonsCount = 0,
-  completedProgressCount = 0,
+  courseLessonCounts = {},
+  enrollmentCompletions = {},
 }: AdminDashboardClientProps) {
   const [selectedRange, setSelectedRange] = useState<"30days" | "6months" | "12months" | "alltime">("6months");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -67,11 +67,11 @@ export default function AdminDashboardClient({
   const dateThreshold = useMemo(() => {
     const now = new Date();
     if (selectedRange === "30days") {
-      return new Date(now.setDate(now.getDate() - 30));
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
     } else if (selectedRange === "6months") {
-      return new Date(now.setMonth(now.getMonth() - 6));
+      return new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
     } else if (selectedRange === "12months") {
-      return new Date(now.setMonth(now.getMonth() - 12));
+      return new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
     }
     return new Date(0); // All time
   }, [selectedRange]);
@@ -97,24 +97,31 @@ export default function AdminDashboardClient({
   const activeStudentsCount = useMemo(() => {
     const studentUsers = initialUsers.filter((u) => u.role === "student");
     if (selectedRange === "alltime") return studentUsers.length;
-    return (
-      studentUsers.filter((u) => new Date(u.created_at) >= dateThreshold).length ||
-      studentUsers.length
-    );
+    return studentUsers.filter((u) => new Date(u.created_at) >= dateThreshold).length;
   }, [initialUsers, dateThreshold, selectedRange]);
 
   const monthlySalesCount = useMemo(() => {
     return filteredOrders.filter((o) => o.status === "paid").length;
   }, [filteredOrders]);
 
-  // Dynamic completion rate
+  // Dynamic completion rate: mathematically accounts for actual lesson counts in each enrolled course
   const completionRate = useMemo(() => {
-    const totalEnrollments = initialEnrollments.length;
-    if (totalEnrollments === 0 || lessonsCount === 0) return 74.2;
-    const expectedTotalLessons = totalEnrollments * lessonsCount;
-    const rate = (completedProgressCount / expectedTotalLessons) * 100;
-    return Number(rate.toFixed(1)) || 74.2;
-  }, [initialEnrollments, lessonsCount, completedProgressCount]);
+    if (!filteredEnrollments.length || !courseLessonCounts) return null;
+
+    let totalExpectedLessons = 0;
+    let totalCompletedLessons = 0;
+
+    filteredEnrollments.forEach((e) => {
+      const expected = courseLessonCounts[e.course_id] || 0;
+      const completed = enrollmentCompletions[`${e.user_id}_${e.course_id}`] || 0;
+      totalExpectedLessons += expected;
+      totalCompletedLessons += Math.min(completed, expected);
+    });
+
+    if (totalExpectedLessons === 0) return null;
+    const rate = (totalCompletedLessons / totalExpectedLessons) * 100;
+    return Number(rate.toFixed(1));
+  }, [filteredEnrollments, courseLessonCounts, enrollmentCompletions]);
 
   // Generate chart data based on range
   const chartData = useMemo(() => {
@@ -123,8 +130,7 @@ export default function AdminDashboardClient({
 
     if (selectedRange === "30days") {
       for (let i = 29; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(now.getDate() - i);
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
         const key = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
         dataMap[key] = { label: key, count: 0, revenue: 0 };
       }
@@ -143,8 +149,7 @@ export default function AdminDashboardClient({
     } else {
       const monthLimit = selectedRange === "6months" ? 6 : selectedRange === "12months" ? 12 : 12;
       for (let i = monthLimit - 1; i >= 0; i--) {
-        const d = new Date();
-        d.setMonth(now.getMonth() - i);
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const key = d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
         dataMap[key] = { label: d.toLocaleDateString("en-US", { month: "short" }), count: 0, revenue: 0 };
       }
@@ -345,10 +350,12 @@ export default function AdminDashboardClient({
           </CardHeader>
           <CardContent>
             <div className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-outfit">
-              {completionRate}%
+              {completionRate !== null ? `${completionRate}%` : "—"}
             </div>
             <div className="flex items-center gap-1.5 mt-1.5">
-              <span className="text-[11px] text-muted-foreground">Course progress index</span>
+              <span className="text-[11px] text-muted-foreground">
+                {completionRate !== null ? "Course progress index" : "No completions recorded yet"}
+              </span>
             </div>
           </CardContent>
         </Card>

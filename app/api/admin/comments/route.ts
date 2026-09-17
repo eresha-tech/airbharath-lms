@@ -11,35 +11,52 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const comments = await db.query.lessonComments.findMany({
-      with: {
-        user: true,
-        lesson: {
-          with: {
-            module: {
-              with: {
-                course: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: [desc(lessonComments.createdAt)],
+    const [allComments, allLessons, allModules, allCourses, allUsers] = await Promise.all([
+      db.select().from(lessonComments).orderBy(desc(lessonComments.createdAt)),
+      db.select().from(lessons),
+      db.select().from(modules),
+      db.select().from(courses),
+      db.select().from(users),
+    ]);
+
+    const courseById: Record<string, any> = {};
+    allCourses.forEach((c) => {
+      courseById[c.id] = c;
     });
 
-    const formattedComments = comments.map((comment: any) => ({
-      id: comment.id,
-      lesson_id: comment.lessonId,
-      user_id: comment.userId,
-      content: comment.content,
-      parent_id: comment.parentId || null,
-      created_at: comment.createdAt,
-      user_name: comment.user?.fullName || comment.user?.email || "Student",
-      user_role: comment.user?.role || "student",
-      lesson_title: comment.lesson?.title || "Lesson",
-      course_title: comment.lesson?.module?.course?.title || "Airbharath Course",
-      course_id: comment.lesson?.module?.course?.id || "",
-    }));
+    const moduleToCourse: Record<string, any> = {};
+    allModules.forEach((m) => {
+      moduleToCourse[m.id] = courseById[m.courseId] || null;
+    });
+
+    const lessonById: Record<string, any> = {};
+    allLessons.forEach((l) => {
+      const course = moduleToCourse[l.moduleId] || null;
+      lessonById[l.id] = { ...l, course };
+    });
+
+    const userById: Record<string, any> = {};
+    allUsers.forEach((u) => {
+      userById[u.id] = u;
+    });
+
+    const formattedComments = allComments.map((comment: any) => {
+      const u = userById[comment.userId];
+      const l = lessonById[comment.lessonId];
+      return {
+        id: comment.id,
+        lesson_id: comment.lessonId,
+        user_id: comment.userId,
+        content: comment.content,
+        parent_id: comment.parentId || null,
+        created_at: comment.createdAt,
+        user_name: u?.fullName || u?.email || "Student",
+        user_role: u?.role || "student",
+        lesson_title: l?.title || "Lesson",
+        course_title: l?.course?.title || "Airbharath Course",
+        course_id: l?.course?.id || "",
+      };
+    });
 
     return NextResponse.json({ comments: formattedComments });
   } catch (error) {

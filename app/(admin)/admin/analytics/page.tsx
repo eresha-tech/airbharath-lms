@@ -44,31 +44,36 @@ export default async function AdminAnalytics() {
     })
     .reduce((sum: number, o: any) => sum + Number(o.amount || 0), 0);
 
-  let growthRate = 0;
+  let growthRateText = "—";
+  let growthRateSubtext = "vs preceding 30-day window";
   if (revPrev30 > 0) {
-    growthRate = ((revLast30 - revPrev30) / revPrev30) * 100;
+    const growthRate = ((revLast30 - revPrev30) / revPrev30) * 100;
+    growthRateText = growthRate >= 0 ? `+${growthRate.toFixed(1)}%` : `${growthRate.toFixed(1)}%`;
   } else if (revLast30 > 0) {
-    growthRate = 100;
+    growthRateText = `+100%`;
+    growthRateSubtext = "New revenue in current period";
+  } else {
+    growthRateText = "—";
+    growthRateSubtext = "No revenue in comparison period";
   }
-  const growthRateText = growthRate >= 0 ? `+${growthRate.toFixed(1)}%` : `${growthRate.toFixed(1)}%`;
 
   const uniqueStudentsWithProgress = new Set(progressList.map((p: any) => p.userId));
   const activeLearnersCount = uniqueStudentsWithProgress.size;
-  const retentionRate = totalStudents > 0 ? (activeLearnersCount / totalStudents) * 100 : 0.0;
+  const retentionRate = totalStudents > 0 ? Number(((activeLearnersCount / totalStudents) * 100).toFixed(1)) : null;
 
   const totalOrdersCount = ordersList.length;
   const refundedOrdersCount = ordersList.filter((o: any) => o.status === "refunded").length;
-  const refundRate = totalOrdersCount > 0 ? (refundedOrdersCount / totalOrdersCount) * 100 : 0;
+  const refundRate = totalOrdersCount > 0 ? Number(((refundedOrdersCount / totalOrdersCount) * 100).toFixed(2)) : 0;
 
+  // 14-day Daily Active Learners (DAL): deduplicated unique learners per calendar day
   const dalData: { label: string; count: number }[] = [];
 
   for (let i = 13; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(now.getDate() - i);
-    const dayLabel = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    const dayLabel = targetDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
-    const startOfDay = new Date(d.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(d.setHours(23, 59, 59, 999));
+    const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0, 0);
+    const endOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999);
 
     const uniqueUsersThisDay = new Set(
       progressList
@@ -87,27 +92,23 @@ export default async function AdminAnalytics() {
 
   const maxDalCount = Math.max(...dalData.map((d) => d.count), 1);
 
+  // Map modules and lessons to courses for accurate syllabus accounting
   const moduleToCourse: { [key: string]: string } = {};
   modulesList.forEach((m: any) => {
     moduleToCourse[m.id] = m.courseId;
   });
 
   const lessonToCourse: { [key: string]: string } = {};
-  lessonsList.forEach((l: any) => {
-    const cId = moduleToCourse[l.moduleId];
-    if (cId) {
-      lessonToCourse[l.id] = cId;
-    }
-  });
-
   const courseLessonsCount: { [key: string]: number } = {};
   lessonsList.forEach((l: any) => {
     const cId = moduleToCourse[l.moduleId];
     if (cId) {
+      lessonToCourse[l.id] = cId;
       courseLessonsCount[cId] = (courseLessonsCount[cId] || 0) + 1;
     }
   });
 
+  // Calculate cohort completion per enrolled course seat
   let completedCount = 0;
   let activeCount = 0;
   let startedCount = 0;
@@ -123,7 +124,7 @@ export default async function AdminAnalytics() {
     const completed = progressList.filter(
       (p: any) => p.userId === e.userId && lessonToCourse[p.lessonId] === e.courseId
     ).length;
-    const percent = Math.round((completed / total) * 100);
+    const percent = Math.min(100, Math.round((completed / total) * 100));
 
     if (percent === 100) {
       completedCount++;
@@ -136,30 +137,30 @@ export default async function AdminAnalytics() {
     }
   });
 
-  const totalEnrollmentsCount = enrollmentsList.length || 1;
+  const totalEnrollmentsCount = enrollmentsList.length;
   const progressBreakdown = [
     {
       label: "Fully Completed (100%)",
-      count: `${completedCount} students`,
-      percent: Math.round((completedCount / totalEnrollmentsCount) * 100),
+      count: `${completedCount} ${completedCount === 1 ? "seat" : "seats"}`,
+      percent: totalEnrollmentsCount > 0 ? Math.round((completedCount / totalEnrollmentsCount) * 100) : 0,
       color: "bg-primary",
     },
     {
       label: "Active Progression (25% - 99%)",
-      count: `${activeCount} students`,
-      percent: Math.round((activeCount / totalEnrollmentsCount) * 100),
+      count: `${activeCount} ${activeCount === 1 ? "seat" : "seats"}`,
+      percent: totalEnrollmentsCount > 0 ? Math.round((activeCount / totalEnrollmentsCount) * 100) : 0,
       color: "bg-emerald-600",
     },
     {
       label: "Early Stage (1% - 24%)",
-      count: `${startedCount} students`,
-      percent: Math.round((startedCount / totalEnrollmentsCount) * 100),
+      count: `${startedCount} ${startedCount === 1 ? "seat" : "seats"}`,
+      percent: totalEnrollmentsCount > 0 ? Math.round((startedCount / totalEnrollmentsCount) * 100) : 0,
       color: "bg-amber-500",
     },
     {
       label: "Not Yet Started (0%)",
-      count: `${notStartedCount} students`,
-      percent: Math.round((notStartedCount / totalEnrollmentsCount) * 100),
+      count: `${notStartedCount} ${notStartedCount === 1 ? "seat" : "seats"}`,
+      percent: totalEnrollmentsCount > 0 ? Math.round((notStartedCount / totalEnrollmentsCount) * 100) : 0,
       color: "bg-muted-foreground/40",
     },
   ];
@@ -191,7 +192,7 @@ export default async function AdminAnalytics() {
             <div className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-outfit">
               {growthRateText}
             </div>
-            <p className="text-[11px] text-muted-foreground mt-1">vs preceding 30-day window</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{growthRateSubtext}</p>
           </CardContent>
         </Card>
 
@@ -206,10 +207,12 @@ export default async function AdminAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-600 font-outfit">
-              {retentionRate.toFixed(1)}%
+              {retentionRate !== null ? `${retentionRate.toFixed(1)}%` : "—"}
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
-              {activeLearnersCount} of {totalStudents} students actively learning
+              {totalStudents > 0
+                ? `${activeLearnersCount} of ${totalStudents} students actively learning`
+                : "No registered students yet"}
             </p>
           </CardContent>
         </Card>

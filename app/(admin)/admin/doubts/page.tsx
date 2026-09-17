@@ -42,52 +42,19 @@ export default function AdminDoubtsPage() {
   const [replyText, setReplyText] = useState("");
   const [replyToId, setReplyToId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [usingFallback, setUsingFallback] = useState(false);
-
-  // Fetch all comments
+  // Fetch all comments from DB
   const fetchAllComments = useCallback(async () => {
     try {
       setIsLoading(true);
       const res = await fetch("/api/admin/comments");
       if (!res.ok) {
-        throw new Error("Failed to fetch from DB API");
+        throw new Error("Failed to fetch comments from database");
       }
       const data = await res.json();
-      if (data.fallback) {
-        throw new Error("Fallback requested by API");
-      }
       setComments(data.comments || []);
-      setUsingFallback(false);
     } catch (err) {
-      console.warn("Using localStorage scanner fallback for Admin doubts:", err);
-      setUsingFallback(true);
-
-      const localComments: Comment[] = [];
-      if (typeof window !== "undefined") {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith("irii_comments_")) {
-            const lessonId = key.replace("irii_comments_", "");
-            try {
-              const items = JSON.parse(localStorage.getItem(key) || "[]");
-              items.forEach((item: any) => {
-                localComments.push({
-                  ...item,
-                  lesson_title: item.lesson_title || `Lesson #${lessonId.slice(0, 6)}`,
-                  course_title: item.course_title || "Technical Course",
-                  course_id: item.course_id || "demo",
-                });
-              });
-            } catch (e) {
-              console.error("Error parsing local comments", e);
-            }
-          }
-        }
-      }
-      localComments.sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-      setComments(localComments);
+      console.error("Error loading admin doubts:", err);
+      setComments([]);
     } finally {
       setIsLoading(false);
     }
@@ -104,101 +71,51 @@ export default function AdminDoubtsPage() {
 
     setIsSubmitting(true);
     const text = replyText.trim();
-    setReplyText("");
-    setReplyToId(null);
 
-    const tempId = Math.random().toString();
-    const newReply: Comment = {
-      id: tempId,
-      lesson_id: parentComment.lesson_id,
-      user_id: "admin",
-      content: text,
-      parent_id: parentComment.id,
-      created_at: new Date().toISOString(),
-      user_name: "Lead Instructor (Admin)",
-      user_role: "admin",
-      lesson_title: parentComment.lesson_title,
-      course_title: parentComment.course_title,
-      course_id: parentComment.course_id,
-    };
+    try {
+      const res = await fetch("/api/comments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          lessonId: parentComment.lesson_id,
+          content: text,
+          parentId: parentComment.id,
+        }),
+      });
 
-    if (usingFallback) {
-      const storageKey = `irii_comments_${parentComment.lesson_id}`;
-      const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
-      const updated = [newReply, ...existing];
-      localStorage.setItem(storageKey, JSON.stringify(updated));
-      setIsSubmitting(false);
-      fetchAllComments();
-    } else {
-      try {
-        const res = await fetch("/api/comments", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            lessonId: parentComment.lesson_id,
-            content: text,
-            parentId: parentComment.id,
-          }),
-        });
-
-        if (!res.ok) {
-          throw new Error("Failed to post reply to DB");
-        }
-        await fetchAllComments();
-      } catch (err) {
-        console.error("Error saving reply:", err);
-        const storageKey = `irii_comments_${parentComment.lesson_id}`;
-        const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
-        const updated = [newReply, ...existing];
-        localStorage.setItem(storageKey, JSON.stringify(updated));
-        setUsingFallback(true);
-        fetchAllComments();
-      } finally {
-        setIsSubmitting(false);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to post reply to database");
       }
+
+      setReplyText("");
+      setReplyToId(null);
+      await fetchAllComments();
+    } catch (err: any) {
+      alert(err.message || "Failed to post reply.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   // Delete handler
   const handleDeleteComment = async (comment: Comment) => {
-    if (!confirm("Are you sure you want to delete this comment?")) return;
+    if (!confirm("Are you sure you want to delete this question/reply?")) return;
 
-    const deleteRecursive = (list: Comment[], targetId: string): Comment[] => {
-      const childrenIds = list.filter((c) => c.parent_id === targetId).map((c) => c.id);
-      let updated = list.filter((c) => c.id !== targetId);
-      childrenIds.forEach((childId) => {
-        updated = deleteRecursive(updated, childId);
+    try {
+      const res = await fetch(`/api/comments?commentId=${comment.id}`, {
+        method: "DELETE",
       });
-      return updated;
-    };
 
-    if (usingFallback) {
-      const storageKey = `irii_comments_${comment.lesson_id}`;
-      const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
-      const updated = deleteRecursive(existing, comment.id);
-      localStorage.setItem(storageKey, JSON.stringify(updated));
-      fetchAllComments();
-    } else {
-      try {
-        const res = await fetch(`/api/comments?commentId=${comment.id}`, {
-          method: "DELETE",
-        });
-
-        if (!res.ok) {
-          throw new Error("Failed to delete comment");
-        }
-        await fetchAllComments();
-      } catch (err) {
-        console.error("Error deleting comment:", err);
-        const storageKey = `irii_comments_${comment.lesson_id}`;
-        const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
-        const updated = deleteRecursive(existing, comment.id);
-        localStorage.setItem(storageKey, JSON.stringify(updated));
-        setUsingFallback(true);
-        fetchAllComments();
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to delete comment from database");
       }
+      await fetchAllComments();
+    } catch (err: any) {
+      alert(err.message || "Failed to delete comment.");
     }
   };
 
