@@ -1,26 +1,29 @@
 "use client";
 
-import { CheckCircle, Check, AlertCircle } from "lucide-react";
+import { CheckCircle, Check, AlertCircle, Loader2, Tag, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Script from "next/script";
+import { Button } from "@/components/ui/button";
 
-function EnrollButton({
-  courseId,
-  isEnrolled,
-  price,
-  courseTitle,
-  initialUser,
-  autoCouponCode,
-}: {
+interface EnrollButtonProps {
   courseId: string;
   isEnrolled: boolean;
   price: number;
   courseTitle: string;
   initialUser?: any;
   autoCouponCode?: string;
-}) {
+}
+
+export default function EnrollButton({
+  courseId,
+  isEnrolled,
+  price,
+  courseTitle,
+  initialUser,
+  autoCouponCode,
+}: EnrollButtonProps) {
   const [user, setUser] = useState<any>(initialUser ?? null);
   const [couponInput, setCouponInput] = useState(autoCouponCode || "");
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
@@ -38,7 +41,7 @@ function EnrollButton({
       .then((data) => {
         if (data?.user) setUser(data.user);
       })
-      .catch(() => { });
+      .catch(() => {});
   }, [initialUser]);
 
   useEffect(() => {
@@ -55,7 +58,7 @@ function EnrollButton({
             setAppliedCoupon(data);
           }
         })
-        .catch(() => { })
+        .catch(() => {})
         .finally(() => setValidatingCoupon(false));
     }
   }, [autoCouponCode, price, courseId]);
@@ -70,7 +73,7 @@ function EnrollButton({
       const res = await fetch("/api/coupons/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: couponInput, amount: price, courseId }),
+        body: JSON.stringify({ code: couponInput.trim(), amount: price, courseId }),
       });
       const data = await res.json();
 
@@ -193,80 +196,103 @@ function EnrollButton({
 
   if (isEnrolled) {
     return (
-      <Link
-        href={`/dashboard/courses/${courseId}`}
-        className="w-full rounded-xl px-6 py-3.5 font-bold bg-[#014a62] text-white hover:bg-[#01374a] transition-all h-12 flex items-center justify-center gap-2 group shadow-md"
+      <Button
+        asChild
+        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 rounded-xl text-sm shadow-sm transition-all duration-200"
       >
-        <span>Access Dashboard</span>
-        <CheckCircle className="w-5 h-5 group-hover:scale-110 transition-transform text-cyan-300" />
-      </Link>
+        <Link
+          href={`/dashboard/courses/${courseId}`}
+          className="flex items-center justify-center gap-2"
+        >
+          <span>Access Course Classroom</span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
+      </Button>
     );
   }
+
+  const finalDisplayPrice = appliedCoupon ? appliedCoupon.finalAmount : price;
 
   return (
     <div className="space-y-4 w-full">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" />
 
       {/* Coupon Application Box */}
-      <div className="space-y-2">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="PROMO CODE"
-            value={couponInput}
-            onChange={(e) => setCouponInput(e.target.value)}
-            disabled={validatingCoupon || isEnrolling}
-            className="flex-1 border border-border rounded-xl px-3 py-2 text-xs font-semibold bg-background focus:outline-none focus:ring-1 focus:ring-[#014a62] uppercase"
-          />
-          <button
-            type="button"
-            onClick={handleApplyCoupon}
-            disabled={validatingCoupon || isEnrolling || !couponInput.trim()}
-            className="px-4 py-2 bg-[#014a62] text-white font-bold rounded-xl text-xs hover:bg-[#01374a] transition-colors disabled:opacity-50"
-          >
-            {validatingCoupon ? "..." : "Apply"}
-          </button>
+      {price > 0 && (
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="PROMO CODE"
+                value={couponInput}
+                onChange={(e) => setCouponInput(e.target.value)}
+                disabled={validatingCoupon || isEnrolling}
+                className="w-full border border-input rounded-xl px-3 py-2 pl-9 text-xs font-semibold bg-background focus:outline-none focus:ring-2 focus:ring-primary uppercase placeholder:normal-case placeholder:font-normal"
+              />
+            </div>
+            <Button
+              type="button"
+              onClick={handleApplyCoupon}
+              disabled={validatingCoupon || isEnrolling || !couponInput.trim()}
+              variant="outline"
+              size="sm"
+              className="px-4 font-bold text-xs h-9 rounded-xl border-primary/20 text-primary hover:bg-primary/10"
+            >
+              {validatingCoupon ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                "Apply"
+              )}
+            </Button>
+          </div>
+
+          {appliedCoupon && (
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 p-2.5 rounded-lg">
+              <Check className="h-3.5 w-3.5 shrink-0" />
+              <span>
+                Coupon applied! Saved ₹{appliedCoupon.discount}. Final price: ₹
+                {appliedCoupon.finalAmount}
+              </span>
+            </div>
+          )}
+
+          {couponError && (
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 p-2.5 rounded-lg">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              <span>{couponError}</span>
+            </div>
+          )}
         </div>
+      )}
 
-        {appliedCoupon && (
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
-            <Check className="h-3.5 w-3.5" />
-            <span>Coupon applied! Saved ₹{appliedCoupon.discount}. Final price: ₹{appliedCoupon.finalAmount}</span>
-          </div>
-        )}
-
-        {couponError && (
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-600">
-            <AlertCircle className="h-3.5 w-3.5" />
-            <span>{couponError}</span>
-          </div>
-        )}
-      </div>
-
-      <button
+      {/* Primary Enrollment Button */}
+      <Button
         type="button"
-        className={`w-full rounded-xl px-6 py-3.5 font-bold transition-all duration-300 relative h-12 text-sm shadow-md
-          ${isEnrolling
-            ? "bg-muted text-muted-foreground cursor-not-allowed"
-            : "bg-[#014a62] text-white hover:bg-[#01374a]"
-          }
-        `}
+        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 rounded-xl text-sm shadow-sm transition-all duration-200 relative"
         disabled={isEnrolling}
         onClick={handleEnroll}
       >
-        <span className={isEnrolling ? "invisible" : ""}>
-          Enroll Now {appliedCoupon ? `(₹${appliedCoupon.finalAmount})` : `(₹${price})`}
-        </span>
-        {isEnrolling && (
-          <div className="absolute inset-0 flex items-center justify-center gap-2">
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs font-bold">Processing...</span>
+        {isEnrolling ? (
+          <div className="flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Processing Order...</span>
           </div>
+        ) : (
+          <span className="flex items-center justify-center gap-1.5">
+            <span>
+              {price === 0
+                ? "Enroll Free"
+                : `Enroll Now • ₹${finalDisplayPrice.toLocaleString("en-IN")}`}
+            </span>
+            <ArrowRight className="w-4 h-4" />
+          </span>
         )}
-      </button>
+      </Button>
 
       {enrollError && (
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-600 mt-2">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 p-2.5 rounded-lg">
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
           <span>{enrollError}</span>
         </div>
@@ -274,5 +300,3 @@ function EnrollButton({
     </div>
   );
 }
-
-export default EnrollButton;
