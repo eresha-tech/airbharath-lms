@@ -1,12 +1,26 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { lessons, enrollments, lessonMaterials } from "@/lib/db/schema";
+import { lessons, enrollments, courses, lessonMaterials, progress } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { LessonCompleteButton } from "@/components/LessonCompleteButton";
 import { LessonComments } from "@/components/LessonComments";
+import { LessonNavigation } from "@/components/classroom/LessonNavigation";
 import { HlsPlayer } from "@/components/video-player/HlsPlayer";
-import { FileText, Download, Image as ImageIcon, Paperclip } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import {
+  FileText,
+  Download,
+  Image as ImageIcon,
+  Paperclip,
+  MessageSquare,
+  BookOpen,
+  ChevronRight,
+  Sparkles,
+  Award,
+} from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +30,8 @@ interface LessonPageProps {
     lessonId: string;
   }>;
 }
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function LessonPage({ params }: LessonPageProps) {
   const { courseId, lessonId } = await params;
@@ -32,12 +48,41 @@ export default async function LessonPage({ params }: LessonPageProps) {
     return redirect(`/dashboard/courses/${courseId}`);
   }
 
+  const isUUID = UUID_REGEX.test(courseId);
+
+  // Retrieve course data to determine previous/next lessons and module context
+  const courseObj = isUUID
+    ? await db.query.courses.findFirst({
+        where: eq(courses.id, courseId),
+        with: {
+          modules: {
+            with: {
+              lessons: true,
+            },
+          },
+        },
+      })
+    : await db.query.courses.findFirst({
+        where: eq(courses.slug, courseId),
+        with: {
+          modules: {
+            with: {
+              lessons: true,
+            },
+          },
+        },
+      });
+
+  if (!courseObj) {
+    return redirect("/dashboard/courses");
+  }
+
   // Check enrollment unless free preview or admin
   let isEnrolled = lessonObj.isFreePreview || session.role === "admin";
 
   if (!isEnrolled) {
     const enrollmentRecord = await db.query.enrollments.findFirst({
-      where: and(eq(enrollments.userId, session.id), eq(enrollments.courseId, courseId)),
+      where: and(eq(enrollments.userId, session.id), eq(enrollments.courseId, courseObj.id)),
     });
     if (enrollmentRecord) {
       isEnrolled = true;
@@ -45,47 +90,138 @@ export default async function LessonPage({ params }: LessonPageProps) {
   }
 
   if (!isEnrolled) {
-    return redirect(`/courses/${courseId}`);
+    return redirect(`/courses/${courseObj.slug || courseObj.id}`);
   }
+
+  // Flatten and sort all lessons to calculate sequential navigation
+  const courseModules = (courseObj.modules as any[]) || [];
+  const sortedModules = courseModules
+    .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
+    .map((mod: any) => ({
+      ...mod,
+      lessons: (mod.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0)),
+    }));
+
+  const allLessonsInOrder: { id: string; title: string; moduleId: string; moduleTitle: string }[] = [];
+  sortedModules.forEach((m: any) => {
+    (m.lessons || []).forEach((l: any) => {
+      allLessonsInOrder.push({
+        id: l.id,
+        title: l.title,
+        moduleId: m.id,
+        moduleTitle: m.title,
+      });
+    });
+  });
+
+  const currentLessonIdx = allLessonsInOrder.findIndex((l) => l.id === lessonId);
+  const previousLesson = currentLessonIdx > 0 ? allLessonsInOrder[currentLessonIdx - 1] : null;
+  const nextLesson =
+    currentLessonIdx >= 0 && currentLessonIdx < allLessonsInOrder.length - 1
+      ? allLessonsInOrder[currentLessonIdx + 1]
+      : null;
+  const currentLessonInfo = currentLessonIdx >= 0 ? allLessonsInOrder[currentLessonIdx] : null;
 
   const activeVideoId = lessonObj.videoUrl || lessonObj.id;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto pt-12 pb-20 px-4">
-          <h1 className="text-2xl font-bold mb-4 font-instrument-serif text-[#014a62]">{lessonObj.title}</h1>
+    <div className="min-h-full flex flex-col bg-background">
+      <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8 animate-fade-in">
+        {/* Top Context & Quick Action Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/60">
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+              <span className="truncate max-w-[200px]">{courseObj.title}</span>
+              <ChevronRight className="h-3 w-3 text-muted-foreground/60 shrink-0" />
+              <span className="text-foreground font-semibold truncate max-w-[200px]">
+                {currentLessonInfo?.moduleTitle || "Curriculum"}
+              </span>
+              {currentLessonIdx >= 0 && (
+                <Badge variant="secondary" className="text-[10px] font-mono ml-1">
+                  Lesson {currentLessonIdx + 1} of {allLessonsInOrder.length}
+                </Badge>
+              )}
+            </div>
 
-          <div className="space-y-8">
-            {/* Video Section */}
-            {activeVideoId && (
-              <HlsPlayer
-                videoId={activeVideoId}
-                watermarkText={session.email || "student@airbharath.in"}
-              />
-            )}
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-outfit text-foreground tracking-tight">
+              {lessonObj.title}
+            </h1>
+          </div>
 
-            {/* Lesson Content */}
-            {lessonObj.content && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4 text-[#014a62] font-instrument-serif">Lesson Notes</h2>
+          <div className="flex items-center gap-3 shrink-0">
+            <LessonCompleteButton
+              lessonId={lessonObj.id}
+              userId={session.id}
+              courseId={courseObj.id}
+            />
+          </div>
+        </div>
+
+        {/* Video Focal Container */}
+        {activeVideoId && (
+          <div className="overflow-hidden rounded-2xl bg-black border border-border/80 shadow-lg relative">
+            <HlsPlayer
+              videoId={activeVideoId}
+              watermarkText={session.email || "student@airbharath.in"}
+            />
+          </div>
+        )}
+
+        {/* Learning Tabs: Notes / Materials & Doubts / Discussion */}
+        <Tabs defaultValue="notes" className="space-y-6">
+          <TabsList className="bg-muted/50 p-1 rounded-xl border border-border/60 grid grid-cols-2 max-w-xs">
+            <TabsTrigger
+              value="notes"
+              className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-xs flex items-center gap-1.5"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              <span>Notes &amp; Files</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="discussion"
+              className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-xs flex items-center gap-1.5"
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>Doubts</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Tab 1: Lesson Notes & Materials */}
+          <TabsContent value="notes" className="space-y-6 mt-0">
+            {lessonObj.content ? (
+              <div className="bg-card border border-border/80 rounded-2xl p-6 sm:p-8 space-y-4 shadow-xs">
+                <h2 className="text-base sm:text-lg font-bold font-outfit text-foreground flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <span>Lesson Notes &amp; Key Concepts</span>
+                </h2>
                 <div
-                  className="prose prose-blue dark:prose-invert max-w-none font-sans"
+                  className="prose prose-slate dark:prose-invert max-w-none text-xs sm:text-sm leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: lessonObj.content }}
                 />
+              </div>
+            ) : (
+              <div className="bg-card border border-border/80 rounded-2xl p-6 text-center text-xs text-muted-foreground space-y-1">
+                <BookOpen className="h-6 w-6 mx-auto text-muted-foreground/40 mb-1" />
+                <p className="font-semibold text-foreground">Video-Only Lesson</p>
+                <p>Follow along with the video module above.</p>
               </div>
             )}
 
             {/* Reference Materials */}
             {materialsList && materialsList.length > 0 && (
-              <div className="bg-muted/20 border border-border/60 rounded-2xl p-6 space-y-4">
-                <div className="flex items-center gap-2 border-b border-border/40 pb-3">
-                  <Paperclip className="h-5 w-5 text-[#014a62]" />
-                  <h2 className="text-base font-extrabold text-foreground font-instrument-serif">Reference Materials</h2>
-                  <span className="ml-auto text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+              <div className="bg-card border border-border/80 rounded-2xl p-6 sm:p-8 space-y-4 shadow-xs">
+                <div className="flex items-center justify-between pb-3 border-b border-border/60">
+                  <div className="flex items-center gap-2">
+                    <Paperclip className="h-4 w-4 text-primary" />
+                    <h3 className="font-bold text-sm sm:text-base font-outfit text-foreground">
+                      Downloadable Reference Files
+                    </h3>
+                  </div>
+                  <Badge variant="secondary" className="text-[10px] font-bold">
                     {materialsList.length} {materialsList.length === 1 ? "file" : "files"}
-                  </span>
+                  </Badge>
                 </div>
+
                 <div className="grid gap-3 sm:grid-cols-2">
                   {materialsList.map((mat: any) => (
                     <a
@@ -93,17 +229,19 @@ export default async function LessonPage({ params }: LessonPageProps) {
                       href={mat.fileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3.5 bg-card border border-border/60 rounded-xl hover:border-primary/30 hover:bg-primary/5 transition-all group shadow-sm"
+                      className="flex items-center gap-3 p-3.5 bg-muted/30 border border-border/60 rounded-xl hover:border-primary/40 hover:bg-muted/60 transition-all group shadow-2xs"
                     >
-                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
-                        mat.fileType === "pdf"
-                          ? "bg-red-50 border border-red-100"
-                          : "bg-blue-50 border border-blue-100"
-                      }`}>
+                      <div
+                        className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
+                          mat.fileType === "pdf"
+                            ? "bg-rose-500/10 text-rose-600 border border-rose-500/20"
+                            : "bg-blue-500/10 text-blue-600 border border-blue-500/20"
+                        }`}
+                      >
                         {mat.fileType === "pdf" ? (
-                          <FileText className="h-5 w-5 text-red-500" />
+                          <FileText className="h-5 w-5" />
                         ) : (
-                          <ImageIcon className="h-5 w-5 text-blue-500" />
+                          <ImageIcon className="h-5 w-5" />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -111,7 +249,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
                           {mat.title}
                         </p>
                         <p className="text-[10px] text-muted-foreground mt-0.5 uppercase font-semibold">
-                          {mat.fileType === "pdf" ? "PDF Document" : "Image"}
+                          {mat.fileType === "pdf" ? "PDF Document" : "Image File"}
                           {mat.fileSize ? ` • ${(mat.fileSize / 1024).toFixed(0)} KB` : ""}
                         </p>
                       </div>
@@ -121,19 +259,24 @@ export default async function LessonPage({ params }: LessonPageProps) {
                 </div>
               </div>
             )}
+          </TabsContent>
 
-            <div className="flex justify-end border-b border-border/60 pb-8">
-              <LessonCompleteButton lessonId={lessonObj.id} userId={session.id} courseId={courseId} />
-            </div>
-
-            {/* Comments Section */}
+          {/* Tab 2: Doubts & Discussion */}
+          <TabsContent value="discussion" className="mt-0">
             <LessonComments
               lessonId={lessonObj.id}
               currentUserId={session.id}
               currentUserName={session.fullName || session.email || "Student"}
             />
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Sequential Lesson Navigation Footer */}
+        <LessonNavigation
+          courseId={courseObj.id}
+          previousLesson={previousLesson}
+          nextLesson={nextLesson}
+        />
       </div>
     </div>
   );

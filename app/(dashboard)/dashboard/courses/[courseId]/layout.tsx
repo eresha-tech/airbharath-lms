@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { enrollments, courses, progress } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { Sidebar } from "@/components/dashboard/Sidebar";
+import { ClassroomSidebar } from "@/components/classroom/ClassroomSidebar";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +53,7 @@ export default async function CourseLayout({
       });
 
   if (!courseObj) {
-    return redirect("/my-courses");
+    return redirect("/dashboard/courses");
   }
 
   // Check enrollment
@@ -86,9 +86,11 @@ export default async function CourseLayout({
   const completedLessonIds = userProgress.map((p: any) => p.lessonId);
 
   return (
-    <div className="h-full">
-      <Sidebar course={formattedCourse as any} completedLessons={completedLessonIds} />
-      <main className="h-full pl-0 lg:pl-96">{children}</main>
+    <div className="min-h-screen bg-background flex flex-col">
+      <ClassroomSidebar course={formattedCourse as any} completedLessons={completedLessonIds} />
+      <main className="flex-1 pl-0 lg:pl-88 xl:pl-96 transition-all duration-300">
+        {children}
+      </main>
     </div>
   );
 }
