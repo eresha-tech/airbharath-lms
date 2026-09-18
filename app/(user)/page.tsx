@@ -1,13 +1,12 @@
 import { HeroBanner } from "@/components/landing/HeroBanner";
 import { TrustStrip } from "@/components/landing/TrustStrip";
-import { HeadlineSection } from "@/components/landing/HeadlineSection";
-import { ChallengesSection } from "@/components/landing/ChallengesSection";
-import { SolutionSection } from "@/components/landing/SolutionSection";
 import { CoursesSection } from "@/components/landing/CoursesSection";
+import { SolutionSection } from "@/components/landing/SolutionSection";
+import { CareerTransitionJourney } from "@/components/landing/CareerTransitionJourney";
+import { CertificateShowcase } from "@/components/landing/CertificateShowcase";
+import { HeadlineSection } from "@/components/landing/HeadlineSection";
 import { TransformationMatrix } from "@/components/landing/TransformationMatrix";
 import { ExpertGuidanceSection } from "@/components/landing/ExpertGuidanceSection";
-import { OutcomesSection } from "@/components/landing/OutcomesSection";
-import { CareerTransitionJourney } from "@/components/landing/CareerTransitionJourney";
 import { LandingFAQ } from "@/components/landing/LandingFAQ";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { db } from "@/lib/db";
@@ -30,16 +29,16 @@ export default async function Home() {
     <>
       <HeroBanner />
       <TrustStrip />
-      <HeadlineSection />
-      <ChallengesSection />
-      <SolutionSection />
       <CoursesSection dbCourses={publishedCourses} />
+      <SolutionSection />
+      <CareerTransitionJourney />
+      <CertificateShowcase />
+      <HeadlineSection />
       <TransformationMatrix />
       <ExpertGuidanceSection />
-      <OutcomesSection />
-      <CareerTransitionJourney />
       <LandingFAQ />
       <FinalCTA />
     </>
   );
 }
+

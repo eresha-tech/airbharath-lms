@@ -1,110 +1,107 @@
-import { BookOpen, Compass, Award, Rocket } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, PlayCircle, ShieldCheck, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-const JOURNEY_STEPS = [
+const STEPS = [
   {
-    step: "STEP 01",
-    title: "LEARN",
-    description: "Choose the skills relevant to the direction you want to explore.",
+    step: "01",
+    title: "Explore & Select Your Program",
+    description:
+      "Browse our focused certificate courses in AI, Marketing, Entrepreneurship, or MS Office — or pick the All-in-One Combo Pass.",
     icon: BookOpen,
   },
   {
-    step: "STEP 02",
-    title: "PRACTISE",
-    description: "Work on practical assignments and build confidence using the skills.",
-    icon: Compass,
+    step: "02",
+    title: "Learn At Your Own Pace",
+    description:
+      "Watch structured HD video lessons, access downloadable learning resources, and post doubt questions directly beneath lessons.",
+    icon: PlayCircle,
   },
   {
-    step: "STEP 03",
-    title: "GAIN EXPOSURE",
-    description: "Where applicable, explore internship and practical-exposure opportunities.",
-    icon: Award,
-  },
-  {
-    step: "STEP 04",
-    title: "MAKE YOUR MOVE",
-    description: "Use your new skills and experience to explore your next opportunity.",
-    icon: Rocket,
+    step: "03",
+    title: "Complete & Earn Certificate",
+    description:
+      "Track your lesson progress in real time. Reach 100% completion to instantly unlock your unique QR-verifiable digital certificate.",
+    icon: ShieldCheck,
   },
 ];
 
 export function CareerTransitionJourney() {
   return (
-    <section className="py-20 bg-white border-b border-gray-200/80">
-      <div className="container mx-auto px-4 max-w-5xl space-y-12">
-
+    <section id="how-it-works" className="py-16 sm:py-24 bg-muted/20 border-b border-border">
+      <div className="container mx-auto px-4 max-w-6xl space-y-12">
         {/* Header */}
         <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-[#014a62] bg-[#014a62]/10 px-3.5 py-1.5 rounded-full border border-[#014a62]/20">
-            Strategic Path
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
+            Simple 3-Step Process
           </span>
           <h2
-            className="text-3xl md:text-5xl font-bold font-instrument-serif text-[#014a62]"
+            className="text-3xl sm:text-4xl md:text-5xl font-bold font-outfit text-foreground leading-tight tracking-tight"
             style={{ textWrap: "balance" } as React.CSSProperties}
           >
-            Your Next Career Doesn&rsquo;t Have to Start With a Resignation.
+            How Learning on AirBharath Works
           </h2>
+          <p className="text-sm sm:text-base text-muted-foreground font-normal leading-relaxed">
+            A seamless, transparent learning journey designed to fit into your existing schedule.
+          </p>
         </div>
 
-        {/* Stepper — ordered list for semantic step flow */}
-        <ol className="space-y-4 list-none p-0 m-0" aria-label="Career transition steps">
-          {JOURNEY_STEPS.map((item, idx) => {
+        {/* 3 Step Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+          {STEPS.map((item, idx) => {
             const Icon = item.icon;
             return (
-              <li key={item.step}>
-                <div className="bg-slate-50/80 border border-slate-200/90 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 hover:border-[#014a62]/40 transition-colors hover:shadow-lg">
-                  <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 rounded-2xl bg-[#014a62] text-white flex items-center justify-center shrink-0 shadow-lg shadow-[#014a62]/20">
-                      <Icon className="w-7 h-7" aria-hidden="true" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#014a62]">
-                        {item.step}
-                      </span>
-                      <h3 className="text-xl font-bold font-instrument-serif text-[#014a62]">
-                        {item.title}
-                      </h3>
+              <div
+                key={item.step}
+                className="bg-card border border-border rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-6 hover:shadow-sm hover:border-primary/40 transition-all duration-300 relative group"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl sm:text-3xl font-extrabold font-outfit text-primary/30 group-hover:text-primary transition-colors">
+                      {item.step}
+                    </span>
+                    <div
+                      aria-hidden="true"
+                      className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors shadow-2xs"
+                    >
+                      <Icon className="w-6 h-6" />
                     </div>
                   </div>
 
-                  <p className="text-xs md:text-sm text-slate-700 font-medium max-w-md">
+                  <h3 className="text-lg font-bold font-outfit text-foreground">
+                    {item.title}
+                  </h3>
+
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed font-normal">
                     {item.description}
                   </p>
                 </div>
 
-                {/* Connector — purely decorative, respects reduced motion via CSS */}
-                {idx < JOURNEY_STEPS.length - 1 && (
-                  <div
-                    aria-hidden="true"
-                    className="flex justify-center text-[#014a62]/40 py-2 motion-safe:animate-bounce"
-                  >
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M12 5v14M5 12l7 7 7-7" />
-                    </svg>
-                  </div>
-                )}
-              </li>
+                <div className="pt-4 border-t border-border/60 text-xs font-semibold text-primary flex items-center justify-between">
+                  <span>Step {idx + 1} of 3</span>
+                  <ArrowRight className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                </div>
+              </div>
             );
           })}
-        </ol>
-
-        {/* Footer Banner */}
-        <div className="bg-[#014a62] text-white p-6 rounded-2xl text-center space-y-1 shadow-lg">
-          <p className="text-base md:text-lg font-bold font-instrument-serif text-white">
-            Don&rsquo;t make a blind career switch.
-          </p>
-          <p className="text-xs md:text-sm font-semibold text-cyan-200">Prepare for it.</p>
         </div>
 
+        {/* Action Strip */}
+        <div className="p-6 sm:p-8 rounded-2xl bg-card border border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+          <div className="space-y-1">
+            <h4 className="text-base font-bold font-outfit text-foreground">
+              Ready to start your first module?
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              Browse our course catalog and begin learning immediately after enrollment.
+            </p>
+          </div>
+          <Button asChild className="bg-primary hover:bg-primary/90 text-white font-bold h-11 px-6 rounded-xl shrink-0">
+            <Link href="/courses">Explore Course Catalog</Link>
+          </Button>
+        </div>
       </div>
     </section>
   );
 }
+

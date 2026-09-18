@@ -3,89 +3,87 @@ import { GraduationCap, Briefcase, Award, CheckCircle2 } from "lucide-react";
 const PILLARS = [
   {
     icon: GraduationCap,
-    title: "IIM Alumni",
-    desc: "Learn from professionals with strong academic, management and entrepreneurial perspectives.",
+    title: "IIM Alumni Faculty",
+    desc: "Learn from educators and leaders with strong academic, managerial, and entrepreneurial backgrounds.",
     tag: "Academic & Strategic Rigor",
   },
   {
     icon: Briefcase,
     title: "Industry Practitioners",
-    desc: "Understand how skills are applied in real professional environments — beyond textbooks and theory.",
+    desc: "Understand how skills are actively applied in modern high-growth workplaces — beyond theory and textbook examples.",
     tag: "Real-World Context",
   },
   {
     icon: Award,
-    title: "Airbharath's 30+ Years",
-    desc: "Our learning philosophy is shaped by more than three decades across aviation, learning and technology, where training, discipline, quality and performance matter.",
-    tag: "Proven Discipline & Heritage",
+    title: "30+ Years Heritage",
+    desc: "Our curriculum philosophy is shaped by more than three decades across aviation, corporate training, and technology.",
+    tag: "Proven Quality & Pedigree",
   },
 ];
 
 export function ExpertGuidanceSection() {
   return (
-    <section className="py-20 bg-white border-b border-gray-200/80">
-      <div className="container mx-auto px-4 max-w-6xl space-y-12">
-
+    <section className="py-16 sm:py-24 bg-card border-b border-border">
+      <div className="container mx-auto px-4 max-w-7xl space-y-12">
         {/* Header */}
         <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-[#014a62] bg-[#014a62]/10 px-3.5 py-1.5 rounded-full border border-[#014a62]/20">
-            Instructor Pedigree
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
+            Faculty &amp; Pedigree
           </span>
           <h2
-            className="text-3xl md:text-5xl font-bold font-instrument-serif text-[#014a62]"
+            className="text-3xl sm:text-4xl md:text-5xl font-bold font-outfit text-foreground leading-tight tracking-tight"
             style={{ textWrap: "balance" } as React.CSSProperties}
           >
-            Learn From IIM Alumni &amp; Industry Practitioners.
+            Learn From IIM Alumni &amp; Industry Practitioners
           </h2>
-          <p className="text-base text-slate-700 font-sans leading-relaxed">
-            Learning becomes more meaningful when the people teaching you understand both the
-            concepts and the context in which they are applied.
+          <p className="text-sm sm:text-base text-muted-foreground font-normal leading-relaxed">
+            Education is most effective when guided by mentors who understand both fundamental principles and real-world professional application.
           </p>
         </div>
 
         {/* 3 Pillar Cards */}
-        <ul className="grid grid-cols-1 md:grid-cols-3 gap-8 list-none p-0 m-0">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
           {PILLARS.map((pillar) => {
             const Icon = pillar.icon;
             return (
-              <li
+              <div
                 key={pillar.title}
-                className="bg-slate-50/80 border border-slate-200/90 rounded-3xl p-8 space-y-4 hover:shadow-xl hover:border-[#014a62]/30 transition-all duration-200 flex flex-col justify-between"
+                className="bg-muted/30 border border-border rounded-3xl p-6 sm:p-8 space-y-5 hover:shadow-xs hover:border-primary/40 hover:bg-card transition-all duration-200 flex flex-col justify-between group"
               >
                 <div className="space-y-4">
-                  <div className="w-14 h-14 rounded-2xl bg-[#014a62] text-white flex items-center justify-center shadow-lg shadow-[#014a62]/20">
-                    <Icon className="w-7 h-7" aria-hidden="true" />
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-xs">
+                    <Icon className="w-6 h-6 sm:w-7 sm:h-7" aria-hidden="true" />
                   </div>
 
-                  <h3 className="text-xl font-bold font-instrument-serif text-[#014a62]">
+                  <h3 className="text-lg sm:text-xl font-bold font-outfit text-foreground group-hover:text-primary transition-colors">
                     {pillar.title}
                   </h3>
 
-                  <p className="text-xs md:text-sm text-slate-600 leading-relaxed font-sans font-normal">
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed font-normal">
                     {pillar.desc}
                   </p>
                 </div>
 
-                <div className="pt-4 border-t border-slate-200/60 text-xs font-bold text-[#014a62] flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" aria-hidden="true" />
+                <div className="pt-4 border-t border-border/60 text-xs font-bold text-primary flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                   <span>{pillar.tag}</span>
                 </div>
-              </li>
+              </div>
             );
           })}
-        </ul>
-
-        {/* Learning Philosophy Callout */}
-        <div className="bg-[#014a62] text-white p-8 rounded-3xl shadow-xl text-center space-y-3">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-cyan-300">
-            Our Core Approach Is Simple
-          </span>
-          <p className="text-xl md:text-3xl font-bold font-instrument-serif text-white tracking-wide">
-            Learn it. Understand it. Practise it. Apply it.
-          </p>
         </div>
 
+        {/* Learning Philosophy Callout */}
+        <div className="bg-primary text-primary-foreground p-6 sm:p-8 rounded-3xl shadow-sm text-center space-y-2">
+          <span className="text-xs font-extrabold uppercase tracking-widest text-primary-foreground/80">
+            Our Core Approach
+          </span>
+          <p className="text-xl sm:text-2xl md:text-3xl font-bold font-outfit text-white tracking-tight">
+            Learn Concept &rarr; Watch Demonstration &rarr; Practise Workflow &rarr; Apply at Work
+          </p>
+        </div>
       </div>
     </section>
   );
 }
+
