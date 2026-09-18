@@ -42,7 +42,7 @@ export function CoursesSection({ dbCourses = [] }: CoursesSectionProps) {
           <div className="space-y-3 max-w-2xl">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Accredited Programs</span>
+              <span>Certificate Programs</span>
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold font-outfit text-foreground tracking-tight">
               Featured Certificate Programs

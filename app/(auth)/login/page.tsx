@@ -1,15 +1,40 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Phone, Shield, ArrowRight, CheckCircle2, User, RefreshCw, Sparkles, ArrowLeft, Loader2 } from 'lucide-react';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import {
+  Phone,
+  Shield,
+  ArrowRight,
+  CheckCircle2,
+  User,
+  RefreshCw,
+  Sparkles,
+  ArrowLeft,
+  Loader2,
+  Mail,
+  Award,
+  BookOpen,
+  Lock,
+  AlertCircle,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const rawCallbackUrl = searchParams.get('callbackUrl');
+
+  // Sanitize callback URL (must be internal relative path)
+  const callbackUrl =
+    rawCallbackUrl && rawCallbackUrl.startsWith('/') && !rawCallbackUrl.startsWith('//')
+      ? rawCallbackUrl
+      : null;
+
   const [step, setStep] = useState<'phone' | 'otp' | 'profile'>('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
@@ -20,6 +45,29 @@ export default function LoginPage() {
   const [resendTimer, setResendTimer] = useState(30);
   const [message, setMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    let isMounted = true;
+    fetch('/api/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && data?.user) {
+          const dest = callbackUrl || (data.user.role === 'admin' ? '/admin' : '/dashboard');
+          router.replace(dest);
+        } else if (isMounted) {
+          setCheckingAuth(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setCheckingAuth(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [router, callbackUrl]);
 
   // 30s Countdown timer for OTP Resend
   useEffect(() => {
@@ -36,8 +84,8 @@ export default function LoginPage() {
   const handleSendOTP = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.length < 10) {
-      setMessage('Please enter a valid 10-digit mobile number');
+    if (cleanPhone.length !== 10) {
+      setMessage('Please enter a valid 10-digit Indian mobile number');
       setIsSuccess(false);
       return;
     }
@@ -55,10 +103,10 @@ export default function LoginPage() {
 
       setStep('otp');
       setResendTimer(30);
-      setMessage('OTP sent successfully to your mobile number!');
+      setMessage('A 4-digit verification OTP has been sent to your mobile.');
       setIsSuccess(true);
     } catch (err: any) {
-      setMessage(err.message);
+      setMessage(err.message || 'Failed to send OTP. Please try again.');
       setIsSuccess(false);
     } finally {
       setLoading(false);
@@ -81,10 +129,10 @@ export default function LoginPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to resend OTP');
 
       setResendTimer(30);
-      setMessage('A new OTP has been sent to your mobile number!');
+      setMessage('A fresh 4-digit OTP has been resent to your mobile number.');
       setIsSuccess(true);
     } catch (err: any) {
-      setMessage(err.message);
+      setMessage(err.message || 'Failed to resend OTP');
       setIsSuccess(false);
     } finally {
       setResendLoading(false);
@@ -96,7 +144,7 @@ export default function LoginPage() {
     if (e) e.preventDefault();
     const otpToVerify = customOtp || otp;
     if (!otpToVerify || otpToVerify.length < 4) {
-      setMessage('Please enter a valid 4-digit OTP');
+      setMessage('Please enter the complete 4-digit OTP code');
       setIsSuccess(false);
       return;
     }
@@ -114,18 +162,19 @@ export default function LoginPage() {
 
       if (data.isNewUser || !data.user?.fullName) {
         setStep('profile');
-        setMessage('Verification complete! Please enter your full name to set up your profile.');
+        setMessage('Mobile verified! Please tell us your name to set up your learning profile.');
         setIsSuccess(true);
       } else {
         setIsSuccess(true);
-        setMessage('Successfully logged in! Redirecting...');
+        setMessage('Login successful! Redirecting to your destination...');
+        const dest = callbackUrl || (data.user?.role === 'admin' ? '/admin' : '/dashboard');
         setTimeout(() => {
-          router.push(data.user?.role === 'admin' ? '/admin' : '/dashboard');
+          router.push(dest);
           router.refresh();
-        }, 500);
+        }, 400);
       }
     } catch (err: any) {
-      setMessage(err.message);
+      setMessage(err.message || 'Invalid or expired OTP');
       setIsSuccess(false);
     } finally {
       setLoading(false);
@@ -141,7 +190,7 @@ export default function LoginPage() {
       return;
     }
     if (!email.trim()) {
-      setMessage('Please enter your email address');
+      setMessage('Please enter a valid email address');
       setIsSuccess(false);
       return;
     }
@@ -152,131 +201,241 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/update-profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName, email }),
+        body: JSON.stringify({ fullName: fullName.trim(), email: email.trim() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update profile');
 
       setIsSuccess(true);
-      setMessage('Profile setup complete! Redirecting to dashboard...');
+      setMessage('Profile setup complete! Redirecting to your dashboard...');
+      const dest = callbackUrl || (data.user?.role === 'admin' ? '/admin' : '/dashboard');
       setTimeout(() => {
-        router.push(data.user?.role === 'admin' ? '/admin' : '/dashboard');
+        router.push(dest);
         router.refresh();
-      }, 500);
+      }, 400);
     } catch (err: any) {
-      setMessage(err.message);
+      setMessage(err.message || 'Failed to update profile');
       setIsSuccess(false);
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="flex flex-col min-h-screen bg-slate-50/70 text-slate-900 font-sans">
-      {/* Centered Auth Container */}
-      <div className="flex-1 flex items-center justify-center p-4 md:p-8">
-        <div className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden flex flex-col md:flex-row transition-all duration-300">
-          
-          {/* Desktop Left Branding Banner (Hidden on Mobile) */}
-          <div className="hidden md:flex md:w-1/2 bg-[#014a62] text-white p-10 lg:p-12 flex-col justify-between relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#01374a] via-[#014a62] to-[#026282] opacity-95 pointer-events-none" />
-            <div className="absolute -top-32 -left-32 w-80 h-80 bg-cyan-400/20 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-teal-400/20 rounded-full blur-3xl pointer-events-none" />
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-xs font-semibold text-muted-foreground">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
+  return (
+    <div className="min-h-screen flex flex-col justify-between bg-slate-50/80 font-sans text-foreground">
+      {/* Top Floating Back Link */}
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-primary transition-colors py-1.5 px-3 rounded-full hover:bg-slate-200/60"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to AirBharath LMS</span>
+        </Link>
+      </div>
+
+      {/* Main Split Layout Container */}
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div className="w-full max-w-5xl bg-white rounded-3xl shadow-xl shadow-slate-900/5 border border-slate-200/80 overflow-hidden flex flex-col lg:flex-row transition-all duration-300">
+          
+          {/* Left Branding & Highlights Panel (Desktop / Tablet Large) */}
+          <div className="hidden lg:flex lg:w-5/12 bg-primary text-white p-8 xl:p-10 flex-col justify-between relative overflow-hidden">
+            {/* Background Aesthetic Layers */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#01374a] via-[#014a62] to-[#026282] pointer-events-none" />
+            <div className="absolute -top-24 -left-24 w-72 h-72 bg-cyan-400/15 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-teal-300/15 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Header Brand */}
             <div className="relative z-10 flex items-center gap-3">
               <img
                 src="https://assets.airbharath.in/logo.webp"
-                alt="Airbharath LMS"
+                alt="AirBharath LMS"
                 className="h-10 w-auto bg-white/10 p-1.5 rounded-xl border border-white/20 shadow-xs"
               />
               <div>
-                <span className="text-xl font-bold font-instrument-serif tracking-tight text-white block">
-                  Airbharath LMS
+                <span className="text-xl font-bold font-outfit tracking-tight text-white block">
+                  AirBharath <span className="text-cyan-200 font-semibold text-lg">LMS</span>
                 </span>
-                <span className="text-[10px] text-cyan-200 uppercase tracking-widest font-extrabold">
-                  Aviation &amp; Technical Excellence
+                <span className="text-[10px] text-cyan-200/90 uppercase tracking-widest font-extrabold">
+                  Aviation &amp; Technical Learning
                 </span>
               </div>
             </div>
 
-            <div className="relative z-10 my-10 space-y-4">
+            {/* Core Value Proposition */}
+            <div className="relative z-10 my-8 space-y-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-cyan-200 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
                 <span>Future-Ready Skill Upgrades</span>
               </div>
 
-              <h1 className="text-3xl lg:text-4xl font-bold font-instrument-serif leading-tight text-white">
-                Learn, Certify &amp; Elevate Your Career.
-              </h1>
-              <p className="text-sm text-cyan-100 leading-relaxed font-sans">
-                Access industry-led courses, QR-verifiable PDF certificates, and practical technical modules all in one place.
-              </p>
-            </div>
-
-            <div className="relative z-10 bg-white/10 border border-white/15 rounded-2xl p-4 flex gap-4 items-center backdrop-blur-md">
-              <div className="bg-[#014a62] p-2.5 rounded-xl border border-white/20 shrink-0 text-cyan-300 shadow-xs">
-                <Shield className="h-5 w-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-extrabold uppercase tracking-wider text-white">Instant 4-Digit Mobile OTP</h4>
-                <p className="text-[11px] text-cyan-100 mt-0.5 font-medium">
-                  Passwordless, instant authentication using your 10-digit mobile number.
+              <div className="space-y-2.5">
+                <h1 className="text-2xl xl:text-3xl font-bold font-outfit leading-tight text-white">
+                  Learn, Certify &amp; Elevate Your Career.
+                </h1>
+                <p className="text-xs xl:text-sm text-cyan-100/90 leading-relaxed font-normal">
+                  Self-paced certificate programs in AI tools, digital marketing, entrepreneurship, and workplace productivity. Taught by IIM alumni and industry practitioners.
                 </p>
               </div>
+
+              {/* Feature Badges */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center gap-3 bg-white/10 border border-white/15 rounded-xl p-3 backdrop-blur-md">
+                  <div className="bg-[#01374a] p-2 rounded-lg text-cyan-300 shrink-0">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Instant 4-Digit Mobile OTP</h4>
+                    <p className="text-[11px] text-cyan-100/80">Fast, passwordless login with your mobile number.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 bg-white/10 border border-white/15 rounded-xl p-3 backdrop-blur-md">
+                  <div className="bg-[#01374a] p-2 rounded-lg text-cyan-300 shrink-0">
+                    <Award className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">QR-Verifiable Credentials</h4>
+                    <p className="text-[11px] text-cyan-100/80">Earn official certificates upon 100% completion.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 bg-white/10 border border-white/15 rounded-xl p-3 backdrop-blur-md">
+                  <div className="bg-[#01374a] p-2 rounded-lg text-cyan-300 shrink-0">
+                    <BookOpen className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">100% Self-Paced Access</h4>
+                    <p className="text-[11px] text-cyan-100/80">Access HD videos, notes, and doubt Q&amp;A anytime.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Note */}
+            <div className="relative z-10 pt-4 border-t border-white/15 text-[11px] text-cyan-200/80 flex items-center justify-between">
+              <span>Secure 256-Bit SSL Gateway</span>
+              <span>ISO &amp; GST Compliant</span>
             </div>
           </div>
 
-          {/* Right Auth Form Panel (Compact & Concise on Mobile) */}
-          <div className="w-full md:w-1/2 p-6 md:p-12 flex flex-col justify-center bg-white">
-            <div className="max-w-sm w-full mx-auto space-y-6">
+          {/* Right Auth Form Panel */}
+          <div className="w-full lg:w-7/12 p-6 sm:p-10 xl:p-12 flex flex-col justify-center bg-white">
+            <div className="max-w-md w-full mx-auto space-y-6">
 
-              {/* Mobile Concise Header (Logo + 1-Line Subtitle) */}
-              <div className="md:hidden text-center space-y-2 pb-2">
+              {/* Mobile Branding (Visible only on mobile/tablet) */}
+              <div className="lg:hidden text-center space-y-2 pb-2">
                 <img
                   src="https://assets.airbharath.in/logo.webp"
-                  alt="Airbharath LMS"
-                  className="h-10 w-auto mx-auto object-contain"
+                  alt="AirBharath LMS"
+                  className="h-9 w-auto mx-auto object-contain"
                 />
-                <p className="text-xs font-bold uppercase tracking-wider text-[#014a62]">
-                  Aviation &amp; Technical Excellence
-                </p>
+                <h2 className="text-sm font-bold uppercase tracking-wider text-primary font-outfit">
+                  AirBharath LMS
+                </h2>
+              </div>
+
+              {/* Stepper Progress Bar */}
+              <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                      step === 'phone'
+                        ? 'bg-primary text-white ring-2 ring-primary/20'
+                        : 'bg-emerald-100 text-emerald-700'
+                    }`}
+                  >
+                    {step === 'phone' ? '1' : '✓'}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-700">Mobile Number</span>
+                </div>
+
+                <div className="h-0.5 flex-1 bg-slate-200 mx-2" />
+
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                      step === 'otp'
+                        ? 'bg-primary text-white ring-2 ring-primary/20'
+                        : step === 'profile'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-slate-100 text-slate-400'
+                    }`}
+                  >
+                    {step === 'profile' ? '✓' : '2'}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-700">Verification</span>
+                </div>
+
+                {step === 'profile' && (
+                  <>
+                    <div className="h-0.5 flex-1 bg-slate-200 mx-2" />
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-full bg-primary text-white ring-2 ring-primary/20 flex items-center justify-center text-xs font-bold">
+                        3
+                      </span>
+                      <span className="text-xs font-semibold text-slate-700">Profile</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* STEP 1: PHONE NUMBER INPUT */}
               {step === 'phone' && (
                 <form onSubmit={handleSendOTP} className="space-y-5">
                   <div className="space-y-1">
-                    <h2 className="text-2xl md:text-3xl font-bold font-instrument-serif text-[#014a62]">Sign In / Sign Up</h2>
-                    <p className="text-xs text-slate-500 font-medium">
-                      Enter your 10-digit mobile number to receive an OTP
+                    <h2 className="text-2xl sm:text-3xl font-bold font-outfit text-foreground tracking-tight">
+                      Sign In or Register
+                    </h2>
+                    <p className="text-xs sm:text-sm text-muted-foreground font-normal">
+                      Enter your 10-digit mobile number to receive a secure OTP. No password required.
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="phone-input">Mobile Phone Number</Label>
+                    <Label htmlFor="phone-input" className="text-xs font-bold text-slate-700">
+                      Mobile Phone Number <span className="text-rose-500">*</span>
+                    </Label>
                     <div className="relative">
-                      <div className="absolute left-3.5 top-3 text-xs font-bold text-slate-600 flex items-center gap-1.5 border-r border-slate-200 pr-2.5 z-10">
-                        <span>+91</span>
+                      <div className="absolute left-3.5 top-3 text-xs font-bold text-slate-600 flex items-center gap-1.5 border-r border-slate-200 pr-2.5 z-10 select-none">
+                        <span>🇮🇳 +91</span>
                       </div>
                       <Input
                         id="phone-input"
                         type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                         placeholder="9876543210"
                         maxLength={10}
-                        className="pl-16 pr-10 h-12 text-sm font-semibold"
+                        className="pl-20 pr-10 h-12 text-sm font-semibold rounded-xl border-slate-200 focus-visible:ring-primary"
                         required
                         autoFocus
+                        disabled={loading}
                       />
-                      <Phone className="absolute right-3.5 top-3.5 h-4 w-4 text-slate-400" />
+                      <Phone className="absolute right-3.5 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
                     </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Works for both existing and new students automatically.
+                    </p>
                   </div>
 
                   <Button
                     type="submit"
-                    disabled={loading}
-                    className="w-full h-12 bg-[#014a62] hover:bg-[#01374a] text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-[#014a62]/15 flex items-center justify-center gap-2"
+                    disabled={loading || phone.length < 10}
+                    className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-primary/10 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {loading ? (
                       <>
@@ -285,7 +444,7 @@ export default function LoginPage() {
                       </>
                     ) : (
                       <>
-                        <span>Send OTP</span>
+                        <span>Send 4-Digit OTP</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
@@ -293,33 +452,41 @@ export default function LoginPage() {
                 </form>
               )}
 
-              {/* STEP 2: 4-BOX INPUT OTP WITH SHADCN */}
+              {/* STEP 2: 4-BOX INPUT OTP */}
               {step === 'otp' && (
                 <form onSubmit={handleVerifyOTP} className="space-y-5">
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <h2 className="text-2xl md:text-3xl font-bold font-instrument-serif text-[#014a62]">Enter 4-Digit OTP</h2>
+                      <h2 className="text-2xl sm:text-3xl font-bold font-outfit text-foreground tracking-tight">
+                        Verify Phone
+                      </h2>
                       <button
                         type="button"
                         onClick={() => {
                           setStep('phone');
                           setOtp('');
+                          setMessage('');
                         }}
-                        className="text-xs font-bold text-[#014a62] hover:underline flex items-center gap-1"
+                        className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer py-1"
                       >
                         <ArrowLeft className="w-3.5 h-3.5" />
-                        <span>Edit Number</span>
+                        <span>Change Number</span>
                       </button>
                     </div>
-                    <p className="text-xs text-slate-500 font-medium">
-                      We sent a 4-digit code to <span className="font-bold text-slate-900">+91 {phone}</span>
+                    <p className="text-xs sm:text-sm text-muted-foreground font-normal">
+                      We sent a 4-digit code to{' '}
+                      <span className="font-bold text-slate-900">
+                        +91 {phone.slice(0, 3)}••••{phone.slice(-3)}
+                      </span>
                     </p>
                   </div>
 
                   {/* 4-Box InputOTP Component */}
                   <div className="space-y-3 flex flex-col items-center justify-center py-2">
-                    <Label className="text-center">Enter 4-Digit Verification Pin</Label>
-                    
+                    <Label className="text-xs font-bold text-slate-700 text-center">
+                      Enter 4-Digit Verification Code
+                    </Label>
+
                     <InputOTP
                       maxLength={4}
                       value={otp}
@@ -330,6 +497,7 @@ export default function LoginPage() {
                         }
                       }}
                       autoFocus
+                      disabled={loading}
                     >
                       <InputOTPGroup>
                         <InputOTPSlot index={0} />
@@ -343,16 +511,16 @@ export default function LoginPage() {
                   <Button
                     type="submit"
                     disabled={loading || otp.length < 4}
-                    className="w-full h-12 bg-[#014a62] hover:bg-[#01374a] text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-[#014a62]/15 flex items-center justify-center gap-2"
+                    className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-primary/10 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {loading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin text-white" />
-                        <span>Verifying...</span>
+                        <span>Verifying Code...</span>
                       </>
                     ) : (
                       <>
-                        <span>Verify OTP &amp; Continue</span>
+                        <span>Verify &amp; Continue</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
@@ -362,18 +530,18 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={handleResendOTP}
-                      disabled={resendTimer > 0 || resendLoading}
+                      disabled={resendTimer > 0 || resendLoading || loading}
                       className={`text-xs font-semibold inline-flex items-center gap-1.5 transition-colors ${
-                        resendTimer > 0 || resendLoading
-                          ? "text-slate-400 cursor-not-allowed"
-                          : "text-[#014a62] hover:underline"
+                        resendTimer > 0 || resendLoading || loading
+                          ? 'text-slate-400 cursor-not-allowed'
+                          : 'text-primary hover:underline cursor-pointer'
                       }`}
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${resendLoading ? 'animate-spin' : ''}`} />
                       {resendLoading ? (
-                        <span>Resending...</span>
+                        <span>Resending code...</span>
                       ) : resendTimer > 0 ? (
-                        <span>Resend OTP in {resendTimer}s</span>
+                        <span>Resend code in {resendTimer}s</span>
                       ) : (
                         <span>Didn&apos;t receive code? Resend OTP</span>
                       )}
@@ -386,55 +554,72 @@ export default function LoginPage() {
               {step === 'profile' && (
                 <form onSubmit={handleCompleteProfile} className="space-y-5">
                   <div className="space-y-1">
-                    <h2 className="text-2xl md:text-3xl font-bold font-instrument-serif text-[#014a62]">Complete Profile</h2>
-                    <p className="text-xs text-slate-500 font-medium">
-                      Welcome to Airbharath LMS! Tell us your full name to get started.
+                    <h2 className="text-2xl sm:text-3xl font-bold font-outfit text-foreground tracking-tight">
+                      Complete Your Profile
+                    </h2>
+                    <p className="text-xs sm:text-sm text-muted-foreground font-normal">
+                      Welcome to AirBharath LMS! Please enter your details as they should appear on your completion certificates.
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="fullname-input">Full Name *</Label>
+                    <Label htmlFor="fullname-input" className="text-xs font-bold text-slate-700">
+                      Full Legal Name <span className="text-rose-500">*</span>
+                    </Label>
                     <div className="relative">
                       <Input
                         id="fullname-input"
                         type="text"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        placeholder="John Doe"
-                        className="pr-10 h-12 text-sm font-semibold"
+                        placeholder="e.g. Captain Rajesh Sharma"
+                        className="pr-10 h-12 text-sm font-semibold rounded-xl border-slate-200 focus-visible:ring-primary"
                         required
                         autoFocus
+                        disabled={loading}
                       />
-                      <User className="absolute right-3.5 top-3.5 h-4 w-4 text-slate-400" />
+                      <User className="absolute right-3.5 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
                     </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      This name will be printed on your official verifiable PDF certificate.
+                    </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email-input">Email Address *</Label>
-                    <Input
-                      id="email-input"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="john@example.com"
-                      className="h-12 text-sm font-semibold"
-                      required
-                    />
+                    <Label htmlFor="email-input" className="text-xs font-bold text-slate-700">
+                      Email Address <span className="text-rose-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="email-input"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="rajesh.sharma@example.com"
+                        className="pr-10 h-12 text-sm font-semibold rounded-xl border-slate-200 focus-visible:ring-primary"
+                        required
+                        disabled={loading}
+                      />
+                      <Mail className="absolute right-3.5 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Used for enrollment invoices, course announcements, and certificate delivery.
+                    </p>
                   </div>
 
                   <Button
                     type="submit"
-                    disabled={loading}
-                    className="w-full h-12 bg-[#014a62] hover:bg-[#01374a] text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-[#014a62]/15 flex items-center justify-center gap-2"
+                    disabled={loading || !fullName.trim() || !email.trim()}
+                    className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-primary/10 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {loading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin text-white" />
-                        <span>Saving...</span>
+                        <span>Saving Profile...</span>
                       </>
                     ) : (
                       <>
-                        <span>Complete Registration</span>
+                        <span>Complete Profile &amp; Continue</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
@@ -444,24 +629,66 @@ export default function LoginPage() {
 
               {/* Alert / Notification Feedback Message */}
               {message && (
-                <div className={`p-4 rounded-xl border flex items-start gap-3 transition-all ${
-                  isSuccess 
-                    ? "bg-emerald-50 border-emerald-200 text-emerald-800" 
-                    : "bg-rose-50 border-rose-200 text-rose-800"
-                }`}>
-                  {isSuccess && <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />}
-                  <p className="text-xs font-semibold leading-relaxed">{message}</p>
+                <div
+                  role="alert"
+                  aria-live="polite"
+                  className={`p-3.5 rounded-xl border flex items-start gap-2.5 transition-all text-xs font-medium ${
+                    isSuccess
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                      : 'bg-rose-50 border-rose-200 text-rose-800'
+                  }`}
+                >
+                  {isSuccess ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                  )}
+                  <p className="leading-relaxed">{message}</p>
                 </div>
               )}
+
+              {/* Footer Legal Agreement */}
+              <div className="pt-2 border-t border-slate-100 text-center text-[11px] text-muted-foreground">
+                <p>
+                  By continuing, you agree to AirBharath LMS{' '}
+                  <Link href="/terms" className="text-primary font-semibold hover:underline">
+                    Terms &amp; Conditions
+                  </Link>{' '}
+                  and{' '}
+                  <Link href="/privacy" className="text-primary font-semibold hover:underline">
+                    Privacy Policy
+                  </Link>
+                  .
+                </p>
+              </div>
 
             </div>
           </div>
         </div>
       </div>
 
-      <footer className="w-full px-6 py-6 border-t border-slate-200/80 bg-white text-center text-xs text-slate-500 font-medium">
-        © {new Date().getFullYear()} Airbharath LMS. All rights reserved.
+      {/* Page Footer */}
+      <footer className="w-full px-6 py-4 text-center text-xs text-slate-500 font-medium border-t border-slate-200/60 bg-white/50 backdrop-blur-xs">
+        <p>&copy; {new Date().getFullYear()} AirBharath LMS. All rights reserved.</p>
       </footer>
     </div>
   );
 }
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-xs font-semibold text-muted-foreground">Loading AirBharath LMS...</p>
+          </div>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
+  );
+}
+
