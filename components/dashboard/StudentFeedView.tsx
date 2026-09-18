@@ -1,0 +1,407 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import {
+  Megaphone,
+  Share2,
+  Check,
+  Calendar,
+  Sparkles,
+  BookOpen,
+  Briefcase,
+  Award,
+  ArrowRight,
+  ExternalLink,
+  ShieldCheck,
+  Compass,
+  Play,
+  Layers,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+
+export interface FeedPostItem {
+  id: string;
+  content: string;
+  imageUrl?: string | null;
+  createdAt: string | Date;
+  author?: {
+    id?: string;
+    fullName?: string | null;
+    avatarUrl?: string | null;
+    role?: string | null;
+  } | null;
+}
+
+export interface SidebarCourseItem {
+  id: string;
+  title: string;
+  percent: number;
+  totalLessons: number;
+  completedLessons: number;
+  resumeLessonId?: string | null;
+}
+
+export interface SidebarJobItem {
+  id: string;
+  title: string;
+  company: string;
+  location?: string | null;
+  createdAt: string | Date;
+}
+
+export interface StudentFeedViewProps {
+  posts: FeedPostItem[];
+  activeCourse?: SidebarCourseItem | null;
+  recentJobs?: SidebarJobItem[];
+  certificatesCount?: number;
+}
+
+export function StudentFeedView({
+  posts,
+  activeCourse,
+  recentJobs = [],
+  certificatesCount = 0,
+}: StudentFeedViewProps) {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleShare = (postId: string, content: string) => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    if (navigator.share) {
+      navigator
+        .share({
+          title: "AirBharath LMS Community Announcement",
+          text: content.slice(0, 100) + "...",
+          url,
+        })
+        .catch(() => {});
+    } else {
+      navigator.clipboard.writeText(url);
+      setCopiedId(postId);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
+  };
+
+  return (
+    <div className="space-y-8 max-w-7xl mx-auto font-sans pb-12">
+      {/* Page Header Banner */}
+      <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Official Student Community</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold font-outfit text-foreground tracking-tight">
+            Activity Notice Board
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl">
+            Stay informed with verified academy announcements, new masterclass launches, platform updates, and technical learning broadcasts.
+          </p>
+
+          <div className="flex flex-wrap items-center gap-2 pt-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-muted text-foreground text-xs font-semibold">
+              <Megaphone className="w-3.5 h-3.5 text-primary" />
+              <span>{posts.length} Broadcasts</span>
+            </span>
+            {activeCourse && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-muted text-foreground text-xs font-semibold">
+                <Layers className="w-3.5 h-3.5 text-cyan-600" />
+                <span>Active Track: {activeCourse.percent}%</span>
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-muted text-foreground text-xs font-semibold">
+              <Award className="w-3.5 h-3.5 text-emerald-600" />
+              <span>{certificatesCount} Credentials Earned</span>
+            </span>
+          </div>
+        </div>
+
+        <Button
+          asChild
+          className="bg-primary hover:bg-primary/90 text-white font-bold h-11 px-5 rounded-xl text-xs shadow-xs shrink-0 self-start md:self-auto cursor-pointer"
+        >
+          <Link href="/dashboard/courses" className="flex items-center gap-2">
+            <span>My Courses</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </Button>
+      </div>
+
+      {/* Two-Column Grid: Main Feed (2/3) + Real-Data Sidebar (1/3) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        {/* Main Feed Column */}
+        <div className="lg:col-span-2 space-y-6">
+          {posts.length === 0 ? (
+            /* Empty State */
+            <div className="bg-card border border-dashed border-border rounded-3xl p-10 sm:p-14 text-center space-y-4 shadow-xs">
+              <div className="h-14 w-14 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary">
+                <Megaphone className="h-7 w-7" />
+              </div>
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h3 className="text-lg font-bold font-outfit text-foreground">
+                  The notice board is quiet right now
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  There are no announcements published at the moment. Check back soon for academy updates, new course curriculum drops, and schedule alerts.
+                </p>
+              </div>
+              <Button
+                asChild
+                className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs px-6 h-10 shadow-xs cursor-pointer"
+              >
+                <Link href="/dashboard/courses">Return to My Learning</Link>
+              </Button>
+            </div>
+          ) : (
+            posts.map((post) => {
+              const formattedDate = new Date(post.createdAt).toLocaleDateString("en-IN", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              });
+              const authorName = post.author?.fullName || "AirBharath Academy Team";
+              const isAdmin = post.author?.role === "admin";
+              const authorInitials = authorName.charAt(0).toUpperCase();
+
+              return (
+                <article
+                  key={post.id}
+                  className="bg-card border border-border/80 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-200"
+                >
+                  {/* Post Header */}
+                  <div className="p-6 sm:p-7 space-y-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-3.5">
+                        {/* Avatar */}
+                        {post.author?.avatarUrl ? (
+                          <img
+                            src={post.author.avatarUrl}
+                            alt={authorName}
+                            className="h-11 w-11 rounded-2xl object-cover border border-border/60 shrink-0"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                              const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                              if (fallback) fallback.classList.remove("hidden");
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className={`h-11 w-11 rounded-2xl bg-primary/10 text-primary font-bold font-outfit text-base items-center justify-center border border-primary/20 shrink-0 ${
+                            post.author?.avatarUrl ? "hidden" : "flex"
+                          }`}
+                        >
+                          {authorInitials}
+                        </div>
+
+                        {/* Author Meta */}
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-bold text-sm sm:text-base font-outfit text-foreground">
+                              {authorName}
+                            </h3>
+                            {isAdmin && (
+                              <Badge className="bg-primary text-white text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 shadow-2xs flex items-center gap-1">
+                                <ShieldCheck className="w-3 h-3" />
+                                <span>Official Broadcast</span>
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                            <Calendar className="w-3 h-3 text-muted-foreground/70" />
+                            <span>{formattedDate}</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Post Content */}
+                    <div className="text-xs sm:text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap font-sans">
+                      {post.content}
+                    </div>
+
+                    {/* Image Attachment if available */}
+                    {post.imageUrl && (
+                      <div className="rounded-2xl overflow-hidden border border-border/60 bg-muted/30 max-h-[440px]">
+                        <img
+                          src={post.imageUrl}
+                          alt="Announcement attachment"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.currentTarget.parentElement as HTMLElement)?.classList.add("hidden");
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Post Action Footer */}
+                    <div className="pt-4 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                        <Megaphone className="w-3.5 h-3.5 text-primary" />
+                        <span>AirBharath Verified Notice</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleShare(post.id, post.content)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground font-semibold text-xs transition-colors cursor-pointer"
+                        title="Share this announcement"
+                      >
+                        {copiedId === post.id ? (
+                          <span className="text-emerald-600 flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Link Copied</span>
+                          </span>
+                        ) : (
+                          <>
+                            <Share2 className="w-3.5 h-3.5" />
+                            <span>Share</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })
+          )}
+        </div>
+
+        {/* Secondary Column: Real Data Sidebar */}
+        <div className="space-y-6">
+          {/* Section 1: Active Learning Track */}
+          {activeCourse && (
+            <div className="bg-card border border-border/80 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold font-outfit uppercase tracking-wider text-primary">
+                  In-Progress Course
+                </span>
+                <span className="text-xs font-bold text-foreground">
+                  {activeCourse.percent}%
+                </span>
+              </div>
+
+              <div className="space-y-1">
+                <h4 className="font-bold text-sm font-outfit text-foreground line-clamp-2">
+                  {activeCourse.title}
+                </h4>
+                <p className="text-[11px] text-muted-foreground">
+                  {activeCourse.completedLessons} of {activeCourse.totalLessons} Lessons Completed
+                </p>
+              </div>
+
+              <Progress value={activeCourse.percent} className="h-2" />
+
+              <Button
+                asChild
+                className="w-full bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Link
+                  href={
+                    activeCourse.resumeLessonId
+                      ? `/dashboard/courses/${activeCourse.id}/lessons/${activeCourse.resumeLessonId}`
+                      : `/dashboard/courses/${activeCourse.id}`
+                  }
+                >
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                  <span>Resume Learning</span>
+                </Link>
+              </Button>
+            </div>
+          )}
+
+          {/* Section 2: Recent Job Opportunities from DB */}
+          {recentJobs.length > 0 && (
+            <div className="bg-card border border-border/80 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold font-outfit uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                  <Briefcase className="w-3.5 h-3.5 text-primary" />
+                  <span>Career Opportunities</span>
+                </h4>
+                <Link
+                  href="/dashboard/jobs"
+                  className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-0.5"
+                >
+                  <span>View All</span>
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+
+              <div className="space-y-3">
+                {recentJobs.slice(0, 3).map((job) => (
+                  <div
+                    key={job.id}
+                    className="p-3.5 bg-muted/40 border border-border/60 rounded-2xl hover:bg-muted/70 transition-colors space-y-1"
+                  >
+                    <div className="font-bold text-xs text-foreground line-clamp-1">
+                      {job.title}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground flex items-center justify-between">
+                      <span className="font-medium text-primary truncate">{job.company}</span>
+                      {job.location && <span className="truncate">{job.location}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                asChild
+                variant="outline"
+                className="w-full border-slate-200 text-slate-700 hover:text-primary hover:bg-slate-100 text-xs font-semibold h-10 rounded-xl"
+              >
+                <Link href="/dashboard/jobs" className="flex items-center justify-center gap-1.5">
+                  <span>Explore Placement Hub</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+              </Button>
+            </div>
+          )}
+
+          {/* Section 3: Academy Quick Links */}
+          <div className="bg-card border border-border/80 rounded-3xl p-5 sm:p-6 shadow-xs space-y-3">
+            <h4 className="text-xs font-bold font-outfit uppercase tracking-wider text-foreground flex items-center gap-1.5">
+              <Compass className="w-3.5 h-3.5 text-primary" />
+              <span>Student Resources</span>
+            </h4>
+
+            <div className="space-y-1.5 text-xs">
+              <Link
+                href="/dashboard/courses"
+                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-muted text-foreground transition-colors font-semibold"
+              >
+                <span className="flex items-center gap-2">
+                  <BookOpen className="w-3.5 h-3.5 text-primary" />
+                  <span>My Enrolled Courses</span>
+                </span>
+                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+              </Link>
+
+              <Link
+                href="/dashboard/certificates"
+                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-muted text-foreground transition-colors font-semibold"
+              >
+                <span className="flex items-center gap-2">
+                  <Award className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Verified Credentials</span>
+                </span>
+                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+              </Link>
+
+              <Link
+                href="/courses"
+                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-muted text-foreground transition-colors font-semibold"
+              >
+                <span className="flex items-center gap-2">
+                  <Compass className="w-3.5 h-3.5 text-cyan-600" />
+                  <span>Course Catalog</span>
+                </span>
+                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

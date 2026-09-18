@@ -1,83 +1,135 @@
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { feedPosts } from "@/lib/db/schema";
-import { desc } from "drizzle-orm";
-import { Megaphone, MessageSquare, Heart, Share2 } from "lucide-react";
+import { feedPosts, enrollments, courses, progress, certificates, jobs } from "@/lib/db/schema";
+import { desc, eq } from "drizzle-orm";
+import {
+  StudentFeedView,
+  FeedPostItem,
+  SidebarCourseItem,
+  SidebarJobItem,
+} from "@/components/dashboard/StudentFeedView";
 
 export const dynamic = "force-dynamic";
 
-export default async function StudentFeed() {
-  let posts: any[] = [];
-  try {
-    posts = await db.query.feedPosts.findMany({
-      with: { author: true },
-      orderBy: [desc(feedPosts.createdAt)],
-    });
-  } catch (err) {
-    console.error("Feed error:", err);
+export default async function StudentFeedPage() {
+  const session = await getSession();
+
+  if (!session) {
+    return redirect("/login");
   }
 
+  // Fetch real posts, student enrollments, progress, certificates, and recent jobs in parallel
+  const [postsData, userEnrollments, userProgress, userCertificates, recentJobsData] =
+    await Promise.all([
+      db.query.feedPosts.findMany({
+        with: { author: true },
+        orderBy: [desc(feedPosts.createdAt)],
+      }),
+      db.query.enrollments.findMany({
+        where: eq(enrollments.userId, session.id),
+        with: {
+          course: {
+            with: {
+              modules: {
+                orderBy: (m: any, { asc }: any) => [asc(m.orderIndex)],
+                with: {
+                  lessons: {
+                    orderBy: (l: any, { asc }: any) => [asc(l.orderIndex)],
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: [desc(enrollments.enrolledAt)],
+      }),
+      db.query.progress.findMany({
+        where: eq(progress.userId, session.id),
+      }),
+      db.query.certificates.findMany({
+        where: eq(certificates.userId, session.id),
+      }),
+      db.query.jobs.findMany({
+        orderBy: [desc(jobs.createdAt)],
+        limit: 3,
+      }),
+    ]);
+
+  const completedLessonIds = new Set(
+    userProgress.filter((p: any) => p.isCompleted).map((p: any) => p.lessonId)
+  );
+
+  // Determine earliest active in-progress course for the sidebar
+  let activeCourse: SidebarCourseItem | null = null;
+
+  for (const enrollment of userEnrollments as any[]) {
+    const course = enrollment.course;
+    if (!course) continue;
+
+    let totalLessons = 0;
+    let completedLessons = 0;
+    const allLessons: Array<{ id: string; title: string }> = [];
+
+    (course.modules as any[])?.forEach((m: any) => {
+      m.lessons?.forEach((l: any) => {
+        totalLessons++;
+        allLessons.push({ id: l.id, title: l.title });
+        if (completedLessonIds.has(l.id)) {
+          completedLessons++;
+        }
+      });
+    });
+
+    const percent = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+    if (percent < 100) {
+      const nextIncomplete = allLessons.find((l) => !completedLessonIds.has(l.id));
+      const resumeLesson = nextIncomplete || allLessons[0] || null;
+
+      activeCourse = {
+        id: course.id,
+        title: course.title,
+        percent,
+        totalLessons,
+        completedLessons,
+        resumeLessonId: resumeLesson ? resumeLesson.id : null,
+      };
+      break;
+    }
+  }
+
+  // Format posts
+  const posts: FeedPostItem[] = postsData.map((p: any) => ({
+    id: p.id,
+    content: p.content,
+    imageUrl: p.imageUrl,
+    createdAt: p.createdAt,
+    author: p.author
+      ? {
+          id: p.author.id,
+          fullName: p.author.fullName,
+          avatarUrl: p.author.avatarUrl,
+          role: p.author.role,
+        }
+      : null,
+  }));
+
+  // Format recent jobs
+  const recentJobs: SidebarJobItem[] = recentJobsData.map((j: any) => ({
+    id: j.id,
+    title: j.title,
+    company: j.company,
+    location: j.location,
+    createdAt: j.createdAt,
+  }));
+
   return (
-    <div className="space-y-8 max-w-4xl mx-auto animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold font-instrument-serif text-[#014a62]">Activity Notice Board</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Stay up to date with broadcasts and course announcements from Airbharath LMS.</p>
-      </div>
-
-      <div className="space-y-6">
-        {posts && posts.length > 0 ? (
-          posts.map((post: any) => (
-            <div key={post.id} className="bg-card p-6 border rounded-2xl shadow-sm flex flex-col gap-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-[#014a62]/10 rounded-full flex items-center justify-center font-bold text-[#014a62] uppercase">
-                  {post.author?.fullName?.charAt(0) || "A"}
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm text-foreground">
-                    {post.author?.fullName || "Airbharath Team"}
-                  </h4>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(post.createdAt).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap font-sans">
-                {post.content}
-              </div>
-
-              {post.imageUrl && (
-                <div className="rounded-xl overflow-hidden border max-h-[400px]">
-                  <img
-                    src={post.imageUrl}
-                    alt="Notice attachment"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-
-              <div className="flex items-center gap-6 border-t pt-4 text-xs font-semibold text-muted-foreground">
-                <button className="flex items-center gap-1.5 hover:text-foreground">
-                  <Heart className="h-4 w-4" /> Like
-                </button>
-                <button className="flex items-center gap-1.5 hover:text-foreground">
-                  <MessageSquare className="h-4 w-4" /> Comment
-                </button>
-                <button className="flex items-center gap-1.5 hover:text-foreground">
-                  <Share2 className="h-4 w-4" /> Share
-                </button>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="bg-gray-50 p-12 border border-dashed rounded-3xl text-center space-y-4 max-w-lg mx-auto">
-            <Megaphone className="h-12 w-12 mx-auto text-muted-foreground/30" />
-            <div>
-              <h3 className="font-bold text-lg text-foreground">Your feed is quiet</h3>
-              <p className="text-xs text-muted-foreground">Check back later for course announcements and technical news.</p>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+    <StudentFeedView
+      posts={posts}
+      activeCourse={activeCourse}
+      recentJobs={recentJobs}
+      certificatesCount={userCertificates.length}
+    />
   );
 }
