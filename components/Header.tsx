@@ -22,6 +22,7 @@ const NAV_LINKS = [
   { href: "/#benefits", label: "Platform", icon: Sparkles },
   { href: "/#how-it-works", label: "How It Works", icon: BookOpen },
   { href: "/#certificate", label: "Certificates", icon: ShieldCheck },
+  { href: "/pricing", label: "Pricing" },
   { href: "/faq", label: "FAQ" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
@@ -99,38 +100,47 @@ export default function Header() {
               </Link>
 
               <Link
-                href="/#benefits"
-                className="px-3 py-1.5 rounded-lg hover:text-primary hover:bg-slate-100 transition-colors"
+                href="/pricing"
+                className={`px-3 py-1.5 rounded-lg transition-colors ${
+                  pathname === "/pricing"
+                    ? "text-primary font-bold bg-slate-100"
+                    : "hover:text-primary hover:bg-slate-100"
+                }`}
               >
-                Platform
-              </Link>
-
-              <Link
-                href="/#how-it-works"
-                className="px-3 py-1.5 rounded-lg hover:text-primary hover:bg-slate-100 transition-colors"
-              >
-                How It Works
-              </Link>
-
-              <Link
-                href="/#certificate"
-                className="px-3 py-1.5 rounded-lg hover:text-primary hover:bg-slate-100 transition-colors"
-              >
-                Certificates
+                Pricing
               </Link>
 
               <Link
                 href="/faq"
-                className="px-3 py-1.5 rounded-lg hover:text-primary hover:bg-slate-100 transition-colors"
+                className={`px-3 py-1.5 rounded-lg transition-colors ${
+                  pathname === "/faq"
+                    ? "text-primary font-bold bg-slate-100"
+                    : "hover:text-primary hover:bg-slate-100"
+                }`}
               >
                 FAQ
               </Link>
 
               <Link
                 href="/about"
-                className="px-3 py-1.5 rounded-lg hover:text-primary hover:bg-slate-100 transition-colors"
+                className={`px-3 py-1.5 rounded-lg transition-colors ${
+                  pathname === "/about"
+                    ? "text-primary font-bold bg-slate-100"
+                    : "hover:text-primary hover:bg-slate-100"
+                }`}
               >
                 About
+              </Link>
+
+              <Link
+                href="/contact"
+                className={`px-3 py-1.5 rounded-lg transition-colors ${
+                  pathname === "/contact"
+                    ? "text-primary font-bold bg-slate-100"
+                    : "hover:text-primary hover:bg-slate-100"
+                }`}
+              >
+                Contact
               </Link>
             </nav>
           </div>

@@ -1,71 +1,112 @@
-import { CheckCircle2 } from "lucide-react";
-import Link from "next/link";
+import { db } from "@/lib/db";
+import { courses } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { PricingView, type PricingCourseItem } from "@/components/pricing/PricingView";
 
-export default function PricingPage() {
-  return (
-    <div className="container mx-auto px-4 py-24">
-      <div className="text-center max-w-3xl mx-auto mb-16">
-        <h1 className="text-4xl font-bold mb-4 tracking-tight">Investment in Intelligence.</h1>
-        <p className="text-lg text-muted-foreground">
-          We win when you win. Introducing our risk-free, income-aligned tuition model.
-        </p>
-      </div>
+export const dynamic = "force-dynamic";
 
-      <div className="bg-card rounded-3xl border shadow-xl overflow-hidden flex flex-col md:flex-row max-w-5xl mx-auto">
-        <div className="p-10 md:w-1/2 flex flex-col justify-center border-b md:border-b-0 md:border-r border-border bg-muted/30">
-          <h3 className="text-2xl font-bold mb-2">Shared Success Plan</h3>
-          <p className="text-muted-foreground mb-6">Start your journey today with minimal upfront investment.</p>
-          
-          <div className="flex items-baseline gap-2 mb-8">
-            <span className="text-5xl font-extrabold text-primary">50%</span>
-            <span className="text-xl text-muted-foreground font-medium">Upfront</span>
-          </div>
-          
-          <ul className="space-y-4 mb-8 flex-1">
-            <li className="flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-accent shrink-0" />
-              <span>Access all premium software training</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-accent shrink-0" />
-              <span>Live mentorship & project portfolio</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-accent shrink-0" />
-              <span>Sudarshan Kriya behavioral training</span>
-            </li>
-          </ul>
-        </div>
-        
-        <div className="p-10 md:w-1/2 bg-primary text-primary-foreground flex flex-col justify-center">
-          <h3 className="text-2xl font-bold mb-2 text-white">Pay the Rest Later</h3>
-          <p className="text-primary-foreground/80 mb-6">We only succeed when you secure a high-paying job.</p>
-          
-          <div className="flex items-baseline gap-2 mb-8">
-            <span className="text-5xl font-extrabold text-white">50%</span>
-            <span className="text-xl text-primary-foreground/80 font-medium">Post-Placement</span>
-          </div>
-          
-          <ul className="space-y-4 mb-8 flex-1">
-            <li className="flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-green-400 shrink-0" />
-              <span>Only payable after landing a job</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-green-400 shrink-0" />
-              <span>Direct entry into corporate placement hub</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-green-400 shrink-0" />
-              <span>Earn 2x-3x the average market salary</span>
-            </li>
-          </ul>
-          
-          <Link href="/search/courses" className="w-full text-center py-4 bg-white text-primary font-bold rounded-lg hover:bg-white/90 transition-colors shadow-lg block">
-            Apply for the Program
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
+export const metadata = {
+  title: "Pricing & Plans | AirBharath LMS",
+  description:
+    "Transparent pricing for AirBharath LMS professional certificate courses. Complete 18% GST compliance, verifiable credentials, and instant invoice generation.",
+};
+
+const FEATURED_FALLBACK_COURSES: PricingCourseItem[] = [
+  {
+    id: "combo-pack",
+    title: "All-in-One Professional Skill Combo Pass",
+    slug: "combo-pack",
+    price: 1999,
+    description: "Access all 4 certificate programs in one bundle.",
+    modulesCount: 23,
+    lessonsCount: 78,
+    badge: "Comprehensive Bundle",
+  },
+  {
+    id: "ai-skills",
+    title: "AI Skills for the Future of Work",
+    slug: "ai-skills",
+    price: 825,
+    description: "Practical AI workflows and productivity tools.",
+    modulesCount: 6,
+    lessonsCount: 24,
+    badge: "Certificate Course",
+  },
+  {
+    id: "content-creation",
+    title: "Content Creation & Digital Marketing",
+    slug: "content-creation",
+    price: 825,
+    description: "Digital presence and high-impact content strategies.",
+    modulesCount: 5,
+    lessonsCount: 18,
+    badge: "Certificate Course",
+  },
+  {
+    id: "ms-office",
+    title: "MS Office Essentials",
+    slug: "ms-office",
+    price: 825,
+    description: "Spreadsheets, executive presentations, and documentation.",
+    modulesCount: 5,
+    lessonsCount: 16,
+    badge: "Certificate Course",
+  },
+  {
+    id: "entrepreneurship",
+    title: "Entrepreneurship Basics",
+    slug: "entrepreneurship",
+    price: 825,
+    description: "Venture foundations, business models, and validation.",
+    modulesCount: 6,
+    lessonsCount: 20,
+    badge: "Certificate Course",
+  },
+];
+
+export default async function PricingPage() {
+  let dbCourses: any[] = [];
+
+  try {
+    dbCourses = await db.query.courses.findMany({
+      where: eq(courses.isPublished, true),
+      with: {
+        modules: {
+          with: {
+            lessons: true,
+          },
+        },
+      },
+    });
+
+    dbCourses.sort((a: any, b: any) => {
+      if (a.slug === "combo-pack") return -1;
+      if (b.slug === "combo-pack") return 1;
+      return 0;
+    });
+  } catch (err) {
+    console.error("Pricing page courses fetch error:", err);
+  }
+
+  const formattedCourses: PricingCourseItem[] =
+    dbCourses.length > 0
+      ? dbCourses.map((c: any) => {
+          const modulesCount = c.modules?.length || 0;
+          const lessonsCount =
+            c.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0) || 0;
+
+          return {
+            id: c.id,
+            title: c.title,
+            slug: c.slug || c.id,
+            description: c.description || null,
+            price: Number(c.price) || 825,
+            modulesCount,
+            lessonsCount,
+            badge: c.slug?.includes("combo") ? "Comprehensive Bundle" : "Certificate Course",
+          };
+        })
+      : FEATURED_FALLBACK_COURSES;
+
+  return <PricingView courses={formattedCourses} />;
 }
