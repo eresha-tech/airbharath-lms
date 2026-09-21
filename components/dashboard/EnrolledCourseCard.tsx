@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Play, RefreshCw, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { BookOpen, Play, RefreshCw, AlertTriangle, CheckCircle2, Award } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ export function EnrolledCourseCard({ course }: EnrolledCourseCardProps) {
   return (
     <div
       className={cn(
-        "bg-card border rounded-2xl overflow-hidden shadow-xs flex flex-col justify-between transition-all duration-200 hover:shadow-md",
+        "bg-card border rounded-2xl overflow-hidden shadow-2xs flex flex-col justify-between transition-all duration-200 hover:shadow-md",
         course.isExpired
           ? "border-destructive/30 bg-destructive/5"
           : "border-border/80 hover:border-border"
@@ -36,22 +36,22 @@ export function EnrolledCourseCard({ course }: EnrolledCourseCardProps) {
     >
       <div>
         {/* Course Thumbnail */}
-        <div className="aspect-video relative overflow-hidden bg-muted">
+        <div className="aspect-video relative overflow-hidden bg-muted group">
           {course.thumbnailUrl ? (
             <img
               src={course.thumbnailUrl}
               alt={course.title}
-              className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           ) : (
             <div className="w-full h-full bg-primary/5 flex items-center justify-center text-primary">
-              <BookOpen className="h-10 w-10 opacity-60" />
+              <BookOpen className="h-10 w-10 opacity-50" />
             </div>
           )}
 
           {/* Expired Overlay */}
           {course.isExpired && (
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-xs flex flex-col items-center justify-center text-center p-4">
+            <div className="absolute inset-0 bg-background/85 backdrop-blur-xs flex flex-col items-center justify-center text-center p-4">
               <AlertTriangle className="w-7 h-7 text-amber-500 mb-1" />
               <span className="font-bold text-xs text-foreground">Access Expired</span>
               <span className="text-[10px] text-muted-foreground mt-0.5">
@@ -63,24 +63,24 @@ export function EnrolledCourseCard({ course }: EnrolledCourseCardProps) {
           {/* Status Badge */}
           <div className="absolute top-2.5 right-2.5">
             {course.isExpired ? (
-              <Badge variant="destructive" className="text-[10px] uppercase font-bold">
+              <Badge variant="destructive" className="text-[10px] uppercase font-bold shadow-xs">
                 Expired
               </Badge>
             ) : isCompleted ? (
-              <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] uppercase font-bold flex items-center gap-1">
+              <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] uppercase font-bold flex items-center gap-1 shadow-xs">
                 <CheckCircle2 className="h-3 w-3" />
-                Completed
+                <span>Completed</span>
               </Badge>
             ) : (
-              <Badge className="bg-primary/90 hover:bg-primary text-primary-foreground text-[10px] uppercase font-bold">
-                Active
+              <Badge className="bg-primary hover:bg-primary text-primary-foreground text-[10px] uppercase font-bold shadow-xs">
+                Active Track
               </Badge>
             )}
           </div>
         </div>
 
         {/* Content Details */}
-        <div className="p-5 space-y-3">
+        <div className="p-4 sm:p-5 space-y-3">
           <div>
             <h3 className="font-bold text-sm sm:text-base text-foreground font-outfit line-clamp-1">
               {course.title}
@@ -100,13 +100,13 @@ export function EnrolledCourseCard({ course }: EnrolledCourseCardProps) {
               </span>
               <span className="font-bold text-foreground">{course.percent}%</span>
             </div>
-            <Progress value={course.percent} className="h-1.5" />
+            <Progress value={course.percent} className="h-1.5 rounded-full" />
           </div>
         </div>
       </div>
 
       {/* Action Footer */}
-      <div className="p-5 pt-0 border-t border-border/50 mt-2">
+      <div className="p-4 sm:p-5 pt-0 border-t border-border/50 mt-1">
         {course.isExpired ? (
           <Button
             asChild
@@ -122,7 +122,7 @@ export function EnrolledCourseCard({ course }: EnrolledCourseCardProps) {
           <Button
             asChild
             variant="outline"
-            className="w-full text-xs font-bold h-9 rounded-xl border-primary/20 text-primary hover:bg-primary/10 mt-3"
+            className="w-full text-xs font-bold h-9 rounded-xl border-primary/30 text-primary hover:bg-primary/10 mt-3"
           >
             <Link href={`/dashboard/courses/${course.id}`}>
               <BookOpen className="h-3.5 w-3.5 mr-1.5" />
@@ -138,7 +138,7 @@ export function EnrolledCourseCard({ course }: EnrolledCourseCardProps) {
               href={`/dashboard/courses/${course.id}/lessons/${course.resumeLessonId}`}
             >
               <Play className="h-3.5 w-3.5 mr-1.5 fill-current" />
-              <span>Resume Lesson</span>
+              <span>{course.completedLessons > 0 ? "Resume Lesson" : "Start Course"}</span>
             </Link>
           </Button>
         )}

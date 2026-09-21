@@ -1,7 +1,7 @@
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { enrollments, courses, progress, certificates } from "@/lib/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { enrollments, courses, progress, certificates, jobs } from "@/lib/db/schema";
+import { eq, inArray, desc } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { BookOpen, ArrowRight } from "lucide-react";
@@ -48,14 +48,19 @@ export default async function StudentDashboard() {
         })
       : [];
 
-  // Retrieve student progress & certificates
-  const studentProgress = await db.query.progress.findMany({
-    where: eq(progress.userId, session.id),
-  });
-
-  const studentCertificates = await db.query.certificates.findMany({
-    where: eq(certificates.userId, session.id),
-  });
+  // Retrieve student progress & certificates in parallel with recent jobs
+  const [studentProgress, studentCertificates, recentJobs] = await Promise.all([
+    db.query.progress.findMany({
+      where: eq(progress.userId, session.id),
+    }),
+    db.query.certificates.findMany({
+      where: eq(certificates.userId, session.id),
+    }),
+    db.query.jobs.findMany({
+      orderBy: [desc(jobs.createdAt)],
+      limit: 3,
+    }),
+  ]);
 
   const completedLessonIds = new Set(
     studentProgress
@@ -116,11 +121,16 @@ export default async function StudentDashboard() {
     })
     .filter((c: any): c is NonNullable<typeof c> => c !== null);
 
-  // Derive metrics safely from existing data
+  // Derive metrics safely from existing real data
   const enrolledCount = coursesWithStatus.length;
   const activeCount = coursesWithStatus.filter((c) => !c.isExpired).length;
   const completedCount = coursesWithStatus.filter((c) => c.percent === 100).length;
+  const allCompleted = enrolledCount > 0 && coursesWithStatus.every((c) => c.percent === 100);
   const completedLessonsCount = completedLessonIds.size;
+  const totalLessonsAcrossAllCourses = coursesWithStatus.reduce(
+    (acc, c) => acc + c.totalLessons,
+    0
+  );
   const averageProgress =
     enrolledCount > 0
       ? Math.round(
@@ -129,39 +139,42 @@ export default async function StudentDashboard() {
       : 0;
   const certificatesCount = studentCertificates.length;
 
-  // Active course with highest continuation relevance (first in-progress or first active)
+  // Active course with highest continuation relevance (first in-progress, or first active)
   const continueCourse =
     coursesWithStatus.find((c) => !c.isExpired && c.percent < 100 && c.totalLessons > 0) ||
     coursesWithStatus.find((c) => !c.isExpired && c.totalLessons > 0);
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* 1. Welcome Section */}
+    <div className="space-y-6 sm:space-y-8 animate-fade-in max-w-7xl mx-auto">
+      {/* 1. Welcome Hero Section */}
       <DashboardWelcome
         userName={session.fullName || "Student"}
         hasCourses={enrolledCount > 0}
+        allCompleted={allCompleted}
         continueUrl={
           continueCourse
             ? `/dashboard/courses/${continueCourse.id}/lessons/${continueCourse.resumeLessonId}`
             : undefined
         }
         continueCourseTitle={continueCourse?.title}
+        continueLessonTitle={continueCourse?.resumeLessonTitle}
       />
 
-      {/* 2. Key Metrics Grid */}
+      {/* 2. Primary Learning Focus (Visual Spotlight) */}
+      {continueCourse && <ContinueLearningCard course={continueCourse} />}
+
+      {/* 3. Key Metrics Grid */}
       <DashboardStats
         enrolledCount={enrolledCount}
         activeCount={activeCount}
         completedCount={completedCount}
         completedLessonsCount={completedLessonsCount}
+        totalLessonsCount={totalLessonsAcrossAllCourses}
         averageProgress={averageProgress}
         certificatesCount={certificatesCount}
       />
 
-      {/* 3. Continue Learning Spotlight */}
-      {continueCourse && <ContinueLearningCard course={continueCourse} />}
-
-      {/* 4. Enrolled Courses & Side Column */}
+      {/* 4. Enrolled Courses & Sidebar Column */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Left Column: My Courses */}
         <div className="lg:col-span-2 space-y-5">
@@ -183,7 +196,7 @@ export default async function StudentDashboard() {
           </div>
 
           {coursesWithStatus.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
               {coursesWithStatus.map((course) => (
                 <EnrolledCourseCard key={course.id} course={course} />
               ))}
@@ -193,10 +206,10 @@ export default async function StudentDashboard() {
           )}
         </div>
 
-        {/* Right Column: Certificates & Career */}
+        {/* Right Column: Certificates & Career Hub */}
         <div className="space-y-6">
           <CertificatesCard certificates={studentCertificates} />
-          <PlacementHighlightsCard />
+          <PlacementHighlightsCard jobs={recentJobs} />
         </div>
       </div>
     </div>
