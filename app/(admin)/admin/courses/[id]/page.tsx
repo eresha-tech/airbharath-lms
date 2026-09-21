@@ -1,10 +1,15 @@
 import { db } from "@/lib/db";
-import { courses, modules, lessons, videos } from "@/lib/db/schema";
+import { courses, modules, lessons, videos, lessonMaterials } from "@/lib/db/schema";
 import { eq, inArray, asc } from "drizzle-orm";
 import CourseEditor from "@/components/admin/CourseEditor";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Course Curriculum Editor | AirBharath LMS Admin",
+  description: "Edit syllabus structure, video lectures, lesson notes, and course publishing properties.",
+};
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -59,7 +64,7 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
 
   // Fetch video status for each lesson (keyed by lessonId)
   const lessonIds = lessonsList.map((l: any) => l.id);
-  const videoStatusByLessonId: Record<string, string> = {};
+  const videoStatusByLessonId: Record<string, { id: string; status: string }> = {};
   if (lessonIds.length > 0) {
     try {
       const videoRows = await db
@@ -67,10 +72,33 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
         .from(videos)
         .where(inArray(videos.lessonId, lessonIds));
       for (const v of videoRows) {
-        if (v.lessonId) videoStatusByLessonId[v.lessonId] = v.status;
+        if (v.lessonId) videoStatusByLessonId[v.lessonId] = { id: v.id, status: v.status };
       }
     } catch (err) {
       console.error("Error fetching video statuses in EditCoursePage:", err);
+    }
+  }
+
+  // Fetch lesson materials for each lesson
+  const materialsByLessonId: Record<string, any[]> = {};
+  if (lessonIds.length > 0) {
+    try {
+      const materialsRows = await db
+        .select()
+        .from(lessonMaterials)
+        .where(inArray(lessonMaterials.lessonId, lessonIds));
+      for (const mat of materialsRows) {
+        if (!materialsByLessonId[mat.lessonId]) materialsByLessonId[mat.lessonId] = [];
+        materialsByLessonId[mat.lessonId].push({
+          id: mat.id,
+          title: mat.title,
+          file_url: mat.fileUrl,
+          file_type: mat.fileType,
+          file_size: mat.fileSize,
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching lesson materials in EditCoursePage:", err);
     }
   }
 
@@ -87,24 +115,27 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
     title: l.title,
     content: l.content,
     video_url: l.videoUrl,
-    video_status: videoStatusByLessonId[l.id] || null,
+    video_id: videoStatusByLessonId[l.id]?.id || (l.videoUrl && UUID_REGEX.test(l.videoUrl) ? l.videoUrl : null),
+    video_status: videoStatusByLessonId[l.id]?.status || null,
     order_index: l.orderIndex,
     is_free_preview: l.isFreePreview,
+    materials: materialsByLessonId[l.id] || [],
   }));
 
   return (
-    <CourseEditor 
+    <CourseEditor
       course={{
         id: courseObj.id,
         title: courseObj.title,
+        slug: courseObj.slug || null,
         description: courseObj.description || "",
         price: Number(courseObj.price || 0),
         thumbnail_url: courseObj.thumbnailUrl || "",
         is_published: !!courseObj.isPublished,
         access_days: courseObj.accessDays ?? null,
-      }} 
-      initialModules={formattedModules} 
-      initialLessons={formattedLessons} 
+      }}
+      initialModules={formattedModules}
+      initialLessons={formattedLessons}
     />
   );
 }
