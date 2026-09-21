@@ -3,8 +3,6 @@
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import {
-  ArrowDownRight,
-  ArrowUpRight,
   Calendar,
   Download,
   Wallet,
@@ -16,46 +14,106 @@ import {
   PlusCircle,
   GraduationCap,
   TrendingUp,
+  ArrowUpRight,
+  ArrowDownRight,
+  Briefcase,
+  Layers,
+  Sparkles,
+  PieChart,
+  Activity,
+  ShoppingBag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-interface AdminDashboardClientProps {
-  initialUsers: any[];
-  initialEnrollments: any[];
-  initialOrders: any[];
+export interface FormattedOrder {
+  id: string;
+  user_id: string;
+  course_id: string;
+  amount: string | number;
+  status: string;
+  created_at: string;
+  users: {
+    full_name?: string | null;
+    email?: string | null;
+  };
+  courses: {
+    title?: string | null;
+    slug?: string | null;
+  };
+}
+
+export interface FormattedUser {
+  id: string;
+  full_name?: string | null;
+  email: string;
+  role: string;
+  created_at: string;
+}
+
+export interface FormattedEnrollment {
+  id: string;
+  user_id: string;
+  course_id: string;
+  enrolled_at: string;
+}
+
+export interface FormattedProgress {
+  id: string;
+  user_id: string;
+  lesson_id: string;
+  course_id?: string | null;
+  is_completed: boolean;
+  updated_at: string;
+}
+
+export interface FormattedCourse {
+  id: string;
+  title: string;
+  slug: string;
+  price: number;
+  is_published: boolean;
+  lesson_count: number;
+}
+
+export interface AdminDashboardClientProps {
+  initialUsers: FormattedUser[];
+  initialEnrollments: FormattedEnrollment[];
+  initialOrders: FormattedOrder[];
+  initialProgress?: FormattedProgress[];
+  initialCourses?: FormattedCourse[];
   courseLessonCounts?: Record<string, number>;
   enrollmentCompletions?: Record<string, number>;
+  lessonToCourse?: Record<string, string>;
 }
 
 export default function AdminDashboardClient({
   initialUsers = [],
   initialEnrollments = [],
   initialOrders = [],
+  initialProgress = [],
+  initialCourses = [],
   courseLessonCounts = {},
   enrollmentCompletions = {},
+  lessonToCourse = {},
 }: AdminDashboardClientProps) {
   const [selectedRange, setSelectedRange] = useState<"30days" | "6months" | "12months" | "alltime">("6months");
   const [showDropdown, setShowDropdown] = useState(false);
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+  const [hoveredDal, setHoveredDal] = useState<number | null>(null);
 
-  // Parse dates correctly
+  // Normalize parsed orders
   const parsedOrders = useMemo(() => {
-    return initialOrders.map((order) => {
-      const userObj = Array.isArray(order.users) ? order.users[0] : order.users;
-      const courseObj = Array.isArray(order.courses) ? order.courses[0] : order.courses;
-      return {
-        ...order,
-        usersNormalized: userObj,
-        coursesNormalized: courseObj,
-        createdAtDate: new Date(order.created_at),
-        amountNum: Number(order.amount) || 0,
-      };
-    });
+    return initialOrders.map((order) => ({
+      ...order,
+      createdAtDate: new Date(order.created_at),
+      amountNum: Number(order.amount) || 0,
+    }));
   }, [initialOrders]);
 
+  // Normalize parsed enrollments
   const parsedEnrollments = useMemo(() => {
     return initialEnrollments.map((enroll) => ({
       ...enroll,
@@ -63,7 +121,7 @@ export default function AdminDashboardClient({
     }));
   }, [initialEnrollments]);
 
-  // Date thresholds
+  // Date thresholds for range filter
   const dateThreshold = useMemo(() => {
     const now = new Date();
     if (selectedRange === "30days") {
@@ -76,7 +134,7 @@ export default function AdminDashboardClient({
     return new Date(0); // All time
   }, [selectedRange]);
 
-  // Filtered lists
+  // Filtered orders and enrollments based on selected range
   const filteredOrders = useMemo(() => {
     if (selectedRange === "alltime") return parsedOrders;
     return parsedOrders.filter((o) => o.createdAtDate >= dateThreshold);
@@ -87,24 +145,65 @@ export default function AdminDashboardClient({
     return parsedEnrollments.filter((e) => e.enrolledAtDate >= dateThreshold);
   }, [parsedEnrollments, dateThreshold, selectedRange]);
 
-  // KPI calculations
+  // --- KPI CALCULATIONS ---
+  // 1. Total Revenue in selected window
   const totalRevenue = useMemo(() => {
     return filteredOrders
       .filter((o) => o.status === "paid")
       .reduce((sum, o) => sum + o.amountNum, 0);
   }, [filteredOrders]);
 
+  // 2. Active Students count
   const activeStudentsCount = useMemo(() => {
     const studentUsers = initialUsers.filter((u) => u.role === "student");
     if (selectedRange === "alltime") return studentUsers.length;
     return studentUsers.filter((u) => new Date(u.created_at) >= dateThreshold).length;
   }, [initialUsers, dateThreshold, selectedRange]);
 
-  const monthlySalesCount = useMemo(() => {
+  // 3. Paid Orders count
+  const paidOrdersCount = useMemo(() => {
     return filteredOrders.filter((o) => o.status === "paid").length;
   }, [filteredOrders]);
 
-  // Dynamic completion rate: mathematically accounts for actual lesson counts in each enrolled course
+  // 4. Mathematically Audited 30-Day Revenue Growth (Phase 6.2 semantics)
+  const growthMetrics = useMemo(() => {
+    const now = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(now.getDate() - 30);
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(now.getDate() - 60);
+
+    const paidAll = parsedOrders.filter((o) => o.status === "paid");
+    const revLast30 = paidAll
+      .filter((o) => o.createdAtDate >= thirtyDaysAgo)
+      .reduce((sum, o) => sum + o.amountNum, 0);
+
+    const revPrev30 = paidAll
+      .filter((o) => o.createdAtDate >= sixtyDaysAgo && o.createdAtDate < thirtyDaysAgo)
+      .reduce((sum, o) => sum + o.amountNum, 0);
+
+    let growthText = "—";
+    let growthSubtext = "vs preceding 30 days";
+    let isPositive = true;
+
+    if (revPrev30 > 0) {
+      const growthRate = ((revLast30 - revPrev30) / revPrev30) * 100;
+      growthText = growthRate >= 0 ? `+${growthRate.toFixed(1)}%` : `${growthRate.toFixed(1)}%`;
+      isPositive = growthRate >= 0;
+    } else if (revLast30 > 0) {
+      growthText = "+100%";
+      growthSubtext = "New revenue in current period";
+      isPositive = true;
+    } else {
+      growthText = "—";
+      growthSubtext = "No revenue in comparison period";
+      isPositive = true;
+    }
+
+    return { growthText, growthSubtext, isPositive, revLast30, revPrev30 };
+  }, [parsedOrders]);
+
+  // 5. Completion Rate (Syllabus Completion Index based on actual completed lessons / enrolled course seats)
   const completionRate = useMemo(() => {
     if (!filteredEnrollments.length || !courseLessonCounts) return null;
 
@@ -123,7 +222,115 @@ export default function AdminDashboardClient({
     return Number(rate.toFixed(1));
   }, [filteredEnrollments, courseLessonCounts, enrollmentCompletions]);
 
-  // Generate chart data based on range
+  // 6. Active Learner Engagement (Deduplicated active students who have completed lessons / total students)
+  const engagementMetrics = useMemo(() => {
+    const studentUsers = initialUsers.filter((u) => u.role === "student");
+    const totalStudents = studentUsers.length;
+
+    const uniqueActiveStudentIds = new Set(initialProgress.map((p) => p.user_id));
+    const activeLearnersCount = uniqueActiveStudentIds.size;
+
+    const engagementRate =
+      totalStudents > 0 ? Number(((activeLearnersCount / totalStudents) * 100).toFixed(1)) : null;
+
+    return { totalStudents, activeLearnersCount, engagementRate };
+  }, [initialUsers, initialProgress]);
+
+  // 7. 14-Day Daily Active Learners (DAL): Deduplicated unique learners per calendar day
+  const dalData = useMemo(() => {
+    const now = new Date();
+    const list: { label: string; fullDate: string; count: number }[] = [];
+
+    for (let i = 13; i >= 0; i--) {
+      const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const dayLabel = targetDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const fullDate = targetDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+      const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0, 0);
+      const endOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999);
+
+      const uniqueUsersThisDay = new Set(
+        initialProgress
+          .filter((p) => {
+            const uDate = new Date(p.updated_at);
+            return uDate >= startOfDay && uDate <= endOfDay;
+          })
+          .map((p) => p.user_id)
+      );
+
+      list.push({
+        label: dayLabel,
+        fullDate,
+        count: uniqueUsersThisDay.size,
+      });
+    }
+
+    return list;
+  }, [initialProgress]);
+
+  const maxDalCount = useMemo(() => {
+    return Math.max(...dalData.map((d) => d.count), 1);
+  }, [dalData]);
+
+  // 8. Cohort Progress Breakdown (Seat-Based across all enrollments)
+  const cohortBreakdown = useMemo(() => {
+    let completedCount = 0;
+    let activeCount = 0;
+    let startedCount = 0;
+    let notStartedCount = 0;
+
+    filteredEnrollments.forEach((e) => {
+      const totalLessons = courseLessonCounts[e.course_id] || 0;
+      if (totalLessons === 0) {
+        notStartedCount++;
+        return;
+      }
+
+      const completedLessons = enrollmentCompletions[`${e.user_id}_${e.course_id}`] || 0;
+      const percent = Math.min(100, Math.round((completedLessons / totalLessons) * 100));
+
+      if (percent === 100) {
+        completedCount++;
+      } else if (percent >= 25) {
+        activeCount++;
+      } else if (percent > 0) {
+        startedCount++;
+      } else {
+        notStartedCount++;
+      }
+    });
+
+    const totalSeats = filteredEnrollments.length;
+
+    return [
+      {
+        label: "Fully Completed (100%)",
+        count: `${completedCount} ${completedCount === 1 ? "seat" : "seats"}`,
+        percent: totalSeats > 0 ? Math.round((completedCount / totalSeats) * 100) : 0,
+        color: "bg-primary",
+      },
+      {
+        label: "Active Progression (25% – 99%)",
+        count: `${activeCount} ${activeCount === 1 ? "seat" : "seats"}`,
+        percent: totalSeats > 0 ? Math.round((activeCount / totalSeats) * 100) : 0,
+        color: "bg-emerald-600",
+      },
+      {
+        label: "Early Stage (1% – 24%)",
+        count: `${startedCount} ${startedCount === 1 ? "seat" : "seats"}`,
+        percent: totalSeats > 0 ? Math.round((startedCount / totalSeats) * 100) : 0,
+        color: "bg-amber-500",
+      },
+      {
+        label: "Not Yet Started (0%)",
+        count: `${notStartedCount} ${notStartedCount === 1 ? "seat" : "seats"}`,
+        percent: totalSeats > 0 ? Math.round((notStartedCount / totalSeats) * 100) : 0,
+        color: "bg-muted-foreground/30",
+      },
+    ];
+  }, [filteredEnrollments, courseLessonCounts, enrollmentCompletions]);
+
+  // 9. Revenue & Enrollment Trend Chart (Month-anchored bucketing)
   const chartData = useMemo(() => {
     const now = new Date();
     const dataMap: { [key: string]: { label: string; count: number; revenue: number } } = {};
@@ -176,8 +383,8 @@ export default function AdminDashboardClient({
     return { maxRevenue, maxEnrollments };
   }, [chartData]);
 
-  // Export CSV Action
-  const handleExport = () => {
+  // Export CSV Handler
+  const handleExportCSV = () => {
     const csvRows = [
       ["Order ID", "Student Name", "Student Email", "Course Title", "Amount (INR)", "Status", "Date Created"],
     ];
@@ -185,9 +392,9 @@ export default function AdminDashboardClient({
     filteredOrders.forEach((order) => {
       csvRows.push([
         order.id,
-        order.usersNormalized?.full_name || "N/A",
-        order.usersNormalized?.email || "N/A",
-        order.coursesNormalized?.title || "N/A",
+        order.users?.full_name || "N/A",
+        order.users?.email || "N/A",
+        order.courses?.title || "N/A",
         order.amountNum.toString(),
         order.status,
         order.createdAtDate.toLocaleDateString(),
@@ -220,24 +427,29 @@ export default function AdminDashboardClient({
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 max-w-7xl mx-auto font-sans pb-12 animate-fade-in">
       {/* Top Header & Range Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-outfit">
+      <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>AirBharath Command Center</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold font-outfit text-foreground tracking-tight">
             Executive Overview
           </h1>
-          <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
-            Monitor real revenue growth, student enrollments, and operational health.
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl">
+            Live platform revenue intake, student enrollment velocity, syllabus completion metrics, and operational health.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-3 shrink-0 self-start md:self-auto">
           {/* Range Dropdown */}
           <div className="relative">
             <button
+              type="button"
               onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center gap-2 px-3.5 py-2 border border-border/80 rounded-xl bg-card text-xs font-semibold hover:bg-muted/50 transition-colors shadow-2xs"
+              className="flex items-center gap-2 px-3.5 py-2.5 border border-border/80 rounded-xl bg-background hover:bg-muted text-xs font-semibold text-foreground transition-colors shadow-2xs cursor-pointer"
             >
               <Calendar className="h-3.5 w-3.5 text-primary" />
               <span>{getRangeLabel()}</span>
@@ -256,12 +468,13 @@ export default function AdminDashboardClient({
                   ].map((option) => (
                     <button
                       key={option.val}
+                      type="button"
                       onClick={() => {
                         setSelectedRange(option.val as any);
                         setShowDropdown(false);
                       }}
                       className={cn(
-                        "w-full text-left px-3.5 py-2 text-xs font-medium hover:bg-muted/50 transition-colors",
+                        "w-full text-left px-3.5 py-2.5 text-xs font-medium hover:bg-muted/60 transition-colors cursor-pointer",
                         selectedRange === option.val
                           ? "text-primary font-bold bg-primary/5"
                           : "text-muted-foreground"
@@ -275,12 +488,11 @@ export default function AdminDashboardClient({
             )}
           </div>
 
-          {/* Export CSV */}
+          {/* Export CSV Button */}
           <Button
-            onClick={handleExport}
+            onClick={handleExportCSV}
             variant="outline"
-            size="sm"
-            className="text-xs font-semibold gap-1.5 rounded-xl border-border/80 hover:bg-muted/50"
+            className="border-slate-200 text-slate-700 hover:text-primary hover:bg-slate-100 font-bold h-10 px-4 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer"
           >
             <Download className="h-3.5 w-3.5" />
             <span>Export CSV</span>
@@ -288,111 +500,131 @@ export default function AdminDashboardClient({
         </div>
       </div>
 
-      {/* KPI Stats Cards */}
+      {/* KPI Row (4 primary metrics) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        {/* Total Revenue */}
-        <Card className="rounded-2xl border-border/80 shadow-2xs hover:shadow-xs transition-shadow">
+        {/* KPI 1: Total Revenue */}
+        <Card className="rounded-3xl border border-border/80 shadow-xs hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
               Total Revenue
             </span>
-            <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <div className="h-9 w-9 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
               <Wallet className="h-4 w-4" />
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-1.5">
             <div className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-outfit">
               ₹{totalRevenue.toLocaleString("en-IN")}
             </div>
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.2 rounded-full">
-                <ArrowUpRight className="h-3 w-3" />
-                Verified
-              </span>
-              <span className="text-[11px] text-muted-foreground">Paid transactions</span>
+            <div className="flex items-center gap-1.5 text-[11px]">
+              {growthMetrics.growthText !== "—" ? (
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full",
+                    growthMetrics.isPositive
+                      ? "text-emerald-700 bg-emerald-500/10 border border-emerald-500/20"
+                      : "text-rose-700 bg-rose-500/10 border border-rose-500/20"
+                  )}
+                >
+                  {growthMetrics.isPositive ? (
+                    <ArrowUpRight className="h-3 w-3" />
+                  ) : (
+                    <ArrowDownRight className="h-3 w-3" />
+                  )}
+                  {growthMetrics.growthText}
+                </span>
+              ) : (
+                <span className="text-muted-foreground font-semibold">—</span>
+              )}
+              <span className="text-muted-foreground truncate">{growthMetrics.growthSubtext}</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Active Students */}
-        <Card className="rounded-2xl border-border/80 shadow-2xs hover:shadow-xs transition-shadow">
+        {/* KPI 2: Active Students */}
+        <Card className="rounded-3xl border border-border/80 shadow-xs hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
               Active Students
             </span>
-            <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <div className="h-9 w-9 rounded-2xl bg-cyan-500/10 text-cyan-600 flex items-center justify-center">
               <Users className="h-4 w-4" />
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-1.5">
             <div className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-outfit">
               {activeStudentsCount.toLocaleString()}
             </div>
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.2 rounded-full">
-                <ArrowUpRight className="h-3 w-3" />
-                Active
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-cyan-700 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full">
+                Registered
               </span>
-              <span className="text-[11px] text-muted-foreground">Registered learners</span>
+              <span>Enrolled learner accounts</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Syllabus Completion */}
-        <Card className="rounded-2xl border-border/80 shadow-2xs hover:shadow-xs transition-shadow">
+        {/* KPI 3: Completion Rate */}
+        <Card className="rounded-3xl border border-border/80 shadow-xs hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
               Completion Rate
             </span>
-            <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <div className="h-9 w-9 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
               <GraduationCap className="h-4 w-4" />
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-1.5">
             <div className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-outfit">
               {completionRate !== null ? `${completionRate}%` : "—"}
             </div>
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <span className="text-[11px] text-muted-foreground">
-                {completionRate !== null ? "Course progress index" : "No completions recorded yet"}
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className="text-muted-foreground">
+                {completionRate !== null
+                  ? "Syllabus lesson progress index"
+                  : "No completions recorded yet"}
               </span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Total Sales Count */}
-        <Card className="rounded-2xl border-border/80 shadow-2xs hover:shadow-xs transition-shadow">
+        {/* KPI 4: Paid Orders */}
+        <Card className="rounded-3xl border border-border/80 shadow-xs hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
               Paid Orders
             </span>
-            <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <div className="h-9 w-9 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
               <TrendingUp className="h-4 w-4" />
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-1.5">
             <div className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-outfit">
-              {monthlySalesCount}
+              {paidOrdersCount.toLocaleString()}
             </div>
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <span className="text-[11px] text-muted-foreground">In selected period</span>
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                Verified
+              </span>
+              <span>Transactions in period</span>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Grid: Trend Chart + Recent Orders & Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-        {/* Left 2 Cols: Trend Chart */}
-        <Card className="lg:col-span-2 rounded-2xl border-border/80 shadow-2xs flex flex-col justify-between overflow-hidden">
-          <CardHeader className="pb-2">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      {/* Analytics Row: Trend Chart + Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+        {/* Left 8 Cols: Performance & Enrollment Trend Chart */}
+        <Card className="lg:col-span-8 rounded-3xl border border-border/80 shadow-xs flex flex-col justify-between overflow-hidden">
+          <CardHeader className="pb-2 border-b border-border/60">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <CardTitle className="text-base font-bold font-outfit text-foreground">
-                  Performance & Enrollment Trend
+                <CardTitle className="text-base font-bold font-outfit text-foreground flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-primary" />
+                  <span>Revenue &amp; Enrollment Trend</span>
                 </CardTitle>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Visualizing student enrollments and revenue intake
+                  Visualizing verified tuition receipts and student enrollments
                 </p>
               </div>
               <div className="flex items-center gap-4 text-xs font-semibold">
@@ -401,18 +633,18 @@ export default function AdminDashboardClient({
                   <span>Revenue (₹)</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <span className="h-2.5 w-2.5 rounded-sm bg-accent" />
+                  <span className="h-2.5 w-2.5 rounded-sm bg-cyan-500" />
                   <span>Enrollments</span>
                 </div>
               </div>
             </div>
           </CardHeader>
 
-          <CardContent className="pt-4">
+          <CardContent className="pt-6">
             {/* Interactive Chart Container */}
-            <div className="relative h-64 sm:h-72 flex items-end justify-between gap-1 sm:gap-2 border-b border-l border-border/60 pb-2 pl-2">
+            <div className="relative h-64 sm:h-72 flex items-end justify-between gap-1 sm:gap-2.5 border-b border-l border-border/60 pb-3 pl-3">
               {/* Y Gridlines */}
-              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-2 pl-2">
+              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-3 pl-3">
                 <div className="w-full border-t border-border/20" />
                 <div className="w-full border-t border-border/20" />
                 <div className="w-full border-t border-border/20" />
@@ -421,9 +653,9 @@ export default function AdminDashboardClient({
 
               {chartData.map((data, idx) => {
                 const revPercent =
-                  maxVal.maxRevenue > 0 ? (data.revenue / maxVal.maxRevenue) * 100 : 0;
+                  maxVal.maxRevenue > 0 ? (data.revenue / maxVal.maxRevenue) * 85 : 0;
                 const countPercent =
-                  maxVal.maxEnrollments > 0 ? (data.count / maxVal.maxEnrollments) * 100 : 0;
+                  maxVal.maxEnrollments > 0 ? (data.count / maxVal.maxEnrollments) * 85 : 0;
 
                 return (
                   <div
@@ -434,17 +666,17 @@ export default function AdminDashboardClient({
                   >
                     {/* Tooltip on hover */}
                     {hoveredBar === idx && (
-                      <div className="absolute bottom-full mb-2 bg-foreground text-background text-[10px] font-semibold p-2.5 rounded-xl shadow-xl z-30 flex flex-col gap-1 min-w-[130px] border border-border/20 pointer-events-none animate-in fade-in zoom-in-95 duration-150">
-                        <p className="text-muted-foreground border-b border-muted/20 pb-0.5">{data.label}</p>
-                        <p className="text-white">
+                      <div className="absolute bottom-full mb-2 bg-slate-950 text-white text-[10px] font-semibold p-2.5 rounded-xl shadow-xl z-30 flex flex-col gap-1 min-w-[140px] border border-slate-800 pointer-events-none animate-in fade-in zoom-in-95 duration-150">
+                        <p className="text-slate-400 border-b border-slate-800 pb-0.5">{data.label}</p>
+                        <p className="text-slate-200">
                           Revenue:{" "}
-                          <span className="text-primary font-bold">
+                          <span className="text-cyan-300 font-bold">
                             ₹{data.revenue.toLocaleString("en-IN")}
                           </span>
                         </p>
-                        <p className="text-white">
-                          Students:{" "}
-                          <span className="text-accent font-bold">{data.count}</span>
+                        <p className="text-slate-200">
+                          Enrollments:{" "}
+                          <span className="text-emerald-400 font-bold">{data.count}</span>
                         </p>
                       </div>
                     )}
@@ -453,11 +685,13 @@ export default function AdminDashboardClient({
                     <div className="flex w-full items-end gap-1 h-[85%] justify-center">
                       <div
                         style={{ height: `${Math.max(revPercent, 3)}%` }}
-                        className="w-2 sm:w-3.5 bg-primary/80 group-hover:bg-primary rounded-t-sm transition-all duration-300"
+                        className="w-2.5 sm:w-4 bg-primary/80 group-hover:bg-primary rounded-t-sm transition-all duration-300"
+                        title={`Revenue: ₹${data.revenue}`}
                       />
                       <div
                         style={{ height: `${Math.max(countPercent, 3)}%` }}
-                        className="w-2 sm:w-3.5 bg-accent/80 group-hover:bg-accent rounded-t-sm transition-all duration-300"
+                        className="w-2.5 sm:w-4 bg-cyan-500/80 group-hover:bg-cyan-500 rounded-t-sm transition-all duration-300"
+                        title={`Enrollments: ${data.count}`}
                       />
                     </div>
 
@@ -471,109 +705,263 @@ export default function AdminDashboardClient({
           </CardContent>
         </Card>
 
-        {/* Right 1 Col: Quick Links & Recent Orders */}
-        <div className="space-y-6">
-          {/* Quick Actions Card */}
-          <Card className="rounded-2xl border-border/80 shadow-2xs">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-bold font-outfit text-foreground">
-                Administrative Actions
+        {/* Right 4 Cols: Administrative Quick Actions */}
+        <div className="lg:col-span-4 space-y-6">
+          <Card className="rounded-3xl border border-border/80 shadow-xs">
+            <CardHeader className="pb-3 border-b border-border/60">
+              <CardTitle className="text-sm font-bold font-outfit text-foreground flex items-center gap-2">
+                <Layers className="h-4 w-4 text-primary" />
+                <span>Admin Quick Actions</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-2">
+            <CardContent className="p-4 grid grid-cols-2 gap-2.5">
               <Link
                 href="/admin/courses/new"
-                className="flex items-center gap-2 p-2.5 rounded-xl border border-border/80 bg-muted/20 hover:bg-muted/60 text-xs font-semibold text-foreground transition-colors"
+                className="flex flex-col gap-1 p-3 rounded-2xl border border-border/70 bg-muted/20 hover:bg-primary/10 hover:border-primary/30 text-xs font-semibold text-foreground transition-all group"
               >
-                <PlusCircle className="h-4 w-4 text-primary shrink-0" />
-                <span className="truncate">Add Course</span>
+                <PlusCircle className="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
+                <span className="truncate font-bold">New Course</span>
+                <span className="text-[10px] text-muted-foreground font-normal">Publish curriculum</span>
               </Link>
+
               <Link
                 href="/admin/students"
-                className="flex items-center gap-2 p-2.5 rounded-xl border border-border/80 bg-muted/20 hover:bg-muted/60 text-xs font-semibold text-foreground transition-colors"
+                className="flex flex-col gap-1 p-3 rounded-2xl border border-border/70 bg-muted/20 hover:bg-primary/10 hover:border-primary/30 text-xs font-semibold text-foreground transition-all group"
               >
-                <Users className="h-4 w-4 text-primary shrink-0" />
-                <span className="truncate">Add Student</span>
+                <Users className="h-4 w-4 text-cyan-600 group-hover:scale-110 transition-transform" />
+                <span className="truncate font-bold">Students</span>
+                <span className="text-[10px] text-muted-foreground font-normal">Manage rosters</span>
               </Link>
+
               <Link
                 href="/admin/doubts"
-                className="flex items-center gap-2 p-2.5 rounded-xl border border-border/80 bg-muted/20 hover:bg-muted/60 text-xs font-semibold text-foreground transition-colors"
+                className="flex flex-col gap-1 p-3 rounded-2xl border border-border/70 bg-muted/20 hover:bg-primary/10 hover:border-primary/30 text-xs font-semibold text-foreground transition-all group"
               >
-                <MessageSquare className="h-4 w-4 text-primary shrink-0" />
-                <span className="truncate">Moderate QA</span>
+                <MessageSquare className="h-4 w-4 text-amber-600 group-hover:scale-110 transition-transform" />
+                <span className="truncate font-bold">QA Doubts</span>
+                <span className="text-[10px] text-muted-foreground font-normal">Moderate inquiries</span>
               </Link>
+
               <Link
                 href="/admin/coupons"
-                className="flex items-center gap-2 p-2.5 rounded-xl border border-border/80 bg-muted/20 hover:bg-muted/60 text-xs font-semibold text-foreground transition-colors"
+                className="flex flex-col gap-1 p-3 rounded-2xl border border-border/70 bg-muted/20 hover:bg-primary/10 hover:border-primary/30 text-xs font-semibold text-foreground transition-all group"
               >
-                <Tag className="h-4 w-4 text-primary shrink-0" />
-                <span className="truncate">New Coupon</span>
+                <Tag className="h-4 w-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+                <span className="truncate font-bold">Coupons</span>
+                <span className="text-[10px] text-muted-foreground font-normal">Discounts &amp; codes</span>
               </Link>
-            </CardContent>
-          </Card>
 
-          {/* Recent Orders Card */}
-          <Card className="rounded-2xl border-border/80 shadow-2xs">
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <CardTitle className="text-sm font-bold font-outfit text-foreground">
-                Recent Transactions
-              </CardTitle>
+              <Link
+                href="/admin/jobs"
+                className="flex flex-col gap-1 p-3 rounded-2xl border border-border/70 bg-muted/20 hover:bg-primary/10 hover:border-primary/30 text-xs font-semibold text-foreground transition-all group"
+              >
+                <Briefcase className="h-4 w-4 text-purple-600 group-hover:scale-110 transition-transform" />
+                <span className="truncate font-bold">Job Board</span>
+                <span className="text-[10px] text-muted-foreground font-normal">Post openings</span>
+              </Link>
+
               <Link
                 href="/admin/orders"
-                className="text-xs font-semibold text-primary hover:underline"
+                className="flex flex-col gap-1 p-3 rounded-2xl border border-border/70 bg-muted/20 hover:bg-primary/10 hover:border-primary/30 text-xs font-semibold text-foreground transition-all group"
               >
-                View all
+                <ShoppingBag className="h-4 w-4 text-indigo-600 group-hover:scale-110 transition-transform" />
+                <span className="truncate font-bold">All Orders</span>
+                <span className="text-[10px] text-muted-foreground font-normal">Payment ledger</span>
               </Link>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3.5">
-                {filteredOrders && filteredOrders.length > 0 ? (
-                  filteredOrders.slice(0, 4).map((order: any) => (
-                    <div key={order.id} className="flex items-start gap-3">
-                      <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0 mt-0.5">
-                        <Wallet className="h-3.5 w-3.5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-foreground truncate">
-                          {order.usersNormalized?.full_name ||
-                            order.usersNormalized?.email ||
-                            "Student"}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground truncate">
-                          {order.coursesNormalized?.title || "Course Enrollment"}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="text-xs font-bold text-foreground">
-                          ₹{order.amountNum.toLocaleString("en-IN")}
-                        </span>
-                        <div className="mt-0.5">
-                          <span
-                            className={cn(
-                              "text-[9px] font-bold px-1.5 py-0.2 rounded-full",
-                              order.status === "paid"
-                                ? "bg-emerald-500/10 text-emerald-600"
-                                : order.status === "pending"
-                                ? "bg-amber-500/10 text-amber-600"
-                                : "bg-rose-500/10 text-rose-600"
-                            )}
-                          >
-                            {order.status.toUpperCase()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-6 text-muted-foreground text-xs font-medium">
-                    No transactions recorded.
-                  </div>
-                )}
-              </div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Learning Performance & Cohort Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
+        {/* Left 6 Cols: Active Learner Engagement & Daily Active Learners (DAL) */}
+        <Card className="lg:col-span-6 rounded-3xl border border-border/80 shadow-xs flex flex-col justify-between">
+          <CardHeader className="pb-3 border-b border-border/60">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-bold font-outfit text-foreground flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                <span>Active Learner Engagement</span>
+              </CardTitle>
+              <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[10px] font-bold">
+                {engagementMetrics.engagementRate !== null
+                  ? `${engagementMetrics.engagementRate}% Active`
+                  : "—"}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {engagementMetrics.totalStudents > 0
+                ? `${engagementMetrics.activeLearnersCount} of ${engagementMetrics.totalStudents} students actively completing curriculum modules`
+                : "No registered students yet"}
+            </p>
+          </CardHeader>
+
+          <CardContent className="pt-6 space-y-4">
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
+                Daily Active Learners (Last 14 Days)
+              </span>
+              <p className="text-[11px] text-muted-foreground">
+                Unique students completing lesson activities per calendar day
+              </p>
+            </div>
+
+            {/* 14-day DAL mini bar chart */}
+            <div className="h-44 sm:h-48 flex items-end justify-between gap-1.5 border-b border-l border-border/60 pb-2 pl-2">
+              {dalData.map((data, idx) => {
+                const heightPercent = maxDalCount > 0 ? (data.count / maxDalCount) * 80 : 0;
+                return (
+                  <div
+                    key={idx}
+                    className="flex-1 flex flex-col items-center justify-end h-full relative group cursor-pointer"
+                    onMouseEnter={() => setHoveredDal(idx)}
+                    onMouseLeave={() => setHoveredDal(null)}
+                  >
+                    {hoveredDal === idx && (
+                      <div className="absolute bottom-full mb-1.5 bg-slate-950 text-white text-[10px] p-2 rounded-xl shadow-xl z-20 whitespace-nowrap font-bold pointer-events-none">
+                        <span>{data.fullDate}: </span>
+                        <span className="text-cyan-300">
+                          {data.count} {data.count === 1 ? "Learner" : "Learners"}
+                        </span>
+                      </div>
+                    )}
+                    <div
+                      style={{ height: `${Math.max(heightPercent, 4)}%` }}
+                      className="w-full bg-primary/80 group-hover:bg-primary rounded-t-sm transition-all duration-300"
+                    />
+                    <span className="text-[8px] sm:text-[9px] text-muted-foreground font-semibold truncate w-full text-center mt-1">
+                      {data.label.split(" ")[1]}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Right 6 Cols: Cohort Progress Distribution (Seat-Based) */}
+        <Card className="lg:col-span-6 rounded-3xl border border-border/80 shadow-xs flex flex-col justify-between">
+          <CardHeader className="pb-3 border-b border-border/60">
+            <CardTitle className="text-base font-bold font-outfit text-foreground flex items-center gap-2">
+              <PieChart className="h-4 w-4 text-primary" />
+              <span>Cohort Progress Distribution</span>
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Completion distribution calculated across all enrolled course seats
+            </p>
+          </CardHeader>
+
+          <CardContent className="pt-6 space-y-4">
+            {cohortBreakdown.map((item, idx) => (
+              <div key={idx} className="space-y-1.5">
+                <div className="flex justify-between text-xs font-semibold text-foreground">
+                  <span>{item.label}</span>
+                  <span className="tabular-nums font-bold">
+                    {item.percent}% <span className="text-muted-foreground font-normal">({item.count})</span>
+                  </span>
+                </div>
+                <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${item.color} rounded-full transition-all duration-500`}
+                    style={{ width: `${item.percent}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Transactions Table / Stream */}
+      <Card className="rounded-3xl border border-border/80 shadow-xs overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/60">
+          <div>
+            <CardTitle className="text-base font-bold font-outfit text-foreground flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-primary" />
+              <span>Recent Transactions &amp; Orders</span>
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Real-time payment logs and student enrollment transactions
+            </p>
+          </div>
+          <Button asChild variant="outline" size="sm" className="rounded-xl text-xs font-bold border-border">
+            <Link href="/admin/orders">View All Orders</Link>
+          </Button>
+        </CardHeader>
+
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            {filteredOrders && filteredOrders.length > 0 ? (
+              <table className="w-full text-xs text-left">
+                <thead className="bg-muted/40 text-muted-foreground font-bold uppercase tracking-wider text-[10px] border-b border-border/60">
+                  <tr>
+                    <th className="py-3 px-4 sm:px-6">Student</th>
+                    <th className="py-3 px-4">Enrolled Course</th>
+                    <th className="py-3 px-4">Amount</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4 sm:px-6 text-right">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {filteredOrders.slice(0, 5).map((order) => {
+                    const studentName = order.users?.full_name || order.users?.email || "Student";
+                    const studentEmail = order.users?.email || "—";
+                    const courseTitle = order.courses?.title || "Course Enrollment";
+                    const formattedDate = new Date(order.created_at).toLocaleDateString("en-IN", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    });
+
+                    return (
+                      <tr key={order.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="py-3.5 px-4 sm:px-6">
+                          <div className="font-bold text-foreground truncate max-w-[180px]">
+                            {studentName}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground truncate max-w-[180px]">
+                            {studentEmail}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="font-semibold text-foreground truncate block max-w-[220px]">
+                            {courseTitle}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-bold text-foreground">
+                          ₹{order.amountNum.toLocaleString("en-IN")}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span
+                            className={cn(
+                              "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider",
+                              order.status === "paid"
+                                ? "bg-emerald-500/10 text-emerald-700 border border-emerald-500/20"
+                                : order.status === "pending"
+                                ? "bg-amber-500/10 text-amber-700 border border-amber-500/20"
+                                : "bg-rose-500/10 text-rose-700 border border-rose-500/20"
+                            )}
+                          >
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 sm:px-6 text-right text-muted-foreground">
+                          {formattedDate}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              <div className="text-center py-10 text-muted-foreground text-xs font-medium space-y-1">
+                <p className="font-semibold text-foreground">No transactions recorded yet.</p>
+                <p className="text-[11px]">Real payment orders will appear here once students enroll.</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
