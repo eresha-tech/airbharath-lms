@@ -454,10 +454,9 @@ export default function AnalyticsClient({
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
-      {/* Date Range Selector & Export Header Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 bg-card rounded-2xl border border-border/80 shadow-2xs">
-        {/* Filter Period Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+      {/* Date Range Selector Pills & CSV Export */}
+      <div className="bg-card border border-border/80 rounded-2xl p-2 sm:p-2.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-1 overflow-x-auto max-w-full pb-1 sm:pb-0">
           {(
             [
               { key: "7d", label: "Last 7 Days" },
@@ -636,7 +635,16 @@ export default function AnalyticsClient({
                       className="flex-1 flex flex-col items-center justify-end h-full gap-1.5 group relative cursor-pointer"
                     >
                       {/* Tooltip */}
-                      <div className="absolute bottom-full mb-2 bg-foreground text-background text-[10px] p-2 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 whitespace-nowrap font-semibold">
+                      <div
+                        className={cn(
+                          "absolute bottom-full mb-2 bg-foreground text-background text-[10px] p-2 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 whitespace-nowrap font-semibold",
+                          idx >= analytics.monthlyRevenueData.length - 2
+                            ? "right-0"
+                            : idx <= 1
+                            ? "left-0"
+                            : "left-1/2 -translate-x-1/2"
+                        )}
+                      >
                         <div className="font-bold">₹{item.revenue.toLocaleString("en-IN")}</div>
                         <div className="text-background/80">
                           {item.orderCount} {item.orderCount === 1 ? "paid order" : "paid orders"}
@@ -689,7 +697,16 @@ export default function AnalyticsClient({
                     className="flex-1 flex flex-col items-center justify-end h-full gap-1.5 group relative cursor-pointer"
                   >
                     {/* Tooltip */}
-                    <div className="absolute bottom-full mb-2 bg-foreground text-background text-[10px] p-2 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 whitespace-nowrap font-semibold">
+                    <div
+                      className={cn(
+                        "absolute bottom-full mb-2 bg-foreground text-background text-[10px] p-2 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 whitespace-nowrap font-semibold",
+                        idx >= analytics.dalData.length - 2
+                          ? "right-0"
+                          : idx <= 1
+                          ? "left-0"
+                          : "left-1/2 -translate-x-1/2"
+                      )}
+                    >
                       <div className="font-bold">{item.fullDate}</div>
                       <div>
                         {item.count} Active {item.count === 1 ? "Learner" : "Learners"}

@@ -639,8 +639,8 @@ export default function CourseEditor({
       )}
 
       {/* Top Breadcrumb & Actions Bar */}
-      <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-2 max-w-2xl">
+      <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+        <div className="space-y-2 min-w-0 flex-1">
           <Link
             href="/admin/courses"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
@@ -677,7 +677,7 @@ export default function CourseEditor({
         </div>
 
         {/* Header Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start md:self-auto">
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start xl:self-auto">
           {course.slug && (
             <Link
               href={`/courses/${course.slug}`}
@@ -726,17 +726,17 @@ export default function CourseEditor({
         onValueChange={(val) => setActiveTab(val as any)}
         className="space-y-6"
       >
-        <TabsList className="bg-muted/50 p-1.5 rounded-2xl border border-border/80 inline-flex h-auto">
+        <TabsList className="bg-muted/50 p-1.5 rounded-2xl border border-border/80 flex flex-wrap sm:inline-flex max-w-full h-auto">
           <TabsTrigger
             value="curriculum"
-            className="rounded-xl px-5 py-2.5 text-xs font-bold gap-2 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-xs transition-all"
+            className="rounded-xl px-5 py-2.5 text-xs font-bold gap-2 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-xs transition-all flex-1 sm:flex-initial"
           >
             <Layers className="h-4 w-4" />
             <span>Curriculum &amp; Syllabus ({modules.length})</span>
           </TabsTrigger>
           <TabsTrigger
             value="settings"
-            className="rounded-xl px-5 py-2.5 text-xs font-bold gap-2 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-xs transition-all"
+            className="rounded-xl px-5 py-2.5 text-xs font-bold gap-2 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-xs transition-all flex-1 sm:flex-initial"
           >
             <Settings className="h-4 w-4" />
             <span>Course Settings &amp; Pricing</span>
