@@ -12,23 +12,32 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Missing lessonId" }, { status: 400 });
     }
 
-    const comments = await db.query.lessonComments.findMany({
-      where: eq(lessonComments.lessonId, lessonId),
-      with: {
-        user: true,
-      },
-      orderBy: [desc(lessonComments.createdAt)],
-    });
+    const rows = await db
+      .select({
+        id: lessonComments.id,
+        lessonId: lessonComments.lessonId,
+        userId: lessonComments.userId,
+        content: lessonComments.content,
+        parentId: lessonComments.parentId,
+        createdAt: lessonComments.createdAt,
+        userName: users.fullName,
+        userEmail: users.email,
+        userRole: users.role,
+      })
+      .from(lessonComments)
+      .leftJoin(users, eq(lessonComments.userId, users.id))
+      .where(eq(lessonComments.lessonId, lessonId))
+      .orderBy(desc(lessonComments.createdAt));
 
-    const formattedComments = comments.map((comment: any) => ({
+    const formattedComments = rows.map((comment) => ({
       id: comment.id,
       lesson_id: comment.lessonId,
       user_id: comment.userId,
       content: comment.content,
       parent_id: comment.parentId || null,
-      created_at: comment.createdAt,
-      user_name: comment.user?.fullName || comment.user?.email || "Student",
-      user_role: comment.user?.role || "student",
+      created_at: comment.createdAt ? new Date(comment.createdAt).toISOString() : new Date().toISOString(),
+      user_name: comment.userName || comment.userEmail || "Student",
+      user_role: comment.userRole || "student",
     }));
 
     return NextResponse.json({ comments: formattedComments });

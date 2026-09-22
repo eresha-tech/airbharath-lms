@@ -26,6 +26,7 @@ import {
   Play,
   PlayCircle,
   Award,
+  PanelLeftClose,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/providers/sidebar-provider";
@@ -53,11 +54,15 @@ interface Course {
 interface ClassroomSidebarProps {
   course: Course;
   completedLessons?: string[];
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export function ClassroomSidebar({
   course,
   completedLessons = [],
+  isCollapsed = false,
+  onToggleCollapse,
 }: ClassroomSidebarProps) {
   const pathname = usePathname();
   const { isOpen, toggle, close } = useSidebar();
@@ -105,8 +110,7 @@ export function ClassroomSidebar({
     <div className="h-full flex flex-col bg-sidebar text-sidebar-foreground select-none font-sans">
       {/* Sidebar Header with Back Link & Progress */}
       <div className={cn("border-b border-sidebar-border shrink-0", isDrawer ? "p-5 pt-9 space-y-4" : "p-4 lg:p-5 space-y-4")}>
-        <div className={cn("flex items-center", isDrawer ? "pr-8" : "")}>
-
+        <div className={cn("flex items-center justify-between", isDrawer ? "pr-8" : "")}>
           <Link
             href="/dashboard/courses"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors group cursor-pointer py-1"
@@ -114,6 +118,17 @@ export function ClassroomSidebar({
             <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-1" />
             <span>Back to My Courses</span>
           </Link>
+
+          {!isDrawer && onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60 transition-colors cursor-pointer"
+              title="Collapse course navigation"
+              aria-label="Collapse course navigation"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -163,10 +178,10 @@ export function ClassroomSidebar({
                         {String(moduleIndex + 1).padStart(2, "0")}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-foreground font-outfit truncate">
+                        <p className="text-xs font-bold text-foreground font-outfit leading-snug break-words">
                           {module.title}
                         </p>
-                        <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-1.5 mt-1 text-[10px] text-muted-foreground">
                           <span>
                             {moduleCompletedCount}/{moduleTotalCount} completed
                           </span>
@@ -195,7 +210,7 @@ export function ClassroomSidebar({
                             onClick={close}
                             aria-current={isActive ? "page" : undefined}
                             className={cn(
-                              "flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all relative group cursor-pointer",
+                              "flex items-start gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all relative group cursor-pointer",
                               isActive
                                 ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                                 : isCompleted
@@ -204,7 +219,7 @@ export function ClassroomSidebar({
                             )}
                           >
                             {/* Completion Status Icon */}
-                            <div className="shrink-0">
+                            <div className="shrink-0 mt-0.5">
                               {isCompleted ? (
                                 <CheckCircle2
                                   className={cn(
@@ -223,7 +238,7 @@ export function ClassroomSidebar({
 
                             <span
                               className={cn(
-                                "flex-1 truncate",
+                                "flex-1 min-w-0 leading-snug break-words",
                                 isCompleted && !isActive && "text-muted-foreground/90 font-medium"
                               )}
                             >
@@ -231,7 +246,7 @@ export function ClassroomSidebar({
                             </span>
 
                             {lesson.isFreePreview && (
-                              <span className="text-[9px] font-bold px-1.5 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded">
+                              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded mt-0.5">
                                 Preview
                               </span>
                             )}
@@ -294,7 +309,12 @@ export function ClassroomSidebar({
       </div>
 
       {/* Desktop Fixed Sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden lg:block w-88 xl:w-96 border-r border-sidebar-border bg-sidebar shadow-xs">
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 hidden lg:block w-88 xl:w-96 border-r border-sidebar-border bg-sidebar shadow-xs transition-transform duration-300 ease-in-out",
+          isCollapsed ? "-translate-x-full" : "translate-x-0"
+        )}
+      >
         <SidebarBody />
       </aside>
 

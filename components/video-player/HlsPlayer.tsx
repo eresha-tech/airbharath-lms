@@ -24,6 +24,8 @@ import {
 interface HlsPlayerProps {
   videoId: string;
   watermarkText?: string;
+  watermarkEmail?: string;
+  watermarkPhone?: string;
   className?: string;
   onEnded?: () => void;
 }
@@ -38,6 +40,25 @@ interface QualityLevel {
 
 const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 2];
 
+function formatPhoneDisplay(rawPhone?: string | null): string {
+  if (!rawPhone) return "";
+  const cleaned = rawPhone.trim();
+  // If already starts with +91 and 10 digits
+  if (cleaned.startsWith("+91")) {
+    const digits = cleaned.slice(3).trim();
+    if (digits.length === 10) {
+      return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
+    }
+    return cleaned;
+  }
+  // If 10 raw digits e.g. 9112345678
+  if (/^\d{10}$/.test(cleaned)) {
+    return `+91 ${cleaned.slice(0, 5)} ${cleaned.slice(5)}`;
+  }
+  // Other format
+  return cleaned.startsWith("+") ? cleaned : `+91 ${cleaned}`;
+}
+
 function formatTime(seconds: number): string {
   if (isNaN(seconds) || seconds < 0 || !isFinite(seconds)) return "00:00";
   const h = Math.floor(seconds / 3600);
@@ -49,7 +70,15 @@ function formatTime(seconds: number): string {
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
-export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className = "", onEnded }: HlsPlayerProps) {
+export function HlsPlayer({
+  videoId,
+  watermarkText = "Airbharath LMS",
+  watermarkEmail,
+  watermarkPhone,
+  className = "",
+  onEnded,
+}: HlsPlayerProps) {
+
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -418,11 +447,33 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
 
   const toggleFullscreen = () => {
     const container = containerRef.current;
+    const video = videoRef.current;
     if (!container) return;
-    if (!document.fullscreenElement) {
-      container.requestFullscreen?.().catch(() => {});
+
+    const isCurrentlyFullscreen =
+      !!document.fullscreenElement ||
+      !!(document as any).webkitFullscreenElement ||
+      !!(document as any).mozFullScreenElement ||
+      !!(document as any).msFullscreenElement;
+
+    if (!isCurrentlyFullscreen) {
+      if (container.requestFullscreen) {
+        container.requestFullscreen().catch(() => {
+          if ((video as any)?.webkitEnterFullscreen) {
+            (video as any).webkitEnterFullscreen();
+          }
+        });
+      } else if ((container as any).webkitRequestFullscreen) {
+        (container as any).webkitRequestFullscreen();
+      } else if ((video as any)?.webkitEnterFullscreen) {
+        (video as any).webkitEnterFullscreen();
+      }
     } else {
-      document.exitFullscreen?.().catch(() => {});
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      }
     }
     resetHideTimer();
   };
@@ -507,6 +558,13 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
   const bufferedPercent = duration > 0 ? (bufferedEnd / duration) * 100 : 0;
 
+  // Construct multi-line watermark: Email on line 1, Phone on line 2
+  const formattedPhone = formatPhoneDisplay(watermarkPhone);
+  const displayWatermark =
+    watermarkEmail || watermarkPhone
+      ? [watermarkEmail, formattedPhone].filter(Boolean).join("\n")
+      : watermarkText;
+
   return (
     <div
       ref={containerRef}
@@ -545,14 +603,14 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
         className="w-full h-full object-contain cursor-pointer"
       />
 
-      {/* Static Watermark Overlay */}
-      {watermarkText && (
-        <div className="absolute top-4 right-4 pointer-events-none select-none text-white/35 text-[11px] font-mono font-medium px-2.5 py-1 bg-black/40 backdrop-blur-md rounded-md border border-white/5 z-20">
-          {watermarkText}
+      {/* Multi-line Watermark Overlay (Email + Mobile Number) */}
+      {displayWatermark && (
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 pointer-events-none select-none text-white/50 text-[9px] sm:text-[11px] font-mono font-medium z-20 text-right leading-tight whitespace-pre-line drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+          {displayWatermark}
         </div>
       )}
 
-      {/* Prominent Loading & Buffering Spinner Overlay (No blur to keep video readable) */}
+      {/* Prominent Loading & Buffering Spinner Overlay */}
       {(loading || isBuffering) && (
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-30 bg-black/10">
           <div className="relative flex items-center justify-center p-3 rounded-2xl bg-black/60 shadow-2xl border border-white/10">
@@ -565,7 +623,7 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
         </div>
       )}
 
-      {/* Center Big Play Button (When Paused - 100% transparent background with no blur so notes/slides are crystal clear) */}
+      {/* Center Big Play Button (When Paused) */}
       {!isPlaying && !loading && !isBuffering && (
         <div
           onClick={togglePlay}
@@ -581,7 +639,7 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
       {activeMenu !== "none" && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="absolute bottom-16 right-4 z-40 bg-zinc-900/95 backdrop-blur-md border border-zinc-700/60 rounded-xl p-2 w-48 text-xs text-zinc-200 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+          className="absolute bottom-14 right-2 sm:bottom-16 sm:right-4 z-40 bg-zinc-900/95 backdrop-blur-md border border-zinc-700/60 rounded-xl p-2 w-48 max-w-[calc(100vw-32px)] text-xs text-zinc-200 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
         >
           {/* Main Settings Menu */}
           {activeMenu === "main" && (
@@ -591,7 +649,7 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
               </div>
               <button
                 onClick={() => setActiveMenu("quality")}
-                className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-white/10 transition text-left"
+                className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-white/10 transition text-left cursor-pointer"
               >
                 <span className="flex items-center gap-2">
                   <Sliders className="w-3.5 h-3.5 text-zinc-400" />
@@ -603,7 +661,7 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
               </button>
               <button
                 onClick={() => setActiveMenu("speed")}
-                className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-white/10 transition text-left"
+                className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-white/10 transition text-left cursor-pointer"
               >
                 <span className="flex items-center gap-2">
                   <Gauge className="w-3.5 h-3.5 text-zinc-400" />
@@ -620,7 +678,7 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
               <div className="flex items-center justify-between px-2 py-1.5 border-b border-zinc-800">
                 <button
                   onClick={() => setActiveMenu("main")}
-                  className="text-[10px] font-semibold text-zinc-400 hover:text-white uppercase tracking-wider"
+                  className="text-[10px] font-semibold text-zinc-400 hover:text-white uppercase tracking-wider cursor-pointer"
                 >
                   ← Back
                 </button>
@@ -628,7 +686,7 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
               </div>
               <button
                 onClick={() => setQuality(-1)}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/10 transition text-left ${
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/10 transition text-left cursor-pointer ${
                   selectedLevel === -1 ? "text-emerald-400 font-semibold" : ""
                 }`}
               >
@@ -642,7 +700,7 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
                   <button
                     key={lvl.index}
                     onClick={() => setQuality(lvl.index)}
-                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/10 transition text-left ${
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/10 transition text-left cursor-pointer ${
                       selectedLevel === lvl.index ? "text-emerald-400 font-semibold" : ""
                     }`}
                   >
@@ -659,7 +717,7 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
               <div className="flex items-center justify-between px-2 py-1.5 border-b border-zinc-800">
                 <button
                   onClick={() => setActiveMenu("main")}
-                  className="text-[10px] font-semibold text-zinc-400 hover:text-white uppercase tracking-wider"
+                  className="text-[10px] font-semibold text-zinc-400 hover:text-white uppercase tracking-wider cursor-pointer"
                 >
                   ← Back
                 </button>
@@ -669,7 +727,7 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
                 <button
                   key={rate}
                   onClick={() => setSpeed(rate)}
-                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/10 transition text-left ${
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-white/10 transition text-left cursor-pointer ${
                     playbackRate === rate ? "text-emerald-400 font-semibold" : ""
                   }`}
                 >
@@ -684,7 +742,7 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
 
       {/* Bottom Controls Bar */}
       <div
-        className={`absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent pt-8 pb-3 px-4 z-20 transition-opacity duration-300 ${
+        className={`absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent pt-8 pb-3 px-3 sm:px-4 z-20 transition-opacity duration-300 ${
           showControls ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
       >
@@ -725,55 +783,60 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
             value={currentTime}
             onChange={handleSeek}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            aria-label="Seek video position"
           />
         </div>
 
         {/* Buttons and Time Bar */}
-        <div className="flex items-center justify-between text-white text-xs mt-1">
+        <div className="flex items-center justify-between text-white text-xs mt-1 gap-2">
           {/* Left Controls */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* Play / Pause */}
             <button
               onClick={togglePlay}
-              className="p-1.5 hover:text-emerald-400 hover:scale-110 active:scale-95 transition-all"
+              className="p-1.5 sm:p-2 hover:text-emerald-400 hover:scale-110 active:scale-95 transition-all touch-manipulation cursor-pointer"
               title={isPlaying ? "Pause (Space/k)" : "Play (Space/k)"}
+              aria-label={isPlaying ? "Pause video" : "Play video"}
             >
-              {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
+              {isPlaying ? <Pause className="w-4 h-4 sm:w-5 sm:h-5 fill-current" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />}
             </button>
 
             {/* Seek -10s */}
             <button
               onClick={() => seekRelative(-10)}
-              className="p-1.5 text-zinc-300 hover:text-white hover:scale-110 active:scale-95 transition-all flex items-center justify-center relative"
+              className="p-1.5 text-zinc-300 hover:text-white hover:scale-110 active:scale-95 transition-all flex items-center justify-center relative touch-manipulation cursor-pointer"
               title="Back 10s (Left/j)"
+              aria-label="Seek back 10 seconds"
             >
-              <RotateCcw className="w-4 h-4" />
-              <span className="absolute text-[8px] font-bold top-[7px] pointer-events-none">10</span>
+              <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="absolute text-[7px] sm:text-[8px] font-bold top-[6px] sm:top-[7px] pointer-events-none">10</span>
             </button>
 
             {/* Seek +10s */}
             <button
               onClick={() => seekRelative(10)}
-              className="p-1.5 text-zinc-300 hover:text-white hover:scale-110 active:scale-95 transition-all flex items-center justify-center relative"
+              className="p-1.5 text-zinc-300 hover:text-white hover:scale-110 active:scale-95 transition-all flex items-center justify-center relative touch-manipulation cursor-pointer"
               title="Forward 10s (Right/l)"
+              aria-label="Seek forward 10 seconds"
             >
-              <RotateCw className="w-4 h-4" />
-              <span className="absolute text-[8px] font-bold top-[7px] pointer-events-none">10</span>
+              <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="absolute text-[7px] sm:text-[8px] font-bold top-[6px] sm:top-[7px] pointer-events-none">10</span>
             </button>
 
             {/* Volume & Slider */}
-            <div className="flex items-center gap-1.5 group/vol">
+            <div className="flex items-center gap-1 group/vol">
               <button
                 onClick={toggleMute}
-                className="p-1.5 text-zinc-300 hover:text-white transition-all"
+                className="p-1.5 text-zinc-300 hover:text-white transition-all touch-manipulation cursor-pointer"
                 title={isMuted ? "Unmute (m)" : "Mute (m)"}
+                aria-label={isMuted ? "Unmute audio" : "Mute audio"}
               >
                 {isMuted || volume === 0 ? (
-                  <VolumeX className="w-5 h-5 text-red-400" />
+                  <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
                 ) : volume < 0.5 ? (
-                  <Volume1 className="w-5 h-5" />
+                  <Volume1 className="w-4 h-4 sm:w-5 sm:h-5" />
                 ) : (
-                  <Volume2 className="w-5 h-5" />
+                  <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
                 )}
               </button>
               <input
@@ -783,46 +846,50 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
                 step={0.05}
                 value={isMuted ? 0 : volume}
                 onChange={handleVolumeSlider}
-                className="w-16 h-1 bg-white/30 accent-emerald-500 rounded-lg cursor-pointer transition-all"
+                className="hidden md:block w-14 lg:w-16 h-1 bg-white/30 accent-emerald-500 rounded-lg cursor-pointer transition-all"
+                aria-label="Volume slider"
               />
             </div>
 
             {/* Time Stamp */}
-            <div className="text-[11px] font-mono text-zinc-300 ml-1 select-none">
+            <div className="text-[10px] sm:text-[11px] font-mono text-zinc-300 ml-0.5 sm:ml-1 select-none">
               <span className="text-white font-medium">{formatTime(currentTime)}</span>
-              <span className="text-zinc-500 mx-1">/</span>
+              <span className="text-zinc-500 mx-0.5 sm:mx-1">/</span>
               <span>{formatTime(duration)}</span>
             </div>
           </div>
 
           {/* Right Controls */}
-          <div className="flex items-center gap-2">
-            {/* Current Quality Badge / Selector */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {/* Current Quality & Speed Settings Button */}
             <button
               onClick={() => setActiveMenu(activeMenu === "none" ? "main" : "none")}
-              className="px-2 py-1 rounded-md bg-white/10 hover:bg-white/20 text-zinc-200 text-[11px] font-mono font-medium flex items-center gap-1.5 transition"
+              className="px-2 py-1.5 sm:py-1 rounded-lg bg-white/10 hover:bg-white/20 text-zinc-200 text-[10px] sm:text-[11px] font-mono font-medium flex items-center gap-1 sm:gap-1.5 transition touch-manipulation cursor-pointer"
               title="Quality & Speed Settings"
+              aria-label="Quality and Speed Settings"
             >
-              <span>{selectedLevel === -1 ? `Auto (${currentLevelLabel})` : currentLevelLabel}</span>
+              <span className="hidden xs:inline sm:inline">{selectedLevel === -1 ? `Auto (${currentLevelLabel})` : currentLevelLabel}</span>
               <Settings className="w-3.5 h-3.5 text-zinc-400" />
             </button>
 
-            {/* Picture in Picture */}
+            {/* Picture in Picture (Desktop only) */}
             <button
               onClick={togglePiP}
-              className="p-1.5 text-zinc-300 hover:text-white hover:scale-110 active:scale-95 transition-all"
+              className="hidden sm:flex p-1.5 text-zinc-300 hover:text-white hover:scale-110 active:scale-95 transition-all touch-manipulation cursor-pointer"
               title="Picture in Picture (p)"
+              aria-label="Picture in Picture"
             >
               <Tv className="w-4 h-4" />
             </button>
 
-            {/* Fullscreen */}
+            {/* Fullscreen Button */}
             <button
               onClick={toggleFullscreen}
-              className="p-1.5 text-zinc-300 hover:text-white hover:scale-110 active:scale-95 transition-all"
+              className="p-1.5 sm:p-1.5 text-zinc-200 hover:text-white hover:bg-white/10 rounded-lg hover:scale-110 active:scale-95 transition-all touch-manipulation cursor-pointer"
               title={isFullscreen ? "Exit Fullscreen (f)" : "Fullscreen (f)"}
+              aria-label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
             >
-              {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+              {isFullscreen ? <Minimize className="w-4 h-4 sm:w-4.5 sm:h-4.5" /> : <Maximize className="w-4 h-4 sm:w-4.5 sm:h-4.5" />}
             </button>
           </div>
         </div>
@@ -830,4 +897,5 @@ export function HlsPlayer({ videoId, watermarkText = "Airbharath LMS", className
     </div>
   );
 }
+
 

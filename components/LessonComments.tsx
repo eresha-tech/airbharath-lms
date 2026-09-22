@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { MessageSquare, Send, Trash2, User, CornerDownRight, Loader2, Info } from "lucide-react";
+import { MessageSquare, Send, Trash2, User, CornerDownRight, Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -34,32 +34,22 @@ export function LessonComments({
   const [replyText, setReplyText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [usingFallback, setUsingFallback] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Fetch comments
+  // Fetch comments from PostgreSQL
   const fetchComments = useCallback(async () => {
     try {
       setIsLoading(true);
+      setErrorMessage(null);
       const res = await fetch(`/api/comments?lessonId=${lessonId}`);
       if (!res.ok) {
-        throw new Error("Failed to fetch from DB");
+        throw new Error("Failed to load discussions from server");
       }
       const data = await res.json();
       setComments(data.comments || []);
-      setUsingFallback(false);
-    } catch (err) {
-      console.warn("Using localStorage fallback for comments:", err);
-      setUsingFallback(true);
-      const localData = localStorage.getItem(`irii_comments_${lessonId}`);
-      if (localData) {
-        try {
-          setComments(JSON.parse(localData));
-        } catch {
-          setComments([]);
-        }
-      } else {
-        setComments([]);
-      }
+    } catch (err: any) {
+      console.error("Error fetching lesson comments:", err);
+      setErrorMessage("Couldn't load discussions. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -78,109 +68,58 @@ export function LessonComments({
     if (!text.trim()) return;
 
     setIsSubmitting(true);
-    const newCommentContent = text;
+    setErrorMessage(null);
 
-    if (parentId) {
-      setReplyText("");
-      setReplyToId(null);
-    } else {
-      setInputText("");
-    }
+    try {
+      const res = await fetch("/api/comments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          lessonId,
+          content: text.trim(),
+          parentId,
+        }),
+      });
 
-    const tempId = Math.random().toString();
-    const newComment: Comment = {
-      id: tempId,
-      lesson_id: lessonId,
-      user_id: currentUserId,
-      content: newCommentContent,
-      parent_id: parentId,
-      created_at: new Date().toISOString(),
-      user_name: currentUserName,
-    };
-
-    if (usingFallback) {
-      const updated = [newComment, ...comments];
-      setComments(updated);
-      localStorage.setItem(
-        `irii_comments_${lessonId}`,
-        JSON.stringify(updated)
-      );
-      setIsSubmitting(false);
-    } else {
-      try {
-        const res = await fetch("/api/comments", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            lessonId,
-            content: newCommentContent,
-            parentId,
-          }),
-        });
-
-        if (!res.ok) {
-          throw new Error("Failed to post comment to DB");
-        }
-
-        await fetchComments();
-      } catch (err) {
-        console.error("Error saving comment to DB, falling back to local:", err);
-        const updated = [newComment, ...comments];
-        setComments(updated);
-        localStorage.setItem(
-          `irii_comments_${lessonId}`,
-          JSON.stringify(updated)
-        );
-        setUsingFallback(true);
-      } finally {
-        setIsSubmitting(false);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to post comment");
       }
+
+      if (parentId) {
+        setReplyText("");
+        setReplyToId(null);
+      } else {
+        setInputText("");
+      }
+
+      await fetchComments();
+    } catch (err: any) {
+      console.error("Error saving comment to DB:", err);
+      setErrorMessage(err.message || "Couldn't post your question. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDeleteComment = async (commentId: string) => {
     if (!confirm("Are you sure you want to delete this comment?")) return;
 
-    const deleteRecursive = (list: Comment[], targetId: string): Comment[] => {
-      const childrenIds = list
-        .filter((c) => c.parent_id === targetId)
-        .map((c) => c.id);
-      let updated = list.filter((c) => c.id !== targetId);
-      childrenIds.forEach((childId) => {
-        updated = deleteRecursive(updated, childId);
+    try {
+      const res = await fetch(`/api/comments?commentId=${commentId}`, {
+        method: "DELETE",
       });
-      return updated;
-    };
 
-    if (usingFallback) {
-      const updated = deleteRecursive(comments, commentId);
-      setComments(updated);
-      localStorage.setItem(
-        `irii_comments_${lessonId}`,
-        JSON.stringify(updated)
-      );
-    } else {
-      try {
-        const res = await fetch(`/api/comments?commentId=${commentId}`, {
-          method: "DELETE",
-        });
-
-        if (!res.ok) {
-          throw new Error("Failed to delete comment");
-        }
-
-        await fetchComments();
-      } catch (err) {
-        console.error("Error deleting comment from DB:", err);
-        const updated = deleteRecursive(comments, commentId);
-        setComments(updated);
-        localStorage.setItem(
-          `irii_comments_${lessonId}`,
-          JSON.stringify(updated)
-        );
+      if (!res.ok) {
+        throw new Error("Failed to delete comment");
       }
+
+      await fetchComments();
+    } catch (err: any) {
+      console.error("Error deleting comment from DB:", err);
+      setErrorMessage("Failed to delete comment. Please try again.");
     }
   };
 
@@ -301,7 +240,7 @@ export function LessonComments({
                   disabled={!replyText.trim() || isSubmitting}
                   className="px-3.5 h-8 rounded-xl bg-primary text-primary-foreground text-xs font-bold cursor-pointer"
                 >
-                  Post
+                  {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Post"}
                 </Button>
                 <Button
                   type="button"
@@ -340,13 +279,37 @@ export function LessonComments({
           </Badge>
         </div>
 
-        {usingFallback && (
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted text-[10px] text-muted-foreground font-medium">
-            <Info className="h-3 w-3 text-primary" />
-            <span>Local Mode</span>
-          </div>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={fetchComments}
+          disabled={isLoading}
+          className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer gap-1.5"
+          title="Refresh discussions"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+          <span className="hidden sm:inline">Refresh</span>
+        </Button>
       </div>
+
+      {/* Error / Retry Notice */}
+      {errorMessage && (
+        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-2xl flex items-center justify-between gap-3 text-xs text-destructive">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={fetchComments}
+            className="h-7 px-2.5 text-xs font-bold border-destructive/30 text-destructive hover:bg-destructive/15 rounded-lg cursor-pointer"
+          >
+            Retry
+          </Button>
+        </div>
+      )}
 
       {/* Input Form */}
       <form onSubmit={(e) => handlePostComment(e, null)} className="flex gap-3">
@@ -401,3 +364,4 @@ export function LessonComments({
     </div>
   );
 }
+

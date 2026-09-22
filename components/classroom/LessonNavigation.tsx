@@ -34,7 +34,7 @@ export function LessonNavigation({
               <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-1" />
               <span>Previous Lesson</span>
             </div>
-            <span className="font-bold text-xs sm:text-sm text-foreground mt-1 line-clamp-1">
+            <span className="font-bold text-xs sm:text-sm text-foreground mt-1 line-clamp-2">
               {previousLesson.title}
             </span>
           </Link>
@@ -54,7 +54,7 @@ export function LessonNavigation({
               <span>Next Lesson</span>
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
             </div>
-            <span className="font-bold text-xs sm:text-sm text-primary-foreground mt-1 line-clamp-1">
+            <span className="font-bold text-xs sm:text-sm text-primary-foreground mt-1 line-clamp-2">
               {nextLesson.title}
             </span>
           </Link>

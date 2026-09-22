@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { enrollments, courses, progress } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { ClassroomSidebar } from "@/components/classroom/ClassroomSidebar";
+import { ClassroomLayout } from "@/components/classroom/ClassroomLayout";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +15,7 @@ interface CourseLayoutProps {
 }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 
 export default async function CourseLayout({
   children,
@@ -86,11 +87,9 @@ export default async function CourseLayout({
   const completedLessonIds = userProgress.map((p: any) => p.lessonId);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <ClassroomSidebar course={formattedCourse as any} completedLessons={completedLessonIds} />
-      <main className="flex-1 pl-0 lg:pl-88 xl:pl-96 transition-all duration-300">
-        {children}
-      </main>
-    </div>
+    <ClassroomLayout course={formattedCourse as any} completedLessons={completedLessonIds}>
+      {children}
+    </ClassroomLayout>
   );
 }
+
