@@ -43,7 +43,7 @@ export default async function VerifyCertificatePage({ params }: VerifyPageProps)
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
 
-      <main className="flex-1 container mx-auto px-4 py-24 sm:py-28 max-w-3xl flex flex-col justify-center">
+      <main className="flex-1 container mx-auto px-4 pt-28 pb-16 sm:pt-32 sm:pb-20 max-w-3xl flex flex-col justify-center">
         <div className="bg-card rounded-3xl border border-border shadow-md overflow-hidden">
           {cert ? (
             <div>

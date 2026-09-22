@@ -89,10 +89,10 @@ export function CertificatesView({
   };
 
   const getVerificationUrl = (code: string) => {
-    if (typeof window !== "undefined") {
-      return `${window.location.origin}/verify-certificate/${code}`;
-    }
-    return `https://lms.airbharath.in/verify-certificate/${code}`;
+    const base =
+      process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") ||
+      (typeof window !== "undefined" ? window.location.origin : "https://lms.airbharath.in");
+    return `${base}/verify-certificate/${code}`;
   };
 
   return (
@@ -190,7 +190,7 @@ export function CertificatesView({
       </div>
 
       {/* SECTION 1: Earned Certificates */}
-      {(activeTab === "all" || activeTab === "earned") && (
+      {(activeTab === "earned" || (activeTab === "all" && earnedCount > 0)) && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -202,38 +202,36 @@ export function CertificatesView({
           </div>
 
           {earnedCount === 0 ? (
-            activeTab === "earned" && (
-              <div className="bg-card border border-dashed border-border rounded-3xl p-10 sm:p-14 text-center space-y-4 shadow-xs">
-                <div className="h-14 w-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto text-emerald-600">
-                  <Award className="h-7 w-7" />
-                </div>
-                <div className="space-y-1.5 max-w-md mx-auto">
-                  <h3 className="text-lg font-bold font-outfit text-foreground">
-                    Your first certificate is waiting
-                  </h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Complete 100% of the lessons in any enrolled course to automatically generate your official verified PDF certificate.
-                  </p>
-                </div>
-                {inProgressCount > 0 ? (
-                  <Button
-                    asChild
-                    className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs px-6 h-10 shadow-xs cursor-pointer"
-                  >
-                    <Link href={`/dashboard/courses/${inProgressTracks[0].courseId}`}>
-                      Resume In-Progress Course
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button
-                    asChild
-                    className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs px-6 h-10 shadow-xs cursor-pointer"
-                  >
-                    <Link href="/courses">Browse Course Catalog</Link>
-                  </Button>
-                )}
+            <div className="bg-card border border-dashed border-border rounded-3xl p-8 sm:p-14 text-center space-y-4 shadow-xs">
+              <div className="h-14 w-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto text-emerald-600">
+                <Award className="h-7 w-7" />
               </div>
-            )
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h3 className="text-lg font-bold font-outfit text-foreground">
+                  Your first certificate is waiting
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Complete 100% of the lessons in any enrolled course to automatically generate your official verified PDF certificate.
+                </p>
+              </div>
+              {inProgressCount > 0 ? (
+                <Button
+                  asChild
+                  className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs px-6 h-10 shadow-xs cursor-pointer"
+                >
+                  <Link href={`/dashboard/courses/${inProgressTracks[0].courseId}`}>
+                    Resume In-Progress Course
+                  </Link>
+                </Button>
+              ) : (
+                <Button
+                  asChild
+                  className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs px-6 h-10 shadow-xs cursor-pointer"
+                >
+                  <Link href="/courses">Browse Course Catalog</Link>
+                </Button>
+              )}
+            </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {earnedCertificates.map((cert) => {
@@ -242,7 +240,6 @@ export function CertificatesView({
                   month: "long",
                   day: "numeric",
                 });
-                const verifyUrl = getVerificationUrl(cert.certificateCode);
 
                 return (
                   <div
@@ -250,12 +247,12 @@ export function CertificatesView({
                     className="bg-card border border-border/80 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between"
                   >
                     {/* Visual Academic Certificate Preview Card */}
-                    <div className="p-6 bg-gradient-to-b from-[#014a62]/[0.04] to-card border-b border-border/60 relative overflow-hidden">
+                    <div className="p-3.5 sm:p-6 bg-gradient-to-b from-[#014a62]/[0.04] to-card border-b border-border/60 relative overflow-hidden">
                       {/* Decorative Background Framing */}
-                      <div className="border-2 border-primary/20 rounded-2xl p-4 sm:p-6 bg-white/80 backdrop-blur-xs relative shadow-inner">
-                        <div className="border border-[#d4af37]/40 rounded-xl p-4 space-y-3.5 text-center">
+                      <div className="border-2 border-primary/20 rounded-2xl p-3 sm:p-5 bg-card/90 dark:bg-zinc-900/90 backdrop-blur-xs relative shadow-inner">
+                        <div className="border border-[#d4af37]/40 rounded-xl p-3.5 sm:p-5 space-y-3 text-center">
                           {/* Header Insignia */}
-                          <div className="flex flex-col items-center gap-1">
+                          <div className="flex flex-col items-center gap-0.5">
                             <div className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.2em] uppercase text-primary font-outfit">
                               <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
                               <span>AirBharath LMS Finishing School</span>
@@ -270,25 +267,25 @@ export function CertificatesView({
                             <p className="text-[10px] text-muted-foreground italic font-serif">
                               This is to certify that
                             </p>
-                            <h4 className="text-base sm:text-lg font-bold font-outfit text-foreground tracking-tight text-primary">
+                            <h4 className="text-base sm:text-xl font-bold font-outfit text-primary tracking-tight leading-tight break-words">
                               {cert.studentName || studentName || "AirBharath Student"}
                             </h4>
                             <p className="text-[10px] text-muted-foreground italic font-serif">
                               has successfully completed 100% curriculum of
                             </p>
-                            <h5 className="text-xs sm:text-sm font-bold text-foreground line-clamp-1">
+                            <h5 className="text-xs sm:text-sm font-bold text-foreground leading-snug break-words max-w-sm mx-auto">
                               {cert.courseTitle}
                             </h5>
                           </div>
 
                           {/* Footer Signatory & Code */}
-                          <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[10px] text-muted-foreground">
-                            <div className="text-left font-mono">
-                              <span className="block text-[9px] uppercase font-bold text-slate-400">Issued</span>
-                              <span>{formattedDate}</span>
+                          <div className="pt-2.5 border-t border-border/60 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                            <div className="text-left font-mono leading-tight">
+                              <span className="block text-[9px] uppercase font-bold text-muted-foreground/70">Issued</span>
+                              <span className="font-semibold text-foreground/90">{formattedDate}</span>
                             </div>
-                            <div className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                              <CheckCircle2 className="h-3 w-3" />
+                            <div className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 shrink-0">
+                              <CheckCircle2 className="h-3 w-3 text-emerald-600" />
                               <span>Verified</span>
                             </div>
                           </div>
@@ -297,7 +294,7 @@ export function CertificatesView({
                     </div>
 
                     {/* Metadata & Actions */}
-                    <div className="p-6 space-y-4">
+                    <div className="p-4 sm:p-6 space-y-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
                           <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -310,6 +307,7 @@ export function CertificatesView({
                               onClick={() => handleCopy(cert.certificateCode, "id")}
                               className="text-muted-foreground hover:text-primary p-1 rounded-md transition-colors cursor-pointer"
                               title="Copy Certificate Code"
+                              aria-label="Copy Certificate Code"
                             >
                               {copiedId === cert.certificateCode ? (
                                 <Check className="h-3.5 w-3.5 text-emerald-600" />
@@ -329,7 +327,7 @@ export function CertificatesView({
                       {/* Action Buttons */}
                       <div className="pt-2 border-t border-border/60 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                         {/* Download PDF */}
-                        {cert.pdfUrl && (
+                        {cert.pdfUrl ? (
                           <Button
                             asChild
                             className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
@@ -342,13 +340,23 @@ export function CertificatesView({
                               <span>Download PDF</span>
                             </a>
                           </Button>
+                        ) : (
+                          <Button
+                            asChild
+                            className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Link href={`/verify-certificate/${cert.certificateCode}`}>
+                              <ShieldCheck className="h-3.5 w-3.5" />
+                              <span>View Record</span>
+                            </Link>
+                          </Button>
                         )}
 
                         {/* View Credential Details Modal */}
                         <Button
                           variant="outline"
                           onClick={() => setSelectedCert(cert)}
-                          className="border-slate-200 text-slate-700 hover:text-primary hover:bg-slate-100 text-xs font-semibold h-10 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
+                          className="border-slate-200 dark:border-zinc-700 text-foreground hover:text-primary hover:bg-muted/60 text-xs font-semibold h-10 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                           <FileText className="h-3.5 w-3.5 text-primary" />
                           <span>Credential Info</span>
@@ -358,7 +366,7 @@ export function CertificatesView({
                         <Button
                           asChild
                           variant="outline"
-                          className="border-slate-200 text-slate-700 hover:text-primary hover:bg-slate-100 text-xs font-semibold h-10 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
+                          className="border-slate-200 dark:border-zinc-700 text-foreground hover:text-primary hover:bg-muted/60 text-xs font-semibold h-10 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                           <Link
                             href={`/verify-certificate/${cert.certificateCode}`}
@@ -380,8 +388,8 @@ export function CertificatesView({
       )}
 
       {/* SECTION 2: In-Progress Tracks / Certificates to Earn */}
-      {(activeTab === "all" || activeTab === "in-progress") && (
-        <div className="space-y-4 pt-4">
+      {(activeTab === "in-progress" || (activeTab === "all" && inProgressCount > 0)) && (
+        <div className="space-y-4 pt-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Layers className="h-4 w-4 text-primary" />
@@ -392,27 +400,25 @@ export function CertificatesView({
           </div>
 
           {inProgressCount === 0 ? (
-            activeTab === "in-progress" && (
-              <div className="bg-card border border-dashed border-border rounded-3xl p-10 text-center space-y-4 shadow-xs">
-                <p className="text-sm font-semibold text-foreground">
-                  No courses currently in progress.
-                </p>
-                <Button
-                  asChild
-                  className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs px-6 h-10 shadow-xs cursor-pointer"
-                >
-                  <Link href="/courses">Browse AirBharath Courses</Link>
-                </Button>
-              </div>
-            )
+            <div className="bg-card border border-dashed border-border rounded-3xl p-8 sm:p-10 text-center space-y-4 shadow-xs">
+              <p className="text-sm font-semibold text-foreground">
+                No courses currently in progress.
+              </p>
+              <Button
+                asChild
+                className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs px-6 h-10 shadow-xs cursor-pointer"
+              >
+                <Link href="/courses">Browse AirBharath Courses</Link>
+              </Button>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {inProgressTracks.map((track) => (
                 <div
                   key={track.courseId}
-                  className="bg-card border border-border/80 rounded-3xl p-5 sm:p-6 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-4"
+                  className="bg-card border border-border/80 rounded-3xl p-4 sm:p-6 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-4"
                 >
-                  <div className="space-y-3.5">
+                  <div className="space-y-3">
                     {/* Badge & Course Title */}
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-md border border-primary/20">
@@ -423,7 +429,7 @@ export function CertificatesView({
                       </span>
                     </div>
 
-                    <h3 className="font-bold text-base font-outfit text-foreground line-clamp-1">
+                    <h3 className="font-bold text-base font-outfit text-foreground leading-snug line-clamp-2">
                       {track.courseTitle}
                     </h3>
 
@@ -472,9 +478,9 @@ export function CertificatesView({
         </div>
       )}
 
-      {/* Global Empty State: Zero Enrollments */}
-      {totalEnrolledCount === 0 && (
-        <div className="bg-card border border-dashed border-border rounded-3xl p-10 sm:p-16 text-center space-y-5 shadow-xs">
+      {/* Global Empty State: Zero Enrollments & Zero Credentials */}
+      {totalCredentialsCount === 0 && (
+        <div className="bg-card border border-dashed border-border rounded-3xl p-8 sm:p-16 text-center space-y-5 shadow-xs">
           <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary">
             <Award className="h-8 w-8" />
           </div>
@@ -498,7 +504,7 @@ export function CertificatesView({
       {/* Credential Details Modal */}
       {selectedCert && (
         <Dialog open={Boolean(selectedCert)} onOpenChange={(open) => !open && setSelectedCert(null)}>
-          <DialogContent className="max-w-md rounded-3xl p-6 space-y-5">
+          <DialogContent className="w-[calc(100vw-2rem)] max-w-lg rounded-3xl p-5 sm:p-6 space-y-4 sm:space-y-5">
             <DialogHeader className="space-y-2">
               <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto">
                 <ShieldCheck className="h-6 w-6" />
@@ -511,7 +517,7 @@ export function CertificatesView({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-3 bg-muted/40 p-4 rounded-2xl border border-border/60 text-xs">
+            <div className="space-y-3 bg-muted/40 p-3.5 sm:p-4 rounded-2xl border border-border/60 text-xs">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
                   Student Full Name
@@ -543,38 +549,43 @@ export function CertificatesView({
                 </span>
               </div>
 
-              <div>
+              {/* Unique Certificate ID */}
+              <div className="space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
                   Unique Certificate ID
                 </span>
-                <div className="flex items-center justify-between gap-2 mt-0.5">
-                  <span className="font-mono font-bold text-foreground">
+                <div className="flex items-center justify-between gap-2 p-2 sm:p-2.5 bg-background rounded-xl border border-border/70">
+                  <span className="font-mono text-xs font-bold text-foreground flex-1 min-w-0 truncate select-all">
                     {selectedCert.certificateCode}
                   </span>
                   <button
                     type="button"
                     onClick={() => handleCopy(selectedCert.certificateCode, "id")}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline cursor-pointer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-[11px] font-bold shrink-0 transition-colors cursor-pointer"
+                    aria-label="Copy Certificate Code"
                   >
                     {copiedId === selectedCert.certificateCode ? (
-                      <span className="text-emerald-600 flex items-center gap-0.5">
-                        <Check className="w-3 h-3" /> Copied
-                      </span>
+                      <>
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        <span className="text-emerald-600">Copied</span>
+                      </>
                     ) : (
-                      <span className="flex items-center gap-0.5">
-                        <Copy className="w-3 h-3" /> Copy Code
-                      </span>
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Copy Code</span>
+                      </>
                     )}
                   </button>
                 </div>
               </div>
 
-              <div>
+              {/* Verification Link */}
+              <div className="space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
                   Verification Link
                 </span>
-                <div className="flex items-center justify-between gap-2 mt-0.5">
-                  <span className="font-mono text-[11px] text-muted-foreground truncate">
+                <div className="flex items-center justify-between gap-2 p-2 sm:p-2.5 bg-background rounded-xl border border-border/70">
+                  <span className="font-mono text-[11px] text-muted-foreground truncate select-all flex-1 min-w-0">
                     {getVerificationUrl(selectedCert.certificateCode)}
                   </span>
                   <button
@@ -582,23 +593,26 @@ export function CertificatesView({
                     onClick={() =>
                       handleCopy(getVerificationUrl(selectedCert.certificateCode), "link")
                     }
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline shrink-0 cursor-pointer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-[11px] font-bold shrink-0 transition-colors cursor-pointer"
+                    aria-label="Copy Verification Link"
                   >
                     {copiedLink === getVerificationUrl(selectedCert.certificateCode) ? (
-                      <span className="text-emerald-600 flex items-center gap-0.5">
-                        <Check className="w-3 h-3" /> Copied
-                      </span>
+                      <>
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        <span className="text-emerald-600">Copied</span>
+                      </>
                     ) : (
-                      <span className="flex items-center gap-0.5">
-                        <Copy className="w-3 h-3" /> Copy Link
-                      </span>
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Copy Link</span>
+                      </>
                     )}
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-2 pt-2">
+            <div className="space-y-2 pt-1">
               {selectedCert.pdfUrl && (
                 <Button
                   asChild
@@ -617,7 +631,7 @@ export function CertificatesView({
               <Button
                 asChild
                 variant="outline"
-                className="w-full border-slate-200 text-slate-700 hover:text-primary hover:bg-slate-100 text-xs font-semibold h-11 rounded-xl flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full border-slate-200 dark:border-zinc-700 text-foreground hover:text-primary hover:bg-muted/60 text-xs font-semibold h-11 rounded-xl flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Link
                   href={`/verify-certificate/${selectedCert.certificateCode}`}

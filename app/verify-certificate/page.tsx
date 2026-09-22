@@ -22,7 +22,7 @@ export default function VerifyCertificateIndexPage() {
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
 
-      <main className="flex-1 container mx-auto px-4 py-28 max-w-3xl flex flex-col justify-center">
+      <main className="flex-1 container mx-auto px-4 pt-28 pb-16 sm:pt-32 sm:pb-20 max-w-3xl flex flex-col justify-center">
         <div className="bg-card rounded-3xl border border-border shadow-md overflow-hidden">
           {/* Header Banner */}
           <div className="bg-primary text-primary-foreground p-8 text-center space-y-3 relative overflow-hidden">
@@ -56,10 +56,13 @@ export default function VerifyCertificateIndexPage() {
                     placeholder="e.g. AB-CERT-123456-789"
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
+                    autoCapitalize="characters"
+                    autoCorrect="off"
+                    spellCheck={false}
                     className="w-full border border-input rounded-xl px-4 py-3 pl-11 text-sm font-mono font-semibold bg-background focus:outline-none focus:ring-2 focus:ring-primary uppercase placeholder:normal-case placeholder:font-sans"
                     required
                   />
-                  <Search className="w-5 h-5 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <Search className="w-5 h-5 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
 
