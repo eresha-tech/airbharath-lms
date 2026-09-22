@@ -14,7 +14,7 @@ interface CertificatesCardProps {
 
 export function CertificatesCard({ certificates }: CertificatesCardProps) {
   return (
-    <div className="bg-card border border-border/80 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+    <div className="bg-card border border-border/80 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="h-8 w-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 shrink-0">

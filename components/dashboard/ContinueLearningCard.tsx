@@ -21,7 +21,7 @@ export function ContinueLearningCard({ course }: ContinueLearningCardProps) {
   const isCompleted = course.percent === 100;
 
   return (
-    <div className="bg-card border border-border/80 rounded-3xl p-5 sm:p-7 shadow-xs space-y-5 hover:border-primary/40 transition-all">
+    <div className="bg-card border border-border/80 rounded-3xl p-5 sm:p-7 shadow-xs space-y-5 hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
       {/* Top Tag & Progress Status */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

@@ -34,11 +34,11 @@ export function TrustStrip() {
             return (
               <li
                 key={item.title}
-                className="flex items-center gap-3.5 p-4 sm:p-5 rounded-2xl bg-muted/40 border border-border/80 hover:border-primary/30 hover:bg-card hover:shadow-xs transition-all duration-200"
+                className="flex items-center gap-3.5 p-4 sm:p-5 rounded-2xl bg-muted/40 border border-border/80 hover:border-primary/40 hover:bg-card hover:shadow-md hover:-translate-y-1 transition-all duration-200 group cursor-pointer"
               >
                 <div
                   aria-hidden="true"
-                  className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0"
+                  className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0 group-hover:scale-110 transition-transform duration-200"
                 >
                   <Icon className="w-5 h-5" />
                 </div>

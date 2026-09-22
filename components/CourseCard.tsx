@@ -46,7 +46,7 @@ export function CourseCard({ course, progress, href }: CourseCardProps) {
     course.badge || course.category?.name || "Certificate Program";
 
   return (
-    <div className="bg-card rounded-3xl overflow-hidden shadow-2xs hover:shadow-md border border-border/80 hover:border-primary/40 flex flex-col justify-between transition-all duration-300 group">
+    <div className="bg-card rounded-3xl overflow-hidden shadow-2xs hover:shadow-md border border-border/80 hover:border-primary/40 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 group">
       <div>
         {/* Course Thumbnail Image Header */}
         <Link href={href} className="relative aspect-video w-full overflow-hidden bg-muted block">

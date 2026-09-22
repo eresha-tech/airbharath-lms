@@ -134,8 +134,6 @@ export function HeroBanner() {
     <section
       className="relative pt-24 pb-16 lg:pt-32 lg:pb-24 overflow-hidden bg-gradient-to-b from-slate-50/80 via-white to-white"
       aria-label="Featured courses hero"
-      onMouseEnter={() => setIsAutoplay(false)}
-      onMouseLeave={() => setIsAutoplay(true)}
     >
       {/* Decorative Dot Matrix Grid Background */}
       <div
@@ -151,10 +149,10 @@ export function HeroBanner() {
 
       <div className="container mx-auto px-4 max-w-7xl space-y-12">
         {/* Top Trust Badge & Main Headline */}
-        <div className="flex flex-col items-center gap-4 text-center max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-primary/20 text-primary text-xs font-bold tracking-wide shadow-xs">
+        <div className="flex flex-col items-center gap-4 text-center max-w-4xl mx-auto animate-fade-up">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-primary/20 text-primary text-xs font-bold tracking-wide shadow-xs animate-float-slow">
             <span className="flex items-center gap-1 text-amber-600 font-extrabold">
-              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" aria-hidden="true" />
+              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500 animate-pulse" aria-hidden="true" />
               30+ Years
             </span>
             <span aria-hidden="true" className="text-slate-300">|</span>
@@ -179,7 +177,7 @@ export function HeroBanner() {
             <Button
               asChild
               size="lg"
-              className="bg-primary hover:bg-primary/90 text-white font-bold px-7 h-12 rounded-xl shadow-md hover:shadow-lg transition-all"
+              className="bg-primary hover:bg-primary/90 text-white font-bold px-7 h-12 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-[0.98]"
             >
               <Link href="/courses" className="flex items-center gap-2">
                 <span>Explore All Courses</span>
@@ -191,7 +189,7 @@ export function HeroBanner() {
               asChild
               variant="outline"
               size="lg"
-              className="border-slate-300 text-slate-700 hover:text-primary hover:bg-slate-50 font-bold px-6 h-12 rounded-xl"
+              className="border-slate-300 text-slate-700 hover:text-primary hover:bg-slate-50 font-bold px-6 h-12 rounded-xl active:scale-[0.98] transition-all"
             >
               <Link href="/login" className="flex items-center gap-2">
                 <PlayCircle className="w-4 h-4 text-primary" />
@@ -211,11 +209,23 @@ export function HeroBanner() {
 
           {/* MAIN FEATURED SLIDE DISPLAY CARD */}
           <div
-            className="relative rounded-3xl border border-border/90 bg-card shadow-xl overflow-hidden transition-all"
+            className="relative rounded-3xl border border-border/90 bg-card shadow-xl hover:shadow-2xl overflow-hidden transition-all duration-300"
             role="region"
             aria-label={`Course ${currentSlide + 1} of ${HERO_SLIDES.length}: ${activeSlide.title}`}
+            onMouseEnter={() => setIsAutoplay(false)}
+            onMouseLeave={() => setIsAutoplay(true)}
           >
-            <div className="p-6 sm:p-8 md:p-10 lg:p-12 bg-gradient-to-br from-primary/5 via-background to-secondary/30 flex flex-col lg:flex-row items-stretch justify-between gap-8 lg:gap-10">
+            {/* Auto-Play Slide Progress Bar */}
+            <div className="h-1 w-full bg-primary/10 overflow-hidden" aria-hidden="true">
+              {isAutoplay && !prefersReduced && (
+                <div key={currentSlide} className="h-full bg-primary animate-progress-fill" />
+              )}
+            </div>
+
+            <div
+              key={currentSlide}
+              className="p-6 sm:p-8 md:p-10 lg:p-12 bg-gradient-to-br from-primary/5 via-background to-secondary/30 flex flex-col lg:flex-row items-stretch justify-between gap-8 lg:gap-10 animate-fade-up"
+            >
               {/* Left Column: Course Highlights */}
               <div className="flex-1 space-y-6 flex flex-col justify-between z-10">
                 <div className="space-y-4">
@@ -281,13 +291,13 @@ export function HeroBanner() {
               </div>
 
               {/* Right Column: Visual Preview Box */}
-              <div className="w-full lg:w-96 bg-card rounded-2xl border border-border shadow-md flex flex-col justify-between overflow-hidden relative z-10 shrink-0">
+              <div className="w-full lg:w-96 bg-card rounded-2xl border border-border shadow-md flex flex-col justify-between overflow-hidden relative z-10 shrink-0 group/preview hover:shadow-lg hover:border-primary/40 transition-all duration-300">
                 {/* Image Header */}
                 <div className="h-44 relative bg-slate-900 overflow-hidden">
                   <img
                     src={activeSlide.image}
                     alt={activeSlide.title}
-                    className="w-full h-full object-cover opacity-90 transition-transform duration-700 hover:scale-105"
+                    className="w-full h-full object-cover opacity-90 transition-transform duration-500 group-hover/preview:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent" />
 
@@ -361,10 +371,10 @@ export function HeroBanner() {
                     role="tab"
                     aria-selected={idx === currentSlide}
                     onClick={() => setCurrentSlide(idx)}
-                    className={`px-3 py-1 rounded-full text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
+                    className={`px-3 py-1 rounded-full text-xs font-bold transition-all duration-150 active:scale-95 cursor-pointer focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
                       idx === currentSlide
                         ? "bg-primary text-white shadow-xs scale-[1.02]"
-                        : "bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                        : "bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground hover:border-primary/30"
                     }`}
                   >
                     0{idx + 1}&nbsp;{slide.badge}
@@ -381,14 +391,14 @@ export function HeroBanner() {
                   <button
                     onClick={prev}
                     aria-label="Previous course slide"
-                    className="p-1.5 rounded-lg bg-card border border-border hover:bg-muted text-foreground transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                    className="p-1.5 rounded-lg bg-card border border-border hover:bg-muted text-foreground transition-all duration-150 active:scale-90 cursor-pointer focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     onClick={next}
                     aria-label="Next course slide"
-                    className="p-1.5 rounded-lg bg-card border border-border hover:bg-muted text-foreground transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                    className="p-1.5 rounded-lg bg-card border border-border hover:bg-muted text-foreground transition-all duration-150 active:scale-90 cursor-pointer focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>

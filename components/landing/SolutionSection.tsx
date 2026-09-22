@@ -73,13 +73,13 @@ export function SolutionSection() {
             return (
               <div
                 key={feature.title}
-                className="bg-muted/30 p-6 sm:p-7 rounded-2xl border border-border hover:border-primary/40 hover:bg-card hover:shadow-sm transition-all duration-300 flex flex-col justify-between space-y-5 group"
+                className="bg-muted/30 p-6 sm:p-7 rounded-2xl border border-border hover:border-primary/40 hover:bg-card hover:shadow-lg hover:-translate-y-1.5 transition-all duration-200 flex flex-col justify-between space-y-5 group cursor-pointer"
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div
                       aria-hidden="true"
-                      className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                      className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110 transition-all duration-200"
                     >
                       <Icon className="w-6 h-6" />
                     </div>
@@ -107,7 +107,7 @@ export function SolutionSection() {
         </div>
 
         {/* Structured Progression Strip */}
-        <div className="bg-primary text-primary-foreground p-6 sm:p-8 rounded-3xl shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+        <div className="bg-primary text-primary-foreground p-6 sm:p-8 rounded-3xl shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <div className="space-y-1">
             <span className="text-xs font-bold uppercase tracking-widest text-primary-foreground/80">
               Structured Learning Flow

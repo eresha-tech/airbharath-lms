@@ -26,8 +26,8 @@ export function CertificateShowcase() {
 
               {/* Genuine Features List */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-card border border-border/80">
-                  <QrCode className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-card border border-border/80 hover:border-primary/40 hover:shadow-md hover:-translate-y-1 transition-all duration-200 group cursor-pointer">
+                  <QrCode className="w-5 h-5 text-primary shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-200" />
                   <div>
                     <h4 className="text-xs font-bold text-foreground">Instant QR Verification</h4>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -36,8 +36,8 @@ export function CertificateShowcase() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-card border border-border/80">
-                  <ShieldCheck className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-card border border-border/80 hover:border-primary/40 hover:shadow-md hover:-translate-y-1 transition-all duration-200 group cursor-pointer">
+                  <ShieldCheck className="w-5 h-5 text-primary shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-200" />
                   <div>
                     <h4 className="text-xs font-bold text-foreground">Unique Credential ID</h4>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -46,8 +46,8 @@ export function CertificateShowcase() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-card border border-border/80">
-                  <FileText className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-card border border-border/80 hover:border-primary/40 hover:shadow-md hover:-translate-y-1 transition-all duration-200 group cursor-pointer">
+                  <FileText className="w-5 h-5 text-primary shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-200" />
                   <div>
                     <h4 className="text-xs font-bold text-foreground">High-Resolution PDF</h4>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -56,8 +56,8 @@ export function CertificateShowcase() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-card border border-border/80">
-                  <Award className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-card border border-border/80 hover:border-primary/40 hover:shadow-md hover:-translate-y-1 transition-all duration-200 group cursor-pointer">
+                  <Award className="w-5 h-5 text-primary shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-200" />
                   <div>
                     <h4 className="text-xs font-bold text-foreground">Official Issuer</h4>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -90,7 +90,7 @@ export function CertificateShowcase() {
 
             {/* Right Certificate Graphic / Mockup */}
             <div className="lg:col-span-5">
-              <div className="relative rounded-2xl bg-card border-2 border-primary/20 p-6 sm:p-8 shadow-xl space-y-5 overflow-hidden">
+              <div className="relative rounded-2xl bg-card border-2 border-primary/20 p-6 sm:p-8 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 space-y-5 overflow-hidden">
                 {/* Decorative border pattern */}
                 <div className="absolute top-2 left-2 right-2 bottom-2 border border-primary/10 rounded-xl pointer-events-none" />
 

@@ -503,7 +503,7 @@ export default function AdminDashboardClient({
       {/* KPI Row (4 primary metrics) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {/* KPI 1: Total Revenue */}
-        <Card className="rounded-3xl border border-border/80 shadow-xs hover:shadow-md transition-shadow">
+        <Card className="rounded-3xl border border-border/80 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
               Total Revenue
@@ -542,7 +542,7 @@ export default function AdminDashboardClient({
         </Card>
 
         {/* KPI 2: Active Students */}
-        <Card className="rounded-3xl border border-border/80 shadow-xs hover:shadow-md transition-shadow">
+        <Card className="rounded-3xl border border-border/80 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
               Active Students
@@ -565,7 +565,7 @@ export default function AdminDashboardClient({
         </Card>
 
         {/* KPI 3: Completion Rate */}
-        <Card className="rounded-3xl border border-border/80 shadow-xs hover:shadow-md transition-shadow">
+        <Card className="rounded-3xl border border-border/80 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
               Completion Rate
@@ -589,7 +589,7 @@ export default function AdminDashboardClient({
         </Card>
 
         {/* KPI 4: Paid Orders */}
-        <Card className="rounded-3xl border border-border/80 shadow-xs hover:shadow-md transition-shadow">
+        <Card className="rounded-3xl border border-border/80 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
               Paid Orders

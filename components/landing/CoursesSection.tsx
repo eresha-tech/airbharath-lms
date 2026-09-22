@@ -71,7 +71,7 @@ export function CoursesSection({ dbCourses = [] }: CoursesSectionProps) {
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-150 active:scale-95 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ${
                   activeCategory === cat.id
                     ? "bg-primary text-white shadow-xs"
                     : "bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -85,7 +85,7 @@ export function CoursesSection({ dbCourses = [] }: CoursesSectionProps) {
 
         {/* Course Cards Grid */}
         {filteredCourses.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div key={activeCategory} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 animate-fade-in">
             {filteredCourses.map((course) => (
               <CourseCard
                 key={course.id}
@@ -113,7 +113,7 @@ export function CoursesSection({ dbCourses = [] }: CoursesSectionProps) {
         )}
 
         {/* Bottom Catalog Discovery Strip */}
-        <div className="p-6 sm:p-8 rounded-2xl bg-card border border-border flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="p-6 sm:p-8 rounded-2xl bg-card border border-border hover:shadow-md hover:border-primary/30 transition-all duration-200 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="space-y-1 text-center sm:text-left">
             <h4 className="text-sm sm:text-base font-bold text-foreground font-outfit">
               Looking for the complete skill set?
@@ -124,7 +124,7 @@ export function CoursesSection({ dbCourses = [] }: CoursesSectionProps) {
           </div>
           <Button
             asChild
-            className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 px-5 rounded-xl shrink-0"
+            className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 px-5 rounded-xl shrink-0 active:scale-95 transition-all"
           >
             <Link href="/courses/combo-pack">Explore Combo Pass</Link>
           </Button>

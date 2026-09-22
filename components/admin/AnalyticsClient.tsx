@@ -729,7 +729,7 @@ export default function AnalyticsClient({
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-3.5">
           {/* 1. Total Students (PostgreSQL) */}
-          <Card className="rounded-2xl border-border/80 p-4 shadow-2xs hover:shadow-xs transition-shadow">
+          <Card className="rounded-2xl border-border/80 p-4 shadow-2xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                 Total Students
@@ -748,7 +748,7 @@ export default function AnalyticsClient({
           </Card>
 
           {/* 2. Active Students (PostgreSQL) */}
-          <Card className="rounded-2xl border-border/80 p-4 shadow-2xs hover:shadow-xs transition-shadow">
+          <Card className="rounded-2xl border-border/80 p-4 shadow-2xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                 Active Learners
@@ -767,7 +767,7 @@ export default function AnalyticsClient({
           </Card>
 
           {/* 3. Course Views (PostHog Behavioral) */}
-          <Card className="rounded-2xl border-border/80 p-4 shadow-2xs hover:shadow-xs transition-shadow">
+          <Card className="rounded-2xl border-border/80 p-4 shadow-2xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                 Course Views
@@ -788,7 +788,7 @@ export default function AnalyticsClient({
           </Card>
 
           {/* 4. Enrollments (PostgreSQL) */}
-          <Card className="rounded-2xl border-border/80 p-4 shadow-2xs hover:shadow-xs transition-shadow">
+          <Card className="rounded-2xl border-border/80 p-4 shadow-2xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                 Enrollments
@@ -807,7 +807,7 @@ export default function AnalyticsClient({
           </Card>
 
           {/* 5. Revenue (PostgreSQL) */}
-          <Card className="rounded-2xl border-border/80 p-4 shadow-2xs hover:shadow-xs transition-shadow">
+          <Card className="rounded-2xl border-border/80 p-4 shadow-2xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                 Total Revenue
@@ -826,7 +826,7 @@ export default function AnalyticsClient({
           </Card>
 
           {/* 6. Course Completion Rate (PostgreSQL) */}
-          <Card className="rounded-2xl border-border/80 p-4 shadow-2xs hover:shadow-xs transition-shadow">
+          <Card className="rounded-2xl border-border/80 p-4 shadow-2xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                 Completion Rate

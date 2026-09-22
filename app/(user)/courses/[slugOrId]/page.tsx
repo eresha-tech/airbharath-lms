@@ -183,7 +183,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
         )}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-cyan-400/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="container mx-auto px-4 relative z-10 max-w-6xl space-y-6">
+        <div className="container mx-auto px-4 relative z-10 max-w-6xl space-y-6 animate-fade-up">
           {/* Breadcrumb Navigation */}
           <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-semibold text-cyan-200">
             <Link href="/courses" className="hover:text-white transition-colors flex items-center gap-1">

@@ -50,7 +50,7 @@ export function PricingView({ courses }: PricingViewProps) {
     <div className="flex flex-col min-h-screen font-sans bg-background text-foreground pb-20">
       {/* Header Banner */}
       <section className="bg-gradient-to-b from-primary/10 via-primary/5 to-transparent pt-28 pb-16 border-b border-border/80">
-        <div className="container mx-auto px-4 max-w-5xl space-y-4 text-center">
+        <div className="container mx-auto px-4 max-w-5xl space-y-4 text-center animate-fade-up">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider">
             <Sparkles className="h-4 w-4" />
             <span>Transparent Pricing</span>
@@ -71,7 +71,7 @@ export function PricingView({ courses }: PricingViewProps) {
         {/* Tier Cards: Individual vs Combo Pass */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           {/* Plan 1: Individual Certificate Course (5 cols) */}
-          <div className="lg:col-span-5 bg-card border border-border/80 rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col justify-between space-y-6">
+          <div className="lg:col-span-5 bg-card border border-border/80 rounded-3xl p-6 sm:p-8 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between space-y-6">
             <div className="space-y-6">
               <div className="space-y-2">
                 <Badge className="bg-muted text-foreground border-border text-[10px] font-bold uppercase tracking-wider">
@@ -143,7 +143,7 @@ export function PricingView({ courses }: PricingViewProps) {
           </div>
 
           {/* Plan 2: All-in-One Combo Pass (7 cols, Featured) */}
-          <div className="lg:col-span-7 bg-card border-2 border-primary rounded-3xl p-6 sm:p-8 shadow-md relative overflow-hidden flex flex-col justify-between space-y-6">
+          <div className="lg:col-span-7 bg-card border-2 border-primary rounded-3xl p-6 sm:p-8 shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-200 relative overflow-hidden flex flex-col justify-between space-y-6">
             <div className="absolute top-0 right-0 bg-primary text-white text-[10px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-bl-2xl shadow-xs">
               Most Popular · All 4 Programs
             </div>

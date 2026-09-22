@@ -47,7 +47,7 @@ export function TransformationMatrix() {
         <div
           role="table"
           aria-label="Skill transformation comparison"
-          className="bg-card rounded-3xl border border-border shadow-xs overflow-hidden"
+          className="bg-card rounded-3xl border border-border shadow-xs hover:shadow-md transition-shadow duration-200 overflow-hidden"
         >
           {/* Column headers */}
           <div
@@ -73,7 +73,7 @@ export function TransformationMatrix() {
               <div
                 key={idx}
                 role="row"
-                className="grid grid-cols-1 md:grid-cols-2 p-5 sm:p-6 hover:bg-muted/40 transition-colors gap-4 md:gap-6 items-center text-xs sm:text-sm"
+                className="grid grid-cols-1 md:grid-cols-2 p-5 sm:p-6 hover:bg-primary/[0.03] transition-colors duration-150 gap-4 md:gap-6 items-center text-xs sm:text-sm group"
               >
                 <div role="cell" className="flex items-start gap-3 text-muted-foreground font-medium">
                   <div aria-hidden="true" className="w-2 h-2 rounded-full bg-muted-foreground/50 shrink-0 mt-1.5" />
@@ -90,7 +90,7 @@ export function TransformationMatrix() {
                   className="flex items-start gap-3 text-foreground font-bold border-t md:border-t-0 md:border-l border-border pt-3 md:pt-0 md:pl-6"
                 >
                   <CheckCircle2
-                    className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5"
+                    className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-200"
                     aria-hidden="true"
                   />
                   <span>{item.future}</span>
@@ -101,7 +101,7 @@ export function TransformationMatrix() {
         </div>
 
         {/* Footer callout */}
-        <div className="text-center bg-card border border-border p-5 sm:p-6 rounded-2xl max-w-3xl mx-auto space-y-1">
+        <div className="text-center bg-card border border-border hover:border-primary/30 hover:shadow-xs transition-all duration-200 p-5 sm:p-6 rounded-2xl max-w-3xl mx-auto space-y-1">
           <p
             className="text-sm sm:text-base font-bold text-foreground font-outfit"
             style={{ textWrap: "balance" } as React.CSSProperties}

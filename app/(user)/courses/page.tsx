@@ -83,7 +83,7 @@ export default async function CoursesPage() {
     <main className="flex-1 pb-20 space-y-10 sm:space-y-12">
       {/* Header Banner */}
       <section className="bg-gradient-to-b from-primary/10 via-primary/5 to-transparent pt-24 sm:pt-28 pb-12 sm:pb-16 border-b border-border/80">
-        <div className="container mx-auto px-4 max-w-6xl space-y-4 sm:space-y-5 text-center">
+        <div className="container mx-auto px-4 max-w-6xl space-y-4 sm:space-y-5 text-center animate-fade-up">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider">
             <GraduationCap className="w-3.5 h-3.5 text-primary" />
             <span>Airbharath Professional Curriculum</span>

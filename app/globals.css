@@ -154,3 +154,119 @@ h1, h2, h3, .font-serif-heading, .font-instrument-serif {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
 }
+
+/* ==================================================
+   Subtle Motion Tokens & GPU-Accelerated Animations
+   ================================================== */
+:root {
+  --motion-fast: 150ms;
+  --motion-normal: 220ms;
+  --motion-slow: 280ms;
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--motion-normal) var(--ease-smooth) forwards;
+}
+
+.animate-fade-up {
+  animation: fadeUp var(--motion-slow) var(--ease-spring) forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn var(--motion-normal) var(--ease-spring) forwards;
+}
+
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 3.5s ease-in-out infinite;
+}
+
+@keyframes progressFill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.animate-progress-fill {
+  transform-origin: left;
+  animation: progressFill 6000ms linear forwards;
+}
+
+.card-hover-lift {
+  transition: transform var(--motion-normal) var(--ease-smooth),
+              box-shadow var(--motion-normal) var(--ease-smooth),
+              border-color var(--motion-normal) var(--ease-smooth);
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+/* ==================================================
+   Accessibility: Reduced Motion Preference
+   ================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .card-hover-lift:hover,
+  .hover\:-translate-y-0\.5:hover,
+  .hover\:-translate-y-1:hover,
+  .hover\:-translate-y-1\.5:hover,
+  .group:hover .group-hover\:scale-105,
+  .group:hover .group-hover\:scale-110,
+  .animate-float-slow,
+  .animate-progress-fill {
+    transform: none !important;
+    animation: none !important;
+  }
+}

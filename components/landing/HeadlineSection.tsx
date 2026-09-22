@@ -43,9 +43,9 @@ export function HeadlineSection() {
         </div>
 
         {/* CALLOUT BOX */}
-        <div className="relative rounded-3xl bg-muted/30 border border-border p-6 sm:p-10 shadow-xs overflow-hidden">
+        <div className="relative rounded-3xl bg-muted/30 border border-border p-6 sm:p-10 shadow-xs hover:shadow-md hover:border-primary/30 transition-all duration-200 overflow-hidden group">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shrink-0 shadow-sm">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform duration-200">
               <ShieldCheck className="w-7 h-7 sm:w-8 sm:h-8" aria-hidden="true" />
             </div>
 
@@ -72,7 +72,7 @@ export function HeadlineSection() {
             <Button
               asChild
               size="lg"
-              className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white font-bold px-8 h-12 rounded-xl text-sm shadow-xs"
+              className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white font-bold px-8 h-12 rounded-xl text-sm shadow-xs active:scale-[0.98] transition-all"
             >
               <Link href="/courses" className="flex items-center gap-2">
                 <span>Explore Courses</span>
@@ -84,7 +84,7 @@ export function HeadlineSection() {
               asChild
               variant="outline"
               size="lg"
-              className="w-full sm:w-auto border-border text-foreground hover:bg-muted font-bold px-8 h-12 rounded-xl text-sm"
+              className="w-full sm:w-auto border-border text-foreground hover:bg-muted font-bold px-8 h-12 rounded-xl text-sm active:scale-[0.98] transition-all"
             >
               <Link href="/login">
                 <span>Student Sign In</span>
@@ -99,7 +99,7 @@ export function HeadlineSection() {
             {TRUST_PILLS.map((pill) => (
               <li
                 key={pill}
-                className="inline-flex items-center gap-1.5 bg-card border border-border px-3 py-1 rounded-full shadow-2xs"
+                className="inline-flex items-center gap-1.5 bg-card border border-border px-3 py-1 rounded-full shadow-2xs hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-150 cursor-default"
               >
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                 <span>{pill}</span>

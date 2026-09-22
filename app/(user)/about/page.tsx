@@ -95,7 +95,7 @@ export default function AboutPage() {
     <div className="flex flex-col min-h-screen font-sans bg-background text-foreground pb-20">
       {/* Hero Header Section */}
       <section className="bg-gradient-to-b from-primary/10 via-primary/5 to-transparent pt-28 pb-16 border-b border-border/80">
-        <div className="container mx-auto px-4 max-w-5xl space-y-6 text-center">
+        <div className="container mx-auto px-4 max-w-5xl space-y-6 text-center animate-fade-up">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider">
             <GraduationCap className="h-4 w-4" />
             <span>About AirBharath LMS</span>
@@ -161,7 +161,7 @@ export default function AboutPage() {
               return (
                 <div
                   key={index}
-                  className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-4"
+                  className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between space-y-4"
                 >
                   <div className="space-y-3">
                     <div className={`h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 ${pillar.color}`}>

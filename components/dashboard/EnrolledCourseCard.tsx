@@ -28,7 +28,7 @@ export function EnrolledCourseCard({ course }: EnrolledCourseCardProps) {
   return (
     <div
       className={cn(
-        "bg-card border rounded-2xl overflow-hidden shadow-2xs flex flex-col justify-between transition-all duration-200 hover:shadow-md",
+        "bg-card border rounded-2xl overflow-hidden shadow-2xs flex flex-col justify-between transition-all duration-200 hover:shadow-md hover:-translate-y-0.5",
         course.isExpired
           ? "border-destructive/30 bg-destructive/5"
           : "border-border/80 hover:border-border"

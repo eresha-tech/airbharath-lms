@@ -48,10 +48,10 @@ export function ExpertGuidanceSection() {
             return (
               <div
                 key={pillar.title}
-                className="bg-muted/30 border border-border rounded-3xl p-6 sm:p-8 space-y-5 hover:shadow-xs hover:border-primary/40 hover:bg-card transition-all duration-200 flex flex-col justify-between group"
+                className="bg-muted/30 border border-border rounded-3xl p-6 sm:p-8 space-y-5 hover:shadow-lg hover:border-primary/40 hover:-translate-y-1.5 hover:bg-card transition-all duration-200 flex flex-col justify-between group cursor-pointer"
               >
                 <div className="space-y-4">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-xs">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform duration-200">
                     <Icon className="w-6 h-6 sm:w-7 sm:h-7" aria-hidden="true" />
                   </div>
 
@@ -74,7 +74,7 @@ export function ExpertGuidanceSection() {
         </div>
 
         {/* Learning Philosophy Callout */}
-        <div className="bg-primary text-primary-foreground p-6 sm:p-8 rounded-3xl shadow-sm text-center space-y-2">
+        <div className="bg-primary text-primary-foreground p-6 sm:p-8 rounded-3xl shadow-sm hover:shadow-md transition-shadow duration-200 text-center space-y-2">
           <span className="text-xs font-extrabold uppercase tracking-widest text-primary-foreground/80">
             Our Core Approach
           </span>

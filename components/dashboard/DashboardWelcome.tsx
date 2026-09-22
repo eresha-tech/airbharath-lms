@@ -20,7 +20,7 @@ export function DashboardWelcome({
   continueLessonTitle,
 }: DashboardWelcomeProps) {
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#014a62] via-[#013c50] to-[#002836] text-white p-6 sm:p-8 lg:p-9 shadow-md border border-[#014a62]/60">
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#014a62] via-[#013c50] to-[#002836] text-white p-6 sm:p-8 lg:p-9 shadow-md border border-[#014a62]/60 animate-fade-up">
       {/* Background radial glow */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-400/15 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
       <div className="absolute bottom-0 left-1/4 w-72 h-72 bg-teal-500/10 rounded-full blur-2xl pointer-events-none -mb-24" />

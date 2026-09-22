@@ -73,7 +73,7 @@ export function DashboardStats({
         return (
           <Card
             key={idx}
-            className="rounded-2xl border-border/80 p-4 sm:p-5 shadow-2xs hover:shadow-xs transition-shadow bg-card"
+            className="rounded-2xl border-border/80 p-4 sm:p-5 shadow-2xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-card"
           >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider font-sans">

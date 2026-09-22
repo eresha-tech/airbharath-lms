@@ -62,7 +62,7 @@ export function LandingFAQ() {
         </div>
 
         {/* Accordion */}
-        <div className="bg-card rounded-3xl border border-border shadow-xs p-6 sm:p-8">
+        <div className="bg-card rounded-3xl border border-border shadow-xs hover:shadow-md transition-shadow duration-200 p-6 sm:p-8">
           <Accordion type="single" collapsible className="w-full space-y-2">
             {FAQ_ITEMS.map((item, idx) => (
               <AccordionItem
