@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Mail, MapPin, ShieldCheck, BookOpen } from "lucide-react";
+import { APP_VERSION, APP_NAME } from "@/lib/app-version";
 
 export function Footer() {
   return (
@@ -166,7 +167,7 @@ export function Footer() {
               Learn. Build. Succeed — with AirBharath LMS.
             </p>
             <p className="text-[11px] text-slate-500">
-              &copy; {new Date().getFullYear()} Eresha Technology Innovators Pvt. Ltd. (AirBharath LMS). All rights reserved.
+              &copy; {new Date().getFullYear()} Eresha Technology Innovators Pvt. Ltd. ({APP_NAME} v{APP_VERSION}). All rights reserved.
             </p>
           </div>
 

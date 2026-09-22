@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { track, resetUser } from "@/lib/analytics";
+import { APP_VERSION, APP_NAME } from "@/lib/app-version";
 
 export interface SettingsUser {
   id: string;
@@ -651,6 +652,14 @@ export function SettingsView({ initialUser, stats }: SettingsViewProps) {
             />
           </div>
         </div>
+      </div>
+
+      {/* System Information & Version */}
+      <div className="pt-2 flex items-center justify-between text-[11px] text-muted-foreground px-2">
+        <span>{APP_NAME}</span>
+        <span className="font-mono text-[10px] bg-muted/60 px-2 py-0.5 rounded-md border border-border/60">
+          v{APP_VERSION}
+        </span>
       </div>
     </div>
   );

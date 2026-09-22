@@ -26,6 +26,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
+import { APP_VERSION } from "@/lib/app-version";
 
 export interface AdminNavItem {
   title: string;
@@ -336,6 +337,11 @@ export function AdminSidebar() {
               <LogOut className="h-3.5 w-3.5" />
               <span>Log out</span>
             </button>
+
+            <div className="pt-2 px-3 flex items-center justify-between text-[10px] text-muted-foreground/50 font-mono">
+              <span>Admin Portal</span>
+              <span>v{APP_VERSION}</span>
+            </div>
           </>
         )}
       </div>

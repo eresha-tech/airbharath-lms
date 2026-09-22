@@ -68,6 +68,7 @@ function getAdminBreadcrumb(pathname: string): { group: string; page: string } {
 }
 
 import { track, resetUser } from "@/lib/analytics";
+import { APP_VERSION, APP_NAME } from "@/lib/app-version";
 
 export function AdminHeader() {
   const pathname = usePathname();
@@ -201,6 +202,12 @@ export function AdminHeader() {
               <LogOut className="h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            <div className="px-2 py-1 text-[10px] text-muted-foreground/60 font-mono text-center">
+              {APP_NAME} v{APP_VERSION}
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

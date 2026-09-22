@@ -23,6 +23,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
+import { APP_VERSION } from "@/lib/app-version";
 
 export interface NavItem {
   title: string;
@@ -242,6 +243,10 @@ export function SidebarNav() {
             <p className="text-[11px] text-muted-foreground leading-relaxed">
               Complete your enrolled modules to unlock verified placement drives.
             </p>
+            <div className="pt-1 flex items-center justify-between text-[10px] text-muted-foreground/60 font-mono">
+              <span>AirBharath LMS</span>
+              <span>v{APP_VERSION}</span>
+            </div>
           </div>
         ) : (
           <TooltipProvider delayDuration={0}>
@@ -252,7 +257,7 @@ export function SidebarNav() {
                 </div>
               </TooltipTrigger>
               <TooltipContent side="right" className="text-xs">
-                Placement Hub: Active
+                AirBharath LMS v{APP_VERSION}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
