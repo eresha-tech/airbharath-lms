@@ -4,7 +4,7 @@ export default function CoursesLoading() {
   return (
     <main className="flex-1 pb-20 space-y-10 sm:space-y-12 animate-pulse">
       {/* Header Banner Skeleton */}
-      <section className="bg-gradient-to-b from-primary/10 via-primary/5 to-transparent pt-10 sm:pt-14 pb-12 sm:pb-16 border-b border-border/80">
+      <section className="bg-gradient-to-b from-primary/10 via-primary/5 to-transparent pt-24 sm:pt-28 pb-12 sm:pb-16 border-b border-border/80">
         <div className="container mx-auto px-4 max-w-6xl space-y-4 sm:space-y-5 text-center flex flex-col items-center">
           <Skeleton className="h-6 w-48 rounded-full" />
           <Skeleton className="h-10 sm:h-12 w-3/4 max-w-lg rounded-2xl" />

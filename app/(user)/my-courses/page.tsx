@@ -70,7 +70,7 @@ export default async function MyCoursesPage() {
   });
 
   return (
-    <main className="flex-1 pt-12 pb-16">
+    <main className="flex-1 pt-24 pb-16">
         <div className="container mx-auto px-4 max-w-6xl space-y-8">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-[#014a62]/10 text-[#014a62] rounded-2xl">

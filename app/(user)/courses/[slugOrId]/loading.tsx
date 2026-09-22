@@ -4,7 +4,7 @@ export default function CourseDetailLoading() {
   return (
     <main className="flex-1 pb-20 animate-pulse">
       {/* 1. Hero Skeleton Header */}
-      <div className="bg-gradient-to-br from-[#014a62] via-[#013c50] to-[#012c3b] py-10 md:py-16 border-b border-[#014a62]/40">
+      <div className="bg-gradient-to-br from-[#014a62] via-[#013c50] to-[#012c3b] pt-24 md:pt-28 pb-10 md:pb-16 border-b border-[#014a62]/40">
         <div className="container mx-auto px-4 max-w-6xl space-y-6">
           {/* Breadcrumb Skeleton */}
           <div className="flex items-center gap-2">

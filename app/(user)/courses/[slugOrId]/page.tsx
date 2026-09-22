@@ -99,7 +99,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
 
   if (!course) {
     return (
-      <div className="container mx-auto px-4 py-24 text-center min-h-[60vh] flex flex-col items-center justify-center space-y-4">
+      <div className="container mx-auto px-4 pt-28 pb-16 text-center min-h-[60vh] flex flex-col items-center justify-center space-y-4">
         <div className="h-16 w-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
           <BookOpen className="h-8 w-8" />
         </div>
@@ -169,7 +169,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
         isFree={Number(course.price) === 0}
       />
       {/* 1. Hero Section Header */}
-      <div className="relative w-full overflow-hidden text-white bg-gradient-to-br from-[#014a62] via-[#013c50] to-[#012c3b] py-10 md:py-16 border-b border-[#014a62]/40">
+      <div className="relative w-full overflow-hidden text-white bg-gradient-to-br from-[#014a62] via-[#013c50] to-[#012c3b] pt-24 md:pt-28 pb-10 md:pb-16 border-b border-[#014a62]/40">
         {course.thumbnailUrl && (
           <div className="absolute inset-0 z-0 opacity-15 mix-blend-overlay">
             <Image
