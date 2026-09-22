@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, Check, AlertCircle, Loader2, Tag, ArrowRight } from "lucide-react";
+import { Check, AlertCircle, Loader2, Tag, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -198,7 +198,7 @@ export default function EnrollButton({
     return (
       <Button
         asChild
-        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 rounded-xl text-sm shadow-sm transition-all duration-200"
+        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-11 sm:h-12 rounded-2xl text-xs sm:text-sm shadow-xs transition-all duration-200 cursor-pointer"
       >
         <Link
           href={`/dashboard/courses/${courseId}`}
@@ -214,7 +214,7 @@ export default function EnrollButton({
   const finalDisplayPrice = appliedCoupon ? appliedCoupon.finalAmount : price;
 
   return (
-    <div className="space-y-4 w-full">
+    <div className="space-y-4 w-full font-sans">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" />
 
       {/* Coupon Application Box */}
@@ -238,7 +238,7 @@ export default function EnrollButton({
               disabled={validatingCoupon || isEnrolling || !couponInput.trim()}
               variant="outline"
               size="sm"
-              className="px-4 font-bold text-xs h-9 rounded-xl border-primary/20 text-primary hover:bg-primary/10"
+              className="px-4 font-bold text-xs h-9 rounded-xl border-primary/20 text-primary hover:bg-primary/10 cursor-pointer"
             >
               {validatingCoupon ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -249,7 +249,7 @@ export default function EnrollButton({
           </div>
 
           {appliedCoupon && (
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 p-2.5 rounded-lg">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 p-2.5 rounded-xl">
               <Check className="h-3.5 w-3.5 shrink-0" />
               <span>
                 Coupon applied! Saved ₹{appliedCoupon.discount}. Final price: ₹
@@ -259,7 +259,7 @@ export default function EnrollButton({
           )}
 
           {couponError && (
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 p-2.5 rounded-lg">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 p-2.5 rounded-xl">
               <AlertCircle className="h-3.5 w-3.5 shrink-0" />
               <span>{couponError}</span>
             </div>
@@ -270,7 +270,7 @@ export default function EnrollButton({
       {/* Primary Enrollment Button */}
       <Button
         type="button"
-        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 rounded-xl text-sm shadow-sm transition-all duration-200 relative"
+        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-11 sm:h-12 rounded-2xl text-xs sm:text-sm shadow-xs transition-all duration-200 relative cursor-pointer"
         disabled={isEnrolling}
         onClick={handleEnroll}
       >
@@ -292,7 +292,7 @@ export default function EnrollButton({
       </Button>
 
       {enrollError && (
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 p-2.5 rounded-lg">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 p-2.5 rounded-xl">
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
           <span>{enrollError}</span>
         </div>

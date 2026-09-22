@@ -11,10 +11,10 @@ import {
   Download,
   Sparkles,
   GraduationCap,
-  Calendar,
   ChevronRight,
-  Globe,
   FileCheck2,
+  PlayCircle,
+  Layers,
 } from "lucide-react";
 import EnrollButton from "@/components/EnrollButton";
 import { getSession } from "@/lib/auth";
@@ -28,7 +28,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
@@ -41,10 +41,25 @@ interface CoursePageProps {
 
 export async function generateMetadata({ params }: CoursePageProps) {
   const { slugOrId } = await params;
+  const isUUID = /^[0-9a-f-]{36}$/i.test(slugOrId);
+
+  let courseTitle = "Course Details";
+  try {
+    const course = isUUID
+      ? await db.query.courses.findFirst({
+          where: eq(courses.id, slugOrId),
+          columns: { title: true },
+        })
+      : await db.query.courses.findFirst({
+          where: eq(courses.slug, slugOrId),
+          columns: { title: true },
+        });
+    if (course?.title) courseTitle = course.title;
+  } catch {}
+
   return {
-    title: `Course Details | Airbharath LMS`,
-    description:
-      "Accelerate your technical career with Airbharath LMS certification programs taught by IIM alumni.",
+    title: `${courseTitle} | Airbharath LMS`,
+    description: `Master career-ready capabilities with ${courseTitle} on Airbharath LMS. Self-paced HD video modules and QR-verifiable certificate included.`,
   };
 }
 
@@ -90,13 +105,13 @@ export default async function CoursePage({ params }: CoursePageProps) {
         <h1 className="text-3xl sm:text-4xl font-bold font-outfit text-foreground">
           Course Not Found
         </h1>
-        <p className="text-muted-foreground text-sm max-w-sm">
+        <p className="text-muted-foreground text-xs sm:text-sm max-w-sm">
           The requested Airbharath course could not be located or may have been updated.
         </p>
-        <Button asChild className="bg-primary text-primary-foreground font-bold rounded-xl mt-4">
+        <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl mt-4 text-xs h-10 px-5 shadow-xs cursor-pointer">
           <Link href="/courses">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Explore All Courses
+            <span>Explore All Courses</span>
           </Link>
         </Button>
       </div>
@@ -146,7 +161,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
   return (
     <main className="flex-1 pb-20">
       {/* 1. Hero Section Header */}
-      <div className="relative w-full overflow-hidden text-white bg-gradient-to-br from-[#014a62] via-[#013c50] to-[#012c3b] py-12 md:py-18 border-b border-[#014a62]/40">
+      <div className="relative w-full overflow-hidden text-white bg-gradient-to-br from-[#014a62] via-[#013c50] to-[#012c3b] py-10 md:py-16 border-b border-[#014a62]/40">
         {course.thumbnailUrl && (
           <div className="absolute inset-0 z-0 opacity-15 mix-blend-overlay">
             <Image
@@ -179,14 +194,14 @@ export default async function CoursePage({ params }: CoursePageProps) {
                   Airbharath Certified Program
                 </span>
                 <span className="px-3 py-1 bg-cyan-400/20 text-cyan-200 rounded-full text-[10px] font-bold uppercase tracking-wider border border-cyan-400/30">
-                  Taught by IIM Alumni
+                  ⚡ 100% Self-Paced
                 </span>
                 <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-[10px] font-bold uppercase tracking-wider border border-emerald-400/30">
-                  ⚡ Self-Paced Access
+                  Verifiable Credential
                 </span>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold font-outfit text-white leading-tight tracking-tight">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold font-outfit text-white leading-tight tracking-tight">
                 {course.title}
               </h1>
 
@@ -196,22 +211,22 @@ export default async function CoursePage({ params }: CoursePageProps) {
                 </p>
               )}
 
-              {/* Course Batch Schedule Notice */}
-              <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-400/30 text-amber-100 flex items-start gap-3 backdrop-blur-xs shadow-xs max-w-2xl">
-                <div className="p-2 bg-amber-500/25 rounded-xl border border-amber-400/40 text-amber-300 shrink-0">
-                  <Calendar className="w-4 h-4" />
+              {/* Instant Access Notice */}
+              <div className="p-4 rounded-2xl bg-cyan-950/40 border border-cyan-400/30 text-cyan-100 flex items-start gap-3 backdrop-blur-xs shadow-xs max-w-2xl">
+                <div className="p-2 bg-cyan-500/20 rounded-xl border border-cyan-400/30 text-cyan-300 shrink-0">
+                  <PlayCircle className="w-4 h-4" />
                 </div>
                 <div className="space-y-0.5 text-xs">
-                  <h4 className="font-bold text-amber-300 flex items-center gap-2">
-                    <span>Batch Notice</span>
-                    <span className="text-[10px] font-extrabold uppercase bg-amber-400/25 text-amber-200 px-2 py-0.2 rounded-full">
-                      Starts Sept 18, 2026
+                  <h4 className="font-bold text-white flex items-center gap-2">
+                    <span>Instant Curriculum Access</span>
+                    <span className="text-[10px] font-extrabold uppercase bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-full">
+                      Immediate
                     </span>
                   </h4>
-                  <p className="text-amber-100/90 leading-relaxed">
+                  <p className="text-cyan-100/80 leading-relaxed">
                     {isEnrolled
-                      ? "You are enrolled! Course video lessons and learning materials will start and become accessible on your LMS Dashboard from September 18, 2026."
-                      : "Course curriculum and modules will begin and unlock from 18th September 2026. Secure your enrollment today!"}
+                      ? "You have full access to all curriculum modules and video lessons on your Student Dashboard."
+                      : "Enroll today to instantly unlock all course modules, HD video lessons, and verifiable certification track."}
                   </p>
                 </div>
               </div>
@@ -260,24 +275,24 @@ export default async function CoursePage({ params }: CoursePageProps) {
 
             {/* Right Column: Pricing & Enrollment Card */}
             <div className="lg:col-span-4 w-full">
-              <Card className="bg-card text-card-foreground border-border shadow-xl p-6 sm:p-7 space-y-6 rounded-2xl">
+              <Card className="bg-card text-card-foreground border-border/80 shadow-xl p-6 sm:p-7 space-y-6 rounded-3xl">
                 <div className="space-y-2">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">
                     Course Investment
                   </span>
-                  <div className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight font-outfit">
+                  <div className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight font-outfit">
                     {rawPrice === 0 ? "Free" : `₹${rawPrice.toLocaleString("en-IN")}`}
                   </div>
 
                   {rawPrice > 0 && (
-                    <div className="bg-muted/40 p-3 rounded-xl border border-border/60 text-xs space-y-1 text-muted-foreground font-medium">
+                    <div className="bg-muted/40 p-3.5 rounded-2xl border border-border/60 text-xs space-y-1 text-muted-foreground font-medium">
                       <div className="flex justify-between">
-                        <span>Base Price (Excl. GST):</span>
-                        <span className="font-bold text-foreground">₹{basePrice}</span>
+                        <span>Base Amount (Excl. GST):</span>
+                        <span className="font-semibold text-foreground">₹{basePrice}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>18% GST (CGST 9% + SGST 9%):</span>
-                        <span className="font-bold text-foreground">₹{gstAmount}</span>
+                        <span className="font-semibold text-foreground">₹{gstAmount}</span>
                       </div>
                       <div className="flex justify-between border-t border-border/60 pt-1 font-bold text-primary">
                         <span>Total Payable:</span>
@@ -302,28 +317,28 @@ export default async function CoursePage({ params }: CoursePageProps) {
                   <Button
                     asChild
                     variant="outline"
-                    className="w-full border-primary/30 text-primary hover:bg-primary/10 font-bold h-10 rounded-xl text-xs flex items-center justify-center gap-2"
+                    className="w-full border-primary/30 text-primary hover:bg-primary/10 font-bold h-10 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <a
                       href={`/api/invoices/download/${userOrder.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <Download className="w-4 h-4 text-primary" />
+                      <Download className="w-3.5 h-3.5 text-primary" />
                       <span>Download Tax Invoice (PDF)</span>
                     </a>
                   </Button>
                 )}
 
                 {/* Security and Certificate Guarantee */}
-                <div className="space-y-2.5 pt-3 border-t border-border text-xs text-muted-foreground font-medium">
+                <div className="space-y-2.5 pt-3 border-t border-border/60 text-xs text-muted-foreground font-medium">
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-                    <span>Razorpay 256-bit Secure Gateway</span>
+                    <span>Razorpay 256-bit Secure Checkout</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <FileCheck2 className="h-4 w-4 text-primary shrink-0" />
-                    <span>QR-Verifiable Completion Certificate</span>
+                    <span>Official QR-Verifiable Certificate</span>
                   </div>
                 </div>
               </Card>
@@ -333,12 +348,12 @@ export default async function CoursePage({ params }: CoursePageProps) {
       </div>
 
       {/* 2. Course Body Content & Curriculum */}
-      <div className="container mx-auto px-4 py-12 max-w-6xl">
+      <div className="container mx-auto px-4 py-10 sm:py-12 max-w-6xl">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
           {/* Main Left Content Area */}
-          <div className="lg:col-span-8 space-y-10">
+          <div className="lg:col-span-8 space-y-8 sm:space-y-10">
             {/* What You'll Learn Highlights */}
-            <div className="bg-card border border-border/80 rounded-2xl p-6 sm:p-8 space-y-5 shadow-xs">
+            <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 space-y-5 shadow-xs">
               <div className="space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
                   Learning Outcomes
@@ -355,21 +370,21 @@ export default async function CoursePage({ params }: CoursePageProps) {
                 </div>
                 <div className="flex items-start gap-2.5 text-xs sm:text-sm text-foreground/90">
                   <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                  <span>Self-paced curriculum designed by IIM alumni</span>
+                  <span>Structured curriculum with hands-on exercises</span>
                 </div>
                 <div className="flex items-start gap-2.5 text-xs sm:text-sm text-foreground/90">
                   <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                  <span>Real-world case studies and workflow demonstrations</span>
+                  <span>Real-world case studies and workflow walkthroughs</span>
                 </div>
                 <div className="flex items-start gap-2.5 text-xs sm:text-sm text-foreground/90">
                   <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                  <span>Tamper-proof verifiable credential upon completion</span>
+                  <span>Verifiable PDF credential upon 100% completion</span>
                 </div>
               </div>
             </div>
 
             {/* Curriculum Breakdown */}
-            <div className="bg-card border border-border/80 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xs">
+            <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xs">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
@@ -379,7 +394,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                     Course Curriculum
                   </h2>
                 </div>
-                <Badge variant="secondary" className="text-xs font-semibold">
+                <Badge variant="secondary" className="text-xs font-semibold px-3 py-1 rounded-xl">
                   {sortedModules.length} Modules · {totalLessons} Lessons
                 </Badge>
               </div>
@@ -401,12 +416,12 @@ export default async function CoursePage({ params }: CoursePageProps) {
                       <AccordionItem
                         key={mod.id}
                         value={`module-${mod.id}`}
-                        className="border border-border/80 rounded-xl overflow-hidden bg-muted/20 px-5 py-0.5 data-[state=open]:bg-muted/40 transition-colors"
+                        className="border border-border/80 rounded-2xl overflow-hidden bg-muted/20 px-5 py-0.5 data-[state=open]:bg-muted/40 transition-colors"
                       >
                         <AccordionTrigger className="hover:no-underline text-foreground font-semibold text-sm py-4">
                           <div className="flex items-center justify-between w-full pr-3 text-left">
                             <div className="flex items-center gap-3">
-                              <span className="text-[11px] font-mono font-bold bg-primary text-primary-foreground px-2 py-0.5 rounded">
+                              <span className="text-[11px] font-mono font-bold bg-primary text-primary-foreground px-2 py-0.5 rounded-md">
                                 {String(idx + 1).padStart(2, "0")}
                               </span>
                               <span className="text-sm sm:text-base font-bold font-outfit text-foreground">
@@ -420,7 +435,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                         </AccordionTrigger>
 
                         <AccordionContent className="pt-1 pb-4">
-                          <div className="divide-y divide-border/60 bg-card rounded-lg border border-border/60 overflow-hidden">
+                          <div className="divide-y divide-border/60 bg-card rounded-xl border border-border/60 overflow-hidden">
                             {lessonsList.map((les: any, lesIdx: number) => (
                               <div
                                 key={les.id}
@@ -460,9 +475,9 @@ export default async function CoursePage({ params }: CoursePageProps) {
           {/* Right Sidebar Details */}
           <div className="lg:col-span-4 space-y-6">
             {/* Verified Certificate Showcase */}
-            <div className="bg-card border border-border/80 rounded-2xl p-6 space-y-4 shadow-xs">
+            <div className="bg-card border border-border/80 rounded-3xl p-6 space-y-4 shadow-xs">
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                   <Award className="h-4 w-4" />
                 </div>
                 <div>
@@ -476,12 +491,12 @@ export default async function CoursePage({ params }: CoursePageProps) {
               </div>
 
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Receive an official certificate featuring a secure verification QR code. Add it directly to your LinkedIn profile and resume to demonstrate competency to recruiters.
+                Receive an official certificate featuring a secure verification QR code and unique credential ID. Add it directly to your LinkedIn profile and resume to demonstrate competency to recruiters.
               </p>
             </div>
 
             {/* Course Fast Facts */}
-            <div className="bg-card border border-border/80 rounded-2xl p-6 space-y-3.5 shadow-xs">
+            <div className="bg-card border border-border/80 rounded-3xl p-6 space-y-3.5 shadow-xs">
               <h3 className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
                 Course Summary
               </h3>
@@ -496,8 +511,8 @@ export default async function CoursePage({ params }: CoursePageProps) {
                   <span className="font-semibold">English &amp; Hindi</span>
                 </div>
                 <div className="flex justify-between items-center pt-2">
-                  <span className="text-muted-foreground">Placement Hub</span>
-                  <span className="font-semibold text-primary">Qualified</span>
+                  <span className="text-muted-foreground">Delivery</span>
+                  <span className="font-semibold text-primary">HD Video Lessons</span>
                 </div>
                 <div className="flex justify-between items-center pt-2">
                   <span className="text-muted-foreground">Access Validity</span>

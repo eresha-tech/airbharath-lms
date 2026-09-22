@@ -11,17 +11,20 @@ import {
   ArrowRight,
   Search,
   Sparkles,
-  Calendar,
   AlertTriangle,
   Award,
   Layers,
   ChevronRight,
   RotateCcw,
+  ShieldCheck,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export interface EnrolledCourseData {
   id: string;
@@ -49,15 +52,14 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<"all" | "in-progress" | "completed">("all");
 
-  // Summary counts
+  // Real Summary metrics
   const totalEnrolled = courses.length;
+  const activeCount = courses.filter((c) => !c.isExpired).length;
   const completedCourses = courses.filter((c) => c.percent === 100);
   const inProgressCourses = courses.filter((c) => c.percent < 100 && !c.isExpired);
   const completedCount = completedCourses.length;
   const inProgressCount = inProgressCourses.length;
-
-  // Active continue learning course (first in-progress course)
-  const continueCourse = inProgressCourses[0] || (courses.length > 0 ? courses[0] : null);
+  const certificatesCount = courses.filter((c) => !!c.certificateCode).length;
 
   // Filtered & searched courses
   const filteredCourses = useMemo(() => {
@@ -66,7 +68,7 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
       if (activeFilter === "in-progress" && (c.percent === 100 || c.isExpired)) return false;
       if (activeFilter === "completed" && c.percent !== 100) return false;
 
-      // Search filter
+      // Search query
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
         const matchTitle = c.title.toLowerCase().includes(query);
@@ -80,185 +82,115 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
   }, [courses, activeFilter, searchQuery]);
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto font-sans pb-12">
-      {/* Page Header */}
+    <div className="space-y-6 sm:space-y-8 max-w-7xl mx-auto font-sans pb-12 animate-fade-in">
+      {/* 1. Page Header Banner */}
       <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Student Learning Portal</span>
+        <div className="space-y-2 max-w-2xl">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">
+            <Sparkles className="w-3 h-3" />
+            <span>Learning Library</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold font-outfit text-foreground tracking-tight">
-            My Enrolled Courses
+            My Learning
           </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl">
-            Track your lesson progress, resume structured HD video modules, access verifiable completion certificates, and download official tax invoices.
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            Manage your enrolled courses, resume structured HD video modules, verify completion credentials, and download tax invoices.
           </p>
-
-          {/* Quick Metrics */}
-          <div className="flex flex-wrap items-center gap-2 pt-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-muted text-foreground text-xs font-semibold">
-              <BookOpen className="w-3.5 h-3.5 text-primary" />
-              <span>{totalEnrolled} Enrolled</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-muted text-foreground text-xs font-semibold">
-              <Layers className="w-3.5 h-3.5 text-cyan-600" />
-              <span>{inProgressCount} In Progress</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-muted text-foreground text-xs font-semibold">
-              <Award className="w-3.5 h-3.5 text-emerald-600" />
-              <span>{completedCount} Completed</span>
-            </span>
-          </div>
         </div>
 
         <Button
           asChild
-          className="bg-primary hover:bg-primary/90 text-white font-bold h-11 px-5 rounded-xl text-xs shadow-xs shrink-0 self-start md:self-auto cursor-pointer"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-10 px-5 rounded-xl text-xs shadow-xs shrink-0 self-start md:self-auto cursor-pointer"
         >
           <Link href="/courses" className="flex items-center gap-2">
-            <span>Explore More Courses</span>
+            <span>Explore Course Catalog</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </Button>
       </div>
 
-      {/* Course Schedule Announcement Notice */}
-      {courses.length > 0 && (
-        <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/15 to-amber-500/10 border border-amber-300/80 p-5 sm:p-6 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs text-foreground">
-          <div className="flex items-start sm:items-center gap-4">
-            <div className="p-3 bg-amber-500 text-white rounded-2xl shadow-xs shrink-0">
-              <Calendar className="h-5 w-5" />
-            </div>
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-bold text-sm sm:text-base font-outfit text-amber-950">
-                  Course Schedule &amp; Live Curriculum Notice
-                </h3>
-                <span className="text-[10px] font-extrabold uppercase bg-amber-200 text-amber-950 px-2.5 py-0.5 rounded-full border border-amber-300">
-                  Starts Sept 18, 2026
-                </span>
-              </div>
-              <p className="text-xs text-amber-900/90 leading-relaxed font-medium">
-                All full course video lessons, curriculum modules, and interactive materials are accessible from your dashboard from <strong>September 18, 2026</strong>.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* FEATURE: Continue Learning Section (Prominent Banner) */}
-      {continueCourse && continueCourse.percent < 100 && !continueCourse.isExpired && (
-        <div className="bg-card border border-primary/20 bg-gradient-to-br from-primary/[0.03] via-card to-card rounded-3xl p-6 sm:p-7 shadow-xs space-y-4">
+      {/* 2. Real Learning Summary KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-5">
+        <Card className="rounded-2xl border-border/80 p-4 sm:p-5 shadow-2xs bg-card">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-primary">
-                Continue Learning
-              </h2>
-            </div>
-            <Badge variant="secondary" className="text-xs font-bold text-primary bg-primary/10">
-              {continueCourse.percent}% Complete
-            </Badge>
-          </div>
-
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-            {/* Thumbnail */}
-            <div className="w-full md:w-64 aspect-video rounded-2xl overflow-hidden bg-muted relative shrink-0 border border-border/60 group">
-              {continueCourse.thumbnailUrl ? (
-                <img
-                  src={continueCourse.thumbnailUrl}
-                  alt={continueCourse.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              ) : (
-                <div className="w-full h-full bg-primary/5 flex items-center justify-center text-primary">
-                  <BookOpen className="h-8 w-8" />
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-              <div className="absolute bottom-2.5 left-3 right-3 flex justify-between items-center text-[11px] text-white font-semibold">
-                <span>{continueCourse.completedLessons} of {continueCourse.totalLessons} Lessons</span>
-                <span>{continueCourse.percent}%</span>
-              </div>
-            </div>
-
-            {/* Info & Actions */}
-            <div className="flex-1 space-y-3.5 w-full">
-              <div className="space-y-1">
-                <h3 className="font-bold text-lg sm:text-xl font-outfit text-foreground line-clamp-1">
-                  {continueCourse.title}
-                </h3>
-                <p className="text-xs text-muted-foreground line-clamp-1">
-                  {continueCourse.resumeLessonTitle ? (
-                    <span>
-                      <strong className="text-foreground">Next Up:</strong> {continueCourse.resumeLessonTitle}
-                    </span>
-                  ) : (
-                    <span>{continueCourse.totalLessons - continueCourse.completedLessons} lessons remaining in track</span>
-                  )}
-                </p>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[11px] text-muted-foreground font-medium">
-                  <span>Overall Curriculum Progress</span>
-                  <span className="text-foreground font-bold">{continueCourse.percent}%</span>
-                </div>
-                <Progress value={continueCourse.percent} className="h-2" />
-              </div>
-
-              {/* CTAs */}
-              <div className="flex flex-wrap items-center gap-3 pt-1">
-                <Button
-                  asChild
-                  className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 px-5 rounded-xl shadow-xs cursor-pointer"
-                >
-                  <Link
-                    href={
-                      continueCourse.resumeLessonId
-                        ? `/dashboard/courses/${continueCourse.id}/lessons/${continueCourse.resumeLessonId}`
-                        : `/dashboard/courses/${continueCourse.id}`
-                    }
-                    className="flex items-center gap-2"
-                  >
-                    <Play className="h-3.5 w-3.5 fill-current" />
-                    <span>Resume Lesson</span>
-                  </Link>
-                </Button>
-
-                <Button
-                  asChild
-                  variant="outline"
-                  className="border-slate-200 text-slate-700 hover:text-primary hover:bg-slate-100 text-xs font-semibold h-10 px-4 rounded-xl"
-                >
-                  <Link
-                    href={`/dashboard/courses/${continueCourse.id}`}
-                    className="flex items-center gap-1.5"
-                  >
-                    <span>View Course Syllabus</span>
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </Link>
-                </Button>
-              </div>
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider font-sans">
+              Enrolled Courses
+            </span>
+            <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <BookOpen className="h-4 w-4" />
             </div>
           </div>
-        </div>
-      )}
+          <div className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground font-outfit mt-2 sm:mt-3">
+            {totalEnrolled}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1 truncate font-medium">
+            {totalEnrolled > 0 ? `${activeCount} active ${activeCount === 1 ? "track" : "tracks"}` : "No active tracks"}
+          </p>
+        </Card>
 
-      {/* Main Courses Area: Search, Tabs & Grid */}
-      <div className="space-y-6">
-        {/* Search Bar & Filter Tabs */}
+        <Card className="rounded-2xl border-border/80 p-4 sm:p-5 shadow-2xs bg-card">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider font-sans">
+              In Progress
+            </span>
+            <div className="h-8 w-8 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
+              <Layers className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground font-outfit mt-2 sm:mt-3">
+            {inProgressCount}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1 truncate font-medium">
+            Active curriculum modules
+          </p>
+        </Card>
+
+        <Card className="rounded-2xl border-border/80 p-4 sm:p-5 shadow-2xs bg-card">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider font-sans">
+              Completed
+            </span>
+            <div className="h-8 w-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground font-outfit mt-2 sm:mt-3">
+            {completedCount}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1 truncate font-medium">
+            100% syllabus completed
+          </p>
+        </Card>
+
+        <Card className="rounded-2xl border-border/80 p-4 sm:p-5 shadow-2xs bg-card">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider font-sans">
+              Certificates
+            </span>
+            <div className="h-8 w-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+              <Award className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground font-outfit mt-2 sm:mt-3">
+            {certificatesCount}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1 truncate font-medium">
+            {certificatesCount > 0 ? "Verified credentials issued" : "Finish 100% to earn"}
+          </p>
+        </Card>
+      </div>
+
+      {/* 3. Search & Filter Bar */}
+      <div className="space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          {/* Status Tabs */}
+          {/* Status Filter Tabs */}
           <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-2xl border border-border/60 self-start">
             <button
               type="button"
               onClick={() => setActiveFilter("all")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeFilter === "all"
-                  ? "bg-white text-primary shadow-xs"
+                  ? "bg-card text-primary shadow-2xs"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -267,9 +199,9 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
             <button
               type="button"
               onClick={() => setActiveFilter("in-progress")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeFilter === "in-progress"
-                  ? "bg-white text-primary shadow-xs"
+                  ? "bg-card text-primary shadow-2xs"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -278,9 +210,9 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
             <button
               type="button"
               onClick={() => setActiveFilter("completed")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeFilter === "completed"
-                  ? "bg-white text-primary shadow-xs"
+                  ? "bg-card text-primary shadow-2xs"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -288,7 +220,7 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
             </button>
           </div>
 
-          {/* Search Input */}
+          {/* Search Input Box */}
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
@@ -296,13 +228,13 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search enrolled courses..."
-              className="pl-10 pr-8 h-10 text-xs font-semibold rounded-xl border-slate-200 focus-visible:ring-primary"
+              className="pl-9 pr-8 h-10 text-xs font-semibold rounded-xl border-border/80 focus-visible:ring-primary bg-card"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-2.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                className="absolute right-3 top-3 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
                 aria-label="Clear search"
               >
                 ✕
@@ -311,32 +243,55 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
           </div>
         </div>
 
-        {/* Empty State: Zero Enrolled Courses */}
+        {/* Live Filter Counter */}
+        {(searchQuery.trim() || activeFilter !== "all") && (
+          <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+            <span>
+              Showing <strong>{filteredCourses.length}</strong> of {totalEnrolled} enrolled courses
+              {activeFilter !== "all" && ` (${activeFilter.replace("-", " ")})`}
+              {searchQuery.trim() && ` matching "${searchQuery}"`}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveFilter("all");
+                setSearchQuery("");
+              }}
+              className="text-primary hover:underline font-semibold cursor-pointer"
+            >
+              Reset Filters
+            </button>
+          </div>
+        )}
+
+        {/* 4. Course Library Grid */}
         {courses.length === 0 ? (
+          /* Empty State: Zero Total Enrolled */
           <div className="bg-card border border-dashed border-border rounded-3xl p-10 sm:p-16 text-center space-y-5 shadow-xs">
             <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary">
               <GraduationCap className="h-8 w-8" />
             </div>
             <div className="space-y-2 max-w-md mx-auto">
               <h3 className="text-xl font-bold font-outfit text-foreground">
-                Your learning journey starts here.
+                Your learning library is waiting.
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                You haven&apos;t enrolled in any AirBharath LMS courses yet. Explore our career tracks to start mastering in-demand industry skills.
+                You haven&apos;t enrolled in any courses yet. Browse our aviation, engineering, and digital skill masterclasses to get started.
               </p>
             </div>
             <Button
               asChild
-              className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs px-6 h-11 shadow-xs cursor-pointer"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl text-xs px-6 h-10 shadow-xs cursor-pointer"
             >
               <Link href="/courses">Browse Course Catalog</Link>
             </Button>
           </div>
         ) : filteredCourses.length === 0 ? (
-          /* Empty State: Zero Filter / Search Results */
+          /* Empty State: Zero Filter/Search Matches */
           <div className="bg-card border border-dashed border-border rounded-3xl p-10 text-center space-y-4 shadow-xs">
             <p className="text-sm font-semibold text-foreground">
-              No enrolled courses match your current search or filter.
+              No enrolled courses match your current filter or search keyword.
             </p>
             <Button
               variant="outline"
@@ -344,25 +299,26 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
                 setActiveFilter("all");
                 setSearchQuery("");
               }}
-              className="rounded-xl text-xs font-bold border-slate-200 text-slate-700 hover:bg-slate-100"
+              className="rounded-xl text-xs font-bold border-border/80 hover:bg-muted"
             >
-              Reset Filters
+              Reset Search &amp; Filters
             </Button>
           </div>
         ) : (
-          /* Enrolled Courses Grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          /* Grid of Course Cards */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
             {filteredCourses.map((course) => {
               const isCompleted = course.percent === 100;
 
               return (
                 <div
                   key={course.id}
-                  className={`bg-card border rounded-3xl overflow-hidden shadow-xs hover:shadow-lg transition-all duration-200 flex flex-col justify-between ${
+                  className={cn(
+                    "bg-card border rounded-3xl overflow-hidden shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col justify-between",
                     course.isExpired
                       ? "border-destructive/30 bg-destructive/5"
-                      : "border-border/80 hover:border-primary/30"
-                  }`}
+                      : "border-border/80 hover:border-primary/40"
+                  )}
                 >
                   <div>
                     {/* Thumbnail Header */}
@@ -375,7 +331,7 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
                         />
                       ) : (
                         <div className="w-full h-full bg-primary/5 flex items-center justify-center text-primary">
-                          <BookOpen className="h-10 w-10 opacity-60" />
+                          <BookOpen className="h-10 w-10 opacity-50" />
                         </div>
                       )}
 
@@ -393,16 +349,16 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
                       {/* Status Badges */}
                       <div className="absolute top-3 right-3 flex items-center gap-1.5">
                         {course.isExpired ? (
-                          <Badge variant="destructive" className="text-[10px] uppercase font-bold">
+                          <Badge variant="destructive" className="text-[10px] uppercase font-bold shadow-xs">
                             Expired
                           </Badge>
                         ) : isCompleted ? (
-                          <Badge className="bg-emerald-600 text-white text-[10px] uppercase font-bold flex items-center gap-1 shadow-xs">
+                          <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] uppercase font-bold flex items-center gap-1 shadow-xs">
                             <CheckCircle2 className="h-3 w-3" />
-                            Completed
+                            <span>Completed</span>
                           </Badge>
                         ) : (
-                          <Badge className="bg-primary text-white text-[10px] uppercase font-bold shadow-xs">
+                          <Badge className="bg-primary hover:bg-primary text-primary-foreground text-[10px] uppercase font-bold shadow-xs">
                             In Progress
                           </Badge>
                         )}
@@ -410,14 +366,14 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
                     </div>
 
                     {/* Course Details */}
-                    <div className="p-5 sm:p-6 space-y-4">
+                    <div className="p-5 sm:p-6 space-y-3.5">
                       <div className="space-y-1">
                         <h3 className="font-bold text-base font-outfit text-foreground line-clamp-1">
                           {course.title}
                         </h3>
                         <p className="text-[11px] text-muted-foreground">
                           {course.expiresAt
-                            ? `Valid until ${new Date(course.expiresAt).toLocaleDateString("en-IN")}`
+                            ? `Valid until ${new Date(course.expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
                             : "Lifetime Access"}
                         </p>
                       </div>
@@ -430,13 +386,13 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
                           </span>
                           <span className="text-foreground font-bold">{course.percent}%</span>
                         </div>
-                        <Progress value={course.percent} className="h-2" />
+                        <Progress value={course.percent} className="h-2 rounded-full" />
                       </div>
                     </div>
                   </div>
 
                   {/* Actions Footer */}
-                  <div className="p-5 sm:p-6 pt-0 space-y-2.5 border-t border-border/50 mt-2">
+                  <div className="p-5 sm:p-6 pt-0 space-y-2 border-t border-border/50 mt-1">
                     {course.isExpired ? (
                       <Button
                         asChild
@@ -472,7 +428,7 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
                               rel="noopener noreferrer"
                               className="flex items-center justify-center gap-1.5"
                             >
-                              <Award className="h-3.5 w-3.5" />
+                              <ShieldCheck className="h-3.5 w-3.5" />
                               <span>View Verified Certificate</span>
                             </Link>
                           </Button>
@@ -481,7 +437,7 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
                     ) : (
                       <Button
                         asChild
-                        className="w-full text-xs font-bold h-10 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-xs mt-3 flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full text-xs font-bold h-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs mt-3 flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <Link
                           href={
@@ -491,17 +447,17 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
                           }
                         >
                           <Play className="h-3.5 w-3.5 fill-current" />
-                          <span>Resume Lesson</span>
+                          <span>{course.completedLessons > 0 ? "Resume Lesson" : "Start Course"}</span>
                         </Link>
                       </Button>
                     )}
 
-                    {/* Tax Invoice PDF Download */}
+                    {/* Tax Invoice PDF Download Action if Order Exists */}
                     {course.orderId && (
                       <Button
                         asChild
                         variant="ghost"
-                        className="w-full text-xs font-medium text-slate-600 hover:text-primary hover:bg-slate-100 h-9 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="w-full text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted h-8 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <a
                           href={`/api/invoices/download/${course.orderId}`}

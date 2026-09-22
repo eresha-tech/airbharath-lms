@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, Check } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -19,7 +19,6 @@ export function LessonCompleteButton({
   userId,
   courseId,
   className,
-  variant = "default",
 }: LessonCompleteButtonProps) {
   const [isPending, setIsPending] = useState(false);
   const [isCompleted, setIsCompleted] = useState<boolean | null>(null);
@@ -73,14 +72,14 @@ export function LessonCompleteButton({
 
   return (
     <Button
+      type="button"
       onClick={handleToggle}
       disabled={isPending || isLoading}
       size="sm"
-      variant={isCompleted ? "outline" : "default"}
       className={cn(
-        "font-bold text-xs rounded-xl transition-all shadow-xs h-9 px-4 shrink-0",
+        "font-bold text-xs rounded-xl transition-all shadow-xs h-9 px-4 shrink-0 cursor-pointer",
         isCompleted
-          ? "border-emerald-500/30 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-500/30 group"
+          ? "border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20"
           : "bg-primary hover:bg-primary/90 text-primary-foreground",
         className
       )}
@@ -97,15 +96,13 @@ export function LessonCompleteButton({
         </span>
       ) : isCompleted ? (
         <span className="flex items-center gap-1.5">
-          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 group-hover:hidden" />
-          <XCircle className="h-3.5 w-3.5 text-rose-500 hidden group-hover:inline" />
-          <span className="group-hover:hidden">Lesson Completed</span>
-          <span className="hidden group-hover:inline">Mark Incomplete</span>
+          <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+          <span>Completed</span>
         </span>
       ) : (
         <span className="flex items-center gap-1.5">
           <CheckCircle2 className="h-3.5 w-3.5" />
-          <span>Mark as Complete</span>
+          <span>Mark Lesson Complete</span>
         </span>
       )}
     </Button>

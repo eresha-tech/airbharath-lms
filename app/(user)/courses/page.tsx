@@ -7,7 +7,6 @@ import {
   ShieldCheck,
   Award,
   Sparkles,
-  BookOpen,
 } from "lucide-react";
 import {
   CourseCatalogClient,
@@ -19,55 +18,8 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "All Certificate Courses | Airbharath LMS",
   description:
-    "Explore Airbharath LMS professional certificate courses in Aviation, AI Skills, Digital Marketing, and Technical Essentials taught by IIM alumni.",
+    "Explore Airbharath LMS professional certificate courses in AI Skills, Digital Marketing, Entrepreneurship, and Technical Essentials.",
 };
-
-const FEATURED_FALLBACK_COURSES: CatalogCourseItem[] = [
-  {
-    id: "content-creation",
-    title: "Content Creation & Digital Marketing",
-    description:
-      "Learn to create purposeful content, understand digital marketing strategies, and build a powerful digital presence for yourself or your business.",
-    badge: "Digital Marketing",
-    modulesCount: 5,
-    lessonsCount: 18,
-    price: 825,
-    slug: "content-creation",
-  },
-  {
-    id: "ai-skills",
-    title: "AI Skills for the Future of Work",
-    description:
-      "Build a practical understanding of AI and learn how AI tools support productivity, content creation, research, and everyday professional tasks.",
-    badge: "AI & Productivity",
-    modulesCount: 6,
-    lessonsCount: 24,
-    price: 825,
-    slug: "ai-skills",
-  },
-  {
-    id: "entrepreneurship",
-    title: "Entrepreneurship Basics",
-    description:
-      "Understand the fundamentals of entrepreneurial thinking, customer discovery, business planning, and venture creation.",
-    badge: "Venture & Business",
-    modulesCount: 6,
-    lessonsCount: 20,
-    price: 825,
-    slug: "entrepreneurship",
-  },
-  {
-    id: "ms-office",
-    title: "MS Office Essentials",
-    description:
-      "Build total confidence in essential workplace digital tools — create professional documents, analyse spreadsheets, and design presentations.",
-    badge: "Workplace Tools",
-    modulesCount: 5,
-    lessonsCount: 16,
-    price: 825,
-    slug: "ms-office",
-  },
-];
 
 export default async function CoursesPage() {
   let dbCourseList: any[] = [];
@@ -83,6 +35,7 @@ export default async function CoursesPage() {
       },
     });
 
+    // Place combo/featured pack first, then alphabetical or standard order
     dbCourseList.sort((a: any, b: any) => {
       if (a.slug === "combo-pack") return -1;
       if (b.slug === "combo-pack") return 1;
@@ -92,35 +45,32 @@ export default async function CoursesPage() {
     console.error("Failed to load courses from DB:", err);
   }
 
-  // Transform DB courses into uniform CatalogCourseItem format
-  const formattedCourses: CatalogCourseItem[] =
-    dbCourseList.length > 0
-      ? dbCourseList.map((c: any) => {
-          const modulesCount = c.modules?.length || 0;
-          const lessonsCount =
-            c.modules?.reduce(
-              (acc: number, m: any) => acc + (m.lessons?.length || 0),
-              0
-            ) || 0;
+  // Transform real DB courses into uniform CatalogCourseItem format
+  const formattedCourses: CatalogCourseItem[] = dbCourseList.map((c: any) => {
+    const modulesCount = c.modules?.length || 0;
+    const lessonsCount =
+      c.modules?.reduce(
+        (acc: number, m: any) => acc + (m.lessons?.length || 0),
+        0
+      ) || 0;
 
-          return {
-            id: c.id,
-            title: c.title,
-            slug: c.slug || c.id,
-            description: c.description || null,
-            thumbnailUrl: c.thumbnailUrl || null,
-            price: Number(c.price) || 0,
-            accessDays: c.accessDays || null,
-            modulesCount,
-            lessonsCount,
-            badge: c.slug?.includes("combo")
-              ? "Comprehensive Pack"
-              : "Certificate Program",
-          };
-        })
-      : FEATURED_FALLBACK_COURSES;
+    return {
+      id: c.id,
+      title: c.title,
+      slug: c.slug || c.id,
+      description: c.description || null,
+      thumbnailUrl: c.thumbnailUrl || null,
+      price: Number(c.price) || 0,
+      accessDays: c.accessDays || null,
+      modulesCount,
+      lessonsCount,
+      badge: c.slug?.includes("combo")
+        ? "Comprehensive Pack"
+        : "Certificate Program",
+    };
+  });
 
-  // Extract unique category tags
+  // Extract unique category tags from real data
   const categories = Array.from(
     new Set(
       formattedCourses
@@ -130,12 +80,12 @@ export default async function CoursesPage() {
   );
 
   return (
-    <main className="flex-1 pb-20 space-y-12">
+    <main className="flex-1 pb-20 space-y-10 sm:space-y-12">
       {/* Header Banner */}
-      <section className="bg-gradient-to-b from-primary/10 via-primary/5 to-transparent pt-12 pb-14 border-b border-border/80">
-        <div className="container mx-auto px-4 max-w-6xl space-y-5 text-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider">
-            <GraduationCap className="w-4 h-4 text-primary" />
+      <section className="bg-gradient-to-b from-primary/10 via-primary/5 to-transparent pt-10 sm:pt-14 pb-12 sm:pb-16 border-b border-border/80">
+        <div className="container mx-auto px-4 max-w-6xl space-y-4 sm:space-y-5 text-center">
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider">
+            <GraduationCap className="w-3.5 h-3.5 text-primary" />
             <span>Airbharath Professional Curriculum</span>
           </div>
 
@@ -144,24 +94,22 @@ export default async function CoursesPage() {
           </h1>
 
           <p className="text-xs sm:text-sm md:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Taught by IIM alumni and industry specialists. Build practical,
-            career-ready capabilities with self-paced learning and QR-verified
-            credentials.
+            Build practical, career-ready capabilities with self-paced HD video modules, structured practical exercises, and QR-verifiable credentials.
           </p>
 
           {/* Quick Value Highlights */}
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2 text-xs font-semibold text-foreground/80">
+          <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 pt-2 text-xs font-semibold text-foreground/80">
             <span className="inline-flex items-center gap-1.5 bg-card border border-border/80 px-3 py-1.5 rounded-full shadow-2xs">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span>100% Self-Paced</span>
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>100% Self-Paced Access</span>
             </span>
             <span className="inline-flex items-center gap-1.5 bg-card border border-border/80 px-3 py-1.5 rounded-full shadow-2xs">
               <ShieldCheck className="w-3.5 h-3.5 text-primary" />
               <span>QR-Verified PDF Certificates</span>
             </span>
             <span className="inline-flex items-center gap-1.5 bg-card border border-border/80 px-3 py-1.5 rounded-full shadow-2xs">
-              <Award className="w-3.5 h-3.5 text-amber-600" />
-              <span>Taught by IIM Alumni</span>
+              <Award className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <span>Industry-Aligned Projects</span>
             </span>
           </div>
         </div>
@@ -179,14 +127,13 @@ export default async function CoursesPage() {
           <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-400/10 rounded-full blur-3xl pointer-events-none" />
           <div className="relative z-10 space-y-2.5 max-w-2xl mx-auto">
             <span className="text-[11px] font-bold uppercase tracking-widest text-cyan-300">
-              The Airbharath Promise
+              The Airbharath Standard
             </span>
             <h3 className="text-xl sm:text-2xl md:text-3xl font-bold font-outfit text-white">
               Learn it. Understand it. Practise it. Apply it.
             </h3>
             <p className="text-xs sm:text-sm text-cyan-100/90 leading-relaxed">
-              Build high-demand technical capabilities without interrupting your
-              routine. Verifiable credentials included with each program.
+              Master high-demand technical capabilities through structured video lessons. Verifiable completion credentials included with each program.
             </p>
           </div>
         </div>

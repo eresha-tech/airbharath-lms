@@ -25,8 +25,6 @@ import {
   CheckCircle2,
   Play,
   PlayCircle,
-  Lock,
-  Sparkles,
   Award,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -99,23 +97,26 @@ export function ClassroomSidebar({
   const totalLessons = course.modules?.reduce(
     (acc, m) => acc + (m.lessons?.length || 0),
     0
-  );
+  ) || 0;
 
   const completedCount = completedLessons.length;
 
-  const SidebarBody = () => (
-    <div className="h-full flex flex-col bg-sidebar text-sidebar-foreground select-none">
+  const SidebarBody = ({ isDrawer = false }: { isDrawer?: boolean }) => (
+    <div className="h-full flex flex-col bg-sidebar text-sidebar-foreground select-none font-sans">
       {/* Sidebar Header with Back Link & Progress */}
-      <div className="p-4 lg:p-5 border-b border-sidebar-border shrink-0 space-y-4">
-        <Link
-          href="/dashboard/courses"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors group"
-        >
-          <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-1" />
-          <span>Back to My Courses</span>
-        </Link>
+      <div className={cn("border-b border-sidebar-border shrink-0", isDrawer ? "p-5 pt-9 space-y-4" : "p-4 lg:p-5 space-y-4")}>
+        <div className={cn("flex items-center", isDrawer ? "pr-8" : "")}>
 
-        <div className="space-y-1.5">
+          <Link
+            href="/dashboard/courses"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors group cursor-pointer py-1"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-1" />
+            <span>Back to My Courses</span>
+          </Link>
+        </div>
+
+        <div className="space-y-2">
           <h1 className="font-bold text-base font-outfit text-foreground leading-snug line-clamp-2">
             {course.title}
           </h1>
@@ -130,6 +131,7 @@ export function ClassroomSidebar({
         </div>
       </div>
 
+
       {/* Curriculum Module Accordion */}
       <ScrollArea className="flex-1">
         <div className="p-3 lg:p-4">
@@ -139,89 +141,108 @@ export function ClassroomSidebar({
             value={openModules}
             onValueChange={setOpenModules}
           >
-            {course.modules?.map((module, moduleIndex) => (
-              <AccordionItem
-                key={module.id}
-                value={module.id}
-                className="border border-sidebar-border rounded-xl overflow-hidden bg-sidebar-accent/20 data-[state=open]:bg-sidebar-accent/40 transition-colors"
-              >
-                <AccordionTrigger className="px-3.5 py-3 hover:no-underline text-left">
-                  <div className="flex items-start gap-2.5 w-full pr-2">
-                    <span className="text-[10px] font-mono font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0 mt-0.5">
-                      {String(moduleIndex + 1).padStart(2, "0")}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-foreground font-outfit truncate">
-                        {module.title}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        {module.lessons?.length || 0} lessons
-                      </p>
-                    </div>
-                  </div>
-                </AccordionTrigger>
+            {course.modules?.map((module, moduleIndex) => {
+              const moduleCompletedCount =
+                module.lessons?.filter((l) => completedLessons.includes(l.id)).length || 0;
+              const moduleTotalCount = module.lessons?.length || 0;
+              const isModuleComplete =
+                moduleTotalCount > 0 && moduleCompletedCount === moduleTotalCount;
 
-                <AccordionContent className="pt-1 pb-2 px-1">
-                  <div className="space-y-1">
-                    {module.lessons?.map((lesson, lessonIndex) => {
-                      const isActive =
-                        pathname ===
-                        `/dashboard/courses/${course.id}/lessons/${lesson.id}`;
-                      const isCompleted = completedLessons.includes(lesson.id);
-
-                      return (
-                        <Link
-                          key={lesson.id}
-                          href={`/dashboard/courses/${course.id}/lessons/${lesson.id}`}
-                          onClick={close}
-                          className={cn(
-                            "flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all relative group",
-                            isActive
-                              ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                              : isCompleted
-                              ? "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
-                              : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-foreground"
-                          )}
-                        >
-                          {/* Completion Status Icon */}
-                          <div className="shrink-0">
-                            {isCompleted ? (
-                              <CheckCircle2
-                                className={cn(
-                                  "h-4 w-4",
-                                  isActive
-                                    ? "text-primary-foreground"
-                                    : "text-emerald-600 dark:text-emerald-400"
-                                )}
-                              />
-                            ) : isActive ? (
-                              <Play className="h-3.5 w-3.5 fill-current text-primary-foreground" />
-                            ) : (
-                              <PlayCircle className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                            )}
-                          </div>
-
-                          <span
-                            className={cn(
-                              "flex-1 truncate",
-                              isCompleted && !isActive && "line-through text-muted-foreground/80"
-                            )}
-                          >
-                            {lesson.title}
+              return (
+                <AccordionItem
+                  key={module.id}
+                  value={module.id}
+                  className="border border-sidebar-border rounded-xl overflow-hidden bg-sidebar-accent/20 data-[state=open]:bg-sidebar-accent/40 transition-colors"
+                >
+                  <AccordionTrigger
+                    className="px-3.5 py-3 hover:no-underline text-left cursor-pointer"
+                    aria-label={`Module ${moduleIndex + 1}: ${module.title}`}
+                  >
+                    <div className="flex items-start gap-2.5 w-full pr-2">
+                      <span className="text-[10px] font-mono font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0 mt-0.5">
+                        {String(moduleIndex + 1).padStart(2, "0")}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-foreground font-outfit truncate">
+                          {module.title}
+                        </p>
+                        <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-muted-foreground">
+                          <span>
+                            {moduleCompletedCount}/{moduleTotalCount} completed
                           </span>
-
-                          {lesson.isFreePreview && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded">
-                              Preview
+                          {isModuleComplete && (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                              ✓ Done
                             </span>
                           )}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
+                        </div>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+
+                  <AccordionContent className="pt-1 pb-2 px-1">
+                    <div className="space-y-1">
+                      {module.lessons?.map((lesson) => {
+                        const isActive =
+                          pathname ===
+                          `/dashboard/courses/${course.id}/lessons/${lesson.id}`;
+                        const isCompleted = completedLessons.includes(lesson.id);
+
+                        return (
+                          <Link
+                            key={lesson.id}
+                            href={`/dashboard/courses/${course.id}/lessons/${lesson.id}`}
+                            onClick={close}
+                            aria-current={isActive ? "page" : undefined}
+                            className={cn(
+                              "flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all relative group cursor-pointer",
+                              isActive
+                                ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                                : isCompleted
+                                ? "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
+                                : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-foreground"
+                            )}
+                          >
+                            {/* Completion Status Icon */}
+                            <div className="shrink-0">
+                              {isCompleted ? (
+                                <CheckCircle2
+                                  className={cn(
+                                    "h-4 w-4",
+                                    isActive
+                                      ? "text-primary-foreground"
+                                      : "text-emerald-600 dark:text-emerald-400"
+                                  )}
+                                />
+                              ) : isActive ? (
+                                <Play className="h-3.5 w-3.5 fill-current text-primary-foreground" />
+                              ) : (
+                                <PlayCircle className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                              )}
+                            </div>
+
+                            <span
+                              className={cn(
+                                "flex-1 truncate",
+                                isCompleted && !isActive && "text-muted-foreground/90 font-medium"
+                              )}
+                            >
+                              {lesson.title}
+                            </span>
+
+                            {lesson.isFreePreview && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded">
+                                Preview
+                              </span>
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
           </Accordion>
         </div>
       </ScrollArea>
@@ -251,7 +272,7 @@ export function ClassroomSidebar({
   return (
     <>
       {/* Mobile Top Action Bar */}
-      <div className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 h-14 bg-background/95 backdrop-blur-md border-b border-border shadow-xs">
+      <div className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 h-14 bg-background/95 backdrop-blur-md border-b border-border shadow-xs font-sans">
         <Link
           href="/dashboard/courses"
           className="flex items-center gap-1.5 text-xs font-bold text-primary hover:underline transition-colors"
@@ -264,7 +285,7 @@ export function ClassroomSidebar({
           onClick={toggle}
           variant="outline"
           size="sm"
-          className="text-xs font-bold border-primary/20 text-primary hover:bg-primary/10 h-8 gap-1.5 rounded-lg"
+          className="text-xs font-bold border-primary/20 text-primary hover:bg-primary/10 h-8 gap-1.5 rounded-xl cursor-pointer"
           aria-label="Open Course Modules"
         >
           <BookOpen className="h-3.5 w-3.5" />
@@ -283,7 +304,7 @@ export function ClassroomSidebar({
           <SheetHeader className="sr-only">
             <SheetTitle>Course Curriculum</SheetTitle>
           </SheetHeader>
-          <SidebarBody />
+          <SidebarBody isDrawer />
         </SheetContent>
       </Sheet>
     </>

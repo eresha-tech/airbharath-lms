@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { lessons, enrollments, courses, lessonMaterials, progress } from "@/lib/db/schema";
+import { lessons, enrollments, courses, lessonMaterials } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { LessonCompleteButton } from "@/components/LessonCompleteButton";
 import { LessonComments } from "@/components/LessonComments";
@@ -18,8 +18,7 @@ import {
   MessageSquare,
   BookOpen,
   ChevronRight,
-  Sparkles,
-  Award,
+  PlayCircle,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -125,41 +124,45 @@ export default async function LessonPage({ params }: LessonPageProps) {
   const activeVideoId = lessonObj.videoUrl || lessonObj.id;
 
   return (
-    <div className="min-h-full flex flex-col bg-background">
-      <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8 animate-fade-in">
-        {/* Top Context & Quick Action Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/60">
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-              <span className="truncate max-w-[200px]">{courseObj.title}</span>
-              <ChevronRight className="h-3 w-3 text-muted-foreground/60 shrink-0" />
-              <span className="text-foreground font-semibold truncate max-w-[200px]">
-                {currentLessonInfo?.moduleTitle || "Curriculum"}
-              </span>
-              {currentLessonIdx >= 0 && (
-                <Badge variant="secondary" className="text-[10px] font-mono ml-1">
-                  Lesson {currentLessonIdx + 1} of {allLessonsInOrder.length}
-                </Badge>
-              )}
-            </div>
-
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-outfit text-foreground tracking-tight">
-              {lessonObj.title}
-            </h1>
+    <div className="min-h-full flex flex-col bg-background font-sans">
+      <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-5 sm:py-7 space-y-6 sm:space-y-7 animate-fade-in">
+        {/* Top Context & Header Action Bar */}
+        <div className="space-y-3 pb-3 border-b border-border/60">
+          {/* Breadcrumbs Row */}
+          <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground font-medium">
+            <span className="truncate max-w-[180px] sm:max-w-[260px] text-muted-foreground hover:text-foreground transition-colors">
+              {courseObj.title}
+            </span>
+            <ChevronRight className="h-3 w-3 text-muted-foreground/60 shrink-0" />
+            <span className="text-foreground font-semibold truncate max-w-[180px] sm:max-w-[260px]">
+              {currentLessonInfo?.moduleTitle || "Curriculum"}
+            </span>
+            {currentLessonIdx >= 0 && (
+              <Badge variant="secondary" className="text-[10px] font-mono px-2 py-0.5 rounded-md ml-auto sm:ml-1 shrink-0">
+                Lesson {currentLessonIdx + 1} of {allLessonsInOrder.length}
+              </Badge>
+            )}
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
-            <LessonCompleteButton
-              lessonId={lessonObj.id}
-              userId={session.id}
-              courseId={courseObj.id}
-            />
+          {/* Title and Complete Button Row */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            <h1 className="text-lg sm:text-2xl md:text-3xl font-bold font-outfit text-foreground tracking-tight leading-snug">
+              {lessonObj.title}
+            </h1>
+
+            <div className="shrink-0 self-start sm:self-auto">
+              <LessonCompleteButton
+                lessonId={lessonObj.id}
+                userId={session.id}
+                courseId={courseObj.id}
+              />
+            </div>
           </div>
         </div>
 
         {/* Video Focal Container */}
         {activeVideoId && (
-          <div className="overflow-hidden rounded-2xl bg-black border border-border/80 shadow-lg relative">
+          <div className="overflow-hidden rounded-2xl sm:rounded-3xl bg-black border border-border/80 shadow-md relative">
             <HlsPlayer
               videoId={activeVideoId}
               watermarkText={session.email || "student@airbharath.in"}
@@ -172,14 +175,14 @@ export default async function LessonPage({ params }: LessonPageProps) {
           <TabsList className="bg-muted/50 p-1 rounded-xl border border-border/60 grid grid-cols-2 max-w-xs">
             <TabsTrigger
               value="notes"
-              className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-xs flex items-center gap-1.5"
+              className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-xs flex items-center gap-1.5 focus-visible:ring-primary cursor-pointer"
             >
               <FileText className="h-3.5 w-3.5" />
               <span>Notes &amp; Files</span>
             </TabsTrigger>
             <TabsTrigger
               value="discussion"
-              className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-xs flex items-center gap-1.5"
+              className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-xs flex items-center gap-1.5 focus-visible:ring-primary cursor-pointer"
             >
               <MessageSquare className="h-3.5 w-3.5" />
               <span>Doubts</span>
@@ -189,7 +192,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
           {/* Tab 1: Lesson Notes & Materials */}
           <TabsContent value="notes" className="space-y-6 mt-0">
             {lessonObj.content ? (
-              <div className="bg-card border border-border/80 rounded-2xl p-6 sm:p-8 space-y-4 shadow-xs">
+              <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 space-y-4 shadow-xs">
                 <h2 className="text-base sm:text-lg font-bold font-outfit text-foreground flex items-center gap-2">
                   <FileText className="h-4 w-4 text-primary" />
                   <span>Lesson Notes &amp; Key Concepts</span>
@@ -200,16 +203,22 @@ export default async function LessonPage({ params }: LessonPageProps) {
                 />
               </div>
             ) : (
-              <div className="bg-card border border-border/80 rounded-2xl p-6 text-center text-xs text-muted-foreground space-y-1">
-                <BookOpen className="h-6 w-6 mx-auto text-muted-foreground/40 mb-1" />
-                <p className="font-semibold text-foreground">Video-Only Lesson</p>
-                <p>Follow along with the video module above.</p>
+              <div className="bg-card border border-dashed border-border/80 rounded-3xl p-8 text-center text-xs text-muted-foreground space-y-2 shadow-xs">
+                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto text-primary">
+                  <PlayCircle className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <p className="font-bold text-sm text-foreground font-outfit">Video Lesson Track</p>
+                  <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                    Focus on the lesson video module above. Additional reference notes are not required for this lesson.
+                  </p>
+                </div>
               </div>
             )}
 
             {/* Reference Materials */}
             {materialsList && materialsList.length > 0 && (
-              <div className="bg-card border border-border/80 rounded-2xl p-6 sm:p-8 space-y-4 shadow-xs">
+              <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 space-y-4 shadow-xs">
                 <div className="flex items-center justify-between pb-3 border-b border-border/60">
                   <div className="flex items-center gap-2">
                     <Paperclip className="h-4 w-4 text-primary" />
@@ -217,7 +226,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
                       Downloadable Reference Files
                     </h3>
                   </div>
-                  <Badge variant="secondary" className="text-[10px] font-bold">
+                  <Badge variant="secondary" className="text-[10px] font-bold px-2 py-0.5 rounded-lg">
                     {materialsList.length} {materialsList.length === 1 ? "file" : "files"}
                   </Badge>
                 </div>
@@ -229,10 +238,10 @@ export default async function LessonPage({ params }: LessonPageProps) {
                       href={mat.fileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3.5 bg-muted/30 border border-border/60 rounded-xl hover:border-primary/40 hover:bg-muted/60 transition-all group shadow-2xs"
+                      className="flex items-center gap-3 p-3.5 bg-muted/30 border border-border/60 rounded-2xl hover:border-primary/40 hover:bg-muted/60 transition-all group shadow-2xs cursor-pointer"
                     >
                       <div
-                        className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
+                        className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
                           mat.fileType === "pdf"
                             ? "bg-rose-500/10 text-rose-600 border border-rose-500/20"
                             : "bg-blue-500/10 text-blue-600 border border-blue-500/20"

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { MessageSquare, Send, Trash2, User, AlertCircle, CornerDownRight, Loader2 } from "lucide-react";
+import { MessageSquare, Send, Trash2, User, CornerDownRight, Loader2, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -222,7 +222,7 @@ export function LessonComments({
           }`}
         >
           <Avatar className="h-8 w-8 rounded-lg border border-border/80 shrink-0">
-            <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold rounded-lg">
+            <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold rounded-lg font-sans">
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -234,7 +234,7 @@ export function LessonComments({
                   {comment.user_name}
                 </span>
                 {comment.user_role === "admin" && (
-                  <Badge className="bg-primary/10 text-primary hover:bg-primary/15 border-primary/20 text-[9px] uppercase font-extrabold px-1.5 py-0.2 rounded">
+                  <Badge className="bg-primary/10 text-primary hover:bg-primary/15 border-primary/20 text-[9px] uppercase font-bold px-1.5 py-0.2 rounded">
                     Instructor
                   </Badge>
                 )}
@@ -252,7 +252,7 @@ export function LessonComments({
                 {isOwner && (
                   <button
                     onClick={() => handleDeleteComment(comment.id)}
-                    className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                    className="text-muted-foreground hover:text-destructive transition-colors p-1 cursor-pointer"
                     title="Delete comment"
                     aria-label="Delete comment"
                   >
@@ -269,11 +269,12 @@ export function LessonComments({
             {/* Action buttons */}
             <div className="flex items-center gap-3 mt-2">
               <button
+                type="button"
                 onClick={() => {
                   setReplyToId(comment.id);
                   setReplyText("");
                 }}
-                className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1"
+                className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <CornerDownRight className="h-3 w-3" />
                 <span>Reply</span>
@@ -298,7 +299,7 @@ export function LessonComments({
                   type="submit"
                   size="sm"
                   disabled={!replyText.trim() || isSubmitting}
-                  className="px-3.5 h-8 rounded-xl bg-primary text-primary-foreground text-xs font-bold"
+                  className="px-3.5 h-8 rounded-xl bg-primary text-primary-foreground text-xs font-bold cursor-pointer"
                 >
                   Post
                 </Button>
@@ -307,7 +308,7 @@ export function LessonComments({
                   size="sm"
                   variant="ghost"
                   onClick={() => setReplyToId(null)}
-                  className="px-3 h-8 rounded-xl text-xs"
+                  className="px-3 h-8 rounded-xl text-xs cursor-pointer"
                 >
                   Cancel
                 </Button>
@@ -327,27 +328,25 @@ export function LessonComments({
   };
 
   return (
-    <div className="bg-card border border-border/80 rounded-2xl p-5 sm:p-7 space-y-6 shadow-xs">
+    <div className="bg-card border border-border/80 rounded-3xl p-5 sm:p-7 space-y-6 shadow-xs font-sans">
       <div className="flex items-center justify-between pb-4 border-b border-border/60">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5 text-primary" />
           <h3 className="font-bold text-sm sm:text-base font-outfit text-foreground">
             Doubts &amp; Discussion
           </h3>
-          <Badge variant="secondary" className="text-[10px] font-bold">
+          <Badge variant="secondary" className="text-[10px] font-bold px-2 py-0.5 rounded-lg">
             {comments.length}
           </Badge>
         </div>
-      </div>
 
-      {usingFallback && (
-        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 rounded-xl p-3 text-xs flex gap-2.5 items-start">
-          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold">Offline Notice:</span> Comments are currently saving locally.
+        {usingFallback && (
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted text-[10px] text-muted-foreground font-medium">
+            <Info className="h-3 w-3 text-primary" />
+            <span>Local Mode</span>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Input Form */}
       <form onSubmit={(e) => handlePostComment(e, null)} className="flex gap-3">
@@ -366,7 +365,7 @@ export function LessonComments({
           <Button
             type="submit"
             disabled={!inputText.trim() || isSubmitting}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-10 px-4 rounded-xl flex items-center gap-1.5 shrink-0 shadow-xs"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-10 px-4 rounded-xl flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
           >
             {isSubmitting ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -382,19 +381,19 @@ export function LessonComments({
       <div className="space-y-4 pt-1">
         {isLoading ? (
           <div className="space-y-3">
-            <div className="h-14 bg-muted/40 rounded-xl animate-pulse" />
-            <div className="h-14 bg-muted/40 rounded-xl animate-pulse" />
+            <div className="h-14 bg-muted/40 rounded-2xl animate-pulse" />
+            <div className="h-14 bg-muted/40 rounded-2xl animate-pulse" />
           </div>
         ) : topLevelComments.length > 0 ? (
           <div className="space-y-3 divide-y divide-border/40">
             {topLevelComments.map((comment) => renderCommentNode(comment, 0))}
           </div>
         ) : (
-          <div className="text-center py-8 text-muted-foreground space-y-1.5 bg-muted/20 border border-dashed border-border/80 rounded-2xl">
-            <MessageSquare className="h-8 w-8 mx-auto text-muted-foreground/40 mb-1" />
+          <div className="text-center py-10 px-4 text-muted-foreground space-y-1.5 bg-muted/20 border border-dashed border-border/80 rounded-2xl">
+            <MessageSquare className="h-7 w-7 mx-auto text-muted-foreground/40 mb-1" />
             <p className="text-xs font-bold text-foreground">No questions or discussions yet</p>
-            <p className="text-[11px] text-muted-foreground">
-              Have a doubt about this lesson? Post it above to get instructor feedback.
+            <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
+              Have a doubt about this lesson? Post it above to get instructor guidance.
             </p>
           </div>
         )}
