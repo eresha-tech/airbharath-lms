@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Megaphone,
@@ -17,6 +17,10 @@ import {
   Compass,
   Play,
   Layers,
+  Maximize2,
+  X,
+  MapPin,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -66,18 +70,38 @@ export function StudentFeedView({
   certificatesCount = 0,
 }: StudentFeedViewProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; alt: string } | null>(null);
+
+  // Close lightbox on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setLightboxImage(null);
+      }
+    };
+    if (lightboxImage) {
+      window.addEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "unset";
+    };
+  }, [lightboxImage]);
 
   const handleShare = (postId: string, content: string) => {
     const url = typeof window !== "undefined" ? window.location.href : "";
     if (navigator.share) {
       navigator
         .share({
-          title: "AirBharath LMS Community Announcement",
-          text: content.slice(0, 100) + "...",
+          title: "AirBharath Community Announcement",
+          text: content.slice(0, 120) + (content.length > 120 ? "..." : ""),
           url,
         })
         .catch(() => {});
-    } else {
+    } else if (navigator.clipboard) {
       navigator.clipboard.writeText(url);
       setCopiedId(postId);
       setTimeout(() => setCopiedId(null), 2000);
@@ -103,7 +127,7 @@ export function StudentFeedView({
           <div className="flex flex-wrap items-center gap-2 pt-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-muted text-foreground text-xs font-semibold">
               <Megaphone className="w-3.5 h-3.5 text-primary" />
-              <span>{posts.length} Broadcasts</span>
+              <span>{posts.length} {posts.length === 1 ? "Broadcast" : "Broadcasts"}</span>
             </span>
             {activeCourse && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-muted text-foreground text-xs font-semibold">
@@ -113,7 +137,7 @@ export function StudentFeedView({
             )}
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-muted text-foreground text-xs font-semibold">
               <Award className="w-3.5 h-3.5 text-emerald-600" />
-              <span>{certificatesCount} Credentials Earned</span>
+              <span>{certificatesCount} {certificatesCount === 1 ? "Credential Earned" : "Credentials Earned"}</span>
             </span>
           </div>
         </div>
@@ -147,12 +171,21 @@ export function StudentFeedView({
                   There are no announcements published at the moment. Check back soon for academy updates, new course curriculum drops, and schedule alerts.
                 </p>
               </div>
-              <Button
-                asChild
-                className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs px-6 h-10 shadow-xs cursor-pointer"
-              >
-                <Link href="/dashboard/courses">Return to My Learning</Link>
-              </Button>
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <Button
+                  asChild
+                  className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs px-5 h-10 shadow-xs cursor-pointer"
+                >
+                  <Link href="/dashboard/courses">Return to My Learning</Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="border-border rounded-xl text-xs px-5 h-10 font-semibold cursor-pointer"
+                >
+                  <Link href="/courses">Browse Course Catalog</Link>
+                </Button>
+              </div>
             </div>
           ) : (
             posts.map((post) => {
@@ -161,9 +194,12 @@ export function StudentFeedView({
                 month: "short",
                 day: "numeric",
               });
-              const authorName = post.author?.fullName || "AirBharath Academy Team";
-              const isAdmin = post.author?.role === "admin";
-              const authorInitials = authorName.charAt(0).toUpperCase();
+              
+              // Clean author display name
+              const rawAuthorName = post.author?.fullName || "AirBharath Academy Team";
+              const authorName = rawAuthorName.replace(/\s*\(Admin\)\s*$/i, "").trim() || rawAuthorName;
+              const isAdmin = post.author?.role === "admin" || rawAuthorName.toLowerCase().includes("admin");
+              const authorInitials = (authorName.charAt(0) || "A").toUpperCase();
 
               return (
                 <article
@@ -217,27 +253,41 @@ export function StudentFeedView({
                     </div>
 
                     {/* Post Content */}
-                    <div className="text-xs sm:text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap font-sans">
+                    <div className="text-xs sm:text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap font-sans break-words">
                       {post.content}
                     </div>
 
                     {/* Image Attachment if available */}
                     {post.imageUrl && (
-                      <div className="rounded-2xl overflow-hidden border border-border/60 bg-muted/30 max-h-[440px]">
+                      <div className="relative rounded-2xl overflow-hidden border border-border/60 bg-muted/30 group">
                         <img
                           src={post.imageUrl}
-                          alt="Announcement attachment"
-                          className="w-full h-full object-cover"
+                          alt={`Attachment for announcement by ${authorName}`}
+                          className="w-full h-auto max-h-[440px] object-cover rounded-2xl transition-transform duration-200 group-hover:scale-[1.01]"
                           onError={(e) => {
                             (e.currentTarget.parentElement as HTMLElement)?.classList.add("hidden");
                           }}
                         />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setLightboxImage({
+                              url: post.imageUrl!,
+                              alt: `Attachment for announcement by ${authorName}`,
+                            })
+                          }
+                          className="absolute bottom-3 right-3 px-3 py-1.5 bg-background/90 hover:bg-background text-foreground backdrop-blur-xs rounded-xl text-xs font-bold border border-border/80 shadow-xs flex items-center gap-1.5 transition-all opacity-90 hover:opacity-100 cursor-pointer"
+                          title="Expand image"
+                        >
+                          <Maximize2 className="w-3.5 h-3.5" />
+                          <span>Expand</span>
+                        </button>
                       </div>
                     )}
 
                     {/* Post Action Footer */}
                     <div className="pt-4 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                      <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
                         <Megaphone className="w-3.5 h-3.5 text-primary" />
                         <span>AirBharath Verified Notice</span>
                       </div>
@@ -246,10 +296,10 @@ export function StudentFeedView({
                         type="button"
                         onClick={() => handleShare(post.id, post.content)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground font-semibold text-xs transition-colors cursor-pointer"
-                        title="Share this announcement"
+                        title="Share this announcement link"
                       >
                         {copiedId === post.id ? (
-                          <span className="text-emerald-600 flex items-center gap-1">
+                          <span className="text-emerald-600 flex items-center gap-1 font-bold">
                             <Check className="w-3.5 h-3.5" />
                             <span>Link Copied</span>
                           </span>
@@ -271,7 +321,7 @@ export function StudentFeedView({
         {/* Secondary Column: Real Data Sidebar */}
         <div className="space-y-6">
           {/* Section 1: Active Learning Track */}
-          {activeCourse && (
+          {activeCourse ? (
             <div className="bg-card border border-border/80 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold font-outfit uppercase tracking-wider text-primary">
@@ -309,6 +359,25 @@ export function StudentFeedView({
                 </Link>
               </Button>
             </div>
+          ) : (
+            <div className="bg-card border border-border/80 rounded-3xl p-5 sm:p-6 shadow-xs space-y-3">
+              <span className="text-xs font-bold font-outfit uppercase tracking-wider text-primary">
+                Learning Status
+              </span>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                You have completed all active enrolled modules or have not started a course yet.
+              </p>
+              <Button
+                asChild
+                variant="outline"
+                className="w-full border-border text-xs font-semibold h-9 rounded-xl"
+              >
+                <Link href="/courses" className="flex items-center justify-center gap-1.5">
+                  <span>Explore Course Catalog</span>
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              </Button>
+            </div>
           )}
 
           {/* Section 2: Recent Job Opportunities from DB */}
@@ -328,27 +397,36 @@ export function StudentFeedView({
                 </Link>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {recentJobs.slice(0, 3).map((job) => (
-                  <div
+                  <Link
                     key={job.id}
-                    className="p-3.5 bg-muted/40 border border-border/60 rounded-2xl hover:bg-muted/70 transition-colors space-y-1"
+                    href="/dashboard/jobs"
+                    className="block p-3.5 bg-muted/40 border border-border/60 rounded-2xl hover:bg-muted/70 transition-colors space-y-1.5 group"
                   >
-                    <div className="font-bold text-xs text-foreground line-clamp-1">
+                    <div className="font-bold text-xs text-foreground group-hover:text-primary transition-colors line-clamp-1">
                       {job.title}
                     </div>
-                    <div className="text-[11px] text-muted-foreground flex items-center justify-between">
-                      <span className="font-medium text-primary truncate">{job.company}</span>
-                      {job.location && <span className="truncate">{job.location}</span>}
+                    <div className="text-[11px] text-muted-foreground flex items-center justify-between gap-2">
+                      <span className="font-medium text-foreground/80 truncate flex items-center gap-1">
+                        <Building2 className="w-3 h-3 text-muted-foreground shrink-0" />
+                        <span className="truncate">{job.company}</span>
+                      </span>
+                      {job.location && (
+                        <span className="truncate flex items-center gap-1 shrink-0 text-[10px]">
+                          <MapPin className="w-2.5 h-2.5 text-muted-foreground" />
+                          <span>{job.location}</span>
+                        </span>
+                      )}
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
 
               <Button
                 asChild
                 variant="outline"
-                className="w-full border-slate-200 text-slate-700 hover:text-primary hover:bg-slate-100 text-xs font-semibold h-10 rounded-xl"
+                className="w-full border-border text-foreground hover:text-primary hover:bg-muted text-xs font-semibold h-10 rounded-xl"
               >
                 <Link href="/dashboard/jobs" className="flex items-center justify-center gap-1.5">
                   <span>Explore Placement Hub</span>
@@ -402,6 +480,36 @@ export function StudentFeedView({
           </div>
         </div>
       </div>
+
+      {/* Lightbox Image Preview Modal */}
+      {lightboxImage && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Image preview"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-fade-in"
+          onClick={() => setLightboxImage(null)}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-3xl border border-white/10 bg-black/40 shadow-2xl p-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setLightboxImage(null)}
+              className="absolute top-4 right-4 h-9 w-9 bg-background/90 hover:bg-background text-foreground rounded-full flex items-center justify-center shadow-lg z-10 transition-colors cursor-pointer"
+              aria-label="Close full size image"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <img
+              src={lightboxImage.url}
+              alt={lightboxImage.alt}
+              className="w-full h-auto max-h-[85vh] object-contain rounded-2xl"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

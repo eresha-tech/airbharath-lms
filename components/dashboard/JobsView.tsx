@@ -132,7 +132,7 @@ export function JobsView({ jobs }: JobsViewProps) {
           <Button
             asChild
             variant="outline"
-            className="border-slate-200 text-slate-700 hover:text-primary hover:bg-slate-100 font-bold h-11 px-4 rounded-xl text-xs"
+            className="border-border text-foreground hover:text-primary hover:bg-muted font-bold h-11 px-4 rounded-xl text-xs"
           >
             <Link href="/dashboard/certificates" className="flex items-center gap-1.5">
               <span>View Credentials</span>
@@ -201,7 +201,7 @@ export function JobsView({ jobs }: JobsViewProps) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search roles, companies, locations..."
-              className="pl-10 pr-8 h-10 text-xs font-semibold rounded-xl border-slate-200 focus-visible:ring-primary"
+              className="pl-10 pr-8 h-10 text-xs font-semibold rounded-xl border-border bg-background focus-visible:ring-primary"
             />
             {searchQuery && (
               <button
@@ -254,7 +254,7 @@ export function JobsView({ jobs }: JobsViewProps) {
                 setSelectedLocation("all");
                 setSearchQuery("");
               }}
-              className="rounded-xl text-xs font-bold border-slate-200 text-slate-700 hover:bg-slate-100 cursor-pointer"
+              className="rounded-xl text-xs font-bold border-border text-foreground hover:bg-muted cursor-pointer"
             >
               Reset Filters
             </Button>
@@ -293,8 +293,8 @@ export function JobsView({ jobs }: JobsViewProps) {
                         </div>
                       </div>
 
-                      <Badge className="bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider shrink-0">
-                        Verified
+                      <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-wider shrink-0">
+                        AirBharath Listing
                       </Badge>
                     </div>
 
@@ -344,7 +344,7 @@ export function JobsView({ jobs }: JobsViewProps) {
                     <Button
                       variant="outline"
                       onClick={() => setSelectedJob(job)}
-                      className="border-slate-200 text-slate-700 hover:text-primary hover:bg-slate-100 text-xs font-semibold h-10 px-3.5 rounded-xl cursor-pointer"
+                      className="border-border text-foreground hover:text-primary hover:bg-muted text-xs font-semibold h-10 px-3.5 rounded-xl cursor-pointer"
                       title="Read full job description"
                     >
                       <FileText className="w-3.5 h-3.5" />
@@ -364,7 +364,7 @@ export function JobsView({ jobs }: JobsViewProps) {
             <DialogHeader className="space-y-2 text-left">
               <div className="flex items-center gap-2">
                 <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-wider">
-                  Verified Opportunity
+                  AirBharath Opportunity
                 </Badge>
               </div>
               <DialogTitle className="text-xl font-bold font-outfit text-foreground leading-snug">

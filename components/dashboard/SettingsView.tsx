@@ -257,11 +257,11 @@ export function SettingsView({ initialUser, stats }: SettingsViewProps) {
                 </span>
               </div>
               <p className="text-xs text-muted-foreground font-medium flex items-center gap-2">
-                <Mail className="w-3.5 h-3.5 text-slate-400" />
+                <Mail className="w-3.5 h-3.5 text-muted-foreground" />
                 <span>{user.email || "No email registered"}</span>
               </p>
               <p className="text-xs text-muted-foreground font-medium flex items-center gap-2">
-                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
                 <span>Member since {memberSince}</span>
               </p>
             </div>
@@ -273,9 +273,9 @@ export function SettingsView({ initialUser, stats }: SettingsViewProps) {
               setIsEditing(!isEditing);
               setErrorMsg("");
             }}
-            className={`rounded-xl text-xs font-bold h-10 px-4 shrink-0 transition-all ${
+            className={`rounded-xl text-xs font-bold h-10 px-4 shrink-0 transition-all cursor-pointer ${
               isEditing
-                ? "border-slate-200 text-slate-700 hover:bg-slate-100"
+                ? "border-border text-foreground hover:bg-muted"
                 : "bg-primary hover:bg-primary/90 text-white shadow-xs"
             }`}
           >
@@ -305,7 +305,7 @@ export function SettingsView({ initialUser, stats }: SettingsViewProps) {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
-                <Label htmlFor="edit-name" className="text-xs font-bold text-slate-700">
+                <Label htmlFor="edit-name" className="text-xs font-bold text-foreground">
                   Full Legal Name <span className="text-rose-500">*</span>
                 </Label>
                 <div className="relative">
@@ -315,16 +315,16 @@ export function SettingsView({ initialUser, stats }: SettingsViewProps) {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="e.g. Captain Rajesh Sharma"
-                    className="pr-10 h-11 text-xs font-semibold rounded-xl border-slate-200 focus-visible:ring-primary"
+                    className="pr-10 h-11 text-xs font-semibold rounded-xl border-border bg-background focus-visible:ring-primary"
                     required
                     disabled={saving}
                   />
-                  <User className="absolute right-3.5 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
+                  <User className="absolute right-3.5 top-3.5 h-4 w-4 text-muted-foreground pointer-events-none" />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-email" className="text-xs font-bold text-slate-700">
+                <Label htmlFor="edit-email" className="text-xs font-bold text-foreground">
                   Email Address <span className="text-rose-500">*</span>
                 </Label>
                 <div className="relative">
@@ -334,17 +334,17 @@ export function SettingsView({ initialUser, stats }: SettingsViewProps) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="rajesh.sharma@example.com"
-                    className="pr-10 h-11 text-xs font-semibold rounded-xl border-slate-200 focus-visible:ring-primary"
+                    className="pr-10 h-11 text-xs font-semibold rounded-xl border-border bg-background focus-visible:ring-primary"
                     required
                     disabled={saving}
                   />
-                  <Mail className="absolute right-3.5 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
+                  <Mail className="absolute right-3.5 top-3.5 h-4 w-4 text-muted-foreground pointer-events-none" />
                 </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-phone" className="text-xs font-bold text-slate-700">
+              <Label htmlFor="edit-phone" className="text-xs font-bold text-foreground">
                 Registered Mobile Number (Read-Only)
               </Label>
               <div className="relative">
@@ -353,9 +353,9 @@ export function SettingsView({ initialUser, stats }: SettingsViewProps) {
                   type="text"
                   value={formatMaskedPhone(user.phone)}
                   disabled
-                  className="pr-10 h-11 text-xs font-semibold rounded-xl bg-slate-100/70 border-slate-200 text-slate-500 cursor-not-allowed select-none"
+                  className="pr-10 h-11 text-xs font-semibold rounded-xl bg-muted/60 border-border text-muted-foreground cursor-not-allowed select-none"
                 />
-                <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
+                <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-muted-foreground pointer-events-none" />
               </div>
               <p className="text-[11px] text-muted-foreground">
                 Mobile number is tied to your primary OTP authentication identity and cannot be altered online.
@@ -368,7 +368,7 @@ export function SettingsView({ initialUser, stats }: SettingsViewProps) {
                 variant="outline"
                 onClick={() => setIsEditing(false)}
                 disabled={saving}
-                className="h-10 px-4 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100"
+                className="h-10 px-4 rounded-xl text-xs font-bold border-border text-foreground hover:bg-muted"
               >
                 Cancel
               </Button>
