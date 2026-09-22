@@ -47,23 +47,42 @@ export default async function VerifyCertificatePage({ params }: VerifyPageProps)
         <div className="bg-card rounded-3xl border border-border shadow-md overflow-hidden">
           {cert ? (
             <div>
-              {/* Authenticity Banner */}
-              <div className="bg-primary text-primary-foreground p-8 sm:p-10 text-center space-y-3 relative overflow-hidden">
-                <div className="relative z-10 flex flex-col items-center">
-                  <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 mb-2">
-                    <ShieldCheck className="w-9 h-9 text-emerald-300" />
+              {/* Authenticity / Status Banner */}
+              {cert.status === "revoked" ? (
+                <div className="bg-destructive text-destructive-foreground p-8 sm:p-10 text-center space-y-3 relative overflow-hidden">
+                  <div className="relative z-10 flex flex-col items-center">
+                    <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 mb-2">
+                      <XCircle className="w-9 h-9 text-rose-200" />
+                    </div>
+                    <span className="bg-rose-950/40 text-rose-200 text-xs font-extrabold uppercase px-3 py-1 rounded-full border border-rose-400/30 tracking-wider">
+                      Certificate Revoked / Void
+                    </span>
+                    <h1 className="text-2xl sm:text-3xl font-bold font-outfit text-white mt-2">
+                      Credential Revoked
+                    </h1>
+                    <p className="text-xs sm:text-sm text-destructive-foreground/90 max-w-md mx-auto">
+                      This certificate record was previously issued but has been formally revoked and is no longer valid.
+                    </p>
                   </div>
-                  <span className="bg-emerald-500/20 text-emerald-300 text-xs font-extrabold uppercase px-3 py-1 rounded-full border border-emerald-400/30 tracking-wider">
-                    Verified Authentic Credential
-                  </span>
-                  <h1 className="text-2xl sm:text-3xl font-bold font-outfit text-white mt-2">
-                    AirBharath LMS Official Credential
-                  </h1>
-                  <p className="text-xs sm:text-sm text-primary-foreground/80 max-w-md mx-auto">
-                    This official certificate record is authentic, valid, and cryptographically registered in the AirBharath LMS registry.
-                  </p>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-primary text-primary-foreground p-8 sm:p-10 text-center space-y-3 relative overflow-hidden">
+                  <div className="relative z-10 flex flex-col items-center">
+                    <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 mb-2">
+                      <ShieldCheck className="w-9 h-9 text-emerald-300" />
+                    </div>
+                    <span className="bg-emerald-500/20 text-emerald-300 text-xs font-extrabold uppercase px-3 py-1 rounded-full border border-emerald-400/30 tracking-wider">
+                      Verified Authentic Credential
+                    </span>
+                    <h1 className="text-2xl sm:text-3xl font-bold font-outfit text-white mt-2">
+                      AirBharath LMS Official Credential
+                    </h1>
+                    <p className="text-xs sm:text-sm text-primary-foreground/80 max-w-md mx-auto">
+                      This official certificate record is authentic, valid, and cryptographically registered in the AirBharath LMS registry.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Details List */}
               <div className="p-6 sm:p-10 space-y-6">

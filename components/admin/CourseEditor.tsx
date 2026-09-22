@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   ArrowLeft,
   Save,
@@ -28,6 +28,11 @@ import {
   Settings,
   ChevronDown,
   ChevronUp,
+  Award,
+  ShieldCheck,
+  Search,
+  Users,
+  RefreshCw,
 } from "lucide-react";
 import { VideoUploader } from "@/components/admin/VideoUploader";
 import Link from "next/link";
@@ -37,6 +42,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
 export interface FormattedMaterial {
@@ -77,6 +84,9 @@ export interface CourseEditorProps {
     thumbnail_url: string;
     is_published: boolean;
     access_days?: number | null;
+    certificate_status?: 'disabled' | 'active' | 'paused';
+    certificate_activated_at?: string | null;
+    certificate_activated_by?: string | null;
   };
   initialModules: FormattedModule[];
   initialLessons: FormattedLesson[];
@@ -90,7 +100,7 @@ export default function CourseEditor({
   const router = useRouter();
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<"curriculum" | "settings">("curriculum");
+  const [activeTab, setActiveTab] = useState<"curriculum" | "settings" | "certificates">("curriculum");
 
   // Course Properties State
   const [title, setTitle] = useState(course.title || "");
@@ -103,6 +113,164 @@ export default function CourseEditor({
   const [isPublished, setIsPublished] = useState(course.is_published || false);
   const [loadingCourse, setLoadingCourse] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+
+  // Certificate Management State
+  const [certStatus, setCertStatus] = useState<'disabled' | 'active' | 'paused'>(
+    course.certificate_status || 'disabled'
+  );
+  const [certActivatedAt, setCertActivatedAt] = useState<string | null>(
+    course.certificate_activated_at || null
+  );
+  const [certActivatedBy, setCertActivatedBy] = useState<{ id: string; name: string } | null>(null);
+  const [certStats, setCertStats] = useState<{
+    totalEnrolled: number;
+    totalCompleted: number;
+    totalEligible: number;
+    totalIssued: number;
+    pendingEligibleCount: number;
+  }>({
+    totalEnrolled: 0,
+    totalCompleted: 0,
+    totalEligible: 0,
+    totalIssued: 0,
+    pendingEligibleCount: 0,
+  });
+  const [certStudents, setCertStudents] = useState<Array<{
+    userId: string;
+    fullName: string;
+    email: string;
+    phone: string;
+    enrolledAt: string;
+    progressPercent: number;
+    completedLessons: number;
+    totalLessons: number;
+    isCompleted: boolean;
+    status: string;
+    certificateCode: string | null;
+    certificateIssuedAt: string | null;
+    pdfUrl: string | null;
+    issuedBy: string | null;
+  }>>([]);
+  const [loadingCertData, setLoadingCertData] = useState(false);
+  const [updatingCertStatus, setUpdatingCertStatus] = useState(false);
+  const [generatingCerts, setGeneratingCerts] = useState(false);
+  const [generatingSingleId, setGeneratingSingleId] = useState<string | null>(null);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [studentSearchTerm, setStudentSearchTerm] = useState("");
+  const [studentFilterTab, setStudentFilterTab] = useState<"all" | "eligible" | "issued" | "in_progress">("all");
+  const [certActionSuccessMsg, setCertActionSuccessMsg] = useState<string | null>(null);
+  const [certActionErrorMsg, setCertActionErrorMsg] = useState<string | null>(null);
+
+  const fetchCertificatesData = useCallback(async () => {
+    setLoadingCertData(true);
+    setCertActionErrorMsg(null);
+    try {
+      const res = await fetch(`/api/admin/courses/${course.id}/certificates`);
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCertStatus(data.course.certificateStatus);
+        setCertActivatedAt(data.course.certificateActivatedAt);
+        setCertActivatedBy(data.course.certificateActivatedBy);
+        setCertStats(data.stats);
+        setCertStudents(data.students);
+      }
+    } catch (err: any) {
+      console.error("Failed to fetch certificate data:", err);
+    } finally {
+      setLoadingCertData(false);
+    }
+  }, [course.id]);
+
+  useEffect(() => {
+    if (activeTab === "certificates") {
+      fetchCertificatesData();
+    }
+  }, [activeTab, fetchCertificatesData]);
+
+  const handleUpdateCertStatus = async (newStatus: "disabled" | "active" | "paused") => {
+    setUpdatingCertStatus(true);
+    setCertActionSuccessMsg(null);
+    setCertActionErrorMsg(null);
+    try {
+      const res = await fetch(`/api/admin/courses/${course.id}/certificates`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update certificate status");
+
+      setCertStatus(data.course.certificateStatus);
+      setCertActivatedAt(data.course.certificateActivatedAt);
+      setCertActionSuccessMsg(
+        newStatus === "active"
+          ? "Certificate issuance is now ACTIVE. Eligible students can claim certificates."
+          : newStatus === "paused"
+          ? "Certificate issuance is PAUSED."
+          : "Certificate issuance is DISABLED."
+      );
+      await fetchCertificatesData();
+    } catch (err: any) {
+      setCertActionErrorMsg(err.message || "Failed to update status");
+    } finally {
+      setUpdatingCertStatus(false);
+    }
+  };
+
+  const handleIssueBatch = async (allEligible: boolean = false) => {
+    setGeneratingCerts(true);
+    setCertActionSuccessMsg(null);
+    setCertActionErrorMsg(null);
+    try {
+      const res = await fetch("/api/admin/certificates/issue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseId: course.id,
+          studentIds: allEligible ? undefined : selectedStudentIds,
+          allEligible,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to issue certificates");
+
+      const r = data.results;
+      setCertActionSuccessMsg(
+        `Batch generation complete: ${r.issuedCount} issued, ${r.alreadyIssuedCount} already had certificates, ${r.skippedCount} skipped.`
+      );
+      setSelectedStudentIds([]);
+      await fetchCertificatesData();
+    } catch (err: any) {
+      setCertActionErrorMsg(err.message || "Failed to issue certificates");
+    } finally {
+      setGeneratingCerts(false);
+    }
+  };
+
+  const handleIssueIndividual = async (studentId: string) => {
+    setGeneratingSingleId(studentId);
+    setCertActionSuccessMsg(null);
+    setCertActionErrorMsg(null);
+    try {
+      const res = await fetch("/api/admin/certificates/issue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseId: course.id,
+          studentIds: [studentId],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to generate certificate");
+
+      setCertActionSuccessMsg("Certificate generated successfully and emailed to student.");
+      await fetchCertificatesData();
+    } catch (err: any) {
+      setCertActionErrorMsg(err.message || "Failed to generate certificate");
+    } finally {
+      setGeneratingSingleId(null);
+    }
+  };
 
   // Curriculum State
   const [modules, setModules] = useState<FormattedModule[]>(initialModules || []);
@@ -741,6 +909,18 @@ export default function CourseEditor({
             <Settings className="h-4 w-4" />
             <span>Course Settings &amp; Pricing</span>
           </TabsTrigger>
+          <TabsTrigger
+            value="certificates"
+            className="rounded-xl px-5 py-2.5 text-xs font-bold gap-2 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-xs transition-all flex-1 sm:flex-initial"
+          >
+            <Award className="h-4 w-4" />
+            <span>Certificates &amp; Issuance</span>
+            {certStats.totalEligible > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 bg-emerald-600 text-white rounded-full text-[10px] font-bold">
+                {certStats.totalEligible}
+              </span>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         {/* TAB 1: CURRICULUM BUILDER */}
@@ -750,60 +930,57 @@ export default function CourseEditor({
               <div>
                 <CardTitle className="text-base font-bold font-outfit text-foreground flex items-center gap-2">
                   <Layers className="h-4 w-4 text-primary" />
-                  <span>Curriculum &amp; Syllabus Structure</span>
+                  <span>Curriculum Structure &amp; Syllabus</span>
                 </CardTitle>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Organize syllabus modules, upload HLS video lectures, and attach downloadable notes.
+                  Organize syllabus modules and add video lectures, quizzes, and downloadable files.
                 </p>
               </div>
 
-              {!showModuleInput && (
-                <Button
-                  size="sm"
-                  onClick={() => setShowModuleInput(true)}
-                  className="rounded-xl text-xs font-bold gap-1.5 h-9 px-3.5 shadow-2xs cursor-pointer self-start sm:self-auto"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Add New Module</span>
-                </Button>
-              )}
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setShowModuleInput(true)}
+                className="rounded-xl text-xs font-bold gap-1.5 shadow-sm cursor-pointer"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Add Module</span>
+              </Button>
             </CardHeader>
 
-            <CardContent className="pt-6 space-y-6">
-              {/* New Module Input Form */}
+            <CardContent className="p-6 space-y-4">
+              {/* Add Module Inline Form */}
               {showModuleInput && (
-                <div className="bg-primary/5 p-5 border border-primary/20 rounded-3xl space-y-3 animate-in fade-in duration-150">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <p className="text-xs font-bold text-primary uppercase tracking-wider">
-                      New Learning Module
-                    </p>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-2.5">
+                <div className="p-4 bg-muted/30 border border-primary/20 rounded-2xl space-y-3 animate-in fade-in duration-150">
+                  <span className="text-xs font-bold uppercase tracking-wider text-primary block">
+                    Create New Syllabus Module
+                  </span>
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Input
-                      type="text"
-                      placeholder="e.g. Module 1: Aerodynamics, Wing Lift & Structural Dynamics"
+                      placeholder="e.g. Module 1: Aircraft Systems & Aerodynamics"
                       value={newModuleTitle}
                       onChange={(e) => setNewModuleTitle(e.target.value)}
-                      className="flex-1 h-10 rounded-xl text-xs sm:text-sm font-semibold bg-background border-border/80 focus:border-primary"
+                      className="h-10 text-xs sm:text-sm font-semibold rounded-xl bg-background"
                       autoFocus
                     />
                     <div className="flex gap-2">
                       <Button
+                        type="button"
                         size="sm"
                         onClick={handleAddModule}
-                        className="rounded-xl text-xs font-bold h-10 px-4 cursor-pointer"
+                        className="rounded-xl text-xs font-bold h-10 px-4"
                       >
-                        Create Module
+                        Create
                       </Button>
                       <Button
+                        type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => {
                           setShowModuleInput(false);
                           setNewModuleTitle("");
                         }}
-                        className="rounded-xl text-xs font-semibold h-10 px-3.5 cursor-pointer"
+                        className="rounded-xl text-xs font-semibold h-10 px-3"
                       >
                         Cancel
                       </Button>
@@ -814,38 +991,33 @@ export default function CourseEditor({
 
               {/* Modules List */}
               {modules.length > 0 ? (
-                <div className="space-y-5">
-                  {modules
-                    .sort((a, b) => a.order_index - b.order_index)
-                    .map((mod, modIdx) => {
-                      const moduleLessons = lessons
-                        .filter((l) => l.module_id === mod.id)
-                        .sort((a, b) => a.order_index - b.order_index);
-                      const isCollapsed = !!collapsedModules[mod.id];
+                <div className="space-y-4">
+                  {modules.map((mod, modIdx) => {
+                    const moduleLessons = (lessons || [])
+                      .filter((l) => l.module_id === mod.id)
+                      .sort((a, b) => a.order_index - b.order_index);
+                    const isCollapsed = !!collapsedModules[mod.id];
 
-                      return (
-                        <div
-                          key={mod.id}
-                          className="border border-border/80 rounded-3xl overflow-hidden bg-card shadow-xs transition-shadow"
-                        >
-                          {/* Module Header */}
-                          <div className="bg-muted/40 px-5 py-4 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div
-                              className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer select-none"
-                              onClick={() => toggleModuleCollapse(mod.id)}
-                            >
-                              <span className="h-7 w-7 rounded-xl bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0">
-                                {mod.order_index || modIdx + 1}
-                              </span>
-                              <div className="min-w-0">
-                                <h4 className="font-bold text-sm text-foreground font-outfit">
-                                  {mod.title}
-                                </h4>
-                                <span className="text-[11px] text-muted-foreground font-medium">
-                                  {moduleLessons.length} {moduleLessons.length === 1 ? "lesson" : "lessons"} in module
-                                </span>
-                              </div>
+                    return (
+                      <div
+                        key={mod.id}
+                        className="border border-border/80 rounded-2xl overflow-hidden bg-card/50 shadow-2xs transition-all duration-200"
+                      >
+                        {/* Module Header Bar */}
+                        <div className="p-4 bg-muted/40 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                              {modIdx + 1}
                             </div>
+                            <div className="min-w-0">
+                              <h4 className="font-bold text-sm text-foreground truncate font-outfit">
+                                {mod.title}
+                              </h4>
+                              <span className="text-[11px] text-muted-foreground font-medium">
+                                {moduleLessons.length} {moduleLessons.length === 1 ? "lesson" : "lessons"} in module
+                              </span>
+                            </div>
+                          </div>
 
                             <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                               <Button
@@ -1202,6 +1374,580 @@ export default function CourseEditor({
                   <Trash2 className="h-4 w-4" />
                   <span>Delete Entire Course</span>
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 3: CERTIFICATES & ISSUANCE */}
+        <TabsContent value="certificates" className="space-y-6 m-0">
+          {/* Certificate Activation Status Card */}
+          <Card className="rounded-3xl border border-border/80 shadow-xs">
+            <CardHeader className="pb-4 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <CardTitle className="text-base font-bold font-outfit text-foreground flex items-center gap-2">
+                  <Award className="h-5 w-5 text-primary" />
+                  <span>Certificate Issuance Control</span>
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Control whether qualifying students receive tamper-proof QR-verifiable certificates of completion.
+                </p>
+              </div>
+
+              {/* Status Badge & Actions */}
+              <div className="flex flex-wrap items-center gap-3">
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border",
+                    certStatus === "active"
+                      ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+                      : certStatus === "paused"
+                      ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30"
+                      : "bg-slate-500/10 text-slate-700 dark:text-slate-400 border-slate-500/20"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "h-2 w-2 rounded-full",
+                      certStatus === "active"
+                        ? "bg-emerald-500"
+                        : certStatus === "paused"
+                        ? "bg-amber-500"
+                        : "bg-slate-400"
+                    )}
+                  />
+                  <span>
+                    {certStatus === "active"
+                      ? "ACTIVE"
+                      : certStatus === "paused"
+                      ? "PAUSED"
+                      : "DISABLED"}
+                  </span>
+                </span>
+
+                {certStatus === "disabled" ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={updatingCertStatus}
+                    onClick={() => handleUpdateCertStatus("active")}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-xs gap-1.5 cursor-pointer"
+                  >
+                    {updatingCertStatus ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5" />
+                    )}
+                    <span>Activate Issuance</span>
+                  </Button>
+                ) : certStatus === "active" ? (
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={updatingCertStatus}
+                      onClick={() => handleUpdateCertStatus("paused")}
+                      className="border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 text-xs font-semibold h-10 px-3.5 rounded-xl cursor-pointer"
+                    >
+                      <span>Pause Issuance</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={updatingCertStatus}
+                      onClick={() => handleUpdateCertStatus("disabled")}
+                      className="border-destructive/30 text-destructive hover:bg-destructive/10 text-xs font-semibold h-10 px-3.5 rounded-xl cursor-pointer"
+                    >
+                      <span>Deactivate</span>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={updatingCertStatus}
+                      onClick={() => handleUpdateCertStatus("active")}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-10 px-4 rounded-xl shadow-xs cursor-pointer"
+                    >
+                      <span>Resume Issuance</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={updatingCertStatus}
+                      onClick={() => handleUpdateCertStatus("disabled")}
+                      className="border-destructive/30 text-destructive hover:bg-destructive/10 text-xs font-semibold h-10 px-3.5 rounded-xl cursor-pointer"
+                    >
+                      <span>Deactivate</span>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-6 space-y-6">
+              {/* Status Message Alerts */}
+              {certActionSuccessMsg && (
+                <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 rounded-2xl text-xs font-bold flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <span>{certActionSuccessMsg}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCertActionSuccessMsg(null)}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {certActionErrorMsg && (
+                <div className="p-3.5 bg-destructive/10 border border-destructive/20 text-destructive rounded-2xl text-xs font-bold flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <span>{certActionErrorMsg}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCertActionErrorMsg(null)}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* Status Overview Banner */}
+              <div className="bg-muted/30 border border-border/60 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="space-y-1">
+                  <span className="font-bold text-foreground">
+                    {certStatus === "active"
+                      ? "Certificate Issuance is Active"
+                      : certStatus === "paused"
+                      ? "Certificate Issuance is Currently Paused"
+                      : "Certificate Issuance is Disabled"}
+                  </span>
+                  <p className="text-muted-foreground">
+                    {certStatus === "active"
+                      ? "Students who reach 100% curriculum completion can instantly claim their verified certificates."
+                      : certStatus === "paused"
+                      ? "Existing certificates remain valid. Eligible students cannot claim new certificates while paused."
+                      : "Students reaching 100% will see a 'Course Completed' notice without certificate generation until activated."}
+                  </p>
+                </div>
+
+                {certActivatedAt && (
+                  <div className="text-[11px] text-muted-foreground font-mono shrink-0 sm:text-right">
+                    <div>
+                      Activated: {new Date(certActivatedAt).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </div>
+                    {certActivatedBy?.name && <div>by {certActivatedBy.name}</div>}
+                  </div>
+                )}
+              </div>
+
+              {/* 4 Metrics Strip */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="p-4 bg-card border border-border/80 rounded-2xl shadow-2xs space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                    Total Enrolled
+                  </span>
+                  <div className="text-xl sm:text-2xl font-bold font-outfit text-foreground">
+                    {certStats.totalEnrolled}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">Students in course</span>
+                </div>
+
+                <div className="p-4 bg-card border border-border/80 rounded-2xl shadow-2xs space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                    100% Completed
+                  </span>
+                  <div className="text-xl sm:text-2xl font-bold font-outfit text-foreground">
+                    {certStats.totalCompleted}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">Finished curriculum</span>
+                </div>
+
+                <div className="p-4 bg-card border border-border/80 rounded-2xl shadow-2xs space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 block">
+                    Issued Credentials
+                  </span>
+                  <div className="text-xl sm:text-2xl font-bold font-outfit text-emerald-600">
+                    {certStats.totalIssued}
+                  </div>
+                  <span className="text-[10px] text-emerald-700/80">Tamper-proof registered</span>
+                </div>
+
+                <div className="p-4 bg-card border border-border/80 rounded-2xl shadow-2xs space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 block">
+                    Pending Issuance
+                  </span>
+                  <div className="text-xl sm:text-2xl font-bold font-outfit text-amber-600">
+                    {certStats.pendingEligibleCount}
+                  </div>
+                  <span className="text-[10px] text-amber-700/80">Eligible to mint</span>
+                </div>
+              </div>
+
+              {/* Student Eligibility & Issuance Table */}
+              <div className="space-y-4 pt-2">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    <h3 className="font-bold text-sm sm:text-base font-outfit text-foreground">
+                      Enrolled Learners &amp; Credential Status ({certStudents.length})
+                    </h3>
+                  </div>
+
+                  {/* Bulk Action Buttons */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fetchCertificatesData()}
+                      disabled={loadingCertData}
+                      className="h-9 px-3 rounded-xl text-xs font-semibold gap-1.5"
+                      title="Refresh Student Statuses"
+                    >
+                      <RefreshCw className={cn("h-3.5 w-3.5", loadingCertData && "animate-spin")} />
+                      <span>Refresh</span>
+                    </Button>
+
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={selectedStudentIds.length === 0 || generatingCerts}
+                      onClick={() => handleIssueBatch(false)}
+                      className="h-9 px-3.5 rounded-xl text-xs font-bold gap-1.5 shadow-xs cursor-pointer"
+                    >
+                      {generatingCerts ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Award className="h-3.5 w-3.5" />
+                      )}
+                      <span>Generate for Selected ({selectedStudentIds.length})</span>
+                    </Button>
+
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={certStats.pendingEligibleCount === 0 || generatingCerts}
+                      onClick={() => handleIssueBatch(true)}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 px-3.5 rounded-xl text-xs font-bold gap-1.5 shadow-xs cursor-pointer"
+                    >
+                      {generatingCerts ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5" />
+                      )}
+                      <span>Generate for All Eligible ({certStats.pendingEligibleCount})</span>
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Filters & Search */}
+                <div className="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center bg-muted/20 p-3 rounded-2xl border border-border/60">
+                  <div className="flex flex-wrap gap-1.5">
+                    {(
+                      [
+                        { key: "all", label: "All Learners", count: certStudents.length },
+                        { key: "eligible", label: "Eligible (100%)", count: certStats.totalEligible },
+                        { key: "issued", label: "Issued", count: certStats.totalIssued },
+                        {
+                          key: "in_progress",
+                          label: "In Progress",
+                          count: certStudents.filter((s) => !s.isCompleted && s.status !== "issued").length,
+                        },
+                      ] as const
+                    ).map((tab) => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setStudentFilterTab(tab.key)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
+                          studentFilterTab === tab.key
+                            ? "bg-card text-primary shadow-2xs border border-border/80"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <span>{tab.label}</span>
+                        <span className="text-[10px] px-1.5 py-0.2 bg-muted rounded-full font-mono">
+                          {tab.count}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="relative w-full sm:w-64">
+                    <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <Input
+                      type="text"
+                      placeholder="Search student name or email..."
+                      value={studentSearchTerm}
+                      onChange={(e) => setStudentSearchTerm(e.target.value)}
+                      className="pl-9 h-9 text-xs rounded-xl bg-background"
+                    />
+                  </div>
+                </div>
+
+                {/* Students Table */}
+                {loadingCertData ? (
+                  <div className="py-16 text-center text-muted-foreground flex flex-col items-center gap-2">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <span className="text-xs font-semibold">Evaluating curriculum progress &amp; credentials...</span>
+                  </div>
+                ) : (
+                  (() => {
+                    const filteredStudents = certStudents.filter((student) => {
+                      // Filter by search
+                      const matchesSearch =
+                        !studentSearchTerm ||
+                        student.fullName.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+                        student.email.toLowerCase().includes(studentSearchTerm.toLowerCase());
+
+                      if (!matchesSearch) return false;
+
+                      // Filter by tab
+                      if (studentFilterTab === "eligible") {
+                        return student.status === "eligible";
+                      }
+                      if (studentFilterTab === "issued") {
+                        return student.status === "issued";
+                      }
+                      if (studentFilterTab === "in_progress") {
+                        return !student.isCompleted && student.status !== "issued";
+                      }
+                      return true;
+                    });
+
+                    const eligibleFiltered = filteredStudents.filter((s) => s.status === "eligible");
+                    const allEligibleSelected =
+                      eligibleFiltered.length > 0 &&
+                      eligibleFiltered.every((s) => selectedStudentIds.includes(s.userId));
+
+                    const toggleSelectAll = () => {
+                      if (allEligibleSelected) {
+                        const eligibleIdsSet = new Set(eligibleFiltered.map((s) => s.userId));
+                        setSelectedStudentIds(selectedStudentIds.filter((id) => !eligibleIdsSet.has(id)));
+                      } else {
+                        const newSelected = Array.from(
+                          new Set([...selectedStudentIds, ...eligibleFiltered.map((s) => s.userId)])
+                        );
+                        setSelectedStudentIds(newSelected);
+                      }
+                    };
+
+                    const toggleStudentSelect = (userId: string) => {
+                      if (selectedStudentIds.includes(userId)) {
+                        setSelectedStudentIds(selectedStudentIds.filter((id) => id !== userId));
+                      } else {
+                        setSelectedStudentIds([...selectedStudentIds, userId]);
+                      }
+                    };
+
+                    if (filteredStudents.length === 0) {
+                      return (
+                        <div className="text-center py-12 px-4 border border-dashed border-border rounded-2xl space-y-2">
+                          <p className="text-xs font-semibold text-foreground">No students match this filter</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            Try adjusting your search query or tab filter.
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="bg-card border border-border/80 rounded-2xl overflow-hidden shadow-2xs">
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="bg-muted/40 border-b border-border/80 text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
+                                <th className="p-3.5 w-10 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={allEligibleSelected}
+                                    onChange={toggleSelectAll}
+                                    disabled={eligibleFiltered.length === 0}
+                                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer disabled:opacity-40"
+                                    title="Select all eligible students on this view"
+                                  />
+                                </th>
+                                <th className="p-3.5">Learner Profile</th>
+                                <th className="p-3.5">Curriculum Progress</th>
+                                <th className="p-3.5">Enrolled Date</th>
+                                <th className="p-3.5">Certificate State</th>
+                                <th className="p-3.5 text-right">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/60">
+                              {filteredStudents.map((s) => {
+                                const isEligible = s.status === "eligible";
+                                const isIssued = s.status === "issued";
+                                const isSelected = selectedStudentIds.includes(s.userId);
+                                const isSingleGenerating = generatingSingleId === s.userId;
+
+                                return (
+                                  <tr
+                                    key={s.userId}
+                                    className={cn(
+                                      "hover:bg-muted/30 transition-colors",
+                                      isSelected && "bg-primary/5"
+                                    )}
+                                  >
+                                    <td className="p-3.5 text-center">
+                                      <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        disabled={!isEligible}
+                                        onChange={() => toggleStudentSelect(s.userId)}
+                                        className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer disabled:opacity-30"
+                                      />
+                                    </td>
+
+                                    <td className="p-3.5 min-w-[180px]">
+                                      <div className="font-bold text-foreground font-outfit">
+                                        {s.fullName}
+                                      </div>
+                                      <div className="text-[11px] text-muted-foreground font-mono truncate">
+                                        {s.email || s.phone || "No contact"}
+                                      </div>
+                                    </td>
+
+                                    <td className="p-3.5 min-w-[160px]">
+                                      <div className="space-y-1">
+                                        <div className="flex justify-between text-[11px] font-semibold text-foreground">
+                                          <span>{s.progressPercent}%</span>
+                                          <span className="text-muted-foreground">
+                                            {s.completedLessons}/{s.totalLessons}
+                                          </span>
+                                        </div>
+                                        <Progress
+                                          value={s.progressPercent}
+                                          className={`h-1.5 ${s.isCompleted ? "[&>div]:bg-emerald-600" : ""}`}
+                                        />
+                                      </div>
+                                    </td>
+
+                                    <td className="p-3.5 text-[11px] text-muted-foreground whitespace-nowrap">
+                                      {new Date(s.enrolledAt).toLocaleDateString("en-IN", {
+                                        day: "numeric",
+                                        month: "short",
+                                        year: "numeric",
+                                      })}
+                                    </td>
+
+                                    <td className="p-3.5 whitespace-nowrap">
+                                      {isIssued ? (
+                                        <div className="space-y-0.5">
+                                          <Badge className="bg-emerald-600 text-white text-[10px] font-bold shadow-2xs flex items-center gap-1 w-fit">
+                                            <ShieldCheck className="h-3 w-3" />
+                                            <span>Issued</span>
+                                          </Badge>
+                                          <div className="font-mono text-[10px] text-muted-foreground font-bold">
+                                            {s.certificateCode}
+                                          </div>
+                                        </div>
+                                      ) : isEligible ? (
+                                        <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-[10px] font-bold w-fit flex items-center gap-1">
+                                          <Sparkles className="h-3 w-3 text-emerald-600" />
+                                          <span>Eligible (100%)</span>
+                                        </Badge>
+                                      ) : s.status === "completed_pending" ? (
+                                        <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[10px] font-bold w-fit">
+                                          <span>Pending Activation</span>
+                                        </Badge>
+                                      ) : s.status === "completed_paused" ? (
+                                        <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[10px] font-bold w-fit">
+                                          <span>Issuance Paused</span>
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="outline" className="text-[10px] font-semibold text-muted-foreground w-fit">
+                                          <span>In Progress</span>
+                                        </Badge>
+                                      )}
+                                    </td>
+
+                                    <td className="p-3.5 text-right whitespace-nowrap">
+                                      {isIssued ? (
+                                        <div className="flex items-center justify-end gap-1.5">
+                                          <Button
+                                            asChild
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-7 text-[11px] font-semibold rounded-lg px-2.5"
+                                          >
+                                            <Link
+                                              href={`/verify-certificate/${s.certificateCode}`}
+                                              target="_blank"
+                                              className="flex items-center gap-1"
+                                            >
+                                              <span>Verify</span>
+                                              <ExternalLink className="h-3 w-3" />
+                                            </Link>
+                                          </Button>
+                                          {s.pdfUrl && (
+                                            <Button
+                                              asChild
+                                              variant="outline"
+                                              size="sm"
+                                              className="h-7 text-[11px] font-semibold rounded-lg px-2"
+                                              title="Download Certificate PDF"
+                                            >
+                                              <a
+                                                href={s.pdfUrl}
+                                                download={`AirBharath-Cert-${s.certificateCode}.pdf`}
+                                              >
+                                                <Download className="h-3 w-3" />
+                                              </a>
+                                            </Button>
+                                          )}
+                                        </div>
+                                      ) : isEligible ? (
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          disabled={isSingleGenerating || generatingCerts}
+                                          onClick={() => handleIssueIndividual(s.userId)}
+                                          className="bg-emerald-600 hover:bg-emerald-700 text-white h-7 text-[11px] font-bold rounded-lg px-3 shadow-2xs gap-1 cursor-pointer"
+                                        >
+                                          {isSingleGenerating ? (
+                                            <>
+                                              <Loader2 className="h-3 w-3 animate-spin" />
+                                              <span>Minting...</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Award className="h-3 w-3" />
+                                              <span>Issue Now</span>
+                                            </>
+                                          )}
+                                        </Button>
+                                      ) : (
+                                        <span className="text-[11px] text-muted-foreground/60">—</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
               </div>
             </CardContent>
           </Card>

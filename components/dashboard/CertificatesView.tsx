@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Award,
   Download,
@@ -19,6 +20,9 @@ import {
   FileText,
   User,
   Share2,
+  Loader2,
+  AlertCircle,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -53,6 +57,9 @@ export interface InProgressTrackData {
   totalLessons: number;
   resumeLessonId: string;
   resumeLessonTitle?: string;
+  courseCertificateStatus?: 'disabled' | 'active' | 'paused';
+  certificateStatus?: 'in_progress' | 'completed_pending' | 'completed_paused' | 'eligible';
+  isEligible?: boolean;
 }
 
 export interface CertificatesViewProps {
@@ -68,10 +75,15 @@ export function CertificatesView({
   totalEnrolledCount,
   studentName,
 }: CertificatesViewProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"all" | "earned" | "in-progress">("all");
   const [selectedCert, setSelectedCert] = useState<EarnedCertificateData | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+
+  // Claim State
+  const [claimingCourseId, setClaimingCourseId] = useState<string | null>(null);
+  const [claimError, setClaimError] = useState<string | null>(null);
 
   const earnedCount = earnedCertificates.length;
   const inProgressCount = inProgressTracks.length;
@@ -85,6 +97,41 @@ export function CertificatesView({
     } else {
       setCopiedLink(text);
       setTimeout(() => setCopiedLink(null), 2000);
+    }
+  };
+
+  const handleClaim = async (courseId: string) => {
+    setClaimingCourseId(courseId);
+    setClaimError(null);
+    try {
+      const res = await fetch("/api/certificates/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to claim certificate");
+      }
+
+      if (data.certificate) {
+        setSelectedCert({
+          id: data.certificate.id,
+          courseId,
+          courseTitle: inProgressTracks.find((t) => t.courseId === courseId)?.courseTitle || "Course Certificate",
+          certificateCode: data.certificate.certificateCode,
+          studentName,
+          issuedAt: data.certificate.issuedAt,
+          pdfUrl: data.certificate.pdfUrl,
+        });
+      }
+
+      router.refresh();
+    } catch (err: any) {
+      setClaimError(err.message || "Failed to claim certificate");
+    } finally {
+      setClaimingCourseId(null);
     }
   };
 
@@ -413,66 +460,152 @@ export function CertificatesView({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {inProgressTracks.map((track) => (
-                <div
-                  key={track.courseId}
-                  className="bg-card border border-border/80 rounded-3xl p-4 sm:p-6 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-4"
-                >
-                  <div className="space-y-3">
-                    {/* Badge & Course Title */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-md border border-primary/20">
-                        Certificate Track
-                      </span>
-                      <span className="text-xs font-bold text-foreground">
-                        {track.percent}%
-                      </span>
-                    </div>
+              {inProgressTracks.map((track) => {
+                const isEligible = track.certificateStatus === "eligible" || (track.percent === 100 && track.isEligible);
+                const isPending = track.certificateStatus === "completed_pending" || (track.percent === 100 && track.courseCertificateStatus === "disabled");
+                const isPaused = track.certificateStatus === "completed_paused" || (track.percent === 100 && track.courseCertificateStatus === "paused");
+                const isClaiming = claimingCourseId === track.courseId;
 
-                    <h3 className="font-bold text-base font-outfit text-foreground leading-snug line-clamp-2">
-                      {track.courseTitle}
-                    </h3>
+                return (
+                  <div
+                    key={track.courseId}
+                    className={`bg-card border rounded-3xl p-4 sm:p-6 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-4 ${
+                      isEligible
+                        ? "border-emerald-500/40 bg-emerald-500/5 ring-1 ring-emerald-500/20"
+                        : isPending || isPaused
+                        ? "border-amber-500/30 bg-amber-500/5"
+                        : "border-border/80"
+                    }`}
+                  >
+                    <div className="space-y-3">
+                      {/* Badge & Status Indicator */}
+                      <div className="flex items-center justify-between">
+                        {isEligible ? (
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 px-2.5 py-0.5 rounded-md border border-emerald-500/30 flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-emerald-600" />
+                            <span>Certificate Ready</span>
+                          </span>
+                        ) : isPending ? (
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-500/15 px-2.5 py-0.5 rounded-md border border-amber-500/30 flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-amber-600" />
+                            <span>Course Completed (100%)</span>
+                          </span>
+                        ) : isPaused ? (
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-500/15 px-2.5 py-0.5 rounded-md border border-amber-500/30 flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-amber-600" />
+                            <span>Issuance Paused</span>
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-md border border-primary/20">
+                            Certificate Track
+                          </span>
+                        )}
 
-                    <p className="text-xs text-muted-foreground line-clamp-1">
-                      {track.resumeLessonTitle ? (
-                        <span>
-                          <strong className="text-foreground">Next Up:</strong> {track.resumeLessonTitle}
+                        <span className="text-xs font-bold text-foreground">
+                          {track.percent}%
                         </span>
-                      ) : (
-                        <span>{track.totalLessons - track.completedLessons} lessons remaining</span>
-                      )}
-                    </p>
-
-                    {/* Progress Bar */}
-                    <div className="space-y-1.5 pt-1">
-                      <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
-                        <span>Curriculum Progress</span>
-                        <span>{track.completedLessons} / {track.totalLessons} Lessons</span>
                       </div>
-                      <Progress value={track.percent} className="h-2" />
+
+                      <h3 className="font-bold text-base font-outfit text-foreground leading-snug line-clamp-2">
+                        {track.courseTitle}
+                      </h3>
+
+                      {isEligible ? (
+                        <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">
+                          You have completed 100% of curriculum lessons. Your official tamper-proof credential is ready to be claimed!
+                        </p>
+                      ) : isPending ? (
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Course completed. Certificate issuance is pending academy activation.
+                        </p>
+                      ) : isPaused ? (
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Course completed. Certificate issuance is temporarily paused for review.
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                          {track.resumeLessonTitle ? (
+                            <span>
+                              <strong className="text-foreground">Next Up:</strong> {track.resumeLessonTitle}
+                            </span>
+                          ) : (
+                            <span>{track.totalLessons - track.completedLessons} lessons remaining</span>
+                          )}
+                        </p>
+                      )}
+
+                      {/* Progress Bar */}
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
+                          <span>Curriculum Progress</span>
+                          <span>{track.completedLessons} / {track.totalLessons} Lessons</span>
+                        </div>
+                        <Progress
+                          value={track.percent}
+                          className={`h-2 ${isEligible ? "[&>div]:bg-emerald-600" : ""}`}
+                        />
+                      </div>
+
+                      {claimError && claimingCourseId === track.courseId && (
+                        <div className="p-2.5 bg-destructive/10 text-destructive text-xs rounded-xl flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                          <span>{claimError}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Button */}
+                    <div className="pt-3 border-t border-border/60">
+                      {isEligible ? (
+                        <Button
+                          onClick={() => handleClaim(track.courseId)}
+                          disabled={isClaiming}
+                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-2 cursor-pointer transition-all"
+                        >
+                          {isClaiming ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <span>Generating Verified Certificate...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Award className="h-3.5 w-3.5" />
+                              <span>Claim Verified Certificate</span>
+                            </>
+                          )}
+                        </Button>
+                      ) : isPending || isPaused ? (
+                        <Button
+                          asChild
+                          variant="outline"
+                          className="w-full border-slate-200 dark:border-zinc-700 text-foreground hover:bg-muted/60 text-xs font-semibold h-10 rounded-xl flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <Link href={`/dashboard/courses/${track.courseId}`}>
+                            <BookOpen className="h-3.5 w-3.5 text-primary" />
+                            <span>Review Course Content</span>
+                          </Link>
+                        </Button>
+                      ) : (
+                        <Button
+                          asChild
+                          className="w-full bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <Link
+                            href={
+                              track.resumeLessonId
+                                ? `/dashboard/courses/${track.courseId}/lessons/${track.resumeLessonId}`
+                                : `/dashboard/courses/${track.courseId}`
+                            }
+                          >
+                            <Play className="h-3.5 w-3.5 fill-current" />
+                            <span>Resume Lesson &amp; Earn</span>
+                          </Link>
+                        </Button>
+                      )}
                     </div>
                   </div>
-
-                  {/* Resume CTA */}
-                  <div className="pt-3 border-t border-border/60">
-                    <Button
-                      asChild
-                      className="w-full bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <Link
-                        href={
-                          track.resumeLessonId
-                            ? `/dashboard/courses/${track.courseId}/lessons/${track.resumeLessonId}`
-                            : `/dashboard/courses/${track.courseId}`
-                        }
-                      >
-                        <Play className="h-3.5 w-3.5 fill-current" />
-                        <span>Resume Lesson &amp; Earn</span>
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

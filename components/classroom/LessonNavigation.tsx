@@ -72,7 +72,7 @@ export function LessonNavigation({
             className="h-8 px-3 text-xs font-bold border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15 rounded-xl shrink-0 cursor-pointer"
           >
             <Link href="/dashboard/certificates">
-              <span>View Certificate</span>
+              <span>Certificate Center</span>
             </Link>
           </Button>
         </div>

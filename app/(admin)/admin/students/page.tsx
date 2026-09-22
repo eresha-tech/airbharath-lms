@@ -60,6 +60,7 @@ export default async function AdminStudents() {
       price: Number(c.price || 0),
       totalLessons: lessonIds.length,
       lessonIds,
+      certificateStatus: (c.certificateStatus || "disabled") as "disabled" | "active" | "paused",
     };
   });
 

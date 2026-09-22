@@ -262,21 +262,21 @@ export function ClassroomSidebar({
         </div>
       </ScrollArea>
 
-      {/* Verified Certificate Unlock Footer */}
+      {/* Course Completion & Credential Center Footer */}
       {progress === 100 && (
         <div className="p-3 border-t border-sidebar-border shrink-0">
           <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Award className="h-4 w-4 text-emerald-600" />
               <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                Certificate Unlocked!
+                Curriculum Complete!
               </span>
             </div>
             <Link
               href="/dashboard/certificates"
               className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 underline hover:no-underline"
             >
-              View
+              Credentials
             </Link>
           </div>
         </div>

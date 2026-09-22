@@ -105,6 +105,22 @@ export default async function StudentCertificatesPage() {
     });
 
     const percent = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+    const is100Percent = totalLessons > 0 && completedLessons >= totalLessons;
+    const courseCertStatus = (course.certificateStatus as 'disabled' | 'active' | 'paused') || 'disabled';
+
+    let trackCertStatus: 'in_progress' | 'completed_pending' | 'completed_paused' | 'eligible' = 'in_progress';
+    let isEligible = false;
+
+    if (is100Percent) {
+      if (courseCertStatus === 'active') {
+        trackCertStatus = 'eligible';
+        isEligible = true;
+      } else if (courseCertStatus === 'paused') {
+        trackCertStatus = 'completed_paused';
+      } else {
+        trackCertStatus = 'completed_pending';
+      }
+    }
 
     // Find resume lesson
     const nextIncomplete = allLessons.find((l) => !completedLessonIds.has(l.id));
@@ -120,6 +136,9 @@ export default async function StudentCertificatesPage() {
       totalLessons,
       resumeLessonId: resumeLesson ? resumeLesson.id : "",
       resumeLessonTitle: resumeLesson ? resumeLesson.title : undefined,
+      courseCertificateStatus: courseCertStatus,
+      certificateStatus: trackCertStatus,
+      isEligible,
     });
   }
 

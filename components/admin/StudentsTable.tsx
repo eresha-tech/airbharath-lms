@@ -58,6 +58,7 @@ export interface CourseRecord {
   price: number;
   totalLessons: number;
   lessonIds: string[];
+  certificateStatus?: "disabled" | "active" | "paused";
 }
 
 export interface EnrollmentRecord {
@@ -76,6 +77,8 @@ export interface CertificateRecord {
   certificateCode: string;
   pdfUrl: string;
   issuedAt: string;
+  status?: string;
+  issuedBy?: string | null;
 }
 
 export interface OrderRecord {
@@ -117,6 +120,9 @@ export default function StudentsTable({
   const [selectedCourseFilter, setSelectedCourseFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name-asc" | "name-desc" | "enrollments-desc">("newest");
   const [enrollmentsList, setEnrollmentsList] = useState<EnrollmentRecord[]>(initialEnrollments);
+  const [certificatesList, setCertificatesList] = useState<CertificateRecord[]>(certificates);
+  const [issuingCourseId, setIssuingCourseId] = useState<string | null>(null);
+  const [issueError, setIssueError] = useState<string | null>(null);
 
   // Copy feedback state
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -156,9 +162,9 @@ export default function StudentsTable({
   }, [enrollmentsList]);
 
   const certifiedStudentsCount = useMemo(() => {
-    const certifiedUserIds = new Set(certificates.map((c) => c.userId));
+    const certifiedUserIds = new Set(certificatesList.map((c) => c.userId));
     return initialStudents.filter((s) => certifiedUserIds.has(s.id)).length;
-  }, [initialStudents, certificates]);
+  }, [initialStudents, certificatesList]);
 
   const studentsWithEnrollmentsCount = useMemo(() => {
     const enrolledUserIds = new Set(enrollmentsList.map((e) => e.userId));
@@ -216,7 +222,7 @@ export default function StudentsTable({
 
         const studentEnrollments = enrollmentsList.filter((e) => e.userId === student.id);
         const hasEnrollments = studentEnrollments.length > 0;
-        const isCertified = certificates.some((c) => c.userId === student.id);
+        const isCertified = certificatesList.some((c) => c.userId === student.id);
 
         // Tab filter
         if (filterTab === "enrolled" && !hasEnrollments) return false;
@@ -260,7 +266,7 @@ export default function StudentsTable({
     selectedCourseFilter,
     sortBy,
     enrollmentsList,
-    certificates,
+    certificatesList,
   ]);
 
   // Handle direct enrollment
@@ -383,6 +389,56 @@ export default function StudentsTable({
     setIsEnrollModalOpen(true);
   };
 
+  // Helper for admin issuing a certificate to a student directly
+  const handleIssueCertificate = async (studentId: string, courseId: string) => {
+    setIssuingCourseId(courseId);
+    setIssueError(null);
+    try {
+      const res = await fetch("/api/admin/certificates/issue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseId,
+          studentIds: [studentId],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to issue certificate");
+
+      if (data.results && data.results.length > 0) {
+        const resItem = data.results[0];
+        if (resItem.status === "issued" || resItem.status === "already_issued") {
+          setCertificatesList((prev) => {
+            const existingIdx = prev.findIndex(
+              (c) => c.userId === studentId && c.courseId === courseId
+            );
+            const newCert: CertificateRecord = {
+              id: resItem.certificateId || `cert-${Date.now()}`,
+              userId: studentId,
+              courseId,
+              certificateCode: resItem.certificateCode || "AB-CERT-ISSUED",
+              pdfUrl: `/api/certificates/download/${resItem.certificateCode}`,
+              issuedAt: new Date().toISOString(),
+              status: "issued",
+            };
+            if (existingIdx >= 0) {
+              const updated = [...prev];
+              updated[existingIdx] = newCert;
+              return updated;
+            }
+            return [newCert, ...prev];
+          });
+        } else if (resItem.status === "failed") {
+          throw new Error(resItem.message || "Certificate issuance failed for this student");
+        }
+      }
+    } catch (err: any) {
+      setIssueError(err.message || "Failed to issue certificate");
+    } finally {
+      setIssuingCourseId(null);
+    }
+  };
+
   // Calculation helper for estimated expiry date preview in enrollment modal
   const getEstimatedExpiryPreview = () => {
     if (!selectedCourseId) return null;
@@ -456,7 +512,7 @@ export default function StudentsTable({
             </div>
             <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-sky-500 inline-block" />
-              {certificates.length} total credentials issued
+              {certificatesList.length} total credentials issued
             </p>
           </CardContent>
         </Card>
@@ -677,7 +733,7 @@ export default function StudentsTable({
               {filteredStudents.length > 0 ? (
                 filteredStudents.map((student) => {
                   const studentEnrollments = enrollmentsList.filter((e) => e.userId === student.id);
-                  const studentCertificates = certificates.filter((c) => c.userId === student.id);
+                  const studentCertificates = certificatesList.filter((c) => c.userId === student.id);
                   const studentOrders = orders.filter((o) => o.userId === student.id);
 
                   const initials = student.full_name
@@ -978,7 +1034,7 @@ export default function StudentsTable({
         {filteredStudents.length > 0 ? (
           filteredStudents.map((student) => {
             const studentEnrollments = enrollmentsList.filter((e) => e.userId === student.id);
-            const studentCertificates = certificates.filter((c) => c.userId === student.id);
+            const studentCertificates = certificatesList.filter((c) => c.userId === student.id);
             const studentOrders = orders.filter((o) => o.userId === student.id);
 
             const initials = student.full_name
@@ -1263,7 +1319,7 @@ export default function StudentsTable({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 sm:p-5 bg-muted/30 border-b border-border/60">
               {(() => {
                 const sEnrs = enrollmentsList.filter((e) => e.userId === activeDossierStudent.id);
-                const sCerts = certificates.filter((c) => c.userId === activeDossierStudent.id);
+                const sCerts = certificatesList.filter((c) => c.userId === activeDossierStudent.id);
                 const sOrders = orders.filter((o) => o.userId === activeDossierStudent.id);
                 const sLessons = getStudentTotalCompletedLessons(activeDossierStudent.id);
                 const totalSpent = sOrders.reduce((sum, o) => sum + Number(o.amount || 0), 0);
@@ -1479,78 +1535,184 @@ export default function StudentsTable({
                 </div>
               )}
 
-              {/* TAB 2: Issued Certificates */}
+              {/* TAB 2: Issued & Eligible Certificates */}
               {dossierTab === "certificates" && (
-                <div className="space-y-3">
+                <div className="space-y-4">
+                  {issueError && (
+                    <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 rounded-xl text-xs flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <span>{issueError}</span>
+                    </div>
+                  )}
+
                   {(() => {
-                    const studentCerts = certificates.filter(
-                      (c) => c.userId === activeDossierStudent.id
+                    const studentEnrollments = enrollmentsList.filter(
+                      (e) => e.userId === activeDossierStudent.id
                     );
 
-                    if (studentCerts.length === 0) {
+                    if (studentEnrollments.length === 0) {
                       return (
                         <div className="text-center py-10 text-muted-foreground space-y-2">
                           <Award className="h-10 w-10 mx-auto text-muted-foreground/40" />
-                          <h5 className="font-bold text-sm text-foreground">No Issued Certificates</h5>
+                          <h5 className="font-bold text-sm text-foreground">No Enrolled Courses</h5>
                           <p className="text-xs">
-                            This student has not yet completed a certified course curriculum.
+                            This student is not currently enrolled in any course curriculum.
                           </p>
                         </div>
                       );
                     }
 
-                    return studentCerts.map((cert) => {
-                      const course = courses.find((c) => c.id === cert.courseId);
+                    return studentEnrollments.map((enr) => {
+                      const course = courses.find((c) => c.id === enr.courseId);
+                      const cert = certificatesList.find(
+                        (c) => c.userId === activeDossierStudent.id && c.courseId === enr.courseId
+                      );
+                      const progress = getStudentCourseProgress(activeDossierStudent.id, enr.courseId);
+                      const isComplete =
+                        progress.totalLessons > 0 && progress.completedCount >= progress.totalLessons;
+                      const isCourseActive = course?.certificateStatus === "active";
+                      const isEligible = isComplete && isCourseActive && !cert;
+                      const isPendingActivation = isComplete && !isCourseActive && !cert;
 
                       return (
                         <div
-                          key={cert.id}
-                          className="bg-card p-4 rounded-xl border border-border/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                          key={enr.id}
+                          className="bg-card p-4 rounded-xl border border-border/80 shadow-2xs space-y-3"
                         >
-                          <div className="flex items-start gap-3">
-                            <div className="h-10 w-10 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
-                              <ShieldCheck className="h-5 w-5" />
-                            </div>
-                            <div className="space-y-0.5">
-                              <h5 className="font-bold text-sm text-foreground font-outfit">
-                                {course?.title || "Certificate of Completion"}
-                              </h5>
-                              <div className="flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
-                                <span className="font-mono font-bold text-foreground">
-                                  {cert.certificateCode}
-                                </span>
-                                <span>•</span>
-                                <span>
-                                  Issued: {new Date(cert.issuedAt).toLocaleDateString("en-IN", {
-                                    day: "numeric",
-                                    month: "short",
-                                    year: "numeric",
-                                  })}
-                                </span>
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-start gap-3">
+                              <div
+                                className={cn(
+                                  "h-10 w-10 rounded-xl flex items-center justify-center shrink-0",
+                                  cert
+                                    ? "bg-sky-500/10 text-sky-600 dark:text-sky-400"
+                                    : isEligible
+                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                    : "bg-muted text-muted-foreground"
+                                )}
+                              >
+                                {cert ? (
+                                  <ShieldCheck className="h-5 w-5" />
+                                ) : (
+                                  <Award className="h-5 w-5" />
+                                )}
                               </div>
+                              <div className="space-y-0.5">
+                                <div className="flex items-center gap-2">
+                                  <h5 className="font-bold text-sm text-foreground font-outfit">
+                                    {course?.title || "Course Program"}
+                                  </h5>
+                                  {cert ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] font-bold px-2 py-0.2 rounded-full uppercase bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/20"
+                                    >
+                                      Issued
+                                    </Badge>
+                                  ) : isEligible ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] font-bold px-2 py-0.2 rounded-full uppercase bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
+                                    >
+                                      Eligible
+                                    </Badge>
+                                  ) : isPendingActivation ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] font-bold px-2 py-0.2 rounded-full uppercase bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+                                    >
+                                      Activation {course?.certificateStatus || "Disabled"}
+                                    </Badge>
+                                  ) : (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] font-bold px-2 py-0.2 rounded-full uppercase bg-muted text-muted-foreground"
+                                    >
+                                      In Progress
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
+                                  <span>
+                                    Progress: {progress.completedCount} / {progress.totalLessons} lessons ({progress.percentage}%)
+                                  </span>
+                                  {cert && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="font-mono font-bold text-foreground">
+                                        {cert.certificateCode}
+                                      </span>
+                                      <span>•</span>
+                                      <span>
+                                        Issued: {new Date(cert.issuedAt).toLocaleDateString("en-IN", {
+                                          day: "numeric",
+                                          month: "short",
+                                          year: "numeric",
+                                        })}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-2 self-end sm:self-center">
+                              {cert ? (
+                                <>
+                                  <Link
+                                    href={`/verify-certificate/${cert.certificateCode}`}
+                                    target="_blank"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-background text-xs font-semibold text-foreground hover:bg-muted transition-colors"
+                                  >
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                    <span>Verify</span>
+                                  </Link>
+                                  {cert.pdfUrl && (
+                                    <a
+                                      href={cert.pdfUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors shadow-2xs"
+                                    >
+                                      <Download className="h-3.5 w-3.5" />
+                                      <span>PDF</span>
+                                    </a>
+                                  )}
+                                </>
+                              ) : isEligible ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  disabled={issuingCourseId === enr.courseId}
+                                  onClick={() =>
+                                    handleIssueCertificate(activeDossierStudent.id, enr.courseId)
+                                  }
+                                  className="h-8 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs gap-1.5"
+                                >
+                                  <Award className="h-3.5 w-3.5" />
+                                  <span>
+                                    {issuingCourseId === enr.courseId
+                                      ? "Issuing..."
+                                      : "Issue Certificate"}
+                                  </span>
+                                </Button>
+                              ) : isPendingActivation ? (
+                                <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                                  Issuance inactive in course settings
+                                </span>
+                              ) : (
+                                <span className="text-[11px] text-muted-foreground">
+                                  Requires 100% curriculum completion
+                                </span>
+                              )}
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2">
-                            <Link
-                              href={`/verify/${cert.certificateCode}`}
-                              target="_blank"
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-background text-xs font-semibold text-foreground hover:bg-muted transition-colors"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                              <span>Verify</span>
-                            </Link>
-                            {cert.pdfUrl && (
-                              <a
-                                href={cert.pdfUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors shadow-2xs"
-                              >
-                                <Download className="h-3.5 w-3.5" />
-                                <span>PDF</span>
-                              </a>
-                            )}
+                          {/* Progress bar */}
+                          <div className="space-y-1">
+                            <Progress value={progress.percentage} className="h-1.5 bg-muted rounded-full" />
                           </div>
                         </div>
                       );

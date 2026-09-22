@@ -133,6 +133,9 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
         thumbnail_url: courseObj.thumbnailUrl || "",
         is_published: !!courseObj.isPublished,
         access_days: courseObj.accessDays ?? null,
+        certificate_status: courseObj.certificateStatus || "disabled",
+        certificate_activated_at: courseObj.certificateActivatedAt ? new Date(courseObj.certificateActivatedAt).toISOString() : null,
+        certificate_activated_by: courseObj.certificateActivatedBy || null,
       }}
       initialModules={formattedModules}
       initialLessons={formattedLessons}
