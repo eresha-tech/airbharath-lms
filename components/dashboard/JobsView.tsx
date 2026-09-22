@@ -27,6 +27,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { track } from "@/lib/analytics";
 
 export interface JobItemData {
   id: string;
@@ -47,6 +48,15 @@ export function JobsView({ jobs }: JobsViewProps) {
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [selectedJob, setSelectedJob] = useState<JobItemData | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleSelectJob = (job: JobItemData) => {
+    setSelectedJob(job);
+    track("job_opened", {
+      job_id: job.id,
+      title: job.title,
+      company: job.company,
+    });
+  };
 
   // Extract unique locations for filtering
   const uniqueLocations = useMemo(() => {
@@ -325,6 +335,7 @@ export function JobsView({ jobs }: JobsViewProps) {
                     {job.link ? (
                       <Button
                         asChild
+                        onClick={() => handleSelectJob(job)}
                         className="flex-1 bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <a href={job.link} target="_blank" rel="noopener noreferrer">
@@ -334,7 +345,7 @@ export function JobsView({ jobs }: JobsViewProps) {
                       </Button>
                     ) : (
                       <Button
-                        onClick={() => setSelectedJob(job)}
+                        onClick={() => handleSelectJob(job)}
                         className="flex-1 bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <span>View Opportunity</span>
@@ -343,7 +354,7 @@ export function JobsView({ jobs }: JobsViewProps) {
 
                     <Button
                       variant="outline"
-                      onClick={() => setSelectedJob(job)}
+                      onClick={() => handleSelectJob(job)}
                       className="border-border text-foreground hover:text-primary hover:bg-muted text-xs font-semibold h-10 px-3.5 rounded-xl cursor-pointer"
                       title="Read full job description"
                     >

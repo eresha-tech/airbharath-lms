@@ -32,6 +32,8 @@ interface UserProfile {
   role?: string | null;
 }
 
+import { track, resetUser } from "@/lib/analytics";
+
 export function UserMenu() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,6 +62,8 @@ export function UserMenu() {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
+      track("user_signed_out");
+      resetUser();
       await fetch("/api/auth/logout", { method: "POST" });
       router.push("/login");
       router.refresh();

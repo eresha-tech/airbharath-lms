@@ -165,6 +165,10 @@ export default async function LessonPage({ params }: LessonPageProps) {
           <div className="overflow-hidden rounded-2xl sm:rounded-3xl bg-black border border-border/80 shadow-md relative">
             <HlsPlayer
               videoId={activeVideoId}
+              courseId={courseObj.id}
+              lessonId={lessonObj.id}
+              lessonTitle={lessonObj.title}
+              lessonIndex={currentLessonIdx >= 0 ? currentLessonIdx + 1 : undefined}
               watermarkEmail={session.email || session.fullName || "student@airbharath.in"}
               watermarkPhone={session.phone || undefined}
             />

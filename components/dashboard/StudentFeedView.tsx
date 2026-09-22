@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { track } from "@/lib/analytics";
 
 export interface FeedPostItem {
   id: string;
@@ -91,7 +92,13 @@ export function StudentFeedView({
     };
   }, [lightboxImage]);
 
+  const handleOpenImage = (postId: string, imageUrl: string, alt: string) => {
+    track("feed_item_opened", { feed_id: postId });
+    setLightboxImage({ url: imageUrl, alt });
+  };
+
   const handleShare = (postId: string, content: string) => {
+    track("feed_item_opened", { feed_id: postId });
     const url = typeof window !== "undefined" ? window.location.href : "";
     if (navigator.share) {
       navigator
@@ -271,10 +278,11 @@ export function StudentFeedView({
                         <button
                           type="button"
                           onClick={() =>
-                            setLightboxImage({
-                              url: post.imageUrl!,
-                              alt: `Attachment for announcement by ${authorName}`,
-                            })
+                            handleOpenImage(
+                              post.id,
+                              post.imageUrl!,
+                              `Attachment for announcement by ${authorName}`
+                            )
                           }
                           className="absolute bottom-3 right-3 px-3 py-1.5 bg-background/90 hover:bg-background text-foreground backdrop-blur-xs rounded-xl text-xs font-bold border border-border/80 shadow-xs flex items-center gap-1.5 transition-all opacity-90 hover:opacity-100 cursor-pointer"
                           title="Expand image"
@@ -299,10 +307,10 @@ export function StudentFeedView({
                         title="Share this announcement link"
                       >
                         {copiedId === post.id ? (
-                          <span className="text-emerald-600 flex items-center gap-1 font-bold">
-                            <Check className="w-3.5 h-3.5" />
-                            <span>Link Copied</span>
-                          </span>
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="text-emerald-600 font-bold">Link Copied</span>
+                          </>
                         ) : (
                           <>
                             <Share2 className="w-3.5 h-3.5" />
@@ -318,34 +326,34 @@ export function StudentFeedView({
           )}
         </div>
 
-        {/* Secondary Column: Real Data Sidebar */}
+        {/* Sticky Desktop Side Rail */}
         <div className="space-y-6">
-          {/* Section 1: Active Learning Track */}
-          {activeCourse ? (
+          {/* Section 1: Active In-Progress Course Card */}
+          {activeCourse && (
             <div className="bg-card border border-border/80 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold font-outfit uppercase tracking-wider text-primary">
-                  In-Progress Course
+                <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded-md">
+                  Active Learning
                 </span>
                 <span className="text-xs font-bold text-foreground">
                   {activeCourse.percent}%
                 </span>
               </div>
 
-              <div className="space-y-1">
-                <h4 className="font-bold text-sm font-outfit text-foreground line-clamp-2">
+              <div className="space-y-1.5">
+                <h4 className="font-bold text-sm text-foreground font-outfit line-clamp-2">
                   {activeCourse.title}
                 </h4>
-                <p className="text-[11px] text-muted-foreground">
-                  {activeCourse.completedLessons} of {activeCourse.totalLessons} Lessons Completed
+                <p className="text-xs text-muted-foreground">
+                  {activeCourse.completedLessons} of {activeCourse.totalLessons} lessons completed
                 </p>
               </div>
 
-              <Progress value={activeCourse.percent} className="h-2" />
+              <Progress value={activeCourse.percent} className="h-2 rounded-full" />
 
               <Button
                 asChild
-                className="w-full bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 rounded-xl shadow-xs"
               >
                 <Link
                   href={
@@ -353,40 +361,22 @@ export function StudentFeedView({
                       ? `/dashboard/courses/${activeCourse.id}/lessons/${activeCourse.resumeLessonId}`
                       : `/dashboard/courses/${activeCourse.id}`
                   }
+                  className="flex items-center justify-center gap-1.5"
                 >
-                  <Play className="h-3.5 w-3.5 fill-current" />
+                  <Play className="w-3.5 h-3.5 fill-current" />
                   <span>Resume Learning</span>
-                </Link>
-              </Button>
-            </div>
-          ) : (
-            <div className="bg-card border border-border/80 rounded-3xl p-5 sm:p-6 shadow-xs space-y-3">
-              <span className="text-xs font-bold font-outfit uppercase tracking-wider text-primary">
-                Learning Status
-              </span>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                You have completed all active enrolled modules or have not started a course yet.
-              </p>
-              <Button
-                asChild
-                variant="outline"
-                className="w-full border-border text-xs font-semibold h-9 rounded-xl"
-              >
-                <Link href="/courses" className="flex items-center justify-center gap-1.5">
-                  <span>Explore Course Catalog</span>
-                  <ArrowRight className="w-3 h-3" />
                 </Link>
               </Button>
             </div>
           )}
 
-          {/* Section 2: Recent Job Opportunities from DB */}
+          {/* Section 2: Recent Job Opportunities Card */}
           {recentJobs.length > 0 && (
             <div className="bg-card border border-border/80 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold font-outfit uppercase tracking-wider text-foreground flex items-center gap-1.5">
                   <Briefcase className="w-3.5 h-3.5 text-primary" />
-                  <span>Career Opportunities</span>
+                  <span>Latest Openings</span>
                 </h4>
                 <Link
                   href="/dashboard/jobs"
@@ -402,6 +392,13 @@ export function StudentFeedView({
                   <Link
                     key={job.id}
                     href="/dashboard/jobs"
+                    onClick={() =>
+                      track("job_opened", {
+                        job_id: job.id,
+                        title: job.title,
+                        company: job.company,
+                      })
+                    }
                     className="block p-3.5 bg-muted/40 border border-border/60 rounded-2xl hover:bg-muted/70 transition-colors space-y-1.5 group"
                   >
                     <div className="font-bold text-xs text-foreground group-hover:text-primary transition-colors line-clamp-1">

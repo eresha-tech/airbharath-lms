@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { track } from "@/lib/analytics";
 
 interface LessonCompleteButtonProps {
   lessonId: string;
@@ -59,6 +60,19 @@ export function LessonCompleteButton({
       const data = await res.json();
       if (res.ok) {
         setIsCompleted(data.isCompleted);
+        if (data.isCompleted) {
+          track("lesson_completed", {
+            lesson_id: lessonId,
+            course_id: courseId,
+            course_progress_percent: data.progressPercent ?? null,
+          });
+
+          if (data.progressPercent === 100) {
+            track("course_completed", {
+              course_id: courseId,
+            });
+          }
+        }
         router.refresh();
       }
     } catch (error) {

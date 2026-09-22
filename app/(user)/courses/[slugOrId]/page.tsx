@@ -17,6 +17,7 @@ import {
   Layers,
 } from "lucide-react";
 import EnrollButton from "@/components/EnrollButton";
+import { CourseViewTracker } from "@/components/courses/CourseViewTracker";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { courses, enrollments, orders } from "@/lib/db/schema";
@@ -160,6 +161,13 @@ export default async function CoursePage({ params }: CoursePageProps) {
 
   return (
     <main className="flex-1 pb-20">
+      <CourseViewTracker
+        courseId={course.id}
+        slug={course.slug}
+        title={course.title}
+        price={Number(course.price) || 0}
+        isFree={Number(course.price) === 0}
+      />
       {/* 1. Hero Section Header */}
       <div className="relative w-full overflow-hidden text-white bg-gradient-to-br from-[#014a62] via-[#013c50] to-[#012c3b] py-10 md:py-16 border-b border-[#014a62]/40">
         {course.thumbnailUrl && (

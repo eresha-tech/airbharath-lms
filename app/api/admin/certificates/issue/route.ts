@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { adminIssueCertificates } from '@/lib/certificate-service';
+import { serverTrack } from '@/lib/analytics-server';
 
 export async function POST(req: Request) {
   try {
@@ -28,6 +29,15 @@ export async function POST(req: Request) {
       studentIds,
       allEligible: !!allEligible,
       adminId: session.id,
+    });
+
+    // Track admin operational certificate issuance event
+    await serverTrack(session.id, 'admin_certificates_issued', {
+      course_id: courseId,
+      issuance_mode: allEligible ? 'all_eligible' : 'selected',
+      issued_count: results.issuedCount,
+      skipped_count: results.skippedCount,
+      already_issued_count: results.alreadyIssuedCount,
     });
 
     return NextResponse.json({

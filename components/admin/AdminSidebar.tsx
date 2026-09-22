@@ -115,6 +115,8 @@ export function isAdminRouteActive(pathname: string, href: string, exact?: boole
   return pathname.startsWith(href);
 }
 
+import { track, resetUser } from "@/lib/analytics";
+
 export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -122,6 +124,8 @@ export function AdminSidebar() {
 
   const handleLogout = async () => {
     try {
+      track("user_signed_out");
+      resetUser();
       await fetch("/api/auth/logout", { method: "POST" });
       router.push("/login");
       router.refresh();

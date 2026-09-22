@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { track, identifyUser } from '@/lib/analytics';
 
 function LoginForm() {
   const router = useRouter();
@@ -165,6 +166,14 @@ function LoginForm() {
         setMessage('Mobile verified! Please tell us your name to set up your learning profile.');
         setIsSuccess(true);
       } else {
+        if (data.user?.id) {
+          identifyUser(data.user.id, {
+            email: data.user.email,
+            name: data.user.fullName,
+            role: data.user.role || 'student',
+          });
+          track('user_signed_in', { role: data.user.role || 'student' });
+        }
         setIsSuccess(true);
         setMessage('Login successful! Redirecting to your destination...');
         const dest = callbackUrl || (data.user?.role === 'admin' ? '/admin' : '/dashboard');
@@ -205,6 +214,15 @@ function LoginForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update profile');
+
+      if (data.user?.id) {
+        identifyUser(data.user.id, {
+          email: data.user.email,
+          name: data.user.fullName,
+          role: data.user.role || 'student',
+        });
+        track('user_signed_in', { role: data.user.role || 'student', is_new_user: true });
+      }
 
       setIsSuccess(true);
       setMessage('Profile setup complete! Redirecting to your dashboard...');

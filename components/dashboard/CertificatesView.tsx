@@ -34,6 +34,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { track } from "@/lib/analytics";
 
 export interface EarnedCertificateData {
   id: string;
@@ -89,6 +90,15 @@ export function CertificatesView({
   const inProgressCount = inProgressTracks.length;
   const totalCredentialsCount = earnedCount + inProgressCount;
 
+  const handleOpenCertModal = (cert: EarnedCertificateData) => {
+    setSelectedCert(cert);
+    track("certificate_viewed", {
+      certificate_id: cert.id,
+      course_id: cert.courseId,
+      certificate_code: cert.certificateCode,
+    });
+  };
+
   const handleCopy = (text: string, type: "id" | "link") => {
     navigator.clipboard.writeText(text);
     if (type === "id") {
@@ -103,6 +113,8 @@ export function CertificatesView({
   const handleClaim = async (courseId: string) => {
     setClaimingCourseId(courseId);
     setClaimError(null);
+    track("certificate_claim_started", { course_id: courseId });
+
     try {
       const res = await fetch("/api/certificates/claim", {
         method: "POST",
@@ -116,6 +128,12 @@ export function CertificatesView({
       }
 
       if (data.certificate) {
+        track("certificate_claimed", {
+          course_id: courseId,
+          certificate_id: data.certificate.id,
+          certificate_code: data.certificate.certificateCode,
+        });
+
         setSelectedCert({
           id: data.certificate.id,
           courseId,
@@ -402,7 +420,7 @@ export function CertificatesView({
                         {/* View Credential Details Modal */}
                         <Button
                           variant="outline"
-                          onClick={() => setSelectedCert(cert)}
+                          onClick={() => handleOpenCertModal(cert)}
                           className="border-slate-200 dark:border-zinc-700 text-foreground hover:text-primary hover:bg-muted/60 text-xs font-semibold h-10 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                           <FileText className="h-3.5 w-3.5 text-primary" />

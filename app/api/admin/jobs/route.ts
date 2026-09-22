@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { jobs } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { serverTrack } from "@/lib/analytics-server";
 
 export async function GET() {
   try {
@@ -46,6 +47,12 @@ export async function POST(req: Request) {
         postedBy: session.id,
       })
       .returning();
+
+    await serverTrack(session.id, "admin_job_created", {
+      job_id: newJob.id,
+      title: newJob.title,
+      company: newJob.company,
+    });
 
     return NextResponse.json({ job: newJob });
   } catch (error: any) {

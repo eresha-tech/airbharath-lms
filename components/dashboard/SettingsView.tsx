@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { track, resetUser } from "@/lib/analytics";
 
 export interface SettingsUser {
   id: string;
@@ -183,6 +184,8 @@ export function SettingsView({ initialUser, stats }: SettingsViewProps) {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
+      track("user_signed_out");
+      resetUser();
       await fetch("/api/auth/logout", { method: "POST" });
       router.push("/login");
       router.refresh();

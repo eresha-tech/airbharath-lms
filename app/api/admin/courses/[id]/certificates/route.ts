@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { courses, enrollments, users, certificates } from '@/lib/db/schema';
 import { eq, and, desc, inArray } from 'drizzle-orm';
 import { getCertificateEligibility, getCourseLessonIds } from '@/lib/certificate-service';
+import { serverTrack } from '@/lib/analytics-server';
 
 export async function GET(
   req: Request,
@@ -187,6 +188,12 @@ export async function PATCH(
       .set(updatePayload)
       .where(eq(courses.id, courseId))
       .returning();
+
+    // Track admin certificate status change event
+    await serverTrack(session.id, 'admin_certificate_status_changed', {
+      course_id: courseId,
+      status: updated.certificateStatus,
+    });
 
     return NextResponse.json({
       success: true,

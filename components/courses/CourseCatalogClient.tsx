@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Search, X, BookOpen, Compass, Sparkles } from "lucide-react";
 import { CourseCard } from "@/components/CourseCard";
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics";
 
 export interface CatalogCourseItem {
   id: string;
@@ -30,39 +31,71 @@ interface CourseCatalogClientProps {
   categories: string[];
 }
 
+function matchesCourse(
+  course: CatalogCourseItem,
+  searchQuery: string,
+  selectedCategory: string
+): boolean {
+  const normalizedQuery = searchQuery.toLowerCase().trim();
+  const matchesSearch =
+    !normalizedQuery ||
+    course.title.toLowerCase().includes(normalizedQuery) ||
+    course.description?.toLowerCase().includes(normalizedQuery) ||
+    course.slug?.toLowerCase().includes(normalizedQuery);
+
+  const courseCategory =
+    course.badge || course.category?.name || "Certificate Program";
+  const normalizedCategory = selectedCategory.toLowerCase();
+  const matchesCategory =
+    selectedCategory === "All Programs" ||
+    courseCategory.toLowerCase().includes(normalizedCategory) ||
+    normalizedCategory.includes(courseCategory.toLowerCase());
+
+  return Boolean(matchesSearch && matchesCategory);
+}
+
 export function CourseCatalogClient({
   courses,
   categories,
 }: CourseCatalogClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Programs");
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const filteredCourses = useMemo(() => {
-    return courses.filter((course) => {
-      // Search matching (title, description, slug)
-      const matchesSearch =
-        !searchQuery.trim() ||
-        course.title.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
-        (course.description &&
-          course.description.toLowerCase().includes(searchQuery.toLowerCase().trim())) ||
-        (course.slug &&
-          course.slug.toLowerCase().includes(searchQuery.toLowerCase().trim()));
+  const filteredCourses = useMemo(
+    () => courses.filter((course) => matchesCourse(course, searchQuery, selectedCategory)),
+    [courses, searchQuery, selectedCategory]
+  );
 
-      // Category matching
-      const courseCategory =
-        course.badge || course.category?.name || "Certificate Program";
-      const matchesCategory =
-        selectedCategory === "All Programs" ||
-        courseCategory.toLowerCase().includes(selectedCategory.toLowerCase()) ||
-        selectedCategory.toLowerCase().includes(courseCategory.toLowerCase());
+  // Debounced search query tracking
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    if (val.trim().length >= 2) {
+      searchTimeoutRef.current = setTimeout(() => {
+        track("course_search", {
+          query_length: val.trim().length,
+          results_count: courses.filter((course) => matchesCourse(course, val, selectedCategory)).length,
+        });
+      }, 600);
+    }
+  };
 
-      return matchesSearch && matchesCategory;
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category);
+    track("course_filter_used", {
+      filter_type: "category",
+      filter_value: category,
     });
-  }, [courses, searchQuery, selectedCategory]);
+  };
 
   const handleReset = () => {
     setSearchQuery("");
     setSelectedCategory("All Programs");
+    track("course_filter_used", {
+      filter_type: "reset",
+      filter_value: "All Programs",
+    });
   };
 
   if (courses.length === 0) {
@@ -95,13 +128,13 @@ export function CourseCatalogClient({
               type="text"
               placeholder="Search by title, topic, or keyword..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full rounded-xl bg-muted/40 border border-input px-4 py-2.5 pl-10 pr-9 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary focus:bg-background transition-colors placeholder:text-muted-foreground/70"
             />
             {searchQuery && (
               <button
                 type="button"
-                onClick={() => setSearchQuery("")}
+                onClick={handleReset}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer"
                 aria-label="Clear search"
               >
@@ -122,7 +155,7 @@ export function CourseCatalogClient({
           <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 scrollbar-none">
             <button
               type="button"
-              onClick={() => setSelectedCategory("All Programs")}
+              onClick={() => handleCategorySelect("All Programs")}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 selectedCategory === "All Programs"
                   ? "bg-primary text-primary-foreground shadow-xs"
@@ -137,7 +170,7 @@ export function CourseCatalogClient({
                 <button
                   key={cat}
                   type="button"
-                  onClick={() => setSelectedCategory(cat)}
+                  onClick={() => handleCategorySelect(cat)}
                   className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                     selectedCategory === cat
                       ? "bg-primary text-primary-foreground shadow-xs"

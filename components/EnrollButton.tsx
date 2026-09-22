@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Script from "next/script";
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics";
 
 interface EnrollButtonProps {
   courseId: string;
@@ -113,6 +114,15 @@ export default function EnrollButton({
       return;
     }
 
+    const finalAmount = appliedCoupon ? appliedCoupon.finalAmount : price;
+    track("enrollment_started", {
+      course_id: courseId,
+      course_title: courseTitle,
+      price,
+      final_price: finalAmount,
+      coupon_code: appliedCoupon ? appliedCoupon.code : null,
+    });
+
     setIsEnrolling(true);
 
     try {
@@ -133,6 +143,14 @@ export default function EnrollButton({
         setIsEnrolling(false);
         return;
       }
+
+      track("checkout_started", {
+        course_id: courseId,
+        course_title: courseTitle,
+        amount: order.amount ? order.amount / 100 : finalAmount,
+        coupon_code: appliedCoupon ? appliedCoupon.code : null,
+        order_id: order.id,
+      });
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,

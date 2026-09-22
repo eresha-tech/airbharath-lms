@@ -20,9 +20,14 @@ import {
   Sliders,
   Gauge,
 } from "lucide-react";
+import { track } from "@/lib/analytics";
 
 interface HlsPlayerProps {
   videoId: string;
+  courseId?: string;
+  lessonId?: string;
+  lessonTitle?: string;
+  lessonIndex?: number;
   watermarkText?: string;
   watermarkEmail?: string;
   watermarkPhone?: string;
@@ -72,6 +77,10 @@ function formatTime(seconds: number): string {
 
 export function HlsPlayer({
   videoId,
+  courseId,
+  lessonId,
+  lessonTitle,
+  lessonIndex,
   watermarkText = "Airbharath LMS",
   watermarkEmail,
   watermarkPhone,
@@ -83,6 +92,16 @@ export function HlsPlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const hideControlsTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Analytics milestone & start tracking refs
+  const hasTrackedStartRef = useRef<boolean>(false);
+  const milestonesReachedRef = useRef<Set<number>>(new Set());
+
+  // Reset analytics progress trackers when video/lesson changes
+  useEffect(() => {
+    hasTrackedStartRef.current = false;
+    milestonesReachedRef.current = new Set();
+  }, [videoId, lessonId]);
 
   // Core stream states
   const [loading, setLoading] = useState(true);
@@ -339,6 +358,7 @@ export function HlsPlayer({
     setCurrentTime(video.currentTime);
 
     // Update duration if available
+    const activeDuration = video.duration && isFinite(video.duration) && video.duration > 0 ? video.duration : duration;
     if (video.duration && isFinite(video.duration) && video.duration > 0) {
       setDuration((prev) => (prev > 0 ? prev : video.duration));
     }
@@ -349,6 +369,26 @@ export function HlsPlayer({
         if (video.buffered.start(i) <= video.currentTime && video.currentTime <= video.buffered.end(i)) {
           setBufferedEnd(video.buffered.end(i));
           break;
+        }
+      }
+    }
+
+    // Track lesson progress milestone analytics (25%, 50%, 75%, 90%, 100%)
+    if (activeDuration > 0 && (lessonId || courseId)) {
+      const currentPercent = (video.currentTime / activeDuration) * 100;
+      const milestones = [25, 50, 75, 90, 100];
+      for (const m of milestones) {
+        if (currentPercent >= m && !milestonesReachedRef.current.has(m)) {
+          milestonesReachedRef.current.add(m);
+          track("lesson_progress", {
+            course_id: courseId,
+            lesson_id: lessonId,
+            lesson_title: lessonTitle,
+            milestone: m,
+            progress_percent: Math.min(100, Math.round(currentPercent)),
+            duration: Math.round(activeDuration),
+            current_time: Math.round(video.currentTime),
+          });
         }
       }
     }
@@ -591,6 +631,18 @@ export function HlsPlayer({
         onPlay={() => {
           setIsPlaying(true);
           setIsBuffering(false);
+          if (!hasTrackedStartRef.current) {
+            hasTrackedStartRef.current = true;
+            if (lessonId || courseId) {
+              track("lesson_started", {
+                course_id: courseId,
+                lesson_id: lessonId,
+                lesson_title: lessonTitle,
+                lesson_index: lessonIndex,
+                video_id: videoId,
+              });
+            }
+          }
         }}
         onPause={() => setIsPlaying(false)}
         onTimeUpdate={handleTimeUpdate}

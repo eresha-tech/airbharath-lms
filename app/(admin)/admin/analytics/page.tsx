@@ -19,13 +19,14 @@ import AnalyticsClient, {
   AnalyticsUser,
   AnalyticsCertificate,
 } from "@/components/admin/AnalyticsClient";
+import { queryPostHogBehavioralMetrics } from "@/lib/posthog-query";
 import { LineChart } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Analytics & Reports | AirBharath LMS",
-  description: "Executive analytics, cohort syllabus progression, and verified financial reporting.",
+  description: "Executive analytics, cohort syllabus progression, verified financial reporting, and product analytics.",
 };
 
 export default async function AdminAnalyticsPage() {
@@ -38,6 +39,7 @@ export default async function AdminAnalyticsPage() {
     usersList,
     coursesList,
     certificatesList,
+    initialBehavioralMetrics,
   ] = await Promise.all([
     db.query.modules.findMany(),
     db.query.lessons.findMany(),
@@ -59,6 +61,7 @@ export default async function AdminAnalyticsPage() {
     db.query.certificates.findMany({
       orderBy: [desc(certificates.issuedAt)],
     }),
+    queryPostHogBehavioralMetrics("30d"),
   ]);
 
   // Map modules to courses
@@ -128,6 +131,7 @@ export default async function AdminAnalyticsPage() {
     slug: c.slug,
     price: Number(c.price) || 0,
     is_published: c.isPublished,
+    certificate_status: c.certificateStatus || "disabled",
     lesson_count: courseLessonCounts[c.id] || 0,
   }));
 
@@ -143,12 +147,14 @@ export default async function AdminAnalyticsPage() {
     id: c.id,
     user_id: c.userId,
     course_id: c.courseId,
-    certificate_number: c.certificateNumber,
+    certificate_number: c.certificateCode || "",
+    status: c.status || "issued",
+    issued_by: c.issuedBy || null,
     issued_at: c.issuedAt ? new Date(c.issuedAt).toISOString() : new Date().toISOString(),
   }));
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fade-in">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in pb-12">
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-5">
         <div className="space-y-1">
@@ -161,7 +167,7 @@ export default async function AdminAnalyticsPage() {
             </h1>
           </div>
           <p className="text-muted-foreground text-xs sm:text-sm">
-            Understand course performance, learner activity, enrollments, and revenue using real LMS data.
+            Audited database metrics and PostHog product telemetry for AirBharath academy.
           </p>
         </div>
       </div>
@@ -173,6 +179,7 @@ export default async function AdminAnalyticsPage() {
         initialCourses={formattedCourses}
         initialUsers={formattedUsers}
         initialCertificates={formattedCertificates}
+        initialBehavioralMetrics={initialBehavioralMetrics}
         courseLessonCounts={courseLessonCounts}
         enrollmentCompletions={enrollmentCompletions}
         lessonToCourse={lessonToCourse}
