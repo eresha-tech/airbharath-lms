@@ -22,7 +22,11 @@ export default async function PreviewLessonPage({ params }: PreviewLessonPagePro
     where: eq(lessons.id, lessonId),
   });
 
-  if (!lessonObj || !lessonObj.isFreePreview) {
+  if (
+    !lessonObj ||
+    !lessonObj.isFreePreview ||
+    (lessonObj.deliveryType === 'recorded' && lessonObj.releaseAt && new Date(lessonObj.releaseAt) > new Date())
+  ) {
     return redirect(`/courses/${courseId}`);
   }
 

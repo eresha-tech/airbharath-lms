@@ -33,6 +33,10 @@ import {
   Search,
   Users,
   RefreshCw,
+  Radio,
+  CalendarClock,
+  LinkIcon,
+  Lock,
 } from "lucide-react";
 import { VideoUploader } from "@/components/admin/VideoUploader";
 import Link from "next/link";
@@ -54,6 +58,8 @@ export interface FormattedMaterial {
   file_size?: number | null;
 }
 
+import { getLessonAvailability, formatISTDateTime } from "@/lib/lesson-availability";
+
 export interface FormattedLesson {
   id: string;
   module_id: string;
@@ -64,6 +70,11 @@ export interface FormattedLesson {
   video_status?: string | null;
   order_index: number;
   is_free_preview: boolean;
+  delivery_type: 'recorded' | 'live';
+  scheduled_at?: string | null;
+  release_at?: string | null;
+  duration_minutes?: number | null;
+  meeting_url?: string | null;
   materials?: FormattedMaterial[];
 }
 
@@ -294,6 +305,11 @@ export default function CourseEditor({
   const [lessonSavedVideoStatus, setLessonSavedVideoStatus] = useState<string | null>(null);
   const [lessonIsFree, setLessonIsFree] = useState(false);
   const [lessonOrder, setLessonOrder] = useState("1");
+  const [lessonDeliveryType, setLessonDeliveryType] = useState<'recorded' | 'live'>('recorded');
+  const [lessonScheduledAt, setLessonScheduledAt] = useState("");
+  const [lessonReleaseAt, setLessonReleaseAt] = useState("");
+  const [lessonDuration, setLessonDuration] = useState("");
+  const [lessonMeetingUrl, setLessonMeetingUrl] = useState("");
   const [lessonMaterialsList, setLessonMaterialsList] = useState<FormattedMaterial[]>([]);
   const [uploadingMaterial, setUploadingMaterial] = useState(false);
   const [savingLesson, setSavingLesson] = useState(false);
@@ -499,6 +515,11 @@ export default function CourseEditor({
     setLessonSavedVideoId(null);
     setLessonSavedVideoStatus(null);
     setLessonIsFree(false);
+    setLessonDeliveryType('recorded');
+    setLessonScheduledAt("");
+    setLessonReleaseAt("");
+    setLessonDuration("");
+    setLessonMeetingUrl("");
     setLessonMaterialsList([]);
     const moduleLessons = lessons.filter((l) => l.module_id === moduleId);
     setLessonOrder(String(moduleLessons.length + 1));
@@ -516,6 +537,11 @@ export default function CourseEditor({
     setLessonSavedVideoStatus(lesson.video_status || null);
     setLessonIsFree(lesson.is_free_preview || false);
     setLessonOrder(String(lesson.order_index));
+    setLessonDeliveryType(lesson.delivery_type || 'recorded');
+    setLessonScheduledAt(lesson.scheduled_at ? new Date(lesson.scheduled_at).toISOString().slice(0, 16) : "");
+    setLessonReleaseAt(lesson.release_at ? new Date(lesson.release_at).toISOString().slice(0, 16) : "");
+    setLessonDuration(lesson.duration_minutes ? String(lesson.duration_minutes) : "");
+    setLessonMeetingUrl(lesson.meeting_url || "");
     setLessonMaterialsList(lesson.materials || []);
     setLessonModalTab("details");
     setShowLessonModal(true);
@@ -539,6 +565,11 @@ export default function CourseEditor({
           videoUrl: lessonSavedVideoId || undefined,
           isFreePreview: lessonIsFree,
           orderIndex: parseInt(lessonOrder) || 1,
+          deliveryType: lessonDeliveryType,
+          scheduledAt: lessonDeliveryType === 'live' ? (lessonScheduledAt || null) : null,
+          releaseAt: lessonDeliveryType === 'recorded' ? (lessonReleaseAt || null) : null,
+          durationMinutes: lessonDeliveryType === 'live' ? (lessonDuration || null) : null,
+          meetingUrl: lessonDeliveryType === 'live' ? (lessonMeetingUrl.trim() || null) : null,
         }),
       });
 
@@ -554,6 +585,11 @@ export default function CourseEditor({
           video_status: lessonSavedVideoStatus || null,
           order_index: data.lesson.orderIndex,
           is_free_preview: data.lesson.isFreePreview,
+          delivery_type: data.lesson.deliveryType || 'recorded',
+          scheduled_at: data.lesson.scheduledAt || null,
+          release_at: data.lesson.releaseAt || null,
+          duration_minutes: data.lesson.durationMinutes || null,
+          meeting_url: data.lesson.meetingUrl || null,
           materials: lessonMaterialsList,
         };
 
@@ -1094,6 +1130,18 @@ export default function CourseEditor({
                                               Free Preview
                                             </span>
                                           )}
+
+                                          {les.delivery_type === 'live' ? (
+                                            <span className="px-2 py-0.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded-full font-bold uppercase text-[9px] inline-flex items-center gap-1">
+                                              <Radio className="h-2.5 w-2.5" />
+                                              <span>LIVE {les.scheduled_at ? `(${formatISTDateTime(les.scheduled_at, { shortDate: true })})` : ''}</span>
+                                            </span>
+                                          ) : les.release_at && new Date(les.release_at) > new Date() ? (
+                                            <span className="px-2 py-0.5 bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 rounded-full font-bold uppercase text-[9px] inline-flex items-center gap-1">
+                                              <Lock className="h-2.5 w-2.5" />
+                                              <span>SCHEDULED ({formatISTDateTime(les.release_at, { shortDate: true })})</span>
+                                            </span>
+                                          ) : null}
 
                                           {les.video_status === "ready" ? (
                                             <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold">
@@ -2079,6 +2127,164 @@ export default function CourseEditor({
                       </label>
                     </div>
                   </div>
+
+                  {/* Delivery Type */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider">
+                      Delivery Type
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setLessonDeliveryType('recorded')}
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                          lessonDeliveryType === 'recorded'
+                            ? "bg-primary/10 border-primary text-primary"
+                            : "bg-muted/30 border-border/80 text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <Video className="h-3.5 w-3.5" />
+                        <span>Recorded</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLessonDeliveryType('live')}
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                          lessonDeliveryType === 'live'
+                            ? "bg-rose-500/10 border-rose-500 text-rose-600 dark:text-rose-400"
+                            : "bg-muted/30 border-border/80 text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <Radio className="h-3.5 w-3.5" />
+                        <span>Live Session</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Availability Fields for Recorded Lessons */}
+                  {lessonDeliveryType === 'recorded' && (
+                    <div className="space-y-3 p-4 rounded-2xl border border-border/80 bg-muted/20 animate-in fade-in duration-150">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-bold text-foreground uppercase tracking-wider">
+                          Content Availability
+                        </label>
+                        {lessonReleaseAt && (
+                          <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                            Scheduled
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setLessonReleaseAt("")}
+                          className={cn(
+                            "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                            !lessonReleaseAt
+                              ? "bg-emerald-500/10 border-emerald-500 text-emerald-700 dark:text-emerald-400"
+                              : "bg-muted/40 border-border/80 text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <span>Available Immediately</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!lessonReleaseAt) {
+                              const tomorrow = new Date();
+                              tomorrow.setDate(tomorrow.getDate() + 1);
+                              tomorrow.setHours(19, 0, 0, 0); // 7:00 PM
+                              setLessonReleaseAt(tomorrow.toISOString().slice(0, 16));
+                            }
+                          }}
+                          className={cn(
+                            "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                            Boolean(lessonReleaseAt)
+                              ? "bg-amber-500/10 border-amber-500 text-amber-700 dark:text-amber-400"
+                              : "bg-muted/40 border-border/80 text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          <CalendarClock className="h-3.5 w-3.5" />
+                          <span>Schedule Release</span>
+                        </button>
+                      </div>
+
+                      {Boolean(lessonReleaseAt) && (
+                        <div className="space-y-2 pt-1 border-t border-border/60">
+                          <label className="block text-[10px] font-bold text-foreground uppercase tracking-wider flex items-center gap-1">
+                            <Clock className="h-3 w-3 text-amber-600" />
+                            <span>Release Date &amp; Time (IST)</span>
+                          </label>
+                          <Input
+                            type="datetime-local"
+                            value={lessonReleaseAt}
+                            onChange={(e) => setLessonReleaseAt(e.target.value)}
+                            className="h-10 rounded-xl text-xs font-semibold bg-background border-border/80 focus:border-primary"
+                          />
+                          <p className="text-[11px] text-muted-foreground">
+                            🔒 Releases on{" "}
+                            <strong className="text-foreground">
+                              {formatISTDateTime(lessonReleaseAt)}
+                            </strong>
+                            . Lesson will remain locked in student view until release.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Scheduling Fields for Live Lessons */}
+                  {lessonDeliveryType === 'live' && (
+                    <div className="space-y-3 p-4 rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/20 animate-in fade-in duration-150">
+                      <div className="flex items-center gap-2 text-xs font-bold text-rose-600 dark:text-rose-400">
+                        <CalendarClock className="h-3.5 w-3.5" />
+                        <span>Live Session Schedule</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-bold text-foreground uppercase tracking-wider">
+                            Date & Time
+                          </label>
+                          <Input
+                            type="datetime-local"
+                            value={lessonScheduledAt}
+                            onChange={(e) => setLessonScheduledAt(e.target.value)}
+                            className="h-10 rounded-xl text-xs font-semibold bg-background border-border/80 focus:border-primary"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-bold text-foreground uppercase tracking-wider">
+                            Duration (minutes)
+                          </label>
+                          <Input
+                            type="number"
+                            placeholder="e.g. 60"
+                            value={lessonDuration}
+                            onChange={(e) => setLessonDuration(e.target.value)}
+                            min="1"
+                            className="h-10 rounded-xl text-xs font-semibold bg-background border-border/80 focus:border-primary tabular-nums"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                          <LinkIcon className="h-3 w-3" />
+                          <span>Meeting URL (Zoom, Google Meet, etc.)</span>
+                        </label>
+                        <Input
+                          type="url"
+                          placeholder="https://zoom.us/j/..."
+                          value={lessonMeetingUrl}
+                          onChange={(e) => setLessonMeetingUrl(e.target.value)}
+                          className="h-10 rounded-xl text-xs font-semibold bg-background border-border/80 focus:border-primary"
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {/* Lesson Notes / Summary */}
                   <div className="space-y-1.5">

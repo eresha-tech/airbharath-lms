@@ -35,6 +35,22 @@ export async function POST(
       return NextResponse.json({ error: "Video processing failed" }, { status: 400 });
     }
 
+    // Server-side check: Disallow playback of unreleased scheduled lessons
+    if (session.role !== "admin" && video.lessonId) {
+      const [lesson] = await db.select().from(lessons).where(eq(lessons.id, video.lessonId));
+      if (
+        lesson &&
+        lesson.deliveryType === "recorded" &&
+        lesson.releaseAt &&
+        new Date(lesson.releaseAt) > new Date()
+      ) {
+        return NextResponse.json(
+          { error: "This lesson has not been released yet." },
+          { status: 403 }
+        );
+      }
+    }
+
     let isAuthorized = session.role === "admin";
 
     // Check free preview

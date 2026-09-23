@@ -15,9 +15,13 @@ import {
   FileCheck2,
   PlayCircle,
   Layers,
+  Radio,
+  CalendarClock,
+  ExternalLink,
 } from "lucide-react";
 import EnrollButton from "@/components/EnrollButton";
 import { CourseViewTracker } from "@/components/courses/CourseViewTracker";
+import { formatISTDateTime } from "@/lib/lesson-availability";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { courses, enrollments, orders } from "@/lib/db/schema";
@@ -124,40 +128,67 @@ export default async function CoursePage({ params }: CoursePageProps) {
   let userOrder: any = null;
 
   if (session) {
-    try {
-      const enrollmentObj = await db.query.enrollments.findFirst({
-        where: and(
-          eq(enrollments.userId, session.id),
-          eq(enrollments.courseId, course.id)
-        ),
-      });
-      if (enrollmentObj && enrollmentObj.status === "active") {
-        isEnrolled = true;
-
-        userOrder = await db.query.orders.findFirst({
+    if (session.role === "admin") {
+      isEnrolled = true;
+    } else {
+      try {
+        const enrollmentObj = await db.query.enrollments.findFirst({
           where: and(
-            eq(orders.userId, session.id),
-            eq(orders.courseId, course.id),
-            eq(orders.status, "paid")
+            eq(enrollments.userId, session.id),
+            eq(enrollments.courseId, course.id)
           ),
         });
-      }
-    } catch {}
+        if (enrollmentObj && enrollmentObj.status === "active") {
+          isEnrolled = true;
+
+          userOrder = await db.query.orders.findFirst({
+            where: and(
+              eq(orders.userId, session.id),
+              eq(orders.courseId, course.id),
+              eq(orders.status, "paid")
+            ),
+          });
+        }
+      } catch {}
+    }
   }
 
   const rawPrice = Number(course.price) || 0;
   const basePrice = Math.round((rawPrice / 1.18) * 100) / 100;
   const gstAmount = Math.round((rawPrice - basePrice) * 100) / 100;
 
-  const courseModules = (course.modules as any[]) || [];
-  const sortedModules = courseModules.sort(
-    (a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0)
-  );
+  const rawCourseModules = (course.modules as any[]) || [];
+  // Ensure meetingUrl is never exposed to non-enrolled / unauthenticated visitors
+  const sortedModules = rawCourseModules
+    .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
+    .map((mod: any) => ({
+      ...mod,
+      lessons: (mod.lessons || []).map((les: any) => ({
+        ...les,
+        meetingUrl: isEnrolled ? les.meetingUrl : null,
+      })),
+    }));
+
   const totalLessons =
     sortedModules.reduce(
       (acc: number, mod: any) => acc + (mod.lessons?.length || 0),
       0
     ) || 0;
+
+  // Compute upcoming live sessions
+  const now = new Date();
+  const upcomingSessions = sortedModules
+    .flatMap((mod: any, modIdx: number) =>
+      (mod.lessons as any[] || []).filter(
+        (les: any) => les.deliveryType === 'live' && les.scheduledAt && new Date(les.scheduledAt) > now
+      ).map((les: any) => ({
+        ...les,
+        moduleName: mod.title,
+        moduleIndex: modIdx + 1,
+      }))
+    )
+    .sort((a: any, b: any) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
+    .slice(0, 5);
 
   return (
     <main className="flex-1 pb-20">
@@ -457,16 +488,27 @@ export default async function CoursePage({ params }: CoursePageProps) {
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                  {les.isFreePreview ? (
+                                  {les.deliveryType === 'live' ? (
+                                    <span className="px-2 py-0.5 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-[9px] font-bold rounded-full border border-rose-200 dark:border-rose-800 uppercase inline-flex items-center gap-1">
+                                      <Radio className="w-2.5 h-2.5" />
+                                      Live
+                                    </span>
+                                  ) : les.releaseAt && new Date(les.releaseAt) > now ? (
+                                    <span className="px-2 py-0.5 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-[9px] font-bold rounded-full border border-amber-200 dark:border-amber-800 uppercase inline-flex items-center gap-1">
+                                      <Lock className="w-2.5 h-2.5" />
+                                      <span>Releases {formatISTDateTime(les.releaseAt, { shortDate: true })}</span>
+                                    </span>
+                                  ) : null}
+                                  {les.isFreePreview && (!les.releaseAt || new Date(les.releaseAt) <= now) ? (
                                     <span className="px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold rounded-full border border-emerald-200 dark:border-emerald-800">
                                       Free Preview
                                     </span>
-                                  ) : (
+                                  ) : !les.releaseAt || new Date(les.releaseAt) <= now ? (
                                     <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                                       <Lock className="w-3 h-3" />
                                       <span>Enrolled</span>
                                     </span>
-                                  )}
+                                  ) : null}
                                 </div>
                               </div>
                             ))}
@@ -478,6 +520,68 @@ export default async function CoursePage({ params }: CoursePageProps) {
                 </Accordion>
               )}
             </div>
+
+            {/* Upcoming Live Sessions */}
+            {upcomingSessions.length > 0 && (
+              <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 space-y-5 shadow-xs">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
+                    Live Sessions
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-bold font-outfit text-foreground">
+                    Upcoming Schedule
+                  </h2>
+                </div>
+
+                <div className="space-y-3">
+                  {upcomingSessions.map((session: any) => {
+                    const sessionDate = new Date(session.scheduledAt);
+                    return (
+                      <div key={session.id} className="flex items-start gap-4 p-4 rounded-2xl border border-border/80 bg-muted/20 hover:bg-muted/40 transition-colors">
+                        <div className="flex flex-col items-center justify-center min-w-[52px] bg-rose-500/10 border border-rose-500/20 rounded-xl p-2.5 text-center">
+                          <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase">
+                            {sessionDate.toLocaleDateString('en-IN', { month: 'short' })}
+                          </span>
+                          <span className="text-lg font-bold text-foreground font-outfit leading-none">
+                            {sessionDate.getDate()}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <p className="text-sm font-bold text-foreground font-outfit truncate">
+                            {session.title}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                            <span className="font-semibold">Module {session.moduleIndex}: {session.moduleName}</span>
+                            <span>·</span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {sessionDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                            </span>
+                            {session.durationMinutes && (
+                              <>
+                                <span>·</span>
+                                <span>{session.durationMinutes} min</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        {isEnrolled && session.meetingUrl && (
+                          <a
+                            href={session.meetingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition-colors shrink-0"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            <span>Join</span>
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Sidebar Details */}

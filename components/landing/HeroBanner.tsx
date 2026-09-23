@@ -45,7 +45,7 @@ const HERO_SLIDES = [
       "Learn how to practically leverage AI tools like ChatGPT, Claude & Midjourney, master prompt engineering, work faster, and adapt to the evolving workplace.",
     badge: "AI & Productivity",
     price: "825",
-    originalPrice: null,
+    originalPrice: 999,
     image: "https://assets.airbharath.in/lms/ai-skills.webp",
     icon: GraduationCap,
     slug: "ai-skills",
@@ -60,7 +60,7 @@ const HERO_SLIDES = [
       "Master end-to-end digital marketing: learn social media marketing, SEO basics, running targeted ads, video content creation, and online brand growth.",
     badge: "Digital Marketing",
     price: "825",
-    originalPrice: null,
+    originalPrice: 999,
     image: "https://assets.airbharath.in/lms/content-creation.webp",
     icon: Sparkles,
     slug: "content-creation",
@@ -75,7 +75,7 @@ const HERO_SLIDES = [
       "Have a business idea? Learn the foundational principles of entrepreneurial thinking, customer discovery, business planning, unit economics, and venture creation.",
     badge: "Venture & Business",
     price: "825",
-    originalPrice: null,
+    originalPrice: 999,
     image: "https://assets.airbharath.in/lms/entrepreneurship.webp",
     icon: Briefcase,
     slug: "entrepreneurship",
@@ -90,7 +90,7 @@ const HERO_SLIDES = [
       "Build total confidence in essential workplace digital tools — create professional documents, analyse data in spreadsheets, and design stunning presentations.",
     badge: "Workplace Tools",
     price: "825",
-    originalPrice: null,
+    originalPrice: 999,
     image: "https://assets.airbharath.in/lms/ms-office.webp",
     icon: LayoutGrid,
     slug: "ms-office",
@@ -215,146 +215,155 @@ export function HeroBanner() {
             onMouseEnter={() => setIsAutoplay(false)}
             onMouseLeave={() => setIsAutoplay(true)}
           >
-            {/* Auto-Play Slide Progress Bar */}
-            <div className="h-1 w-full bg-primary/10 overflow-hidden" aria-hidden="true">
-              {isAutoplay && !prefersReduced && (
-                <div key={currentSlide} className="h-full bg-primary animate-progress-fill" />
-              )}
-            </div>
-
+            {/* Sliding Carousel Track */}
             <div
-              key={currentSlide}
-              className="p-6 sm:p-8 md:p-10 lg:p-12 bg-gradient-to-br from-primary/5 via-background to-secondary/30 flex flex-col lg:flex-row items-stretch justify-between gap-8 lg:gap-10 animate-fade-up"
+              className={`flex ${prefersReduced ? "transition-none" : "transition-transform duration-500 ease-in-out"}`}
+              style={{ transform: `translateX(-${currentSlide * 100}%)` }}
             >
-              {/* Left Column: Course Highlights */}
-              <div className="flex-1 space-y-6 flex flex-col justify-between z-10">
-                <div className="space-y-4">
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    <span className="text-[11px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-primary text-white shadow-xs">
-                      {activeSlide.courseCode}
-                    </span>
-                    <span className="text-xs font-bold px-3 py-1 rounded-full border border-primary/20 bg-primary/10 text-primary">
-                      {activeSlide.badge}
-                    </span>
-                  </div>
+              {HERO_SLIDES.map((slide, slideIdx) => {
+                const isCurrent = slideIdx === currentSlide;
+                return (
+                  <div
+                    key={slide.id}
+                    className="w-full shrink-0 p-6 sm:p-8 md:p-10 lg:p-12 bg-gradient-to-br from-primary/5 via-background to-secondary/30 flex flex-col lg:flex-row items-stretch justify-between gap-8 lg:gap-10"
+                    aria-hidden={!isCurrent}
+                  >
+                    {/* Left Column: Course Highlights */}
+                    <div className="flex-1 space-y-6 flex flex-col justify-between z-10">
+                      <div className="space-y-4">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                          <span className="text-[11px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-primary text-white shadow-xs">
+                            {slide.courseCode}
+                          </span>
+                          <span className="text-xs font-bold px-3 py-1 rounded-full border border-primary/20 bg-primary/10 text-primary">
+                            {slide.badge}
+                          </span>
+                        </div>
 
-                  <div className="space-y-2">
-                    <h2
-                      className="text-2xl sm:text-3xl md:text-4xl font-bold font-outfit text-foreground leading-snug"
-                      style={{ textWrap: "balance" } as React.CSSProperties}
-                    >
-                      {activeSlide.title}
-                    </h2>
-                    <p className="text-sm md:text-base font-semibold text-primary">
-                      {activeSlide.tagline}
-                    </p>
-                  </div>
+                        <div className="space-y-2">
+                          <h2
+                            className="text-2xl sm:text-3xl md:text-4xl font-bold font-outfit text-foreground leading-snug"
+                            style={{ textWrap: "balance" } as React.CSSProperties}
+                          >
+                            {slide.title}
+                          </h2>
+                          <p className="text-sm md:text-base font-semibold text-primary">
+                            {slide.tagline}
+                          </p>
+                        </div>
 
-                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-2xl">
-                    {activeSlide.description}
-                  </p>
-                </div>
+                        <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-2xl">
+                          {slide.description}
+                        </p>
+                      </div>
 
-                <div className="space-y-5 pt-2">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Button
-                      asChild
-                      className="bg-primary hover:bg-primary/90 text-white font-bold px-6 h-11 rounded-xl shadow-xs"
-                    >
-                      <Link href={`/courses/${activeSlide.slug}`} className="flex items-center gap-2">
-                        <span>Explore Program</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </Link>
-                    </Button>
+                      <div className="space-y-5 pt-2">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <Button
+                            asChild
+                            className="bg-primary hover:bg-primary/90 text-white font-bold px-6 h-11 rounded-xl shadow-xs"
+                          >
+                            <Link href={`/courses/${slide.slug}`} className="flex items-center gap-2">
+                              <span>Explore Program</span>
+                              <ArrowRight className="w-4 h-4" />
+                            </Link>
+                          </Button>
 
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="border-border text-foreground hover:bg-muted font-semibold px-5 h-11 rounded-xl"
-                    >
-                      <Link href="/courses">View All Programs</Link>
-                    </Button>
-                  </div>
+                          <Button
+                            asChild
+                            variant="outline"
+                            className="border-border text-foreground hover:bg-muted font-semibold px-5 h-11 rounded-xl"
+                          >
+                            <Link href="/courses">View All Programs</Link>
+                          </Button>
+                        </div>
 
-                  <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-700 pt-2 border-t border-border/60">
-                    <span className="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      {activeSlide.stats}
-                    </span>
-                    <span aria-hidden="true" className="text-slate-300 hidden sm:inline">·</span>
-                    <span className="flex items-center gap-1 text-slate-700 font-medium">
-                      <GraduationCap className="w-4 h-4 text-primary" />
-                      Taught by IIM Alumni
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Visual Preview Box */}
-              <div className="w-full lg:w-96 bg-card rounded-2xl border border-border shadow-md flex flex-col justify-between overflow-hidden relative z-10 shrink-0 group/preview hover:shadow-lg hover:border-primary/40 transition-all duration-300">
-                {/* Image Header */}
-                <div className="h-44 relative bg-slate-900 overflow-hidden">
-                  <img
-                    src={activeSlide.image}
-                    alt={activeSlide.title}
-                    className="w-full h-full object-cover opacity-90 transition-transform duration-500 group-hover/preview:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent" />
-
-                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-white bg-primary/90 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/20">
-                      Featured Program
-                    </span>
-                    <span className="text-xs font-extrabold text-amber-300 bg-amber-950/80 backdrop-blur-md px-2.5 py-0.5 rounded-lg border border-amber-400/40 flex items-center gap-1">
-                      <span className="line-through text-amber-200/60 text-[10px]">₹{Number(activeSlide.originalPrice).toLocaleString("en-IN")}</span>
-                      <span>₹{Number(activeSlide.price).toLocaleString("en-IN")}</span>
-                    </span>
-                  </div>
-
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <h3 className="text-sm sm:text-base font-bold font-outfit text-white leading-tight">
-                      {activeSlide.title}
-                    </h3>
-                  </div>
-                </div>
-
-                <div className="p-5 space-y-4">
-                  <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                    <BookOpen className="w-3.5 h-3.5 text-primary" />
-                    AirBharath LMS Professional Certificate
-                  </p>
-
-                  <dl className="space-y-2 pt-2 border-t border-border text-xs font-semibold text-slate-700">
-                    <div className="flex items-center justify-between">
-                      <dt className="flex items-center gap-1.5 text-muted-foreground">
-                        <ShieldCheck className="w-4 h-4 text-primary" />
-                        Verification
-                      </dt>
-                      <dd className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        QR Verified ID
-                      </dd>
+                        <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-700 pt-2 border-t border-border/60">
+                          <span className="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            {slide.stats}
+                          </span>
+                          <span aria-hidden="true" className="text-slate-300 hidden sm:inline">·</span>
+                          <span className="flex items-center gap-1 text-slate-700 font-medium">
+                            <GraduationCap className="w-4 h-4 text-primary" />
+                            Taught by IIM Alumni
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <dt className="flex items-center gap-1.5 text-muted-foreground">
-                        <Award className="w-4 h-4 text-primary" />
-                        Instructors
-                      </dt>
-                      <dd className="text-primary font-bold">IIM Alumni</dd>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <dt className="flex items-center gap-1.5 text-muted-foreground">
-                        <Laptop className="w-4 h-4 text-primary" />
-                        Pacing
-                      </dt>
-                      <dd className="text-foreground font-bold">100% Self-Paced</dd>
-                    </div>
-                  </dl>
 
-                  <div className="p-2.5 bg-muted/50 rounded-xl border border-border text-[11px] text-muted-foreground font-medium text-center">
-                    Beginner-friendly · Full lifetime dashboard access
+                    {/* Right Column: Visual Preview Box */}
+                    <div className="w-full lg:w-96 bg-card rounded-2xl border border-border shadow-md flex flex-col justify-between overflow-hidden relative z-10 shrink-0 group/preview hover:shadow-lg hover:border-primary/40 transition-all duration-300">
+                      {/* Image Header */}
+                      <div className="h-44 relative bg-slate-900 overflow-hidden">
+                        <img
+                          src={slide.image}
+                          alt={slide.title}
+                          className="w-full h-full object-cover opacity-90 transition-transform duration-500 group-hover/preview:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent" />
+
+                        <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-white bg-primary/90 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/20">
+                            Featured Program
+                          </span>
+                          <span className="text-xs font-extrabold text-amber-300 bg-amber-950/80 backdrop-blur-md px-2.5 py-0.5 rounded-lg border border-amber-400/40 flex items-center gap-1">
+                            {slide.originalPrice && (
+                              <span className="line-through text-amber-200/60 text-[10px]">
+                                ₹{Number(slide.originalPrice).toLocaleString("en-IN")}
+                              </span>
+                            )}
+                            <span>₹{Number(slide.price).toLocaleString("en-IN")}</span>
+                          </span>
+                        </div>
+
+                        <div className="absolute bottom-3 left-3 right-3">
+                          <h3 className="text-sm sm:text-base font-bold font-outfit text-white leading-tight">
+                            {slide.title}
+                          </h3>
+                        </div>
+                      </div>
+
+                      <div className="p-5 space-y-4">
+                        <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+                          <BookOpen className="w-3.5 h-3.5 text-primary" />
+                          AirBharath LMS Professional Certificate
+                        </p>
+
+                        <dl className="space-y-2 pt-2 border-t border-border text-xs font-semibold text-slate-700">
+                          <div className="flex items-center justify-between">
+                            <dt className="flex items-center gap-1.5 text-muted-foreground">
+                              <ShieldCheck className="w-4 h-4 text-primary" />
+                              Verification
+                            </dt>
+                            <dd className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                              QR Verified ID
+                            </dd>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <dt className="flex items-center gap-1.5 text-muted-foreground">
+                              <Award className="w-4 h-4 text-primary" />
+                              Instructors
+                            </dt>
+                            <dd className="text-primary font-bold">IIM Alumni</dd>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <dt className="flex items-center gap-1.5 text-muted-foreground">
+                              <Laptop className="w-4 h-4 text-primary" />
+                              Pacing
+                            </dt>
+                            <dd className="text-foreground font-bold">100% Self-Paced</dd>
+                          </div>
+                        </dl>
+
+                        <div className="p-2.5 bg-muted/50 rounded-xl border border-border text-[11px] text-muted-foreground font-medium text-center">
+                          Beginner-friendly · Full lifetime dashboard access
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
 
             {/* Slide Controls & Quick Selector Navigation Bar */}
@@ -371,11 +380,10 @@ export function HeroBanner() {
                     role="tab"
                     aria-selected={idx === currentSlide}
                     onClick={() => setCurrentSlide(idx)}
-                    className={`px-3 py-1 rounded-full text-xs font-bold transition-all duration-150 active:scale-95 cursor-pointer focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
-                      idx === currentSlide
-                        ? "bg-primary text-white shadow-xs scale-[1.02]"
-                        : "bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground hover:border-primary/30"
-                    }`}
+                    className={`px-3 py-1 rounded-full text-xs font-bold transition-all duration-150 active:scale-95 cursor-pointer focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${idx === currentSlide
+                      ? "bg-primary text-white shadow-xs scale-[1.02]"
+                      : "bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground hover:border-primary/30"
+                      }`}
                   >
                     0{idx + 1}&nbsp;{slide.badge}
                   </button>

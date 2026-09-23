@@ -119,6 +119,11 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
     video_status: videoStatusByLessonId[l.id]?.status || null,
     order_index: l.orderIndex,
     is_free_preview: l.isFreePreview,
+    delivery_type: l.deliveryType || 'recorded',
+    scheduled_at: l.scheduledAt ? new Date(l.scheduledAt).toISOString() : null,
+    release_at: l.releaseAt ? new Date(l.releaseAt).toISOString() : null,
+    duration_minutes: l.durationMinutes || null,
+    meeting_url: l.meetingUrl || null,
     materials: materialsByLessonId[l.id] || [],
   }));
 

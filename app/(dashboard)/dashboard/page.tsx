@@ -13,6 +13,7 @@ import { EnrolledCourseCard } from "@/components/dashboard/EnrolledCourseCard";
 import { CertificatesCard } from "@/components/dashboard/CertificatesCard";
 import { PlacementHighlightsCard } from "@/components/dashboard/PlacementHighlightsCard";
 import { DashboardEmptyState } from "@/components/dashboard/DashboardEmptyState";
+import { UpcomingSessionsCard } from "@/components/dashboard/UpcomingSessionsCard";
 
 export const dynamic = "force-dynamic";
 
@@ -144,6 +145,67 @@ export default async function StudentDashboard() {
     coursesWithStatus.find((c) => !c.isExpired && c.percent < 100 && c.totalLessons > 0) ||
     coursesWithStatus.find((c) => !c.isExpired && c.totalLessons > 0);
 
+  // Extract upcoming live sessions & scheduled recorded releases across enrolled active courses
+  const upcomingLiveSessions: Array<{
+    id: string;
+    title: string;
+    courseId: string;
+    courseTitle: string;
+    scheduledAt: Date;
+    durationMinutes: number | null;
+    meetingUrl: string | null;
+  }> = [];
+
+  const upcomingRecordedContent: Array<{
+    id: string;
+    title: string;
+    courseId: string;
+    courseTitle: string;
+    releaseAt: Date;
+  }> = [];
+
+  enrolledCourses.forEach((c: any) => {
+    (c.modules as any[])?.forEach((m: any) => {
+      m.lessons?.forEach((l: any) => {
+        if (
+          l.deliveryType === "live" &&
+          l.scheduledAt &&
+          new Date(l.scheduledAt) > now
+        ) {
+          upcomingLiveSessions.push({
+            id: l.id,
+            title: l.title,
+            courseId: c.id,
+            courseTitle: c.title,
+            scheduledAt: new Date(l.scheduledAt),
+            durationMinutes: l.durationMinutes || null,
+            meetingUrl: l.meetingUrl || null,
+          });
+        } else if (
+          l.deliveryType !== "live" &&
+          l.releaseAt &&
+          new Date(l.releaseAt) > now
+        ) {
+          upcomingRecordedContent.push({
+            id: l.id,
+            title: l.title,
+            courseId: c.id,
+            courseTitle: c.title,
+            releaseAt: new Date(l.releaseAt),
+          });
+        }
+      });
+    });
+  });
+
+  upcomingLiveSessions.sort(
+    (a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime()
+  );
+
+  upcomingRecordedContent.sort(
+    (a, b) => a.releaseAt.getTime() - b.releaseAt.getTime()
+  );
+
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in max-w-7xl mx-auto">
       {/* 1. Welcome Hero Section */}
@@ -206,8 +268,12 @@ export default async function StudentDashboard() {
           )}
         </div>
 
-        {/* Right Column: Certificates & Career Hub */}
+        {/* Right Column: Upcoming Live Sessions, Scheduled Releases, Certificates & Career Hub */}
         <div className="space-y-6">
+          <UpcomingSessionsCard
+            liveSessions={upcomingLiveSessions}
+            upcomingContent={upcomingRecordedContent}
+          />
           <CertificatesCard certificates={studentCertificates} />
           <PlacementHighlightsCard jobs={recentJobs} />
         </div>

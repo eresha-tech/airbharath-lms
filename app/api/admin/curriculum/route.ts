@@ -13,7 +13,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { type, courseId, moduleId, title, content, videoUrl, orderIndex, isFreePreview, lessonId } = await req.json();
+    const {
+      type,
+      courseId,
+      moduleId,
+      title,
+      content,
+      videoUrl,
+      orderIndex,
+      isFreePreview,
+      lessonId,
+      deliveryType,
+      scheduledAt,
+      releaseAt,
+      durationMinutes,
+      meetingUrl,
+    } = await req.json();
 
     if (type === "module") {
       const [newModule] = await db
@@ -28,16 +43,86 @@ export async function POST(req: Request) {
     }
 
     if (type === "lesson") {
+      const effectiveDeliveryType = deliveryType === "live" ? "live" : "recorded";
+
+      let parsedScheduledAt: Date | null = null;
+      let parsedReleaseAt: Date | null = null;
+      let parsedDuration: number | null = null;
+      let sanitizedMeetingUrl: string | null = null;
+
+      if (effectiveDeliveryType === "live") {
+        if (!scheduledAt) {
+          return NextResponse.json(
+            { error: "Scheduled date & time is required for live lessons." },
+            { status: 400 }
+          );
+        }
+        parsedScheduledAt = new Date(scheduledAt);
+        if (isNaN(parsedScheduledAt.getTime())) {
+          return NextResponse.json(
+            { error: "Invalid scheduled date & time." },
+            { status: 400 }
+          );
+        }
+
+        if (durationMinutes !== undefined && durationMinutes !== null && durationMinutes !== "") {
+          parsedDuration = parseInt(String(durationMinutes), 10);
+          if (isNaN(parsedDuration) || parsedDuration <= 0) {
+            return NextResponse.json(
+              { error: "Duration must be a positive number of minutes." },
+              { status: 400 }
+            );
+          }
+        }
+
+        if (meetingUrl && typeof meetingUrl === "string" && meetingUrl.trim()) {
+          const trimmed = meetingUrl.trim();
+          try {
+            const urlObj = new URL(trimmed);
+            if (urlObj.protocol !== "http:" && urlObj.protocol !== "https:") {
+              return NextResponse.json(
+                { error: "Meeting URL must start with http:// or https://" },
+                { status: 400 }
+              );
+            }
+            sanitizedMeetingUrl = trimmed;
+          } catch {
+            return NextResponse.json(
+              { error: "Meeting URL must be a valid URL." },
+              { status: 400 }
+            );
+          }
+        }
+      } else {
+        // Recorded lesson
+        if (releaseAt !== undefined && releaseAt !== null && releaseAt !== "") {
+          parsedReleaseAt = new Date(releaseAt);
+          if (isNaN(parsedReleaseAt.getTime())) {
+            return NextResponse.json(
+              { error: "Invalid release date & time format." },
+              { status: 400 }
+            );
+          }
+        }
+      }
+
+      const lessonValues = {
+        title,
+        content,
+        videoUrl,
+        orderIndex: orderIndex || 1,
+        isFreePreview: isFreePreview ?? false,
+        deliveryType: effectiveDeliveryType,
+        scheduledAt: parsedScheduledAt,
+        releaseAt: parsedReleaseAt,
+        durationMinutes: parsedDuration,
+        meetingUrl: sanitizedMeetingUrl,
+      };
+
       if (lessonId) {
         const [updatedLesson] = await db
           .update(lessons)
-          .set({
-            title,
-            content,
-            videoUrl,
-            orderIndex: orderIndex || 1,
-            isFreePreview: isFreePreview ?? false,
-          })
+          .set(lessonValues)
           .where(eq(lessons.id, lessonId))
           .returning();
         return NextResponse.json({ lesson: updatedLesson });
@@ -46,11 +131,7 @@ export async function POST(req: Request) {
           .insert(lessons)
           .values({
             moduleId,
-            title,
-            content,
-            videoUrl,
-            orderIndex: orderIndex || 1,
-            isFreePreview: isFreePreview ?? false,
+            ...lessonValues,
           })
           .returning();
         return NextResponse.json({ lesson: newLesson });

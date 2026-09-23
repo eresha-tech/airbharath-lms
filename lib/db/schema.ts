@@ -47,6 +47,11 @@ export const lessons = pgTable('lessons', {
   videoUrl: text('video_url'),
   isFreePreview: boolean('is_free_preview').default(false).notNull(),
   orderIndex: integer('order_index').notNull(),
+  deliveryType: text('delivery_type').default('recorded').notNull(), // 'recorded' | 'live'
+  scheduledAt: timestamp('scheduled_at', { withTimezone: true }),
+  releaseAt: timestamp('release_at', { withTimezone: true }),
+  durationMinutes: integer('duration_minutes'),
+  meetingUrl: text('meeting_url'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 

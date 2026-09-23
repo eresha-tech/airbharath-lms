@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { progress } from '@/lib/db/schema';
+import { progress, lessons } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { getCertificateEligibility } from '@/lib/certificate-service';
 
@@ -41,6 +41,24 @@ export async function POST(request: Request) {
 
     if (!lessonId) {
       return NextResponse.json({ error: "Missing lessonId" }, { status: 400 });
+    }
+
+    // Server-side check: Disallow completing unreleased scheduled lessons
+    const targetLesson = await db.query.lessons.findFirst({
+      where: eq(lessons.id, lessonId),
+    });
+
+    if (
+      targetLesson &&
+      session.role !== "admin" &&
+      targetLesson.deliveryType === "recorded" &&
+      targetLesson.releaseAt &&
+      new Date(targetLesson.releaseAt) > new Date()
+    ) {
+      return NextResponse.json(
+        { error: "Cannot complete an unreleased scheduled lesson." },
+        { status: 403 }
+      );
     }
 
     // Check current progress
