@@ -19,7 +19,9 @@ export async function POST(req: Request) {
       moduleId,
       title,
       description,
+      summary,
       content,
+      formulas,
       videoUrl,
       orderIndex,
       isFreePreview,
@@ -200,7 +202,9 @@ export async function POST(req: Request) {
 
       const lessonValues = {
         title: title.trim(),
+        summary: summary || null,
         content: content || null,
+        formulas: formulas || null,
         videoUrl: videoUrl || null,
         orderIndex: orderIndex || 1,
         isFreePreview: isFreePreview ?? false,
