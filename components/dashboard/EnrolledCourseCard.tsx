@@ -16,6 +16,7 @@ export interface EnrolledCourseItem {
   completedLessons: number;
   totalLessons: number;
   resumeLessonId: string;
+  bundleTitle?: string | null;
 }
 
 interface EnrolledCourseCardProps {
@@ -82,6 +83,11 @@ export function EnrolledCourseCard({ course }: EnrolledCourseCardProps) {
         {/* Content Details */}
         <div className="p-4 sm:p-5 space-y-3">
           <div>
+            {course.bundleTitle && (
+              <span className="inline-block mb-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
+                Included with {course.bundleTitle}
+              </span>
+            )}
             <h3 className="font-bold text-sm sm:text-base text-foreground font-outfit line-clamp-1">
               {course.title}
             </h3>

@@ -24,8 +24,9 @@ import { CourseViewTracker } from "@/components/courses/CourseViewTracker";
 import { formatISTDateTime } from "@/lib/lesson-availability";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { courses, enrollments, orders } from "@/lib/db/schema";
+import { courses, enrollments, orders, progress } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { hasCourseAccess, getBundleIncludedCourses } from "@/lib/course-access";
 import {
   Accordion,
   AccordionContent,
@@ -35,6 +36,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 export const dynamic = "force-dynamic";
 
@@ -141,36 +143,53 @@ export default async function CoursePage({ params }: CoursePageProps) {
     );
   }
 
-  // Check user enrollment and order for invoice
+  // Check user enrollment and bundle access
   let isEnrolled = false;
   let userOrder: any = null;
+  let accessInfo: any = null;
+  const isBundle = Boolean(course.isBundle);
+  const completedLessonIds = new Set<string>();
+
+  const bundledCourses = await getBundleIncludedCourses(course.id);
 
   if (session) {
-    if (session.role === "admin") {
-      isEnrolled = true;
-    } else {
-      try {
-        const [enrollmentObj, paidOrder] = await Promise.all([
-          db.query.enrollments.findFirst({
-            where: and(
-              eq(enrollments.userId, session.id),
-              eq(enrollments.courseId, course.id)
-            ),
-          }),
-          db.query.orders.findFirst({
+    try {
+      const [access, paidOrder, userProgress] = await Promise.all([
+        hasCourseAccess(session.id, course.id, session.role),
+        db.query.orders.findFirst({
+          where: and(
+            eq(orders.userId, session.id),
+            eq(orders.courseId, course.id),
+            eq(orders.status, "paid")
+          ),
+        }),
+        db.query.progress.findMany({
+          where: eq(progress.userId, session.id),
+        }),
+      ]);
+
+      (userProgress || []).forEach((p: any) => {
+        if (p.isCompleted) completedLessonIds.add(p.lessonId);
+      });
+
+      accessInfo = access;
+      if (access.hasAccess) {
+        isEnrolled = true;
+        userOrder = paidOrder;
+
+        // If enrolled via bundle and no direct order, find the bundle order for invoice
+        if (!userOrder && access.bundleCourseId) {
+          userOrder = await db.query.orders.findFirst({
             where: and(
               eq(orders.userId, session.id),
-              eq(orders.courseId, course.id),
+              eq(orders.courseId, access.bundleCourseId),
               eq(orders.status, "paid")
             ),
-          }),
-        ]);
-
-        if (enrollmentObj && enrollmentObj.status === "active") {
-          isEnrolled = true;
-          userOrder = paidOrder;
+          });
         }
-      } catch {}
+      }
+    } catch (err) {
+      console.error("Error checking course access:", err);
     }
   }
 
@@ -268,13 +287,13 @@ export default async function CoursePage({ params }: CoursePageProps) {
             <div className="lg:col-span-8 space-y-5">
               <div className="flex flex-wrap gap-2">
                 <span className="px-3 py-1 bg-muted text-foreground rounded-full text-[10px] font-bold uppercase tracking-wider border border-border">
-                  Airbharath Certified Program
+                  {isBundle ? "Airbharath Multi-Program Bundle" : "Airbharath Certified Program"}
                 </span>
                 <span className="px-3 py-1 bg-primary/15 text-primary rounded-full text-[10px] font-bold uppercase tracking-wider border border-primary/25">
                   ⚡ 100% Self-Paced
                 </span>
                 <span className="px-3 py-1 bg-success/15 text-success rounded-full text-[10px] font-bold uppercase tracking-wider border border-success/25">
-                  Verifiable Credential
+                  {isBundle ? "Individual Credentials" : "Verifiable Credential"}
                 </span>
               </div>
 
@@ -295,13 +314,27 @@ export default async function CoursePage({ params }: CoursePageProps) {
                 </div>
                 <div className="space-y-0.5 text-xs">
                   <h4 className="font-bold text-foreground flex items-center gap-2">
-                    <span>Instant Curriculum Access</span>
+                    <span>
+                      {isBundle
+                        ? isEnrolled
+                          ? `Active Bundle Pass Enrolled`
+                          : `Multi-Course Access Pass`
+                        : accessInfo?.accessType === "bundle"
+                        ? `Included in your ${accessInfo.bundleTitle || "Combo Pass"}`
+                        : "Instant Curriculum Access"}
+                    </span>
                     <span className="text-[10px] font-extrabold uppercase bg-success/20 text-success px-2 py-0.5 rounded-full">
-                      Immediate
+                      {isEnrolled ? "Unlocked" : "Immediate"}
                     </span>
                   </h4>
                   <p className="text-muted-foreground leading-relaxed">
-                    {isEnrolled
+                    {isBundle
+                      ? isEnrolled
+                        ? `Your active enrollment in ${course.title} unlocks all ${bundledCourses.length} included courses, HD video modules, and individual verifiable credentials.`
+                        : `Enroll today to instantly unlock all ${bundledCourses.length} independent certificate courses included in this commercial pass.`
+                      : accessInfo?.accessType === "bundle"
+                      ? `Your active enrollment in ${accessInfo.bundleTitle || "the Combo Pass"} unlocks this full course, HD video modules, and verifiable credential.`
+                      : isEnrolled
                       ? "You have full access to all curriculum modules and video lessons on your Student Dashboard."
                       : "Enroll today to instantly unlock all course modules, HD video lessons, and verifiable certification track."}
                   </p>
@@ -328,10 +361,12 @@ export default async function CoursePage({ params }: CoursePageProps) {
                   </div>
                   <div>
                     <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      Curriculum
+                      {isBundle ? "Programs" : "Curriculum"}
                     </div>
                     <div className="text-xs font-bold text-foreground">
-                      {sortedModules.length} Modules · {totalLessons} Lessons
+                      {isBundle
+                        ? `${bundledCourses.length} Full Courses`
+                        : `${sortedModules.length} Modules · ${totalLessons} Lessons`}
                     </div>
                   </div>
                 </div>
@@ -344,7 +379,9 @@ export default async function CoursePage({ params }: CoursePageProps) {
                     <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                       Credential
                     </div>
-                    <div className="text-xs font-bold text-foreground">QR-Verifiable PDF</div>
+                    <div className="text-xs font-bold text-foreground">
+                      {isBundle ? "Individual Certificates" : "QR-Verifiable PDF"}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -355,7 +392,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
               <Card className="bg-card text-card-foreground border-border/80 shadow-xl p-6 sm:p-7 space-y-6 rounded-3xl">
                 <div className="space-y-2">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">
-                    Course Investment
+                    {isBundle ? "Bundle Investment" : "Course Investment"}
                   </span>
                   <div className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight font-outfit">
                     {rawPrice === 0 ? "Free" : `₹${rawPrice.toLocaleString("en-IN")}`}
@@ -387,6 +424,8 @@ export default async function CoursePage({ params }: CoursePageProps) {
                   courseTitle={course.title}
                   initialUser={session ? { id: session.id, email: session.email } : null}
                   autoCouponCode={course.slug?.includes("combo") ? "ABCOMBO" : undefined}
+                  customRedirectUrl={isBundle ? "/my-courses" : undefined}
+                  customButtonText={isBundle ? "View My Included Courses" : undefined}
                 />
 
                 {/* Invoice download for enrolled students */}
@@ -460,24 +499,125 @@ export default async function CoursePage({ params }: CoursePageProps) {
               </div>
             </div>
 
-            {/* Curriculum Breakdown */}
+            {/* Curriculum or Included Programs Breakdown */}
             <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xs">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
-                    Syllabus &amp; Modules
+                    {isBundle ? "Bundle Composition" : "Syllabus & Modules"}
                   </span>
                   <h2 className="text-xl sm:text-2xl font-bold font-outfit text-foreground">
-                    Course Curriculum
+                    {isBundle ? "Included Certificate Programs" : "Course Curriculum"}
                   </h2>
                 </div>
                 <Badge variant="secondary" className="text-xs font-semibold px-3 py-1 rounded-xl">
-                  {sortedSections.length > 0 ? `${sortedSections.length} Sections · ` : ""}{sortedModules.length} Modules · {totalLessons} Lessons
+                  {isBundle
+                    ? `${bundledCourses.length} Included Courses`
+                    : `${sortedSections.length > 0 ? `${sortedSections.length} Sections · ` : ""}${sortedModules.length} Modules · ${totalLessons} Lessons`}
                 </Badge>
               </div>
 
-              {sortedSections.length > 0 ? (
-                /* 1. Hierarchical Section-based Syllabus */
+              {isBundle ? (
+                /* Dedicated Bundle Overview for Multi-Course Commercial Passes */
+                <div className="space-y-5">
+                  <div className="p-4 bg-primary/10 border border-primary/20 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                    <span className="font-bold text-primary flex items-center gap-2">
+                      <Layers className="w-4 h-4 shrink-0" />
+                      <span>{bundledCourses.length} Independent Career Programs Included</span>
+                    </span>
+                    <span className="text-muted-foreground font-medium">
+                      Each course awards its own QR-verifiable certificate upon 100% completion
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    {bundledCourses.map((bCourse: any, bIdx: number) => {
+                      let bTotal = 0;
+                      let bDone = 0;
+                      bCourse.modules?.forEach((m: any) => {
+                        m.lessons?.forEach((l: any) => {
+                          bTotal++;
+                          if (completedLessonIds.has(l.id)) bDone++;
+                        });
+                      });
+                      const bPercent = bTotal > 0 ? Math.round((bDone / bTotal) * 100) : 0;
+
+                      return (
+                        <div
+                          key={bCourse.id}
+                          className="border border-border/80 rounded-3xl overflow-hidden bg-card hover:border-primary/40 transition-all shadow-2xs hover:shadow-md flex flex-col justify-between"
+                        >
+                          <div>
+                            {bCourse.thumbnailUrl && (
+                              <div className="aspect-video relative overflow-hidden bg-muted">
+                                <Image
+                                  src={bCourse.thumbnailUrl}
+                                  alt={bCourse.title}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                            )}
+
+                            <div className="p-5 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold font-mono px-2.5 py-0.5 rounded-md bg-primary/10 text-primary">
+                                  Program {bIdx + 1}
+                                </span>
+                                <span className="text-[11px] text-muted-foreground font-medium">
+                                  {bCourse.modules?.length || 0} Modules · {bTotal} Lessons
+                                </span>
+                              </div>
+
+                              <h4 className="font-bold font-outfit text-base text-foreground line-clamp-1">
+                                {bCourse.title}
+                              </h4>
+
+                              {bCourse.description && (
+                                <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                                  {bCourse.description}
+                                </p>
+                              )}
+
+                              {/* Progress bar for enrolled student */}
+                              {isEnrolled && bTotal > 0 && (
+                                <div className="space-y-1.5 pt-2 border-t border-border/50">
+                                  <div className="flex justify-between text-[11px] font-semibold">
+                                    <span className="text-muted-foreground">
+                                      {bDone} of {bTotal} Lessons
+                                    </span>
+                                    <span className="text-foreground font-bold">{bPercent}%</span>
+                                  </div>
+                                  <Progress value={bPercent} className="h-1.5 rounded-full" />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="p-5 pt-0 border-t border-border/50 mt-1">
+                            <Button
+                              asChild
+                              className="w-full text-xs font-bold h-9 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs mt-3 flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              <Link
+                                href={
+                                  isEnrolled
+                                    ? `/dashboard/courses/${bCourse.id}`
+                                    : `/courses/${bCourse.slug || bCourse.id}`
+                                }
+                              >
+                                <span>{isEnrolled ? "Start Learning" : "View Program Details"}</span>
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : sortedSections.length > 0 ? (
+                /* Hierarchical Section-based Syllabus for Regular Courses */
                 <div className="space-y-6">
                   {sortedSections.map((sec: any, secIdx: number) => {
                     const secModules = sec.modules || [];
@@ -587,6 +727,61 @@ export default async function CoursePage({ params }: CoursePageProps) {
                       </div>
                     );
                   })}
+                </div>
+              ) : bundledCourses.length > 0 ? (
+                /* 3. Included Programs in this Bundle */
+                <div className="space-y-4">
+                  <div className="p-3.5 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-between text-xs">
+                    <span className="font-bold text-primary flex items-center gap-2">
+                      <Layers className="w-4 h-4" />
+                      <span>{bundledCourses.length} Full Certificate Courses Included</span>
+                    </span>
+                    <span className="text-muted-foreground font-medium hidden sm:inline">Individual Credentials for each course</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {bundledCourses.map((bCourse: any, bIdx: number) => {
+                      const bLessonCount = bCourse.modules?.reduce(
+                        (acc: number, m: any) => acc + (m.lessons?.length || 0),
+                        0
+                      ) || 0;
+                      return (
+                        <div
+                          key={bCourse.id}
+                          className="border border-border rounded-2xl p-4 bg-card hover:border-primary/40 transition-all flex flex-col justify-between space-y-3"
+                        >
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-md bg-primary/10 text-primary">
+                                Course {bIdx + 1}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground font-medium">
+                                {bCourse.modules?.length || 0} Modules · {bLessonCount} Lessons
+                              </span>
+                            </div>
+                            <h4 className="font-bold font-outfit text-sm text-foreground">
+                              {bCourse.title}
+                            </h4>
+                            {bCourse.description && (
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                {bCourse.description}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="pt-2 border-t border-border/60 flex items-center justify-between">
+                            <Link
+                              href={isEnrolled ? `/dashboard/courses/${bCourse.id}` : `/courses/${bCourse.slug || bCourse.id}`}
+                              className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-1"
+                            >
+                              <span>{isEnrolled ? "Start Learning" : "View Course Details"}</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : sortedModules.length === 0 ? (
                 <p className="text-sm text-muted-foreground italic">

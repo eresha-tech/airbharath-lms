@@ -17,6 +17,8 @@ interface EnrollButtonProps {
   courseTitle: string;
   initialUser?: any;
   autoCouponCode?: string;
+  customRedirectUrl?: string;
+  customButtonText?: string;
 }
 
 export default function EnrollButton({
@@ -26,6 +28,8 @@ export default function EnrollButton({
   courseTitle,
   initialUser,
   autoCouponCode,
+  customRedirectUrl,
+  customButtonText,
 }: EnrollButtonProps) {
   const [user, setUser] = useState<any>(initialUser ?? null);
   const [couponInput, setCouponInput] = useState(autoCouponCode || "");
@@ -175,7 +179,7 @@ export default function EnrollButton({
             const verifyData = await verifyRes.json();
             if (verifyData.success || verifyData.message === "Success") {
               router.refresh();
-              router.push(`/dashboard/courses/${courseId}`);
+              router.push(customRedirectUrl || `/dashboard/courses/${courseId}`);
             } else {
               setEnrollError(verifyData.error || "Payment verification failed.");
               setIsEnrolling(false);
@@ -220,10 +224,10 @@ export default function EnrollButton({
         className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-11 sm:h-12 rounded-2xl text-xs sm:text-sm shadow-xs transition-all duration-200 cursor-pointer"
       >
         <Link
-          href={`/dashboard/courses/${courseId}`}
+          href={customRedirectUrl || `/dashboard/courses/${courseId}`}
           className="flex items-center justify-center gap-2"
         >
-          <span>Access Course Classroom</span>
+          <span>{customButtonText || "Access Course Classroom"}</span>
           <ArrowRight className="w-4 h-4" />
         </Link>
       </Button>

@@ -22,12 +22,24 @@ export const courses = pgTable('courses', {
   price: numeric('price', { precision: 10, scale: 2 }).notNull(),
   accessDays: integer('access_days'), // null means lifetime access
   isPublished: boolean('is_published').default(false).notNull(),
+  isBundle: boolean('is_bundle').default(false).notNull(),
   instructorId: uuid('instructor_id').references(() => users.id),
   certificateStatus: text('certificate_status').default('disabled').notNull(), // 'disabled' | 'active' | 'paused'
   certificateActivatedAt: timestamp('certificate_activated_at', { withTimezone: true }),
   certificateActivatedBy: uuid('certificate_activated_by').references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+// Course Bundle Items Table
+export const courseBundleItems = pgTable('course_bundle_items', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  bundleCourseId: uuid('bundle_course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  courseId: uuid('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  orderIndex: integer('order_index').default(0).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t: any) => [
+  uniqueIndex('bundle_course_item_unique_idx').on(t.bundleCourseId, t.courseId)
+]);
 
 // Course Sections Table
 export const courseSections = pgTable('course_sections', {
@@ -225,6 +237,21 @@ export const coursesRelations = relations(courses, ({ one, many }) => ({
   modules: many(modules),
   enrollments: many(enrollments),
   videos: many(videos),
+  bundleItems: many(courseBundleItems, { relationName: 'bundleItems' }),
+  bundledIn: many(courseBundleItems, { relationName: 'bundledIn' }),
+}));
+
+export const courseBundleItemsRelations = relations(courseBundleItems, ({ one }) => ({
+  bundle: one(courses, {
+    fields: [courseBundleItems.bundleCourseId],
+    references: [courses.id],
+    relationName: 'bundleItems',
+  }),
+  course: one(courses, {
+    fields: [courseBundleItems.courseId],
+    references: [courses.id],
+    relationName: 'bundledIn',
+  }),
 }));
 
 export const courseSectionsRelations = relations(courseSections, ({ one, many }) => ({

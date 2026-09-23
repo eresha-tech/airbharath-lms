@@ -2,6 +2,7 @@ import { cache } from "react";
 import { db } from "@/lib/db";
 import { enrollments, courses, progress, certificates, jobs } from "@/lib/db/schema";
 import { eq, inArray, desc } from "drizzle-orm";
+import { getUserAccessSummary } from "@/lib/course-access";
 
 export interface DashboardCourseStatus {
   id: string;
@@ -16,6 +17,7 @@ export interface DashboardCourseStatus {
   percent: number;
   resumeLessonId: string;
   resumeLessonTitle: string;
+  bundleTitle?: string | null;
 }
 
 export interface UpcomingLiveSessionItem {
@@ -64,9 +66,10 @@ export const getStudentDashboardData = cache(
   async (userId: string): Promise<StudentDashboardData> => {
     const now = new Date();
 
-    // 1. Fetch user enrollments, progress, certificates, and recent jobs in parallel
-    const [studentEnrollments, studentProgress, studentCertificates, recentJobs] =
+    // 1. Fetch user access summary (direct + bundle entitlements), enrollments, progress, certificates, and jobs
+    const [accessSummary, studentEnrollments, studentProgress, studentCertificates, recentJobs] =
       await Promise.all([
+        getUserAccessSummary(userId),
         db.query.enrollments.findMany({
           where: eq(enrollments.userId, userId),
         }),
@@ -82,17 +85,20 @@ export const getStudentDashboardData = cache(
         }),
       ]);
 
-    const courseIds = studentEnrollments.map((e: any) => e.courseId);
+    const targetCourseIds = accessSummary.effectiveCourseIds;
 
-    // 2. Fetch enrolled courses with curriculum modules and lessons
-    const enrolledCourses =
-      courseIds.length > 0
+    // 2. Fetch accessible learning courses with curriculum modules and lessons
+    const accessibleCourses =
+      targetCourseIds.length > 0
         ? await db.query.courses.findMany({
-            where: inArray(courses.id, courseIds),
+            where: inArray(courses.id, targetCourseIds),
             with: {
               modules: {
+                orderBy: (m: any, { asc }: any) => [asc(m.orderIndex)],
                 with: {
-                  lessons: true,
+                  lessons: {
+                    orderBy: (l: any, { asc }: any) => [asc(l.orderIndex)],
+                  },
                 },
               },
             },
@@ -105,56 +111,78 @@ export const getStudentDashboardData = cache(
         .map((p: any) => p.lessonId)
     );
 
-    // 3. Compute status, progress percentage, and resume lesson for each course
-    const coursesWithStatus: DashboardCourseStatus[] = studentEnrollments
-      .map((enr: any) => {
-        const courseObj = enrolledCourses.find((c: any) => c.id === enr.courseId);
-        if (!courseObj) return null;
+    // 3. Compute status, progress percentage, and resume lesson for each learning course
+    // Exclude courses that are pure bundle containers
+    const learningCourses = accessibleCourses.filter(
+      (c: any) => !c.isBundle && !accessSummary.bundleCourseIds.includes(c.id)
+    );
 
-        const isExpired = enr.expiresAt && new Date(enr.expiresAt) < now;
+    const coursesWithStatus: DashboardCourseStatus[] = learningCourses.map((courseObj: any) => {
+      const directEnrollment = studentEnrollments.find((e: any) => e.courseId === courseObj.id);
+      const bundleInfo = accessSummary.courseToBundleMap[courseObj.id];
 
-        const lessonsList: any[] = [];
-        (courseObj.modules as any[])?.forEach((m: any) => {
-          if (m.lessons) lessonsList.push(...m.lessons);
-        });
+      let isExpired = false;
+      let effectiveExpiresAt: Date | string | null = null;
+      let enrollmentId = directEnrollment?.id || `bundle_${courseObj.id}`;
 
-        lessonsList.sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
-
-        const totalLessons = lessonsList.length;
-        const completedLessons = lessonsList.filter((l) =>
-          completedLessonIds.has(l.id)
-        ).length;
-        const percent =
-          totalLessons > 0
-            ? Math.round((completedLessons / totalLessons) * 100)
-            : 0;
-
-        let resumeLessonId = lessonsList[0]?.id || "";
-        let resumeLessonTitle = lessonsList[0]?.title || "";
-        const incomplete = lessonsList.find(
-          (l) => !completedLessonIds.has(l.id)
-        );
-        if (incomplete) {
-          resumeLessonId = incomplete.id;
-          resumeLessonTitle = incomplete.title;
+      if (directEnrollment) {
+        isExpired =
+          directEnrollment.status === "expired" ||
+          (directEnrollment.expiresAt !== null && new Date(directEnrollment.expiresAt) <= now);
+        effectiveExpiresAt = directEnrollment.expiresAt;
+      } else if (bundleInfo) {
+        const parentEnrollment = studentEnrollments.find((e: any) => e.courseId === bundleInfo.bundleId);
+        if (parentEnrollment) {
+          enrollmentId = parentEnrollment.id;
+          isExpired =
+            parentEnrollment.status === "expired" ||
+            (parentEnrollment.expiresAt !== null && new Date(parentEnrollment.expiresAt) <= now);
         }
+        effectiveExpiresAt = bundleInfo.expiresAt || null;
+      }
 
-        return {
-          id: courseObj.id,
-          title: courseObj.title,
-          slug: (courseObj as any).slug || null,
-          thumbnailUrl: (courseObj as any).thumbnailUrl || null,
-          enrollmentId: enr.id,
-          expiresAt: enr.expiresAt,
-          isExpired: Boolean(isExpired),
-          totalLessons,
-          completedLessons,
-          percent,
-          resumeLessonId,
-          resumeLessonTitle,
-        };
-      })
-      .filter((c: any): c is DashboardCourseStatus => c !== null);
+      const lessonsList: any[] = [];
+      (courseObj.modules as any[])?.forEach((m: any) => {
+        if (m.lessons) lessonsList.push(...m.lessons);
+      });
+
+      lessonsList.sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+
+      const totalLessons = lessonsList.length;
+      const completedLessons = lessonsList.filter((l) =>
+        completedLessonIds.has(l.id)
+      ).length;
+      const percent =
+        totalLessons > 0
+          ? Math.round((completedLessons / totalLessons) * 100)
+          : 0;
+
+      let resumeLessonId = lessonsList[0]?.id || "";
+      let resumeLessonTitle = lessonsList[0]?.title || "";
+      const incomplete = lessonsList.find(
+        (l) => !completedLessonIds.has(l.id)
+      );
+      if (incomplete) {
+        resumeLessonId = incomplete.id;
+        resumeLessonTitle = incomplete.title;
+      }
+
+      return {
+        id: courseObj.id,
+        title: courseObj.title,
+        slug: courseObj.slug || null,
+        thumbnailUrl: courseObj.thumbnailUrl || null,
+        enrollmentId,
+        expiresAt: effectiveExpiresAt,
+        isExpired: Boolean(isExpired),
+        totalLessons,
+        completedLessons,
+        percent,
+        resumeLessonId,
+        resumeLessonTitle,
+        bundleTitle: !directEnrollment && bundleInfo ? bundleInfo.bundleTitle : null,
+      };
+    });
 
     // 4. Derive summary metrics
     const enrolledCount = coursesWithStatus.length;
@@ -187,7 +215,7 @@ export const getStudentDashboardData = cache(
     const upcomingLiveSessions: UpcomingLiveSessionItem[] = [];
     const upcomingRecordedContent: UpcomingRecordedItem[] = [];
 
-    enrolledCourses.forEach((c: any) => {
+    learningCourses.forEach((c: any) => {
       (c.modules as any[])?.forEach((m: any) => {
         m.lessons?.forEach((l: any) => {
           if (

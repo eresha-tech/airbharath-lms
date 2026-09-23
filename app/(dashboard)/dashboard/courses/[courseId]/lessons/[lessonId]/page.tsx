@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { lessons, enrollments, courses, lessonMaterials } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { hasCourseAccess } from "@/lib/course-access";
 import { LessonCompleteButton } from "@/components/LessonCompleteButton";
 import { LessonComments } from "@/components/LessonComments";
 import { LessonNavigation } from "@/components/classroom/LessonNavigation";
@@ -107,10 +108,8 @@ export default async function LessonPage({ params }: LessonPageProps) {
   let isEnrolled = lessonObj.isFreePreview || session.role === "admin";
 
   if (!isEnrolled) {
-    const enrollmentRecord = await db.query.enrollments.findFirst({
-      where: and(eq(enrollments.userId, session.id), eq(enrollments.courseId, courseObj.id)),
-    });
-    if (enrollmentRecord) {
+    const access = await hasCourseAccess(session.id, courseObj.id, session.role);
+    if (access.hasAccess) {
       isEnrolled = true;
     }
   }

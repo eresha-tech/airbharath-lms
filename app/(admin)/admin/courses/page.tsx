@@ -15,6 +15,7 @@ export default async function AdminCourses() {
     with: {
       instructor: true,
       enrollments: true,
+      bundleItems: true,
       modules: {
         with: {
           lessons: true,
@@ -31,6 +32,8 @@ export default async function AdminCourses() {
       lessonCount += m.lessons?.length || 0;
     });
 
+    const isBundle = Boolean(course.isBundle || (course.bundleItems && course.bundleItems.length > 0));
+
     return {
       id: course.id,
       title: course.title,
@@ -40,6 +43,8 @@ export default async function AdminCourses() {
       price: Number(course.price || 0),
       accessDays: course.accessDays ?? null,
       isPublished: !!course.isPublished,
+      isBundle,
+      bundleItemCount: course.bundleItems?.length || 0,
       createdAt: course.createdAt ? new Date(course.createdAt).toISOString() : new Date().toISOString(),
       studentCount: course.enrollments?.length || 0,
       moduleCount: modules.length,

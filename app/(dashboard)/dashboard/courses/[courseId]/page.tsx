@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { courses, enrollments } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { hasCourseAccess, getBundleIncludedCourses } from "@/lib/course-access";
 import Link from "next/link";
 import { ArrowLeft, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -69,12 +70,16 @@ export default async function CoursePage({ params }: CoursePageProps) {
     return redirect("/dashboard/courses");
   }
 
-  const enrollmentRecord = await db.query.enrollments.findFirst({
-    where: and(eq(enrollments.userId, session.id), eq(enrollments.courseId, courseObj.id)),
-  });
+  const access = await hasCourseAccess(session.id, courseObj.id, session.role);
 
-  if (!enrollmentRecord && session.role !== "admin") {
+  if (!access.hasAccess) {
     return redirect(`/courses/${courseObj.slug || courseObj.id}`);
+  }
+
+  // If this course is a bundle with included courses, find the first course in the bundle
+  const bundledCourses = await getBundleIncludedCourses(courseObj.id);
+  if (bundledCourses.length > 0) {
+    return redirect(`/dashboard/courses/${bundledCourses[0].id}`);
   }
 
   // Find first lesson across sections or top-level modules

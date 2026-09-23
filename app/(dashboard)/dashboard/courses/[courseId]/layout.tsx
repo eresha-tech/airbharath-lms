@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { enrollments, courses, progress } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { ClassroomLayout } from "@/components/classroom/ClassroomLayout";
+import { hasCourseAccess } from "@/lib/course-access";
 
 export const dynamic = "force-dynamic";
 
@@ -75,13 +76,21 @@ export default async function CourseLayout({
     return redirect("/dashboard/courses");
   }
 
-  // Check enrollment
-  const enrollmentObj = await db.query.enrollments.findFirst({
-    where: and(eq(enrollments.userId, session.id), eq(enrollments.courseId, courseObj.id)),
-  });
+  // Check enrollment / bundle entitlement
+  const access = await hasCourseAccess(session.id, courseObj.id, session.role);
 
-  if (!enrollmentObj && session.role !== "admin") {
+  if (!access.hasAccess) {
     return redirect(`/courses/${courseObj.slug || courseObj.id}`);
+  }
+
+  // A bundle is an access pass, not a normal classroom course
+  if (courseObj.isBundle) {
+    const { getBundleIncludedCourses } = await import("@/lib/course-access");
+    const bundledCourses = await getBundleIncludedCourses(courseObj.id);
+    if (bundledCourses.length > 0) {
+      return redirect(`/dashboard/courses/${bundledCourses[0].id}`);
+    }
+    return redirect("/my-courses");
   }
 
   const courseSections = (courseObj.sections as any[]) || [];
