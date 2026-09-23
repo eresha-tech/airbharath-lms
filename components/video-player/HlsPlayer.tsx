@@ -20,8 +20,16 @@ import {
   Sliders,
   Gauge,
   Subtitles,
+  SlidersHorizontal,
 } from "lucide-react";
 import { track } from "@/lib/analytics";
+import {
+  CaptionOverlay,
+  CaptionPreferences,
+  DEFAULT_CAPTION_PREFERENCES,
+  loadCaptionPreferences,
+  saveCaptionPreferences,
+} from "./CaptionOverlay";
 
 interface HlsPlayerProps {
   videoId: string;
@@ -125,17 +133,36 @@ export function HlsPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
 
-  // Quality & Speed menu states
+  // Quality & Speed & Caption menu states
   const [levels, setLevels] = useState<QualityLevel[]>([]);
   const [selectedLevel, setSelectedLevel] = useState<number>(-1); // -1 = Auto
   const [currentLevelLabel, setCurrentLevelLabel] = useState<string>("720p");
-  const [activeMenu, setActiveMenu] = useState<"none" | "main" | "quality" | "speed">("none");
+  const [activeMenu, setActiveMenu] = useState<"none" | "main" | "quality" | "speed" | "captions">("none");
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverPos, setHoverPos] = useState<number>(0);
 
   // Captions state
   const [hasServerCaptions, setHasServerCaptions] = useState<boolean>(false);
   const [isCaptionsOn, setIsCaptionsOn] = useState<boolean>(false);
+  const [captionPrefs, setCaptionPrefs] = useState<CaptionPreferences>(DEFAULT_CAPTION_PREFERENCES);
+
+  // Load persisted caption preferences on mount
+  useEffect(() => {
+    setCaptionPrefs(loadCaptionPreferences());
+  }, []);
+
+  const updateCaptionPrefs = (updates: Partial<CaptionPreferences>) => {
+    setCaptionPrefs((prev) => {
+      const next = { ...prev, ...updates };
+      saveCaptionPreferences(next);
+      return next;
+    });
+  };
+
+  const resetCaptionPrefs = () => {
+    setCaptionPrefs(DEFAULT_CAPTION_PREFERENCES);
+    saveCaptionPreferences(DEFAULT_CAPTION_PREFERENCES);
+  };
 
   const isCaptionAvailable = captionAvailable ?? hasServerCaptions;
   const effectiveCaptionUrl =
@@ -562,7 +589,7 @@ export function HlsPlayer({
       const tracks = video.textTracks;
       if (tracks && tracks.length > 0) {
         for (let i = 0; i < tracks.length; i++) {
-          tracks[i].mode = isCaptionsOn ? "showing" : "disabled";
+          tracks[i].mode = isCaptionsOn ? "hidden" : "disabled";
         }
       }
     };
@@ -581,7 +608,7 @@ export function HlsPlayer({
     const nextState = !isCaptionsOn;
     if (tracks && tracks.length > 0) {
       for (let i = 0; i < tracks.length; i++) {
-        tracks[i].mode = nextState ? "showing" : "disabled";
+        tracks[i].mode = nextState ? "hidden" : "disabled";
       }
     }
     setIsCaptionsOn(nextState);
@@ -726,6 +753,14 @@ export function HlsPlayer({
         )}
       </video>
 
+      {/* Custom AirBharath Caption Overlay */}
+      <CaptionOverlay
+        videoRef={videoRef}
+        isCaptionsOn={isCaptionsOn}
+        preferences={captionPrefs}
+        showControls={showControls}
+      />
+
       {/* Multi-line Watermark Overlay (Email + Mobile Number) */}
       {displayWatermark && (
         <div className="absolute top-3 right-3 sm:top-4 sm:right-4 pointer-events-none select-none text-white/50 text-[9px] sm:text-[11px] font-mono font-medium z-20 text-right leading-tight whitespace-pre-line drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
@@ -758,11 +793,13 @@ export function HlsPlayer({
         </div>
       )}
 
-      {/* Settings / Quality / Speed Menu Overlays */}
+      {/* Settings / Quality / Speed / Captions Menu Overlays */}
       {activeMenu !== "none" && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="absolute bottom-14 right-2 sm:bottom-16 sm:right-4 z-40 bg-zinc-900/95 backdrop-blur-md border border-zinc-700/60 rounded-xl p-2 w-48 max-w-[calc(100vw-32px)] text-xs text-zinc-200 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+          className={`absolute bottom-14 right-2 sm:bottom-16 sm:right-4 z-40 bg-zinc-900/95 backdrop-blur-md border border-zinc-700/60 rounded-2xl p-2.5 text-xs text-zinc-200 shadow-2xl animate-in fade-in zoom-in-95 duration-150 ${
+            activeMenu === "captions" ? "w-64 max-w-[calc(100vw-24px)]" : "w-48 max-w-[calc(100vw-32px)]"
+          }`}
         >
           {/* Main Settings Menu */}
           {activeMenu === "main" && (
@@ -792,6 +829,20 @@ export function HlsPlayer({
                 </span>
                 <span className="text-zinc-400 text-[11px] font-mono">{playbackRate}x</span>
               </button>
+              {isCaptionAvailable && (
+                <button
+                  onClick={() => setActiveMenu("captions")}
+                  className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-white/10 transition text-left cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <Subtitles className="w-3.5 h-3.5 text-zinc-400" />
+                    Captions
+                  </span>
+                  <span className="text-zinc-400 text-[11px] font-mono capitalize">
+                    {isCaptionsOn ? captionPrefs.textSize : "Off"}
+                  </span>
+                </button>
+              )}
             </div>
           )}
 
@@ -858,6 +909,155 @@ export function HlsPlayer({
                   {playbackRate === rate && <Check className="w-3.5 h-3.5" />}
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* Captions Customization Submenu */}
+          {activeMenu === "captions" && (
+            <div className="space-y-2.5 max-h-[72vh] overflow-y-auto pr-0.5">
+              <div className="flex items-center justify-between px-2 py-1 border-b border-zinc-800">
+                <button
+                  onClick={() => setActiveMenu("main")}
+                  className="text-[10px] font-semibold text-zinc-400 hover:text-white uppercase tracking-wider cursor-pointer"
+                >
+                  ← Back
+                </button>
+                <span className="text-[10px] font-semibold text-zinc-400 uppercase">Captions</span>
+              </div>
+
+              {/* Toggle Captions On/Off */}
+              <div className="px-1 pt-0.5">
+                <button
+                  onClick={toggleCaptions}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition text-left cursor-pointer border ${
+                    isCaptionsOn
+                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 font-semibold"
+                      : "bg-white/5 text-zinc-300 border-white/10 hover:bg-white/10"
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Subtitles className="w-3.5 h-3.5" />
+                    <span>Display Subtitles</span>
+                  </span>
+                  <span className="text-[11px] font-bold">{isCaptionsOn ? "ON" : "OFF"}</span>
+                </button>
+              </div>
+
+              {/* Text Size */}
+              <div className="space-y-1 px-1">
+                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                  Text Size
+                </div>
+                <div className="grid grid-cols-4 gap-1">
+                  {(
+                    [
+                      { id: "small", label: "Small" },
+                      { id: "medium", label: "Medium" },
+                      { id: "large", label: "Large" },
+                      { id: "xl", label: "XL" },
+                    ] as const
+                  ).map((size) => (
+                    <button
+                      key={size.id}
+                      onClick={() => updateCaptionPrefs({ textSize: size.id })}
+                      className={`py-1 rounded-md text-[10px] font-semibold transition cursor-pointer text-center ${
+                        captionPrefs.textSize === size.id
+                          ? "bg-emerald-500 text-white shadow-xs font-bold"
+                          : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      {size.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Style */}
+              <div className="space-y-1 px-1">
+                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                  Style
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-[10px]">
+                  {(
+                    [
+                      { id: "rounded_dark", label: "Rounded Dark" },
+                      { id: "solid_dark", label: "Solid Dark" },
+                      { id: "text_shadow", label: "Text + Shadow" },
+                      { id: "high_contrast", label: "High Contrast" },
+                    ] as const
+                  ).map((st) => (
+                    <button
+                      key={st.id}
+                      onClick={() => updateCaptionPrefs({ style: st.id })}
+                      className={`py-1.5 px-2 rounded-md font-semibold transition cursor-pointer text-left truncate ${
+                        captionPrefs.style === st.id
+                          ? "bg-emerald-500/25 text-emerald-400 border border-emerald-500/40"
+                          : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      {st.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Background Opacity (for Rounded Dark) */}
+              {captionPrefs.style === "rounded_dark" && (
+                <div className="space-y-1 px-1">
+                  <div className="flex items-center justify-between text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                    <span>Background Opacity</span>
+                    <span className="font-mono text-zinc-200">{captionPrefs.opacity}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={captionPrefs.opacity}
+                    onChange={(e) => updateCaptionPrefs({ opacity: Number(e.target.value) })}
+                    className="w-full h-1 bg-white/20 accent-emerald-500 rounded-lg cursor-pointer"
+                  />
+                </div>
+              )}
+
+              {/* Position */}
+              <div className="space-y-1 px-1">
+                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                  Position
+                </div>
+                <div className="grid grid-cols-3 gap-1">
+                  {(
+                    [
+                      { id: "lower", label: "Lower" },
+                      { id: "default", label: "Default" },
+                      { id: "higher", label: "Higher" },
+                    ] as const
+                  ).map((pos) => (
+                    <button
+                      key={pos.id}
+                      onClick={() => updateCaptionPrefs({ position: pos.id })}
+                      className={`py-1 rounded-md text-[10px] font-semibold transition cursor-pointer text-center ${
+                        captionPrefs.position === pos.id
+                          ? "bg-emerald-500 text-white shadow-xs font-bold"
+                          : "bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      {pos.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Reset to Default */}
+              <div className="px-1 pt-1 border-t border-zinc-800">
+                <button
+                  onClick={resetCaptionPrefs}
+                  className="w-full py-1 text-[10px] font-semibold text-zinc-400 hover:text-white hover:bg-white/5 rounded-md transition cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Reset to Default</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
