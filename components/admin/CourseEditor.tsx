@@ -103,6 +103,7 @@ export interface CourseEditorProps {
     price: number;
     thumbnail_url: string;
     is_published: boolean;
+    is_bundle?: boolean | null;
     access_days?: number | null;
     certificate_status?: 'disabled' | 'active' | 'paused';
     certificate_activated_at?: string | null;
@@ -121,8 +122,10 @@ export default function CourseEditor({
 }: CourseEditorProps) {
   const router = useRouter();
 
-  // Active Tab
-  const [activeTab, setActiveTab] = useState<"curriculum" | "settings" | "certificates">("curriculum");
+  // Active Tab: Prioritize bundle management if course is configured as a bundle
+  const [activeTab, setActiveTab] = useState<"curriculum" | "settings" | "certificates" | "bundle">(
+    course.is_bundle ? "bundle" : "curriculum"
+  );
 
   // Course Properties State
   const [title, setTitle] = useState(course.title || "");
@@ -135,6 +138,23 @@ export default function CourseEditor({
   const [isPublished, setIsPublished] = useState(course.is_published || false);
   const [loadingCourse, setLoadingCourse] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+
+  // Bundle Management State
+  const [isBundle, setIsBundle] = useState<boolean>(Boolean(course.is_bundle));
+  const [selectedBundleCourseIds, setSelectedBundleCourseIds] = useState<string[]>([]);
+  const [availableCourses, setAvailableCourses] = useState<Array<{
+    id: string;
+    title: string;
+    slug: string | null;
+    price: string | number;
+    thumbnailUrl: string | null;
+    isPublished: boolean;
+  }>>([]);
+  const [loadingBundleData, setLoadingBundleData] = useState(false);
+  const [savingBundle, setSavingBundle] = useState(false);
+  const [bundleActionSuccessMsg, setBundleActionSuccessMsg] = useState<string | null>(null);
+  const [bundleActionErrorMsg, setBundleActionErrorMsg] = useState<string | null>(null);
+  const [bundleSearchTerm, setBundleSearchTerm] = useState("");
 
   // Certificate Management State
   const [certStatus, setCertStatus] = useState<'disabled' | 'active' | 'paused'>(
@@ -203,11 +223,56 @@ export default function CourseEditor({
     }
   }, [course.id]);
 
-  useEffect(() => {
-    if (activeTab === "certificates") {
-      fetchCertificatesData();
+  const fetchBundleData = useCallback(async () => {
+    setLoadingBundleData(true);
+    setBundleActionErrorMsg(null);
+    try {
+      const res = await fetch(`/api/admin/courses/${course.id}/bundle`);
+      const data = await res.json();
+      if (res.ok) {
+        setIsBundle(Boolean(data.isBundle));
+        setSelectedBundleCourseIds(data.bundleItems?.map((bi: any) => bi.courseId) || []);
+        setAvailableCourses(data.availableCourses || []);
+      }
+    } catch (err: any) {
+      console.error("Failed to fetch bundle data:", err);
+    } finally {
+      setLoadingBundleData(false);
     }
-  }, [activeTab, fetchCertificatesData]);
+  }, [course.id]);
+
+  useEffect(() => {
+    if (activeTab === "bundle") {
+      fetchBundleData();
+    }
+  }, [activeTab, fetchBundleData]);
+
+  const handleSaveBundle = async () => {
+    setSavingBundle(true);
+    setBundleActionSuccessMsg(null);
+    setBundleActionErrorMsg(null);
+    try {
+      const res = await fetch(`/api/admin/courses/${course.id}/bundle`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          isBundle,
+          includedCourseIds: selectedBundleCourseIds,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setBundleActionSuccessMsg("Bundle configuration saved successfully!");
+        setIsBundle(data.isBundle);
+      } else {
+        setBundleActionErrorMsg(data.error || "Failed to save bundle configuration.");
+      }
+    } catch (err: any) {
+      setBundleActionErrorMsg(err.message || "Network error while saving bundle.");
+    } finally {
+      setSavingBundle(false);
+    }
+  };
 
   const handleUpdateCertStatus = async (newStatus: "disabled" | "active" | "paused") => {
     setUpdatingCertStatus(true);
@@ -1134,10 +1199,44 @@ export default function CourseEditor({
               </span>
             )}
           </TabsTrigger>
+          <TabsTrigger
+            value="bundle"
+            className="rounded-xl px-5 py-2.5 text-xs font-bold gap-2 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-xs transition-all flex-1 sm:flex-initial"
+          >
+            <Layers className="h-4 w-4" />
+            <span>Course Bundle ({selectedBundleCourseIds.length})</span>
+            {isBundle && (
+              <span className="ml-1 px-1.5 py-0.5 bg-primary/20 text-primary rounded-full text-[10px] font-bold">
+                Active
+              </span>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         {/* TAB 1: CURRICULUM BUILDER */}
         <TabsContent value="curriculum" className="space-y-6 m-0">
+          {isBundle && (
+            <div className="p-4 bg-primary/10 border border-primary/20 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="space-y-0.5">
+                <span className="font-bold text-primary flex items-center gap-1.5">
+                  <Layers className="h-4 w-4" />
+                  <span>Course Bundle Mode Active</span>
+                </span>
+                <p className="text-muted-foreground">
+                  Bundle courses are managed through <strong>Included Courses</strong>. This bundle does not need its own lessons.
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setActiveTab("bundle")}
+                className="bg-primary text-primary-foreground font-bold rounded-xl text-xs h-9 px-4 shrink-0 shadow-xs cursor-pointer"
+              >
+                Configure Included Courses →
+              </Button>
+            </div>
+          )}
+
           <Card className="rounded-3xl border border-border/80 shadow-xs">
             <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-border/60 gap-3">
               <div>
@@ -2670,6 +2769,181 @@ export default function CourseEditor({
                   })()
                 )}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 4: BUNDLE MANAGEMENT */}
+        <TabsContent value="bundle" className="space-y-6 m-0">
+          <Card className="rounded-3xl border border-border/80 shadow-xs">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-border/60 gap-3">
+              <div>
+                <CardTitle className="text-base font-bold font-outfit text-foreground flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-primary" />
+                  <span>Course Bundle &amp; Multi-Course Entitlements</span>
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Package multiple standalone courses into this commercial Combo Pass. Enrolled students gain instant access to all selected courses.
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                size="sm"
+                disabled={savingBundle || loadingBundleData}
+                onClick={handleSaveBundle}
+                className="rounded-xl text-xs font-bold gap-2 h-9 px-4 shadow-xs cursor-pointer shrink-0"
+              >
+                {savingBundle ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Saving Bundle...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-3.5 w-3.5" />
+                    <span>Save Bundle Settings</span>
+                  </>
+                )}
+              </Button>
+            </CardHeader>
+
+            <CardContent className="p-6 space-y-6">
+              {bundleActionSuccessMsg && (
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <span>{bundleActionSuccessMsg}</span>
+                </div>
+              )}
+
+              {bundleActionErrorMsg && (
+                <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{bundleActionErrorMsg}</span>
+                </div>
+              )}
+
+              {/* Toggle Bundle Mode */}
+              <div className="p-4 rounded-2xl border border-border/80 bg-muted/20 flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <h4 className="text-xs sm:text-sm font-bold font-outfit text-foreground">
+                    Enable Course Bundle Mode
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    When enabled, buying or enrolling in this course grants access to all selected standalone programs below.
+                  </p>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+                  <input
+                    type="checkbox"
+                    checked={isBundle}
+                    onChange={(e) => setIsBundle(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+              </div>
+
+              {loadingBundleData ? (
+                <div className="py-12 flex flex-col items-center justify-center space-y-3 text-muted-foreground">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-xs">Loading bundle configuration...</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        Included Courses ({selectedBundleCourseIds.length} Selected)
+                      </h4>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Select which courses are bundled with this pass.
+                      </p>
+                    </div>
+
+                    <div className="relative w-full sm:w-64">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                      <Input
+                        type="text"
+                        placeholder="Search courses..."
+                        value={bundleSearchTerm}
+                        onChange={(e) => setBundleSearchTerm(e.target.value)}
+                        className="pl-8 h-8 text-xs font-medium rounded-xl border-border/80"
+                      />
+                    </div>
+                  </div>
+
+                  {availableCourses.length === 0 ? (
+                    <div className="p-8 text-center bg-muted/20 border border-dashed border-border rounded-2xl text-muted-foreground text-xs">
+                      No other courses found to include. Create standalone courses first.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-1">
+                      {availableCourses
+                        .filter((c) =>
+                          c.title.toLowerCase().includes(bundleSearchTerm.toLowerCase()) ||
+                          (c.slug && c.slug.toLowerCase().includes(bundleSearchTerm.toLowerCase()))
+                        )
+                        .map((c) => {
+                          const isSelected = selectedBundleCourseIds.includes(c.id);
+                          return (
+                            <div
+                              key={c.id}
+                              onClick={() => {
+                                if (isSelected) {
+                                  setSelectedBundleCourseIds((prev) =>
+                                    prev.filter((id) => id !== c.id)
+                                  );
+                                } else {
+                                  setSelectedBundleCourseIds((prev) => [...prev, c.id]);
+                                }
+                              }}
+                              className={cn(
+                                "p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 text-left",
+                                isSelected
+                                  ? "border-primary bg-primary/5 shadow-2xs"
+                                  : "border-border bg-card hover:border-primary/40 hover:bg-muted/30"
+                              )}
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div
+                                  className={cn(
+                                    "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors",
+                                    isSelected
+                                      ? "bg-primary border-primary text-primary-foreground"
+                                      : "border-border bg-background"
+                                  )}
+                                >
+                                  {isSelected && <Check className="h-3.5 w-3.5" />}
+                                </div>
+
+                                <div className="min-w-0">
+                                  <h5 className="font-bold text-xs font-outfit text-foreground truncate">
+                                    {c.title}
+                                  </h5>
+                                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                                    <span>₹{Number(c.price).toLocaleString("en-IN")}</span>
+                                    <span>·</span>
+                                    <span className={c.isPublished ? "text-emerald-600 font-semibold" : "text-amber-600 font-semibold"}>
+                                      {c.isPublished ? "Published" : "Draft"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {isSelected && (
+                                <Badge variant="secondary" className="text-[10px] font-bold shrink-0 bg-primary/15 text-primary border-primary/20">
+                                  Included
+                                </Badge>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

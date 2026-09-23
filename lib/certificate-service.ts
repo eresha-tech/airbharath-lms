@@ -3,6 +3,7 @@ import { courses, modules, lessons, progress, certificates, users, enrollments }
 import { eq, and, inArray, desc } from 'drizzle-orm';
 import { generateAndSaveCertificate } from '@/lib/certificate-generator';
 import { sendMailercloudEmail } from '@/lib/mailercloud';
+import { hasCourseAccess } from '@/lib/course-access';
 
 export type CertificateLifecycleStatus =
   | 'in_progress'
@@ -156,12 +157,10 @@ export async function claimCertificate({
   courseId: string;
   baseUrl?: string;
 }) {
-  // 1. Verify active enrollment
-  const enrollment = await db.query.enrollments.findFirst({
-    where: and(eq(enrollments.userId, userId), eq(enrollments.courseId, courseId)),
-  });
+  // 1. Verify active enrollment / bundle entitlement
+  const access = await hasCourseAccess(userId, courseId);
 
-  if (!enrollment) {
+  if (!access.hasAccess) {
     throw new Error('You are not enrolled in this course.');
   }
 
@@ -309,12 +308,10 @@ export async function adminIssueCertificates({
         continue;
       }
 
-      // 2. Verify student is enrolled in this course
-      const enrollment = await db.query.enrollments.findFirst({
-        where: and(eq(enrollments.userId, sId), eq(enrollments.courseId, courseId)),
-      });
+      // 2. Verify student has direct enrollment or bundle access to this course
+      const access = await hasCourseAccess(sId, courseId);
 
-      if (!enrollment) {
+      if (!access.hasAccess) {
         results.skippedCount++;
         results.errors.push({
           studentId: sId,

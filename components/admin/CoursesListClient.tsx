@@ -35,6 +35,8 @@ export interface FormattedCourseListItem {
   price: number;
   accessDays: number | null;
   isPublished: boolean;
+  isBundle?: boolean;
+  bundleItemCount?: number;
   createdAt: string;
   studentCount: number;
   moduleCount: number;
@@ -356,6 +358,12 @@ export default function CoursesListClient({ initialCourses = [] }: CoursesListCl
                               <span>•</span>
                               <span>{course.lessonCount} lessons</span>
                             </span>
+
+                            {course.isBundle && (
+                              <Badge variant="secondary" className="text-[9px] font-bold bg-primary/15 text-primary border-primary/20 px-2 py-0.5">
+                                Bundle ({course.bundleItemCount || 0} Courses)
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </div>

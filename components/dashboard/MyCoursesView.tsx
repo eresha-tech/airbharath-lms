@@ -42,6 +42,7 @@ export interface EnrolledCourseData {
   orderId?: string | null;
   certificateCode?: string | null;
   certificateId?: string | null;
+  bundleTitle?: string | null;
 }
 
 interface MyCoursesViewProps {
@@ -347,7 +348,12 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
                       )}
 
                       {/* Status Badges */}
-                      <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                      <div className="absolute top-3 right-3 flex flex-wrap items-center gap-1.5 justify-end max-w-[85%]">
+                        {course.bundleTitle && (
+                          <Badge variant="outline" className="bg-background/90 text-primary border-primary/30 text-[9px] font-bold uppercase shadow-2xs">
+                            {course.bundleTitle}
+                          </Badge>
+                        )}
                         {course.isExpired ? (
                           <Badge variant="destructive" className="text-[10px] uppercase font-bold shadow-xs">
                             Expired

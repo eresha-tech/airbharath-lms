@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { enrollments, courses, progress, orders, certificates } from "@/lib/db/schema";
 import { eq, inArray, and, desc } from "drizzle-orm";
 import { MyCoursesView, EnrolledCourseData } from "@/components/dashboard/MyCoursesView";
+import { getUserAccessSummary } from "@/lib/course-access";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,10 @@ export default async function MyCoursesDashboardPage() {
     return redirect("/login");
   }
 
-  // Fetch student's enrollments, progress, paid orders, and certificates in parallel
+  // 1. Get complete course access summary (direct + bundle entitlements)
+  const accessSummary = await getUserAccessSummary(session.id);
+
+  // 2. Fetch student's progress, paid orders, certificates, and enrollments in parallel
   const [userEnrollments, userProgress, userOrders, userCertificates] = await Promise.all([
     db.query.enrollments.findMany({
       where: eq(enrollments.userId, session.id),
@@ -31,13 +35,13 @@ export default async function MyCoursesDashboardPage() {
     }),
   ]);
 
-  const courseIds = userEnrollments.map((e: any) => e.courseId);
+  const targetCourseIds = accessSummary.effectiveCourseIds;
 
-  // Fetch courses with ordered modules and lessons
-  const enrolledCourses =
-    courseIds.length > 0
+  // 3. Fetch courses with ordered modules and lessons in one single query
+  const allAccessibleCourses =
+    targetCourseIds.length > 0
       ? await db.query.courses.findMany({
-          where: inArray(courses.id, courseIds),
+          where: inArray(courses.id, targetCourseIds),
           with: {
             modules: {
               orderBy: (m: any, { asc }: any) => [asc(m.orderIndex)],
@@ -55,20 +59,43 @@ export default async function MyCoursesDashboardPage() {
     userProgress.filter((p: any) => p.isCompleted).map((p: any) => p.lessonId)
   );
 
-  // Map courses with precise real progress and navigation state
-  const rawCourses: (EnrolledCourseData | null)[] = userEnrollments.map((enrollment: any) => {
-    const course = enrolledCourses.find((c: any) => c.id === enrollment.courseId);
-    if (!course) return null;
+  const now = new Date();
 
-    const isExpired =
-      enrollment.status === "expired" ||
-      (enrollment.expiresAt && new Date(enrollment.expiresAt) < new Date());
+  // 4. Map courses with precise real progress, certificates, and bundle entitlement state
+  const coursesData: EnrolledCourseData[] = [];
+
+  for (const course of allAccessibleCourses) {
+    // Bundles are access/commercial containers, never normal learning courses
+    if (course.isBundle || accessSummary.bundleCourseIds.includes(course.id)) {
+      continue;
+    }
+    const courseModules = (course.modules as any[]) || [];
+
+    // Direct enrollment record, if any
+    const directEnrollment = userEnrollments.find((e: any) => e.courseId === course.id);
+    const bundleInfo = accessSummary.courseToBundleMap[course.id];
+
+    let isExpired = false;
+    let effectiveExpiresAt: Date | string | null = null;
+
+    if (directEnrollment) {
+      isExpired =
+        directEnrollment.status === "expired" ||
+        (directEnrollment.expiresAt !== null && new Date(directEnrollment.expiresAt) <= now);
+      effectiveExpiresAt = directEnrollment.expiresAt;
+    } else if (bundleInfo) {
+      const parentEnrollment = userEnrollments.find((e: any) => e.courseId === bundleInfo.bundleId);
+      isExpired =
+        parentEnrollment?.status === "expired" ||
+        (parentEnrollment?.expiresAt !== null && parentEnrollment?.expiresAt !== undefined && new Date(parentEnrollment.expiresAt) <= now);
+      effectiveExpiresAt = bundleInfo.expiresAt || null;
+    }
 
     let totalLessons = 0;
     let completedLessons = 0;
     const allLessons: Array<{ id: string; title: string }> = [];
 
-    (course.modules as any[])?.forEach((m: any) => {
+    courseModules.forEach((m: any) => {
       m.lessons?.forEach((l: any) => {
         totalLessons++;
         allLessons.push({ id: l.id, title: l.title });
@@ -78,17 +105,19 @@ export default async function MyCoursesDashboardPage() {
       });
     });
 
-    // Preserve exact standard calculation: completed / total * 100
     const percent = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
-
-    // Find resume lesson: first incomplete lesson, or fallback to first lesson in sequence
     const nextIncompleteLesson = allLessons.find((l) => !completedLessonIds.has(l.id));
     const resumeLesson = nextIncompleteLesson || allLessons[0] || null;
 
-    const matchingOrder = userOrders.find((o: any) => o.courseId === course.id);
+    // Direct order, or fallback to parent bundle order
+    let matchingOrder = userOrders.find((o: any) => o.courseId === course.id);
+    if (!matchingOrder && bundleInfo) {
+      matchingOrder = userOrders.find((o: any) => o.courseId === bundleInfo.bundleId);
+    }
+
     const matchingCert = userCertificates.find((c: any) => c.courseId === course.id);
 
-    const courseItem: EnrolledCourseData = {
+    coursesData.push({
       id: course.id,
       title: course.title,
       slug: course.slug ?? null,
@@ -100,18 +129,13 @@ export default async function MyCoursesDashboardPage() {
       resumeLessonId: resumeLesson ? resumeLesson.id : "",
       resumeLessonTitle: resumeLesson ? resumeLesson.title : undefined,
       isExpired: Boolean(isExpired),
-      expiresAt: enrollment.expiresAt,
+      expiresAt: effectiveExpiresAt,
       orderId: matchingOrder?.id ?? null,
       certificateCode: matchingCert?.certificateCode ?? null,
       certificateId: matchingCert?.id ?? null,
-    };
-
-    return courseItem;
-  });
-
-  const coursesData: EnrolledCourseData[] = rawCourses.filter(
-    (item): item is EnrolledCourseData => item !== null
-  );
+      bundleTitle: !directEnrollment && bundleInfo ? bundleInfo.bundleTitle : null,
+    });
+  }
 
   return <MyCoursesView courses={coursesData} />;
 }

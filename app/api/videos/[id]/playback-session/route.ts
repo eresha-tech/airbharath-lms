@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { videos, lessons, modules, enrollments, playbackSessions } from "@/lib/db/schema";
 import { eq, and, or, inArray } from "drizzle-orm";
+import { hasCourseAccess } from "@/lib/course-access";
 import {
   getCloudFrontSignedPlaybackUrl,
   acquirePlaybackSession,
@@ -114,19 +115,9 @@ export async function POST(
         if (targetLesson.isFreePreview) {
           isAuthorized = true;
         } else {
-          // 2. Active enrollment in this specific course
-          const [enrollment] = await db
-            .select()
-            .from(enrollments)
-            .where(
-              and(
-                eq(enrollments.userId, session.id),
-                eq(enrollments.courseId, targetLesson.courseId),
-                eq(enrollments.status, "active")
-              )
-            );
-
-          if (enrollment) {
+          // 2. Active enrollment / bundle entitlement in this specific course
+          const access = await hasCourseAccess(session.id, targetLesson.courseId, session.role);
+          if (access.hasAccess) {
             isAuthorized = true;
           }
         }
@@ -170,19 +161,10 @@ export async function POST(
         if (hasFreePreview) {
           isAuthorized = true;
         } else {
-          // Check active enrollment in THIS requested course
-          const [enrollment] = await db
-            .select()
-            .from(enrollments)
-            .where(
-              and(
-                eq(enrollments.userId, session.id),
-                eq(enrollments.courseId, requestedCourseId),
-                eq(enrollments.status, "active")
-              )
-            );
+          // Check active enrollment / bundle entitlement in THIS requested course
+          const access = await hasCourseAccess(session.id, requestedCourseId, session.role);
 
-          if (enrollment) {
+          if (access.hasAccess) {
             // Also check that at least one referencing lesson in this course is released
             const hasReleasedLesson = courseLessons.some(
               (l) =>
@@ -218,17 +200,8 @@ export async function POST(
         }
 
         if (!isAuthorized) {
-          const [enrollment] = await db
-            .select()
-            .from(enrollments)
-            .where(
-              and(
-                eq(enrollments.userId, session.id),
-                eq(enrollments.courseId, video.courseId),
-                eq(enrollments.status, "active")
-              )
-            );
-          if (enrollment) {
+          const access = await hasCourseAccess(session.id, video.courseId, session.role);
+          if (access.hasAccess) {
             isAuthorized = true;
           }
         }

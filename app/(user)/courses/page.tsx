@@ -27,6 +27,19 @@ export default async function CoursesPage() {
     dbCourseList = await db.query.courses.findMany({
       where: eq(courses.isPublished, true),
       with: {
+        bundleItems: {
+          with: {
+            course: {
+              with: {
+                modules: {
+                  with: {
+                    lessons: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         modules: {
           with: {
             lessons: true,
@@ -37,8 +50,8 @@ export default async function CoursesPage() {
 
     // Place combo/featured pack first, then alphabetical or standard order
     dbCourseList.sort((a: any, b: any) => {
-      if (a.slug === "combo-pack") return -1;
-      if (b.slug === "combo-pack") return 1;
+      if (a.isBundle || a.slug === "combo-pack") return -1;
+      if (b.isBundle || b.slug === "combo-pack") return 1;
       return 0;
     });
   } catch (err) {
@@ -47,12 +60,25 @@ export default async function CoursesPage() {
 
   // Transform real DB courses into uniform CatalogCourseItem format
   const formattedCourses: CatalogCourseItem[] = dbCourseList.map((c: any) => {
-    const modulesCount = c.modules?.length || 0;
-    const lessonsCount =
+    const isBundle = Boolean(c.isBundle || (c.bundleItems && c.bundleItems.length > 0));
+    let modulesCount = c.modules?.length || 0;
+    let lessonsCount =
       c.modules?.reduce(
         (acc: number, m: any) => acc + (m.lessons?.length || 0),
         0
       ) || 0;
+
+    if (isBundle && c.bundleItems && c.bundleItems.length > 0 && lessonsCount === 0) {
+      c.bundleItems.forEach((bi: any) => {
+        const bCourse = bi.course;
+        if (bCourse) {
+          modulesCount += bCourse.modules?.length || 0;
+          bCourse.modules?.forEach((m: any) => {
+            lessonsCount += m.lessons?.length || 0;
+          });
+        }
+      });
+    }
 
     return {
       id: c.id,
@@ -64,8 +90,8 @@ export default async function CoursesPage() {
       accessDays: c.accessDays || null,
       modulesCount,
       lessonsCount,
-      badge: c.slug?.includes("combo")
-        ? "Comprehensive Pack"
+      badge: isBundle || c.slug?.includes("combo")
+        ? "Combo Pass"
         : "Certificate Program",
     };
   });

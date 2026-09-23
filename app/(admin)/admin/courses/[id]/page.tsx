@@ -157,6 +157,7 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
         price: Number(courseObj.price || 0),
         thumbnail_url: courseObj.thumbnailUrl || "",
         is_published: !!courseObj.isPublished,
+        is_bundle: !!courseObj.isBundle,
         access_days: courseObj.accessDays ?? null,
         certificate_status: courseObj.certificateStatus || "disabled",
         certificate_activated_at: courseObj.certificateActivatedAt ? new Date(courseObj.certificateActivatedAt).toISOString() : null,

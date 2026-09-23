@@ -1,13 +1,14 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { certificates, enrollments, courses, progress, users } from "@/lib/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { certificates, courses, progress, users } from "@/lib/db/schema";
+import { eq, desc, inArray } from "drizzle-orm";
 import {
   CertificatesView,
   EarnedCertificateData,
   InProgressTrackData,
 } from "@/components/dashboard/CertificatesView";
+import { getUserAccessSummary } from "@/lib/course-access";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +19,12 @@ export default async function StudentCertificatesPage() {
     return redirect("/login");
   }
 
-  // Fetch student certificates, enrollments with lessons, progress, and user profile in parallel
-  const [studentCertificates, userEnrollments, userProgress, userProfile] = await Promise.all([
+  // 1. Get access summary for all accessible courses (direct + bundle entitlements)
+  const accessSummary = await getUserAccessSummary(session.id);
+  const targetCourseIds = accessSummary.effectiveCourseIds;
+
+  // 2. Fetch student certificates, progress, profile, and accessible courses in parallel
+  const [studentCertificates, allAccessibleCourses, userProgress, userProfile] = await Promise.all([
     db.query.certificates.findMany({
       where: eq(certificates.userId, session.id),
       with: {
@@ -27,10 +32,9 @@ export default async function StudentCertificatesPage() {
       },
       orderBy: [desc(certificates.issuedAt)],
     }),
-    db.query.enrollments.findMany({
-      where: eq(enrollments.userId, session.id),
-      with: {
-        course: {
+    targetCourseIds.length > 0
+      ? db.query.courses.findMany({
+          where: inArray(courses.id, targetCourseIds),
           with: {
             modules: {
               orderBy: (m: any, { asc }: any) => [asc(m.orderIndex)],
@@ -41,10 +45,8 @@ export default async function StudentCertificatesPage() {
               },
             },
           },
-        },
-      },
-      orderBy: [desc(enrollments.enrolledAt)],
-    }),
+        })
+      : Promise.resolve([]),
     db.query.progress.findMany({
       where: eq(progress.userId, session.id),
     }),
@@ -74,27 +76,23 @@ export default async function StudentCertificatesPage() {
 
   const earnedCourseIds = new Set(earnedCertificates.map((c) => c.courseId));
 
-  // Map enrolled courses that are still in progress towards a certificate
+  // Map accessible courses that are still in progress towards a certificate
   const inProgressTracks: InProgressTrackData[] = [];
 
-  for (const enrollment of userEnrollments as any[]) {
-    const course = enrollment.course;
-    if (!course) continue;
+  for (const course of allAccessibleCourses as any[]) {
+    // Bundles are access containers; certificates are attached strictly to included learning courses
+    if (course.isBundle || accessSummary.bundleCourseIds.includes(course.id)) {
+      continue;
+    }
 
     // If student already earned the certificate for this course, don't show under in-progress
     if (earnedCourseIds.has(course.id)) continue;
-
-    const isExpired =
-      enrollment.status === "expired" ||
-      (enrollment.expiresAt && new Date(enrollment.expiresAt) < new Date());
-
-    if (isExpired) continue;
 
     let totalLessons = 0;
     let completedLessons = 0;
     const allLessons: Array<{ id: string; title: string }> = [];
 
-    (course.modules as any[])?.forEach((m: any) => {
+    (course.modules || []).forEach((m: any) => {
       m.lessons?.forEach((l: any) => {
         totalLessons++;
         allLessons.push({ id: l.id, title: l.title });
@@ -146,7 +144,7 @@ export default async function StudentCertificatesPage() {
     <CertificatesView
       earnedCertificates={earnedCertificates}
       inProgressTracks={inProgressTracks}
-      totalEnrolledCount={userEnrollments.length}
+      totalEnrolledCount={targetCourseIds.length}
       studentName={studentName}
     />
   );
