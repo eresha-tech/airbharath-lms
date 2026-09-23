@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getLessonAvailability, formatISTDateTime } from "@/lib/lesson-availability";
 import { LockedLessonTracker } from "@/components/classroom/LockedLessonTracker";
+import { MarkdownContent } from "@/components/content/MarkdownContent";
 import {
   FileText,
   Download,
@@ -29,6 +30,8 @@ import {
   Video,
   ExternalLink,
   Lock,
+  Sparkles,
+  Calculator,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -376,18 +379,41 @@ export default async function LessonPage({ params }: LessonPageProps) {
 
             {/* Tab 1: Lesson Notes & Materials */}
             <TabsContent value="notes" className="space-y-6 mt-0">
-              {lessonObj.content ? (
+              {/* Lesson Summary */}
+              {lessonObj.summary?.trim() && (
+                <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 space-y-4 shadow-xs">
+                  <h2 className="text-base sm:text-lg font-bold font-outfit text-foreground flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span>Lesson Summary</span>
+                  </h2>
+                  <MarkdownContent content={lessonObj.summary} />
+                </div>
+              )}
+
+              {/* Lesson Notes */}
+              {lessonObj.content?.trim() && (
                 <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 space-y-4 shadow-xs">
                   <h2 className="text-base sm:text-lg font-bold font-outfit text-foreground flex items-center gap-2">
                     <FileText className="h-4 w-4 text-primary" />
-                    <span>Lesson Notes &amp; Key Concepts</span>
+                    <span>Lesson Notes</span>
                   </h2>
-                  <div
-                    className="prose prose-slate dark:prose-invert max-w-none text-xs sm:text-sm leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: lessonObj.content }}
-                  />
+                  <MarkdownContent content={lessonObj.content} />
                 </div>
-              ) : (
+              )}
+
+              {/* Key Formulas */}
+              {lessonObj.formulas?.trim() && (
+                <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 space-y-4 shadow-xs">
+                  <h2 className="text-base sm:text-lg font-bold font-outfit text-foreground flex items-center gap-2">
+                    <Calculator className="h-4 w-4 text-primary" />
+                    <span>Key Formulas</span>
+                  </h2>
+                  <MarkdownContent content={lessonObj.formulas} variant="formula" />
+                </div>
+              )}
+
+              {/* Fallback if no content or materials */}
+              {!lessonObj.summary?.trim() && !lessonObj.content?.trim() && !lessonObj.formulas?.trim() && (!materialsList || materialsList.length === 0) && (
                 <div className="bg-card border border-dashed border-border/80 rounded-3xl p-8 text-center text-xs text-muted-foreground space-y-2 shadow-xs">
                   <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto text-primary">
                     <PlayCircle className="h-5 w-5" />

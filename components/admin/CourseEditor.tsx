@@ -48,6 +48,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { MarkdownContent } from "@/components/content/MarkdownContent";
 import { cn } from "@/lib/utils";
 
 export interface FormattedMaterial {
@@ -64,7 +65,9 @@ export interface FormattedLesson {
   id: string;
   module_id: string;
   title: string;
+  summary?: string | null;
   content: string | null;
+  formulas?: string | null;
   video_url: string | null;
   video_id?: string | null;
   video_status?: string | null;
@@ -386,7 +389,12 @@ export default function CourseEditor({
 
   // Lesson Form state
   const [lessonTitle, setLessonTitle] = useState("");
+  const [lessonSummary, setLessonSummary] = useState("");
   const [lessonContent, setLessonContent] = useState("");
+  const [lessonFormulas, setLessonFormulas] = useState("");
+  const [showSummaryPreview, setShowSummaryPreview] = useState(false);
+  const [showNotesPreview, setShowNotesPreview] = useState(false);
+  const [showFormulasPreview, setShowFormulasPreview] = useState(false);
   const [lessonSavedVideoId, setLessonSavedVideoId] = useState<string | null>(null);
   const [lessonSavedVideoStatus, setLessonSavedVideoStatus] = useState<string | null>(null);
   const [lessonIsFree, setLessonIsFree] = useState(false);
@@ -710,7 +718,9 @@ export default function CourseEditor({
     setActiveModuleId(moduleId);
     setEditingLesson(null);
     setLessonTitle("");
+    setLessonSummary("");
     setLessonContent("");
+    setLessonFormulas("");
     setLessonSavedVideoId(null);
     setLessonSavedVideoStatus(null);
     setLessonIsFree(false);
@@ -720,6 +730,9 @@ export default function CourseEditor({
     setLessonDuration("");
     setLessonMeetingUrl("");
     setLessonMaterialsList([]);
+    setShowSummaryPreview(false);
+    setShowNotesPreview(false);
+    setShowFormulasPreview(false);
     const moduleLessons = lessons.filter((l) => l.module_id === moduleId);
     setLessonOrder(String(moduleLessons.length + 1));
     setLessonModalTab("details");
@@ -731,7 +744,12 @@ export default function CourseEditor({
     setEditingLesson(lesson);
     setActiveModuleId(lesson.module_id);
     setLessonTitle(lesson.title);
+    setLessonSummary(lesson.summary || "");
     setLessonContent(lesson.content || "");
+    setLessonFormulas(lesson.formulas || "");
+    setShowSummaryPreview(false);
+    setShowNotesPreview(false);
+    setShowFormulasPreview(false);
     setLessonSavedVideoId(lesson.video_id || lesson.video_url || null);
     setLessonSavedVideoStatus(lesson.video_status || null);
     setLessonIsFree(lesson.is_free_preview || false);
@@ -760,7 +778,9 @@ export default function CourseEditor({
           lessonId: editingLesson?.id,
           moduleId: activeModuleId,
           title: lessonTitle.trim(),
+          summary: lessonSummary.trim() || null,
           content: lessonContent.trim() || null,
+          formulas: lessonFormulas.trim() || null,
           videoUrl: lessonSavedVideoId || undefined,
           isFreePreview: lessonIsFree,
           orderIndex: parseInt(lessonOrder) || 1,
@@ -778,7 +798,9 @@ export default function CourseEditor({
           id: data.lesson.id,
           module_id: data.lesson.moduleId,
           title: data.lesson.title,
-          content: data.lesson.content,
+          summary: data.lesson.summary || null,
+          content: data.lesson.content || null,
+          formulas: data.lesson.formulas || null,
           video_url: data.lesson.videoUrl,
           video_id: lessonSavedVideoId || (data.lesson.videoUrl || null),
           video_status: lessonSavedVideoStatus || null,
@@ -3233,18 +3255,145 @@ export default function CourseEditor({
                     </div>
                   )}
 
-                  {/* Lesson Notes / Summary */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider">
-                      Lesson Notes, Formulas &amp; Summary
-                    </label>
-                    <Textarea
-                      placeholder="Lesson summary, theoretical guidelines, aircraft systems references, or study checklist..."
-                      value={lessonContent}
-                      onChange={(e) => setLessonContent(e.target.value)}
-                      rows={5}
-                      className="rounded-xl text-xs sm:text-sm font-medium bg-background border-border/80 focus:border-primary leading-relaxed"
-                    />
+                  {/* 1. Lesson Summary (Markdown + LaTeX Supported) */}
+                  <div className="space-y-2 p-4 rounded-2xl border border-border/80 bg-muted/10">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="block text-xs font-bold text-foreground uppercase tracking-wider">
+                          Lesson Summary
+                        </label>
+                        <p className="text-[11px] text-muted-foreground">
+                          Short, concise overview of key takeaways and objectives.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowSummaryPreview(!showSummaryPreview)}
+                        className="text-[11px] font-bold text-primary hover:underline inline-flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <Eye className="h-3 w-3" />
+                        <span>{showSummaryPreview ? "Edit Raw Markdown" : "Live Preview"}</span>
+                      </button>
+                    </div>
+
+                    {showSummaryPreview ? (
+                      <div className="rounded-xl border border-border/80 p-3.5 bg-background min-h-[90px] max-h-[220px] overflow-y-auto">
+                        {lessonSummary?.trim() ? (
+                          <MarkdownContent content={lessonSummary} />
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic">
+                            No summary content written yet.
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <Textarea
+                        placeholder="Write a concise overview (e.g. ## Overview, **Key Idea:** In this lesson you learned...)..."
+                        value={lessonSummary}
+                        onChange={(e) => setLessonSummary(e.target.value)}
+                        rows={3}
+                        className="rounded-xl text-xs sm:text-sm font-mono bg-background border-border/80 focus:border-primary leading-relaxed"
+                      />
+                    )}
+
+                    <p className="text-[11px] text-muted-foreground leading-relaxed flex items-center gap-1.5 pt-0.5">
+                      <Sparkles className="h-3 w-3 text-primary shrink-0" />
+                      <span>Markdown supported: <strong>**bold**</strong>, <em>*italic*</em>, <code>`code`</code>, ## headings, - lists.</span>
+                    </p>
+                  </div>
+
+                  {/* 2. Lesson Notes (Markdown + LaTeX Supported) */}
+                  <div className="space-y-2 p-4 rounded-2xl border border-border/80 bg-muted/10">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="block text-xs font-bold text-foreground uppercase tracking-wider">
+                          Lesson Notes &amp; Detailed Concepts
+                        </label>
+                        <p className="text-[11px] text-muted-foreground">
+                          Comprehensive study notes, deep theoretical guidelines, code snippets, and checklists.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowNotesPreview(!showNotesPreview)}
+                        className="text-[11px] font-bold text-primary hover:underline inline-flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <Eye className="h-3 w-3" />
+                        <span>{showNotesPreview ? "Edit Raw Markdown" : "Live Preview"}</span>
+                      </button>
+                    </div>
+
+                    {showNotesPreview ? (
+                      <div className="rounded-xl border border-border/80 p-3.5 bg-background min-h-[120px] max-h-[280px] overflow-y-auto">
+                        {lessonContent?.trim() ? (
+                          <MarkdownContent content={lessonContent} />
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic">
+                            No lesson notes written yet.
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <Textarea
+                        placeholder="Detailed lesson notes, markdown tables, blockquotes, code snippets (e.g. ## Core Concepts, | Col1 | Col2 |, > Important Note)..."
+                        value={lessonContent}
+                        onChange={(e) => setLessonContent(e.target.value)}
+                        rows={5}
+                        className="rounded-xl text-xs sm:text-sm font-mono bg-background border-border/80 focus:border-primary leading-relaxed"
+                      />
+                    )}
+
+                    <p className="text-[11px] text-muted-foreground leading-relaxed flex items-center gap-1.5 pt-0.5">
+                      <Sparkles className="h-3 w-3 text-primary shrink-0" />
+                      <span>Markdown supported: ## headings, **bold**, tables, <code>`code`</code>, blockquotes, $inline math$.</span>
+                    </p>
+                  </div>
+
+                  {/* 3. Formulas / Key Formulas (Markdown + LaTeX Supported) */}
+                  <div className="space-y-2 p-4 rounded-2xl border border-border/80 bg-muted/10">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="block text-xs font-bold text-foreground uppercase tracking-wider">
+                          Formulas &amp; Key Expressions
+                        </label>
+                        <p className="text-[11px] text-muted-foreground">
+                          Mathematical formulas, equations, or financial expressions using LaTeX notation.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowFormulasPreview(!showFormulasPreview)}
+                        className="text-[11px] font-bold text-primary hover:underline inline-flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <Eye className="h-3 w-3" />
+                        <span>{showFormulasPreview ? "Edit Raw Markdown" : "Live Preview"}</span>
+                      </button>
+                    </div>
+
+                    {showFormulasPreview ? (
+                      <div className="rounded-xl border border-border/80 p-3.5 bg-background min-h-[90px] max-h-[220px] overflow-y-auto">
+                        {lessonFormulas?.trim() ? (
+                          <MarkdownContent content={lessonFormulas} variant="formula" />
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic">
+                            No formulas written yet.
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <Textarea
+                        placeholder="Mathematical or analytical formulas (e.g. $$Revenue = Price \times Quantity$$, $Profit = Revenue - Cost$)..."
+                        value={lessonFormulas}
+                        onChange={(e) => setLessonFormulas(e.target.value)}
+                        rows={3}
+                        className="rounded-xl text-xs sm:text-sm font-mono bg-background border-border/80 focus:border-primary leading-relaxed"
+                      />
+                    )}
+
+                    <p className="text-[11px] text-muted-foreground leading-relaxed flex items-center gap-1.5 pt-0.5">
+                      <Sparkles className="h-3 w-3 text-primary shrink-0" />
+                      <span>LaTeX supported: <code className="text-primary font-mono text-[10px]">$inline math$</code> and <code className="text-primary font-mono text-[10px]">$$block math$$</code>.</span>
+                    </p>
                   </div>
                 </div>
               )}
