@@ -24,6 +24,7 @@ import {
   Check,
   X,
   BookOpen,
+  Subtitles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +44,12 @@ export interface VideoAsset {
     lessonTitle: string;
     courseId: string;
     courseTitle: string;
+  }>;
+  captions?: Array<{
+    id: string;
+    languageCode: string;
+    label: string;
+    status: string;
   }>;
 }
 
@@ -282,6 +289,13 @@ export function VideoLibraryModal({
                                 : `Used in ${video.usageCount || 0} lessons`}
                             </span>
                           </span>
+
+                          {video.captions?.some((c) => c.languageCode === "en" && c.status === "ready") && (
+                            <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[9px] font-bold px-1.5 py-0">
+                              <Subtitles className="w-2.5 h-2.5 mr-1" />
+                              CC: English
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>

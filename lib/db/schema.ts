@@ -221,6 +221,20 @@ export const playbackSessions = pgTable('playback_sessions', {
   active: boolean('active').default(true).notNull(),
 });
 
+// Video Captions Table (WebVTT Tracks per Reusable Video Asset)
+export const videoCaptions = pgTable('video_captions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  videoId: uuid('video_id').references(() => videos.id, { onDelete: 'cascade' }).notNull(),
+  languageCode: text('language_code').default('en').notNull(),
+  label: text('label').default('English').notNull(),
+  s3Key: text('s3_key').notNull(),
+  status: text('status').default('ready').notNull(), // 'ready' | 'processing' | 'failed'
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t: any) => [
+  uniqueIndex('video_caption_lang_unique_idx').on(t.videoId, t.languageCode)
+]);
+
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
@@ -343,6 +357,14 @@ export const videosRelations = relations(videos, ({ one, many }) => ({
     references: [lessons.id],
   }),
   playbackSessions: many(playbackSessions),
+  captions: many(videoCaptions),
+}));
+
+export const videoCaptionsRelations = relations(videoCaptions, ({ one }) => ({
+  video: one(videos, {
+    fields: [videoCaptions.videoId],
+    references: [videos.id],
+  }),
 }));
 
 export const playbackSessionsRelations = relations(playbackSessions, ({ one }) => ({
