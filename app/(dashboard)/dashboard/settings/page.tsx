@@ -18,23 +18,11 @@ export default async function SettingsPage() {
     redirect("/login");
   }
 
-  // Fetch full user record from database
-  const userRecord = await db.query.users.findFirst({
-    where: eq(users.id, session.id),
-  });
-
-  const currentUser: SettingsUser = {
-    id: session.id,
-    phone: userRecord?.phone || session.phone,
-    email: userRecord?.email || session.email || "",
-    fullName: userRecord?.fullName || session.fullName || "",
-    avatarUrl: userRecord?.avatarUrl || null,
-    role: userRecord?.role || session.role || "student",
-    createdAt: userRecord?.createdAt || null,
-  };
-
-  // Fetch real student learning data
-  const [studentEnrollments, studentProgress, studentCertificates] = await Promise.all([
+  // Fetch full user record and real student learning data in parallel
+  const [userRecord, studentEnrollments, studentProgress, studentCertificates] = await Promise.all([
+    db.query.users.findFirst({
+      where: eq(users.id, session.id),
+    }),
     db.query.enrollments.findMany({
       where: eq(enrollments.userId, session.id),
     }),
@@ -45,6 +33,16 @@ export default async function SettingsPage() {
       where: eq(certificates.userId, session.id),
     }),
   ]);
+
+  const currentUser: SettingsUser = {
+    id: session.id,
+    phone: userRecord?.phone || session.phone,
+    email: userRecord?.email || session.email || "",
+    fullName: userRecord?.fullName || session.fullName || "",
+    avatarUrl: userRecord?.avatarUrl || null,
+    role: userRecord?.role || session.role || "student",
+    createdAt: userRecord?.createdAt || null,
+  };
 
   const completedLessonsCount = studentProgress.filter((p: any) => p.isCompleted).length;
 

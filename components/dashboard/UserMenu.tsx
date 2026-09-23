@@ -34,6 +34,7 @@ interface UserProfile {
 
 import { track, resetUser } from "@/lib/analytics";
 import { APP_VERSION, APP_NAME } from "@/lib/app-version";
+import { getClientUser, clearClientUser } from "@/lib/user-session-client";
 
 export function UserMenu() {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -43,11 +44,10 @@ export function UserMenu() {
 
   useEffect(() => {
     let mounted = true;
-    fetch("/api/auth/me")
-      .then((res) => res.json())
+    getClientUser()
       .then((data) => {
-        if (mounted && data?.user) {
-          setUser(data.user);
+        if (mounted && data) {
+          setUser(data);
         }
       })
       .catch(() => {})
@@ -65,6 +65,7 @@ export function UserMenu() {
       setIsLoggingOut(true);
       track("user_signed_out");
       resetUser();
+      clearClientUser();
       await fetch("/api/auth/logout", { method: "POST" });
       router.push("/login");
       router.refresh();

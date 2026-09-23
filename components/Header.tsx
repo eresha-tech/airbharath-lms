@@ -28,18 +28,19 @@ const NAV_LINKS = [
   { href: "/contact", label: "Contact" },
 ];
 
+import { getClientUser, ClientUser } from "@/lib/user-session-client";
+
 export default function Header() {
   const pathname = usePathname();
-  const [user, setUser] = useState<{ id: string; role: string; fullName?: string; email?: string } | null>(null);
+  const [user, setUser] = useState<ClientUser | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => (res.ok ? res.json() : null))
+    getClientUser()
       .then((data) => {
-        if (data?.user) {
-          setUser(data.user);
+        if (data) {
+          setUser(data);
         }
       })
       .catch(() => {});
@@ -169,7 +170,7 @@ export default function Header() {
                   size="sm"
                   className="hidden sm:inline-flex border-slate-200 text-slate-700 hover:text-primary hover:bg-slate-50 text-xs font-semibold h-9 rounded-xl"
                 >
-                  <Link href="/dashboard/courses">
+                  <Link href="/dashboard/courses" prefetch={true}>
                     <BookOpen className="w-3.5 h-3.5 mr-1.5 text-primary" />
                     <span>My Learning</span>
                   </Link>
@@ -180,7 +181,7 @@ export default function Header() {
                   size="sm"
                   className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-9 px-4 rounded-xl shadow-xs"
                 >
-                  <Link href={user.role === "admin" ? "/admin" : "/dashboard"}>
+                  <Link href={user.role === "admin" ? "/admin" : "/dashboard"} prefetch={true}>
                     <User className="w-3.5 h-3.5 mr-1.5" />
                     <span>{user.role === "admin" ? "Admin Portal" : "Dashboard"}</span>
                   </Link>
@@ -194,7 +195,7 @@ export default function Header() {
                   size="sm"
                   className="text-slate-700 hover:text-primary hover:bg-slate-100 text-xs font-bold h-9 px-3 sm:px-4 rounded-xl"
                 >
-                  <Link href="/login">Sign In</Link>
+                  <Link href="/login" prefetch={true}>Sign In</Link>
                 </Button>
 
                 <Button
@@ -202,7 +203,7 @@ export default function Header() {
                   size="sm"
                   className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-9 px-3.5 sm:px-4 rounded-xl shadow-xs"
                 >
-                  <Link href="/courses" className="flex items-center gap-1.5">
+                  <Link href="/courses" prefetch={true} className="flex items-center gap-1.5">
                     <span>Get Started</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>

@@ -8,6 +8,8 @@ import Script from "next/script";
 import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics";
 
+import { getClientUser } from "@/lib/user-session-client";
+
 interface EnrollButtonProps {
   courseId: string;
   isEnrolled: boolean;
@@ -37,10 +39,9 @@ export default function EnrollButton({
 
   useEffect(() => {
     if (initialUser !== undefined && initialUser !== null) return;
-    fetch("/api/auth/me")
-      .then((res) => res.json())
+    getClientUser()
       .then((data) => {
-        if (data?.user) setUser(data.user);
+        if (data) setUser(data);
       })
       .catch(() => {});
   }, [initialUser]);

@@ -3,23 +3,15 @@
 import { useEffect, Suspense, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
+import { getClientUser } from "@/lib/user-session-client";
 import { identifyUser } from "@/lib/analytics";
-
-interface AuthenticatedUser {
-  id: string;
-  email?: string | null;
-  fullName?: string | null;
-  role?: string | null;
-}
 
 function PostHogIdentityTracker() {
   useEffect(() => {
     let isMounted = true;
 
-    fetch("/api/auth/me")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        const user = data?.user as AuthenticatedUser | null;
+    getClientUser()
+      .then((user) => {
         if (isMounted && user?.id) {
           identifyUser(user.id, {
             email: user.email,

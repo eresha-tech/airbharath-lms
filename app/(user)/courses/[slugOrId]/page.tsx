@@ -132,22 +132,25 @@ export default async function CoursePage({ params }: CoursePageProps) {
       isEnrolled = true;
     } else {
       try {
-        const enrollmentObj = await db.query.enrollments.findFirst({
-          where: and(
-            eq(enrollments.userId, session.id),
-            eq(enrollments.courseId, course.id)
-          ),
-        });
-        if (enrollmentObj && enrollmentObj.status === "active") {
-          isEnrolled = true;
-
-          userOrder = await db.query.orders.findFirst({
+        const [enrollmentObj, paidOrder] = await Promise.all([
+          db.query.enrollments.findFirst({
+            where: and(
+              eq(enrollments.userId, session.id),
+              eq(enrollments.courseId, course.id)
+            ),
+          }),
+          db.query.orders.findFirst({
             where: and(
               eq(orders.userId, session.id),
               eq(orders.courseId, course.id),
               eq(orders.status, "paid")
             ),
-          });
+          }),
+        ]);
+
+        if (enrollmentObj && enrollmentObj.status === "active") {
+          isEnrolled = true;
+          userOrder = paidOrder;
         }
       } catch {}
     }

@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { enrollments, courses, progress } from "@/lib/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { enrollments, progress } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 import { CourseCard } from "@/components/CourseCard";
@@ -16,58 +16,53 @@ export default async function MyCoursesPage() {
     return redirect("/login");
   }
 
+  // Fetch user enrollments with nested course data and progress in parallel
   let userEnrollments: any[] = [];
+  let userProgress: any[] = [];
+
   try {
-    userEnrollments = await db.query.enrollments.findMany({
-      where: eq(enrollments.userId, session.id),
-    });
-  } catch (err) {
-    console.error("Enrollment error:", err);
-  }
-
-  const courseIds = userEnrollments.map((e: any) => e.courseId);
-
-  let enrolledCourses: any[] = [];
-  if (courseIds.length > 0) {
-    try {
-      enrolledCourses = await db.query.courses.findMany({
-        where: inArray(courses.id, courseIds),
+    const [enrollmentRes, progressRes] = await Promise.all([
+      db.query.enrollments.findMany({
+        where: eq(enrollments.userId, session.id),
         with: {
-          modules: {
+          course: {
             with: {
-              lessons: true,
+              modules: {
+                with: {
+                  lessons: true,
+                },
+              },
             },
           },
         },
-      });
-    } catch (err) {
-      console.error("Courses error:", err);
-    }
-  }
-
-  let userProgress: any[] = [];
-  try {
-    userProgress = await db.query.progress.findMany({
-      where: eq(progress.userId, session.id),
-    });
+      }),
+      db.query.progress.findMany({
+        where: eq(progress.userId, session.id),
+      }),
+    ]);
+    userEnrollments = enrollmentRes;
+    userProgress = progressRes;
   } catch (err) {
-    console.error("Progress error:", err);
+    console.error("MyCourses data fetch error:", err);
   }
 
   const completedLessonIds = new Set(userProgress.filter((p: any) => p.isCompleted).map((p: any) => p.lessonId));
 
-  const coursesWithProgress = enrolledCourses.map((course: any) => {
-    let total = 0;
-    let done = 0;
-    (course.modules as any[])?.forEach((m: any) => {
-      m.lessons?.forEach((l: any) => {
-        total++;
-        if (completedLessonIds.has(l.id)) done++;
+  const coursesWithProgress = userEnrollments
+    .filter((e: any) => e.course)
+    .map((e: any) => {
+      const course = e.course;
+      let total = 0;
+      let done = 0;
+      (course.modules as any[])?.forEach((m: any) => {
+        m.lessons?.forEach((l: any) => {
+          total++;
+          if (completedLessonIds.has(l.id)) done++;
+        });
       });
+      const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+      return { course, percent };
     });
-    const percent = total > 0 ? Math.round((done / total) * 100) : 0;
-    return { course, percent };
-  });
 
   return (
     <main className="flex-1 pt-24 pb-16">
@@ -82,7 +77,7 @@ export default async function MyCoursesPage() {
             </div>
           </div>
 
-          {enrolledCourses.length === 0 ? (
+          {coursesWithProgress.length === 0 ? (
             <div className="text-center py-16 bg-gray-50 border border-dashed rounded-3xl space-y-4">
               <h2 className="text-xl font-bold text-foreground">No enrolled courses yet</h2>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">

@@ -35,12 +35,14 @@ export async function verifySessionToken(token: string): Promise<UserSession | n
   }
 }
 
-export async function getSession(): Promise<UserSession | null> {
+import { cache } from 'react';
+
+export const getSession = cache(async (): Promise<UserSession | null> => {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
   return await verifySessionToken(token);
-}
+});
 
 export async function setSessionCookie(user: UserSession) {
   const token = await createSessionToken(user);

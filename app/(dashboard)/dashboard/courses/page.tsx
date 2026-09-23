@@ -14,33 +14,12 @@ export default async function MyCoursesDashboardPage() {
     return redirect("/login");
   }
 
-  // Fetch student's enrollments (ordered by newest first)
-  const userEnrollments = await db.query.enrollments.findMany({
-    where: eq(enrollments.userId, session.id),
-    orderBy: [desc(enrollments.enrolledAt)],
-  });
-
-  const courseIds = userEnrollments.map((e: any) => e.courseId);
-
-  // Fetch courses with ordered modules and lessons
-  const enrolledCourses = courseIds.length > 0
-    ? await db.query.courses.findMany({
-        where: inArray(courses.id, courseIds),
-        with: {
-          modules: {
-            orderBy: (m: any, { asc }: any) => [asc(m.orderIndex)],
-            with: {
-              lessons: {
-                orderBy: (l: any, { asc }: any) => [asc(l.orderIndex)],
-              },
-            },
-          },
-        },
-      })
-    : [];
-
-  // Fetch progress, paid orders, and issued certificates in parallel
-  const [userProgress, userOrders, userCertificates] = await Promise.all([
+  // Fetch student's enrollments, progress, paid orders, and certificates in parallel
+  const [userEnrollments, userProgress, userOrders, userCertificates] = await Promise.all([
+    db.query.enrollments.findMany({
+      where: eq(enrollments.userId, session.id),
+      orderBy: [desc(enrollments.enrolledAt)],
+    }),
     db.query.progress.findMany({
       where: eq(progress.userId, session.id),
     }),
@@ -51,6 +30,26 @@ export default async function MyCoursesDashboardPage() {
       where: eq(certificates.userId, session.id),
     }),
   ]);
+
+  const courseIds = userEnrollments.map((e: any) => e.courseId);
+
+  // Fetch courses with ordered modules and lessons
+  const enrolledCourses =
+    courseIds.length > 0
+      ? await db.query.courses.findMany({
+          where: inArray(courses.id, courseIds),
+          with: {
+            modules: {
+              orderBy: (m: any, { asc }: any) => [asc(m.orderIndex)],
+              with: {
+                lessons: {
+                  orderBy: (l: any, { asc }: any) => [asc(l.orderIndex)],
+                },
+              },
+            },
+          },
+        })
+      : [];
 
   const completedLessonIds = new Set(
     userProgress.filter((p: any) => p.isCompleted).map((p: any) => p.lessonId)

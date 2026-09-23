@@ -181,6 +181,7 @@ export function SidebarNav() {
                         <TooltipTrigger asChild>
                           <Link
                             href={item.href}
+                            prefetch={true}
                             className={cn(
                               "flex items-center justify-center h-10 w-10 mx-auto rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
                               isActive
@@ -205,6 +206,7 @@ export function SidebarNav() {
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch={true}
                     className={cn(
                       "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
                       isActive

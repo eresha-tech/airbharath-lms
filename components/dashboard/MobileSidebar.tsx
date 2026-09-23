@@ -65,6 +65,7 @@ export function MobileSidebar() {
                     <Link
                       key={item.href}
                       href={item.href}
+                      prefetch={true}
                       onClick={closeMobile}
                       className={cn(
                         "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
