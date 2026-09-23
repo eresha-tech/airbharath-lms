@@ -72,7 +72,7 @@ export function HeadlineSection() {
             <Button
               asChild
               size="lg"
-              className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white font-bold px-8 h-12 rounded-xl text-sm shadow-xs active:scale-[0.98] transition-all"
+              className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-8 h-12 rounded-xl text-sm shadow-xs active:scale-[0.98] transition-all"
             >
               <Link href="/courses" className="flex items-center gap-2">
                 <span>Explore Courses</span>

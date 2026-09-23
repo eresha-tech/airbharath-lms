@@ -261,7 +261,7 @@ export function HeroBanner() {
                         <div className="flex flex-wrap items-center gap-3">
                           <Button
                             asChild
-                            className="bg-primary hover:bg-primary/90 text-white font-bold px-6 h-11 rounded-xl shadow-xs"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-6 h-11 rounded-xl shadow-xs"
                           >
                             <Link href={`/courses/${slide.slug}`} className="flex items-center gap-2">
                               <span>Explore Program</span>

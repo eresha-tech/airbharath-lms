@@ -232,7 +232,7 @@ export default function AboutPage() {
         {/* Institutional Heritage Section */}
         <div className="bg-slate-900 dark:bg-card text-white dark:text-foreground rounded-3xl p-8 sm:p-12 border border-slate-800 dark:border-border shadow-md flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
           <div className="space-y-3 max-w-2xl relative z-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 dark:bg-accent-soft text-cyan-300 dark:text-accent-light text-xs font-bold uppercase tracking-wider border border-white/10 dark:border-primary/20">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 dark:bg-accent-soft text-accent-light text-xs font-bold uppercase tracking-wider border border-white/10 dark:border-primary/20">
               <Compass className="w-3.5 h-3.5 text-primary" />
               <span>Organizational Heritage</span>
             </div>
@@ -268,7 +268,7 @@ export default function AboutPage() {
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <Button
               asChild
-              className="bg-primary hover:bg-primary/90 text-white font-bold h-11 px-6 rounded-xl text-xs shadow-xs"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-11 px-6 rounded-xl text-xs shadow-xs"
             >
               <Link href="/courses">Explore Programs</Link>
             </Button>

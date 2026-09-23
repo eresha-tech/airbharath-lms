@@ -4,42 +4,42 @@ export default function CourseDetailLoading() {
   return (
     <main className="flex-1 pb-20 animate-pulse">
       {/* 1. Hero Skeleton Header */}
-      <div className="bg-gradient-to-br from-[#014a62] via-[#013c50] to-[#012c3b] pt-24 md:pt-28 pb-10 md:pb-16 border-b border-[#014a62]/40">
+      <div className="bg-card pt-24 md:pt-28 pb-10 md:pb-16 border-b border-border">
         <div className="container mx-auto px-4 max-w-6xl space-y-6">
           {/* Breadcrumb Skeleton */}
           <div className="flex items-center gap-2">
-            <Skeleton className="h-4 w-16 bg-white/20 rounded" />
-            <Skeleton className="h-4 w-3 bg-white/20 rounded" />
-            <Skeleton className="h-4 w-48 bg-white/20 rounded" />
+            <Skeleton className="h-4 w-16 rounded" />
+            <Skeleton className="h-4 w-3 rounded" />
+            <Skeleton className="h-4 w-48 rounded" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
             {/* Left Hero Content Skeleton */}
             <div className="lg:col-span-8 space-y-5">
               <div className="flex gap-2">
-                <Skeleton className="h-6 w-36 bg-white/20 rounded-full" />
-                <Skeleton className="h-6 w-28 bg-white/20 rounded-full" />
-                <Skeleton className="h-6 w-32 bg-white/20 rounded-full" />
+                <Skeleton className="h-6 w-36 rounded-full" />
+                <Skeleton className="h-6 w-28 rounded-full" />
+                <Skeleton className="h-6 w-32 rounded-full" />
               </div>
 
-              <Skeleton className="h-10 sm:h-12 w-3/4 bg-white/20 rounded-2xl" />
-              <Skeleton className="h-4 w-full max-w-2xl bg-white/20 rounded-lg" />
-              <Skeleton className="h-4 w-2/3 bg-white/20 rounded-lg" />
+              <Skeleton className="h-10 sm:h-12 w-3/4 rounded-2xl" />
+              <Skeleton className="h-4 w-full max-w-2xl rounded-lg" />
+              <Skeleton className="h-4 w-2/3 rounded-lg" />
 
               {/* Instant Access Notice Skeleton */}
-              <div className="p-4 rounded-2xl bg-white/10 border border-white/15 flex items-center gap-3">
-                <Skeleton className="h-9 w-9 bg-white/20 rounded-xl shrink-0" />
+              <div className="p-4 rounded-2xl bg-muted/40 border border-border flex items-center gap-3">
+                <Skeleton className="h-9 w-9 rounded-xl shrink-0" />
                 <div className="space-y-2 flex-1">
-                  <Skeleton className="h-4 w-44 bg-white/20 rounded" />
-                  <Skeleton className="h-3 w-3/4 bg-white/20 rounded" />
+                  <Skeleton className="h-4 w-44 rounded" />
+                  <Skeleton className="h-3 w-3/4 rounded" />
                 </div>
               </div>
 
               {/* Key Specs Highlights Skeleton */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-white/15">
-                <Skeleton className="h-12 rounded-xl bg-white/10" />
-                <Skeleton className="h-12 rounded-xl bg-white/10" />
-                <Skeleton className="h-12 rounded-xl bg-white/10 col-span-2 sm:col-span-1" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-border">
+                <Skeleton className="h-12 rounded-xl" />
+                <Skeleton className="h-12 rounded-xl" />
+                <Skeleton className="h-12 rounded-xl col-span-2 sm:col-span-1" />
               </div>
             </div>
 

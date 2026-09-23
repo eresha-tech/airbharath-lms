@@ -153,7 +153,7 @@ export default async function VerifyCertificatePage({ params }: VerifyPageProps)
                   {cert.pdfUrl && (
                     <Button
                       asChild
-                      className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white text-xs font-bold h-11 px-5 rounded-xl shadow-xs shrink-0 order-1 sm:order-2 flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold h-11 px-5 rounded-xl shadow-xs shrink-0 order-1 sm:order-2 flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <a
                         href={cert.pdfUrl}
@@ -181,10 +181,10 @@ export default async function VerifyCertificatePage({ params }: VerifyPageProps)
                 </p>
               </div>
               <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
-                <Button asChild variant="outline" className="rounded-xl text-xs font-bold border-slate-200">
+                <Button asChild variant="outline" className="rounded-xl text-xs font-bold border-border">
                   <Link href="/verify-certificate">Search Again</Link>
                 </Button>
-                <Button asChild className="bg-primary hover:bg-primary/90 text-white rounded-xl text-xs font-bold">
+                <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold">
                   <Link href="/">Back to AirBharath LMS</Link>
                 </Button>
               </div>

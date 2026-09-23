@@ -128,7 +128,7 @@ export function SidebarNav() {
           {!isCollapsed && (
             <div className="flex flex-col leading-tight truncate">
               <span className="font-bold text-base tracking-tight text-foreground font-outfit">
-                Airbharath
+                AirBharath
               </span>
               <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
                 Student Portal

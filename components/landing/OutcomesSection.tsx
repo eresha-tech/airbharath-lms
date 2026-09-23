@@ -46,16 +46,16 @@ const OUTCOMES = [
 
 export function OutcomesSection() {
   return (
-    <section className="py-20 bg-slate-50/70 border-b border-gray-200/80">
+    <section className="py-20 bg-background border-b border-border">
       <div className="container mx-auto px-4 max-w-6xl space-y-12">
 
         {/* Header */}
         <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-[#014a62] bg-[#014a62]/10 px-3.5 py-1.5 rounded-full border border-[#014a62]/20">
+          <span className="text-xs font-extrabold uppercase tracking-widest text-primary bg-primary/10 px-3.5 py-1.5 rounded-full border border-primary/20">
             Real Value Deliverables
           </span>
           <h2
-            className="text-3xl md:text-5xl font-bold font-instrument-serif text-[#014a62]"
+            className="text-3xl md:text-5xl font-bold font-outfit text-foreground"
             style={{ textWrap: "balance" } as React.CSSProperties}
           >
             Not Just Topics. Build Capabilities.

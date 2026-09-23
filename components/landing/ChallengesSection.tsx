@@ -122,7 +122,7 @@ export function ChallengesSection() {
                     </p>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs font-semibold text-[#014a62]">
+                  <div className="pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs font-semibold text-primary">
                     <span>Air Bharath Solution Available</span>
                     <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
                   </div>

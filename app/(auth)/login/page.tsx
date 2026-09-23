@@ -268,11 +268,11 @@ function LoginForm() {
         <div className="w-full max-w-5xl bg-card rounded-3xl shadow-xl border border-border overflow-hidden flex flex-col lg:flex-row transition-all duration-300">
           
           {/* Left Branding & Highlights Panel (Desktop / Tablet Large) */}
-          <div className="hidden lg:flex lg:w-5/12 bg-primary text-white p-8 xl:p-10 flex-col justify-between relative overflow-hidden">
+          <div className="hidden lg:flex lg:w-5/12 bg-slate-950 dark:bg-card text-white dark:text-foreground p-8 xl:p-10 flex-col justify-between relative overflow-hidden border-r border-border/40">
             {/* Background Aesthetic Layers */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#01374a] via-[#014a62] to-[#026282] pointer-events-none" />
-            <div className="absolute -top-24 -left-24 w-72 h-72 bg-cyan-400/15 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-teal-300/15 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 dark:from-card dark:via-card dark:to-card pointer-events-none" />
+            <div className="absolute -top-24 -left-24 w-72 h-72 bg-primary/15 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
             {/* Header Brand */}
             <div className="relative z-10 flex items-center gap-3">
@@ -282,10 +282,10 @@ function LoginForm() {
                 className="h-10 w-auto bg-white/10 p-1.5 rounded-xl border border-white/20 shadow-xs"
               />
               <div>
-                <span className="text-xl font-bold font-outfit tracking-tight text-white block">
-                  AirBharath <span className="text-cyan-200 font-semibold text-lg">LMS</span>
+                <span className="text-xl font-bold font-outfit tracking-tight text-white dark:text-foreground block">
+                  AirBharath <span className="text-primary font-semibold text-lg">LMS</span>
                 </span>
-                <span className="text-[10px] text-cyan-200/90 uppercase tracking-widest font-extrabold">
+                <span className="text-[10px] text-accent-light uppercase tracking-widest font-extrabold">
                   Aviation &amp; Technical Learning
                 </span>
               </div>
@@ -293,56 +293,56 @@ function LoginForm() {
 
             {/* Core Value Proposition */}
             <div className="relative z-10 my-8 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-cyan-200 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
-                <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 border border-primary/25 text-accent-light text-xs font-bold uppercase tracking-wider backdrop-blur-md">
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
                 <span>Future-Ready Skill Upgrades</span>
               </div>
 
               <div className="space-y-2.5">
-                <h1 className="text-2xl xl:text-3xl font-bold font-outfit leading-tight text-white">
+                <h1 className="text-2xl xl:text-3xl font-bold font-outfit leading-tight text-white dark:text-foreground">
                   Learn, Certify &amp; Elevate Your Career.
                 </h1>
-                <p className="text-xs xl:text-sm text-cyan-100/90 leading-relaxed font-normal">
+                <p className="text-xs xl:text-sm text-slate-300 dark:text-muted-foreground leading-relaxed font-normal">
                   Self-paced certificate programs in AI tools, digital marketing, entrepreneurship, and workplace productivity. Taught by IIM alumni and industry practitioners.
                 </p>
               </div>
 
               {/* Feature Badges */}
               <div className="space-y-3 pt-2">
-                <div className="flex items-center gap-3 bg-white/10 border border-white/15 rounded-xl p-3 backdrop-blur-md">
-                  <div className="bg-[#01374a] p-2 rounded-lg text-cyan-300 shrink-0">
+                <div className="flex items-center gap-3 bg-white/5 dark:bg-muted/30 border border-white/10 dark:border-border rounded-xl p-3 backdrop-blur-md">
+                  <div className="bg-primary/15 p-2 rounded-lg text-primary shrink-0">
                     <Shield className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-white">Instant 4-Digit Mobile OTP</h4>
-                    <p className="text-[11px] text-cyan-100/80">Fast, passwordless login with your mobile number.</p>
+                    <h4 className="text-xs font-bold text-white dark:text-foreground">Instant 4-Digit Mobile OTP</h4>
+                    <p className="text-[11px] text-slate-400 dark:text-muted-foreground">Fast, passwordless login with your mobile number.</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 bg-white/10 border border-white/15 rounded-xl p-3 backdrop-blur-md">
-                  <div className="bg-[#01374a] p-2 rounded-lg text-cyan-300 shrink-0">
+                <div className="flex items-center gap-3 bg-white/5 dark:bg-muted/30 border border-white/10 dark:border-border rounded-xl p-3 backdrop-blur-md">
+                  <div className="bg-primary/15 p-2 rounded-lg text-primary shrink-0">
                     <Award className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-white">QR-Verifiable Credentials</h4>
-                    <p className="text-[11px] text-cyan-100/80">Earn official certificates upon 100% completion.</p>
+                    <h4 className="text-xs font-bold text-white dark:text-foreground">QR-Verifiable Credentials</h4>
+                    <p className="text-[11px] text-slate-400 dark:text-muted-foreground">Earn official certificates upon 100% completion.</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 bg-white/10 border border-white/15 rounded-xl p-3 backdrop-blur-md">
-                  <div className="bg-[#01374a] p-2 rounded-lg text-cyan-300 shrink-0">
+                <div className="flex items-center gap-3 bg-white/5 dark:bg-muted/30 border border-white/10 dark:border-border rounded-xl p-3 backdrop-blur-md">
+                  <div className="bg-primary/15 p-2 rounded-lg text-primary shrink-0">
                     <BookOpen className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-white">100% Self-Paced Access</h4>
-                    <p className="text-[11px] text-cyan-100/80">Access HD videos, notes, and doubt Q&amp;A anytime.</p>
+                    <h4 className="text-xs font-bold text-white dark:text-foreground">100% Self-Paced Access</h4>
+                    <p className="text-[11px] text-slate-400 dark:text-muted-foreground">Access HD videos, notes, and doubt Q&amp;A anytime.</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Bottom Note */}
-            <div className="relative z-10 pt-4 border-t border-white/15 text-[11px] text-cyan-200/80 flex items-center justify-between">
+            <div className="relative z-10 pt-4 border-t border-white/10 dark:border-border text-[11px] text-slate-400 dark:text-muted-foreground flex items-center justify-between">
               <span>Secure 256-Bit SSL Gateway</span>
               <span>ISO &amp; GST Compliant</span>
             </div>
@@ -370,8 +370,8 @@ function LoginForm() {
                   <span
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
                       step === 'phone'
-                        ? 'bg-primary text-white ring-2 ring-primary/20'
-                        : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                        ? 'bg-primary text-primary-foreground ring-2 ring-primary/20'
+                        : 'bg-success/20 text-success'
                     }`}
                   >
                     {step === 'phone' ? '1' : '✓'}
@@ -385,9 +385,9 @@ function LoginForm() {
                   <span
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
                       step === 'otp'
-                        ? 'bg-primary text-white ring-2 ring-primary/20'
+                        ? 'bg-primary text-primary-foreground ring-2 ring-primary/20'
                         : step === 'profile'
-                        ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                        ? 'bg-success/20 text-success'
                         : 'bg-muted text-muted-foreground'
                     }`}
                   >
@@ -400,7 +400,7 @@ function LoginForm() {
                   <>
                     <div className="h-0.5 flex-1 bg-border mx-2" />
                     <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-primary text-white ring-2 ring-primary/20 flex items-center justify-center text-xs font-bold">
+                      <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground ring-2 ring-primary/20 flex items-center justify-center text-xs font-bold">
                         3
                       </span>
                       <span className="text-xs font-semibold text-foreground">Profile</span>
@@ -423,7 +423,7 @@ function LoginForm() {
 
                   <div className="space-y-2">
                     <Label htmlFor="phone-input" className="text-xs font-bold text-foreground">
-                      Mobile Phone Number <span className="text-rose-500">*</span>
+                      Mobile Phone Number <span className="text-destructive">*</span>
                     </Label>
                     <div className="relative">
                       <div className="absolute left-3.5 top-3 text-xs font-bold text-muted-foreground flex items-center gap-1.5 border-r border-border pr-2.5 z-10 select-none">
@@ -453,11 +453,11 @@ function LoginForm() {
                   <Button
                     type="submit"
                     disabled={loading || phone.length < 10}
-                    className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-primary/10 flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl text-sm transition-all shadow-md shadow-primary/10 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <Loader2 className="w-4 h-4 animate-spin text-primary-foreground" />
                         <span>Sending OTP...</span>
                       </>
                     ) : (
@@ -529,11 +529,11 @@ function LoginForm() {
                   <Button
                     type="submit"
                     disabled={loading || otp.length < 4}
-                    className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-primary/10 flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl text-sm transition-all shadow-md shadow-primary/10 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <Loader2 className="w-4 h-4 animate-spin text-primary-foreground" />
                         <span>Verifying Code...</span>
                       </>
                     ) : (
@@ -582,7 +582,7 @@ function LoginForm() {
 
                   <div className="space-y-2">
                     <Label htmlFor="fullname-input" className="text-xs font-bold text-foreground">
-                      Full Legal Name <span className="text-rose-500">*</span>
+                      Full Legal Name <span className="text-destructive">*</span>
                     </Label>
                     <div className="relative">
                       <Input
@@ -605,7 +605,7 @@ function LoginForm() {
 
                   <div className="space-y-2">
                     <Label htmlFor="email-input" className="text-xs font-bold text-foreground">
-                      Email Address <span className="text-rose-500">*</span>
+                      Email Address <span className="text-destructive">*</span>
                     </Label>
                     <div className="relative">
                       <Input
@@ -628,11 +628,11 @@ function LoginForm() {
                   <Button
                     type="submit"
                     disabled={loading || !fullName.trim() || !email.trim()}
-                    className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-primary/10 flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl text-sm transition-all shadow-md shadow-primary/10 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <Loader2 className="w-4 h-4 animate-spin text-primary-foreground" />
                         <span>Saving Profile...</span>
                       </>
                     ) : (
@@ -652,14 +652,14 @@ function LoginForm() {
                   aria-live="polite"
                   className={`p-3.5 rounded-xl border flex items-start gap-2.5 transition-all text-xs font-medium ${
                     isSuccess
-                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                      : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
+                      ? 'bg-success/10 border-success/20 text-success'
+                      : 'bg-destructive/10 border-destructive/20 text-destructive'
                   }`}
                 >
                   {isSuccess ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
                   ) : (
-                    <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                    <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
                   )}
                   <p className="leading-relaxed">{message}</p>
                 </div>

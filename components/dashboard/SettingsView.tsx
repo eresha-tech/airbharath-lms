@@ -290,7 +290,7 @@ export function SettingsView({ initialUser, stats }: SettingsViewProps) {
             className={`rounded-xl text-xs font-bold h-10 px-4 shrink-0 transition-all cursor-pointer ${
               isEditing
                 ? "border-border text-foreground hover:bg-muted"
-                : "bg-primary hover:bg-primary/90 text-white shadow-xs"
+                : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs"
             }`}
           >
             {isEditing ? (
@@ -389,11 +389,11 @@ export function SettingsView({ initialUser, stats }: SettingsViewProps) {
               <Button
                 type="submit"
                 disabled={saving || !fullName.trim() || !email.trim()}
-                className="h-10 px-5 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-white shadow-xs flex items-center gap-2"
+                className="h-10 px-5 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs flex items-center gap-2"
               >
                 {saving ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary-foreground" />
                     <span>Saving Changes...</span>
                   </>
                 ) : (
@@ -512,7 +512,7 @@ export function SettingsView({ initialUser, stats }: SettingsViewProps) {
             </p>
             <Button
               asChild
-              className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-9 px-4 rounded-xl shadow-xs"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-9 px-4 rounded-xl shadow-xs"
             >
               <Link href="/courses">Explore All Courses</Link>
             </Button>

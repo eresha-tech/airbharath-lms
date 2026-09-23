@@ -151,7 +151,7 @@ export function StudentFeedView({
 
         <Button
           asChild
-          className="bg-primary hover:bg-primary/90 text-white font-bold h-11 px-5 rounded-xl text-xs shadow-xs shrink-0 self-start md:self-auto cursor-pointer"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-11 px-5 rounded-xl text-xs shadow-xs shrink-0 self-start md:self-auto cursor-pointer"
         >
           <Link href="/dashboard/courses" className="flex items-center gap-2">
             <span>My Courses</span>
@@ -181,7 +181,7 @@ export function StudentFeedView({
               <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                 <Button
                   asChild
-                  className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs px-5 h-10 shadow-xs cursor-pointer"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl text-xs px-5 h-10 shadow-xs cursor-pointer"
                 >
                   <Link href="/dashboard/courses">Return to My Learning</Link>
                 </Button>
@@ -353,7 +353,7 @@ export function StudentFeedView({
 
               <Button
                 asChild
-                className="w-full bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 rounded-xl shadow-xs"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-10 rounded-xl shadow-xs"
               >
                 <Link
                   href={

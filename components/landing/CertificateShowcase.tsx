@@ -70,7 +70,7 @@ export function CertificateShowcase() {
               <div className="pt-2 flex flex-wrap items-center gap-3">
                 <Button
                   asChild
-                  className="bg-primary hover:bg-primary/90 text-white font-bold h-11 px-6 rounded-xl shadow-xs"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-11 px-6 rounded-xl shadow-xs"
                 >
                   <Link href="/courses" className="flex items-center gap-2">
                     <span>Explore Certificate Courses</span>

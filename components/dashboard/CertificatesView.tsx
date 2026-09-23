@@ -207,7 +207,7 @@ export function CertificatesView({
 
           <Button
             asChild
-            className="bg-primary hover:bg-primary/90 text-white font-bold h-11 px-5 rounded-xl text-xs shadow-xs cursor-pointer"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-11 px-5 rounded-xl text-xs shadow-xs cursor-pointer"
           >
             <Link href="/dashboard/courses" className="flex items-center gap-2">
               <span>My Courses</span>
@@ -282,7 +282,7 @@ export function CertificatesView({
               {inProgressCount > 0 ? (
                 <Button
                   asChild
-                  className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs px-6 h-10 shadow-xs cursor-pointer"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl text-xs px-6 h-10 shadow-xs cursor-pointer"
                 >
                   <Link href={`/dashboard/courses/${inProgressTracks[0].courseId}`}>
                     Resume In-Progress Course
@@ -291,7 +291,7 @@ export function CertificatesView({
               ) : (
                 <Button
                   asChild
-                  className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs px-6 h-10 shadow-xs cursor-pointer"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl text-xs px-6 h-10 shadow-xs cursor-pointer"
                 >
                   <Link href="/courses">Browse Course Catalog</Link>
                 </Button>
@@ -312,14 +312,14 @@ export function CertificatesView({
                     className="bg-card border border-border/80 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between"
                   >
                     {/* Visual Academic Certificate Preview Card */}
-                    <div className="p-3.5 sm:p-6 bg-gradient-to-b from-[#014a62]/[0.04] to-card border-b border-border/60 relative overflow-hidden">
+                    <div className="p-3.5 sm:p-6 bg-gradient-to-b from-primary/[0.04] to-card border-b border-border/60 relative overflow-hidden">
                       {/* Decorative Background Framing */}
                       <div className="border-2 border-primary/20 rounded-2xl p-3 sm:p-5 bg-card/90 dark:bg-zinc-900/90 backdrop-blur-xs relative shadow-inner">
                         <div className="border border-[#d4af37]/40 rounded-xl p-3.5 sm:p-5 space-y-3 text-center">
                           {/* Header Insignia */}
                           <div className="flex flex-col items-center gap-0.5">
                             <div className="inline-flex items-center gap-1.5 text-[9px] font-bold tracking-[0.2em] uppercase text-primary font-outfit">
-                              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                              <ShieldCheck className="h-3.5 w-3.5 text-success" />
                               <span>AirBharath LMS Finishing School</span>
                             </div>
                             <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#d4af37]">
@@ -395,7 +395,7 @@ export function CertificatesView({
                         {cert.pdfUrl ? (
                           <Button
                             asChild
-                            className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
                           >
                             <a
                               href={cert.pdfUrl}
@@ -408,7 +408,7 @@ export function CertificatesView({
                         ) : (
                           <Button
                             asChild
-                            className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
                           >
                             <Link href={`/verify-certificate/${cert.certificateCode}`}>
                               <ShieldCheck className="h-3.5 w-3.5" />
@@ -471,7 +471,7 @@ export function CertificatesView({
               </p>
               <Button
                 asChild
-                className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs px-6 h-10 shadow-xs cursor-pointer"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl text-xs px-6 h-10 shadow-xs cursor-pointer"
               >
                 <Link href="/courses">Browse AirBharath Courses</Link>
               </Button>
@@ -606,7 +606,7 @@ export function CertificatesView({
                       ) : (
                         <Button
                           asChild
-                          className="w-full bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-2 cursor-pointer"
                         >
                           <Link
                             href={
@@ -645,7 +645,7 @@ export function CertificatesView({
           </div>
           <Button
             asChild
-            className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs px-6 h-11 shadow-xs cursor-pointer"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl text-xs px-6 h-11 shadow-xs cursor-pointer"
           >
             <Link href="/courses">Browse Course Catalog</Link>
           </Button>
@@ -767,7 +767,7 @@ export function CertificatesView({
               {selectedCert.pdfUrl && (
                 <Button
                   asChild
-                  className="w-full bg-primary hover:bg-primary/90 text-white font-bold text-xs h-11 rounded-xl shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-11 rounded-xl shadow-xs flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <a
                     href={selectedCert.pdfUrl}

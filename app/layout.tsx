@@ -22,8 +22,8 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Airbharath LMS - Premium Professional & Technical Learning",
-  description: "Accelerate your career with Airbharath LMS courses, certificates, and practical skills.",
+  title: "AirBharath LMS - Premium Professional & Technical Learning",
+  description: "Accelerate your career with AirBharath LMS courses, certificates, and practical skills.",
   icons: {
     icon: [{ url: "https://assets.airbharath.in/air-bharath-logo.webp", type: "image/webp" }],
     shortcut: "https://assets.airbharath.in/air-bharath-logo.webp",

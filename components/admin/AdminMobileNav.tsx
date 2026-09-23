@@ -51,7 +51,7 @@ export function AdminMobileNav() {
             />
             <div className="flex flex-col leading-tight">
               <span className="font-bold text-base tracking-tight text-foreground font-outfit">
-                Airbharath
+                AirBharath
               </span>
               <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
                 Admin Portal

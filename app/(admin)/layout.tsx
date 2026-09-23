@@ -7,8 +7,8 @@ import { AdminLayoutWrapper } from "@/components/admin/AdminLayoutWrapper";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Airbharath Admin Portal",
-  description: "Airbharath LMS management, curriculum, and metrics dashboard.",
+  title: "AirBharath Admin Portal",
+  description: "AirBharath LMS management, curriculum, and metrics dashboard.",
 };
 
 export default async function AdminLayout({

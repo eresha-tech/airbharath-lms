@@ -68,24 +68,24 @@ export default async function MyCoursesPage() {
     <main className="flex-1 pt-24 pb-16">
         <div className="container mx-auto px-4 max-w-6xl space-y-8">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-[#014a62]/10 text-[#014a62] rounded-2xl">
+            <div className="p-3 bg-primary/10 text-primary rounded-2xl">
               <GraduationCap className="h-7 w-7" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold font-instrument-serif text-[#014a62]">My Enrolled Courses</h1>
+              <h1 className="text-3xl font-bold font-outfit text-foreground">My Enrolled Courses</h1>
               <p className="text-xs text-muted-foreground">Access your active learning programs on Airbharath LMS</p>
             </div>
           </div>
 
           {coursesWithProgress.length === 0 ? (
-            <div className="text-center py-16 bg-gray-50 border border-dashed rounded-3xl space-y-4">
+            <div className="text-center py-16 bg-card border border-border border-dashed rounded-3xl space-y-4">
               <h2 className="text-xl font-bold text-foreground">No enrolled courses yet</h2>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                 Explore Airbharath LMS programs to start learning today.
               </p>
               <Link
-                href="/"
-                className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-xs font-bold bg-[#014a62] text-white hover:bg-[#01374a] transition-all"
+                href="/courses"
+                className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
               >
                 Browse Curriculum
               </Link>

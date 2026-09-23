@@ -35,11 +35,11 @@ export default async function PreviewLessonPage({ params }: PreviewLessonPagePro
   return (
     <div className="min-h-screen bg-background">
       {/* Preview Banner */}
-      <div className="w-full bg-gradient-to-r from-[#014a62] to-[#01374a] text-white py-3 px-4 text-center text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-2">
+      <div className="w-full bg-primary text-primary-foreground py-3 px-4 text-center text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-2 shadow-xs">
         <span>🎬 You&apos;re watching a <strong>Free Preview</strong> lesson.</span>
         <Link
           href={`/courses/${courseId}`}
-          className="inline-flex items-center gap-1 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-white font-bold text-[11px] transition-colors border border-white/20"
+          className="inline-flex items-center gap-1 px-3 py-1 bg-black/15 hover:bg-black/25 dark:bg-white/15 dark:hover:bg-white/25 rounded-full text-primary-foreground font-bold text-[11px] transition-colors border border-current/20"
         >
           Enroll to unlock all lessons →
         </Link>
@@ -55,7 +55,7 @@ export default async function PreviewLessonPage({ params }: PreviewLessonPagePro
           Back to Course
         </Link>
 
-        <h1 className="text-2xl md:text-3xl font-bold font-instrument-serif text-[#014a62] mb-6">{lessonObj.title}</h1>
+        <h1 className="text-2xl md:text-3xl font-bold font-outfit text-foreground mb-6">{lessonObj.title}</h1>
 
         <div className="space-y-8">
           {/* Video */}
@@ -73,24 +73,24 @@ export default async function PreviewLessonPage({ params }: PreviewLessonPagePro
           {/* Lesson Content */}
           {lessonObj.content && (
             <div>
-              <h2 className="text-xl font-semibold mb-4 text-[#014a62] font-instrument-serif">Lesson Notes</h2>
+              <h2 className="text-xl font-semibold mb-4 text-foreground font-outfit">Lesson Notes</h2>
               <div
-                className="prose prose-blue dark:prose-invert max-w-none font-sans"
+                className="prose dark:prose-invert max-w-none font-sans text-foreground"
                 dangerouslySetInnerHTML={{ __html: lessonObj.content }}
               />
             </div>
           )}
 
           {/* CTA to enroll */}
-          <div className="mt-10 p-6 bg-[#014a62]/10 border border-[#014a62]/20 rounded-2xl text-center space-y-3">
-            <Lock className="h-8 w-8 text-[#014a62] mx-auto" />
-            <h3 className="text-lg font-bold font-instrument-serif text-[#014a62]">Enjoying this lesson?</h3>
+          <div className="mt-10 p-6 bg-card border border-border rounded-2xl text-center space-y-3 shadow-xs">
+            <Lock className="h-8 w-8 text-primary mx-auto" />
+            <h3 className="text-lg font-bold font-outfit text-foreground">Enjoying this lesson?</h3>
             <p className="text-sm text-muted-foreground max-w-sm mx-auto font-sans">
               Enroll now to unlock the full course, all lessons, live projects, and your verified completion certificate.
             </p>
             <Link
               href={`/courses/${courseId}`}
-              className="inline-flex items-center gap-2 mt-2 px-6 py-3 bg-[#014a62] text-white font-bold rounded-xl text-xs hover:bg-[#01374a] transition-colors shadow-md"
+              className="inline-flex items-center gap-2 mt-2 px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl text-xs hover:bg-primary/90 transition-colors shadow-md"
             >
               View Enrollment Options
             </Link>

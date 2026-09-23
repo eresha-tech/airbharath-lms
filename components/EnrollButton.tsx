@@ -196,7 +196,7 @@ export default function EnrollButton({
           email: activeUser.email || "",
         },
         theme: {
-          color: "#014a62",
+          color: "#9089FF",
         },
       };
 

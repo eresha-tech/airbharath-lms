@@ -155,13 +155,13 @@ export function AdminSidebar() {
         >
           <img
             src="https://assets.airbharath.in/logo.webp"
-            alt="Airbharath"
+            alt="AirBharath"
             className="h-8 w-auto object-contain shrink-0"
           />
           {!isCollapsed && (
             <div className="flex flex-col leading-tight truncate">
               <span className="font-bold text-base tracking-tight text-foreground font-outfit">
-                Airbharath
+                AirBharath
               </span>
               <div className="flex items-center gap-1">
                 <span className="text-[10px] font-bold text-primary uppercase tracking-wider">

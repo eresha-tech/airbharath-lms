@@ -277,7 +277,7 @@ export function FAQView() {
           <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
             <Button
               asChild
-              className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 px-5 rounded-xl shadow-xs"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-10 px-5 rounded-xl shadow-xs"
             >
               <Link href="/contact">
                 <span>Contact Academic Helpdesk</span>
@@ -287,7 +287,7 @@ export function FAQView() {
             <Button
               asChild
               variant="outline"
-              className="border-slate-200 text-slate-700 hover:text-primary hover:bg-slate-100 font-bold text-xs h-10 px-5 rounded-xl"
+              className="border-border text-foreground hover:bg-muted font-bold text-xs h-10 px-5 rounded-xl"
             >
               <Link href="/courses">Browse Course Catalog</Link>
             </Button>

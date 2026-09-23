@@ -75,19 +75,19 @@ export default async function CoursePage({ params }: CoursePageProps) {
 
   return (
     <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
-      <div className="bg-white p-8 md:p-12 rounded-3xl border border-slate-200 shadow-xl max-w-lg space-y-6">
-        <div className="w-14 h-14 bg-[#014a62]/10 text-[#014a62] rounded-2xl flex items-center justify-center mx-auto">
+      <div className="bg-card p-8 md:p-12 rounded-3xl border border-border shadow-xl max-w-lg space-y-6">
+        <div className="w-14 h-14 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto">
           <BookOpen className="w-7 h-7" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl md:text-3xl font-bold font-instrument-serif text-[#014a62]">
+          <h2 className="text-2xl md:text-3xl font-bold font-outfit text-foreground">
             Welcome to {courseObj.title}
           </h2>
-          <p className="text-slate-600 text-xs md:text-sm leading-relaxed font-sans">
+          <p className="text-muted-foreground text-xs md:text-sm leading-relaxed">
             Lessons and materials for this Airbharath course will be published soon.
           </p>
         </div>
-        <Button asChild className="bg-[#014a62] hover:bg-[#01374a] text-white font-bold h-11 px-6 rounded-xl text-xs gap-2">
+        <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-11 px-6 rounded-xl text-xs gap-2">
           <Link href="/dashboard/courses">
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Enrolled Courses</span>

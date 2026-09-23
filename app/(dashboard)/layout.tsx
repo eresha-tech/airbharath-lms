@@ -3,7 +3,7 @@ import { SidebarProvider } from "@/components/providers/sidebar-provider";
 import { StudentLayoutWrapper } from "@/components/dashboard/StudentLayoutWrapper";
 
 export const metadata: Metadata = {
-  title: "Dashboard | Airbharath LMS",
+  title: "Dashboard | AirBharath LMS",
   description: "Your aviation & technical learning dashboard",
 };
 

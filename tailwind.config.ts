@@ -20,9 +20,9 @@ export default {
       },
       colors: {
         airbharath: {
-          DEFAULT: "#014a62",
-          dark: "#01374a",
-          light: "#026282",
+          DEFAULT: "#9089FF",
+          dark: "#7C73FF",
+          light: "#D2CEFF",
         },
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",

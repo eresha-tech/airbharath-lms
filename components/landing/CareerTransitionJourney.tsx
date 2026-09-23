@@ -96,7 +96,7 @@ export function CareerTransitionJourney() {
               Browse our course catalog and begin learning immediately after enrollment.
             </p>
           </div>
-          <Button asChild className="bg-primary hover:bg-primary/90 text-white font-bold h-11 px-6 rounded-xl shrink-0">
+          <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-11 px-6 rounded-xl shrink-0">
             <Link href="/courses">Explore Course Catalog</Link>
           </Button>
         </div>

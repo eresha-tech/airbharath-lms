@@ -124,7 +124,7 @@ export function CoursesSection({ dbCourses = [] }: CoursesSectionProps) {
           </div>
           <Button
             asChild
-            className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 px-5 rounded-xl shrink-0 active:scale-95 transition-all"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-10 px-5 rounded-xl shrink-0 active:scale-95 transition-all"
           >
             <Link href="/courses/combo-pack">Explore Combo Pass</Link>
           </Button>

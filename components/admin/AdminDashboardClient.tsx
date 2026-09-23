@@ -633,7 +633,7 @@ export default function AdminDashboardClient({
                   <span>Revenue (₹)</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <span className="h-2.5 w-2.5 rounded-sm bg-accent-light" />
+                  <span className="h-2.5 w-2.5 rounded-sm bg-success" />
                   <span>Enrollments</span>
                 </div>
               </div>
@@ -682,15 +682,23 @@ export default function AdminDashboardClient({
                     )}
 
                     {/* Dual Bars */}
-                    <div className="flex w-full items-end gap-1 h-[85%] justify-center">
+                    <div className="flex w-full items-end gap-1 sm:gap-1.5 h-[85%] justify-center">
                       <div
-                        style={{ height: `${Math.max(revPercent, 3)}%` }}
-                        className="w-2.5 sm:w-4 bg-primary/80 group-hover:bg-primary rounded-t-sm transition-all duration-300"
+                        style={{ height: `${data.revenue > 0 ? Math.max(revPercent, 5) : 3}%` }}
+                        className={`w-2.5 sm:w-4 rounded-t-sm transition-all duration-300 ${
+                          data.revenue > 0
+                            ? "bg-primary group-hover:brightness-110 shadow-xs"
+                            : "bg-muted/40 group-hover:bg-muted/70"
+                        }`}
                         title={`Revenue: ₹${data.revenue}`}
                       />
                       <div
-                        style={{ height: `${Math.max(countPercent, 3)}%` }}
-                        className="w-2.5 sm:w-4 bg-accent-light/70 group-hover:bg-accent-light rounded-t-sm transition-all duration-300"
+                        style={{ height: `${data.count > 0 ? Math.max(countPercent, 5) : 3}%` }}
+                        className={`w-2.5 sm:w-4 rounded-t-sm transition-all duration-300 ${
+                          data.count > 0
+                            ? "bg-success group-hover:brightness-110 shadow-xs"
+                            : "bg-muted/40 group-hover:bg-muted/70"
+                        }`}
                         title={`Enrollments: ${data.count}`}
                       />
                     </div>

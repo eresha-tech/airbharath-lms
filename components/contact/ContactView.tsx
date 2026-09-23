@@ -145,7 +145,7 @@ export function ContactView() {
 
               <Button
                 type="submit"
-                className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-12 rounded-xl text-xs shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 rounded-xl text-xs shadow-xs flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Send className="w-4 h-4" />
                 <span>Send Email to academy@airbharath.in</span>

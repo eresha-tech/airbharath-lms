@@ -38,17 +38,17 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
 
       <main className="flex-1 pt-24 pb-16">
         <div className="container mx-auto px-4 max-w-6xl space-y-8">
-          <Link href="/dashboard" className="inline-flex items-center gap-2 text-xs font-bold text-[#014a62] hover:underline">
+          <Link href="/dashboard" className="inline-flex items-center gap-2 text-xs font-bold text-primary hover:underline">
             <ArrowLeft className="h-4 w-4" /> Back to Student Dashboard
           </Link>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             {/* Certificate Area */}
-            <div className="lg:col-span-2 bg-white text-zinc-900 border-[10px] border-[#014a62]/20 p-8 md:p-12 rounded-3xl relative shadow-xl min-h-[480px] flex flex-col justify-between items-center text-center font-serif">
+            <div className="lg:col-span-2 bg-white text-zinc-900 border-[10px] border-primary/20 p-8 md:p-12 rounded-3xl relative shadow-xl min-h-[480px] flex flex-col justify-between items-center text-center font-serif">
               <div className="relative z-10 flex flex-col items-center gap-2 mt-4">
                 <img src="https://assets.airbharath.in/logo.webp" alt="Airbharath LMS" className="h-10 w-auto object-contain" />
-                <div className="text-[10px] tracking-[0.2em] uppercase font-sans font-bold text-[#014a62]">
-                  Airbharath LMS Finishing School
+                <div className="text-[10px] tracking-[0.2em] uppercase font-sans font-bold text-primary">
+                  AirBharath LMS Finishing School
                 </div>
               </div>
 
@@ -57,11 +57,11 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
                   Certificate of Completion
                 </h2>
                 <p className="text-xs italic text-zinc-500 font-sans">This is to certify that</p>
-                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#014a62] py-2 border-b-2 border-zinc-100 max-w-md mx-auto">
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-primary py-2 border-b-2 border-zinc-100 max-w-md mx-auto font-sans">
                   {studentName}
                 </h1>
                 <p className="text-xs italic text-zinc-500 font-sans">has successfully completed</p>
-                <h3 className="text-xl md:text-2xl font-bold tracking-tight text-zinc-800">
+                <h3 className="text-xl md:text-2xl font-bold tracking-tight text-zinc-800 font-sans">
                   {courseTitle}
                 </h3>
               </div>
@@ -84,28 +84,28 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
 
             {/* Certificate Right Panel */}
             <div className="space-y-6">
-              <div className="bg-card border rounded-3xl p-6 shadow-sm space-y-6">
-                <h3 className="font-bold text-xl font-instrument-serif text-[#014a62]">Congratulations!</h3>
+              <div className="bg-card border border-border rounded-3xl p-6 shadow-sm space-y-6">
+                <h3 className="font-bold text-xl font-outfit text-foreground">Congratulations!</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   Your official Airbharath LMS technical qualification is verified and active.
                 </p>
 
                 <div className="space-y-3 pt-2">
-                  <div className="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                  <div className="flex items-center gap-3 p-3 bg-success/10 border border-success/20 rounded-xl">
+                    <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
                     <div>
-                      <h4 className="font-bold text-xs text-emerald-900">QR Code Verified</h4>
-                      <p className="text-[10px] text-emerald-700">Authentic digital credential</p>
+                      <h4 className="font-bold text-xs text-foreground">QR Code Verified</h4>
+                      <p className="text-[10px] text-success">Authentic digital credential</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="border-t pt-6">
+                <div className="border-t border-border pt-6">
                   {pdfUrl && pdfUrl !== "#" ? (
                     <a
                       href={pdfUrl}
                       download={`Airbharath-Certificate-${certCode}.pdf`}
-                      className="w-full flex items-center justify-center gap-2 py-3 bg-[#014a62] text-white font-bold rounded-xl text-xs hover:bg-[#01374a] transition-all shadow-sm"
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-primary text-primary-foreground font-bold rounded-xl text-xs hover:bg-primary/90 transition-all shadow-sm"
                     >
                       <Download className="h-4 w-4" />
                       Download PDF Certificate
@@ -113,7 +113,7 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
                   ) : (
                     <Link
                       href={`/verify-certificate/${certCode}`}
-                      className="w-full flex items-center justify-center gap-2 py-3 bg-[#014a62] text-white font-bold rounded-xl text-xs hover:bg-[#01374a] transition-all shadow-sm"
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-primary text-primary-foreground font-bold rounded-xl text-xs hover:bg-primary/90 transition-all shadow-sm"
                     >
                       <Award className="h-4 w-4" />
                       Verify Credential Page

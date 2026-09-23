@@ -152,7 +152,7 @@ export function JobsView({ jobs }: JobsViewProps) {
 
           <Button
             asChild
-            className="bg-primary hover:bg-primary/90 text-white font-bold h-11 px-5 rounded-xl text-xs shadow-xs cursor-pointer"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-11 px-5 rounded-xl text-xs shadow-xs cursor-pointer"
           >
             <Link href="/dashboard/courses" className="flex items-center gap-2">
               <span>My Learning</span>
@@ -172,7 +172,7 @@ export function JobsView({ jobs }: JobsViewProps) {
               onClick={() => setSelectedLocation("all")}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
                 selectedLocation === "all"
-                  ? "bg-primary text-white shadow-xs"
+                  ? "bg-primary text-primary-foreground shadow-xs"
                   : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -191,7 +191,7 @@ export function JobsView({ jobs }: JobsViewProps) {
                   onClick={() => setSelectedLocation(loc)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 flex items-center gap-1 ${
                     isSelected
-                      ? "bg-primary text-white shadow-xs"
+                      ? "bg-primary text-primary-foreground shadow-xs"
                       : "bg-muted text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -242,7 +242,7 @@ export function JobsView({ jobs }: JobsViewProps) {
             </div>
             <Button
               asChild
-              className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs px-6 h-11 shadow-xs cursor-pointer"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl text-xs px-6 h-11 shadow-xs cursor-pointer"
             >
               <Link href="/dashboard/courses">Return to My Learning</Link>
             </Button>
@@ -336,7 +336,7 @@ export function JobsView({ jobs }: JobsViewProps) {
                       <Button
                         asChild
                         onClick={() => handleSelectJob(job)}
-                        className="flex-1 bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <a href={job.link} target="_blank" rel="noopener noreferrer">
                           <span>View Opportunity</span>
@@ -346,7 +346,7 @@ export function JobsView({ jobs }: JobsViewProps) {
                     ) : (
                       <Button
                         onClick={() => handleSelectJob(job)}
-                        className="flex-1 bg-primary hover:bg-primary/90 text-white font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-10 rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <span>View Opportunity</span>
                       </Button>
@@ -438,7 +438,7 @@ export function JobsView({ jobs }: JobsViewProps) {
               {selectedJob.link ? (
                 <Button
                   asChild
-                  className="w-full bg-primary hover:bg-primary/90 text-white font-bold text-xs h-11 rounded-xl shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-11 rounded-xl shadow-xs flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <a href={selectedJob.link} target="_blank" rel="noopener noreferrer">
                     <span>Apply on Partner Portal</span>
@@ -448,7 +448,7 @@ export function JobsView({ jobs }: JobsViewProps) {
               ) : (
                 <Button
                   onClick={() => handleCopyLink(selectedJob)}
-                  className="w-full bg-primary hover:bg-primary/90 text-white font-bold text-xs h-11 rounded-xl shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-11 rounded-xl shadow-xs flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {copiedId === selectedJob.id ? (
                     <>
