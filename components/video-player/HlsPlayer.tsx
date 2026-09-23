@@ -19,6 +19,7 @@ import {
   AlertCircle,
   Sliders,
   Gauge,
+  Subtitles,
 } from "lucide-react";
 import { track } from "@/lib/analytics";
 
@@ -33,6 +34,8 @@ interface HlsPlayerProps {
   watermarkPhone?: string;
   className?: string;
   onEnded?: () => void;
+  captionAvailable?: boolean;
+  captionUrl?: string;
 }
 
 interface QualityLevel {
@@ -81,6 +84,8 @@ export function HlsPlayer({
   lessonId,
   lessonTitle,
   lessonIndex,
+  captionAvailable,
+  captionUrl,
   watermarkText = "Airbharath LMS",
   watermarkEmail,
   watermarkPhone,
@@ -128,6 +133,17 @@ export function HlsPlayer({
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverPos, setHoverPos] = useState<number>(0);
 
+  // Captions state
+  const [hasServerCaptions, setHasServerCaptions] = useState<boolean>(false);
+  const [isCaptionsOn, setIsCaptionsOn] = useState<boolean>(false);
+
+  const isCaptionAvailable = captionAvailable ?? hasServerCaptions;
+  const effectiveCaptionUrl =
+    captionUrl ||
+    (isCaptionAvailable && courseId && lessonId
+      ? `/api/videos/${videoId}/captions?courseId=${courseId}&lessonId=${lessonId}&language=en`
+      : undefined);
+
   // Keep refs up-to-date for timers
   const isPlayingRef = useRef(false);
   const activeMenuRef = useRef<string>("none");
@@ -137,6 +153,7 @@ export function HlsPlayer({
   // 1. Fetch playback session & signed URL
   useEffect(() => {
     let isMounted = true;
+    setIsCaptionsOn(false);
 
     async function initSession() {
       try {
@@ -160,6 +177,9 @@ export function HlsPlayer({
           setPlaybackUrl(data.playbackUrl);
           if (data.durationSeconds && typeof data.durationSeconds === "number") {
             setDuration(data.durationSeconds);
+          }
+          if (data.hasCaptions !== undefined) {
+            setHasServerCaptions(Boolean(data.hasCaptions));
           }
         }
       } catch (err: any) {
@@ -534,15 +554,54 @@ export function HlsPlayer({
     resetHideTimer();
   };
 
+  // Synchronize TextTrack mode with isCaptionsOn state
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const updateTrackMode = () => {
+      const tracks = video.textTracks;
+      if (tracks && tracks.length > 0) {
+        for (let i = 0; i < tracks.length; i++) {
+          tracks[i].mode = isCaptionsOn ? "showing" : "disabled";
+        }
+      }
+    };
+    updateTrackMode();
+    video.textTracks.addEventListener("addtrack", updateTrackMode);
+    return () => {
+      video.textTracks.removeEventListener("addtrack", updateTrackMode);
+    };
+  }, [isCaptionsOn, effectiveCaptionUrl]);
+
+  // Toggle Closed Captions / Subtitles
+  const toggleCaptions = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const tracks = video.textTracks;
+    const nextState = !isCaptionsOn;
+    if (tracks && tracks.length > 0) {
+      for (let i = 0; i < tracks.length; i++) {
+        tracks[i].mode = nextState ? "showing" : "disabled";
+      }
+    }
+    setIsCaptionsOn(nextState);
+    resetHideTimer();
+  }, [isCaptionsOn]);
+
   // Keyboard controls
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (["Space", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "KeyM", "KeyF", "KeyK", "KeyJ", "KeyL"].includes(e.code)) {
+    if (["Space", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "KeyM", "KeyF", "KeyK", "KeyJ", "KeyL", "KeyC"].includes(e.code)) {
       e.preventDefault();
     }
     switch (e.code) {
       case "Space":
       case "KeyK":
         togglePlay();
+        break;
+      case "KeyC":
+        if (isCaptionAvailable || effectiveCaptionUrl) {
+          toggleCaptions();
+        }
         break;
       case "ArrowLeft":
       case "KeyJ":
@@ -654,7 +713,18 @@ export function HlsPlayer({
         onCanPlay={() => setIsBuffering(false)}
         onSeeked={() => setIsBuffering(false)}
         className="w-full h-full object-contain cursor-pointer"
-      />
+      >
+        {effectiveCaptionUrl && (
+          <track
+            key={effectiveCaptionUrl}
+            kind="captions"
+            src={effectiveCaptionUrl}
+            srcLang="en"
+            label="English"
+            default={false}
+          />
+        )}
+      </video>
 
       {/* Multi-line Watermark Overlay (Email + Mobile Number) */}
       {displayWatermark && (
@@ -914,6 +984,22 @@ export function HlsPlayer({
 
           {/* Right Controls */}
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {/* Closed Captions Button (Visible only when English captions exist) */}
+            {(isCaptionAvailable || effectiveCaptionUrl) && (
+              <button
+                onClick={toggleCaptions}
+                className={`p-1.5 sm:p-1.5 rounded-lg transition-all touch-manipulation cursor-pointer flex items-center justify-center ${
+                  isCaptionsOn
+                    ? "bg-emerald-500/25 text-emerald-400 font-bold border border-emerald-500/40 shadow-xs"
+                    : "text-zinc-300 hover:text-white hover:bg-white/10"
+                }`}
+                title={isCaptionsOn ? "Turn captions off (c)" : "Turn captions on (c)"}
+                aria-label={isCaptionsOn ? "Turn captions off" : "Turn captions on"}
+              >
+                <Subtitles className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+              </button>
+            )}
+
             {/* Current Quality & Speed Settings Button */}
             <button
               onClick={() => setActiveMenu(activeMenu === "none" ? "main" : "none")}

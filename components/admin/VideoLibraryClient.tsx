@@ -22,6 +22,7 @@ import {
   ExternalLink,
   ShieldAlert,
   Info,
+  Subtitles,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,13 @@ export interface VideoItem {
     courseId: string;
     courseTitle: string;
   }>;
+  captions?: Array<{
+    id: string;
+    languageCode: string;
+    label: string;
+    status: string;
+    updatedAt: string;
+  }>;
 }
 
 export default function VideoLibraryClient() {
@@ -66,6 +74,11 @@ export default function VideoLibraryClient() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Captions state
+  const [uploadingCaptionId, setUploadingCaptionId] = useState<string | null>(null);
+  const [deletingCaptionId, setDeletingCaptionId] = useState<string | null>(null);
+  const [captionErrors, setCaptionErrors] = useState<Record<string, string>>({});
 
   // Deletion modal state
   const [deleteCandidate, setDeleteCandidate] = useState<VideoItem | null>(null);
@@ -96,6 +109,58 @@ export default function VideoLibraryClient() {
       setLoading(false);
     }
   }
+
+  const handleUploadCaption = async (videoId: string, file: File) => {
+    try {
+      setUploadingCaptionId(videoId);
+      setCaptionErrors((prev) => ({ ...prev, [videoId]: "" }));
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("languageCode", "en");
+      formData.append("label", "English");
+
+      const res = await fetch(`/api/admin/videos/${videoId}/captions`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to upload WebVTT caption file");
+      }
+
+      await fetchVideos();
+    } catch (err: any) {
+      console.error("Caption upload failed:", err);
+      setCaptionErrors((prev) => ({ ...prev, [videoId]: err.message || "Upload failed" }));
+    } finally {
+      setUploadingCaptionId(null);
+    }
+  };
+
+  const handleDeleteCaption = async (videoId: string, languageCode = "en") => {
+    try {
+      setDeletingCaptionId(videoId);
+      setCaptionErrors((prev) => ({ ...prev, [videoId]: "" }));
+
+      const res = await fetch(`/api/admin/videos/${videoId}/captions?language=${languageCode}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to remove caption track");
+      }
+
+      await fetchVideos();
+    } catch (err: any) {
+      console.error("Caption deletion failed:", err);
+      setCaptionErrors((prev) => ({ ...prev, [videoId]: err.message || "Delete failed" }));
+    } finally {
+      setDeletingCaptionId(null);
+    }
+  };
 
   const handleCopyId = (id: string) => {
     navigator.clipboard.writeText(id);
@@ -435,6 +500,99 @@ export default function VideoLibraryClient() {
                         Not linked to any lesson yet.
                       </p>
                     )}
+                  </div>
+
+                  {/* Captions Section */}
+                  <div className="p-3 rounded-2xl bg-muted/30 border border-border/60 space-y-2">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-bold text-foreground flex items-center gap-1.5">
+                        <Subtitles className="w-3.5 h-3.5 text-primary" />
+                        <span>Captions</span>
+                      </span>
+                      {(() => {
+                        const englishCaption = video.captions?.find((c) => c.languageCode === "en");
+                        if (englishCaption && englishCaption.status === "ready") {
+                          return (
+                            <Badge className="bg-success/10 text-success border-success/30 text-[10px] font-bold px-1.5 py-0">
+                              ✓ English Ready
+                            </Badge>
+                          );
+                        }
+                        return (
+                          <Badge variant="outline" className="text-[10px] font-medium text-muted-foreground border-border/80 px-1.5 py-0">
+                            Not uploaded
+                          </Badge>
+                        );
+                      })()}
+                    </div>
+
+                    {captionErrors[video.id] && (
+                      <div className="p-2 rounded-xl bg-destructive/10 border border-destructive/20 text-[10px] text-destructive font-medium flex items-center gap-1.5">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>{captionErrors[video.id]}</span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between gap-2 pt-0.5">
+                      <span className="text-[11px] font-medium text-muted-foreground">English (.vtt)</span>
+
+                      <div className="flex items-center gap-1.5">
+                        {/* Hidden file input */}
+                        <input
+                          id={`caption-file-input-${video.id}`}
+                          type="file"
+                          accept=".vtt,text/vtt"
+                          className="hidden"
+                          disabled={uploadingCaptionId === video.id}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleUploadCaption(video.id, file);
+                              e.target.value = "";
+                            }
+                          }}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          type="button"
+                          disabled={uploadingCaptionId === video.id}
+                          onClick={() => {
+                            document.getElementById(`caption-file-input-${video.id}`)?.click();
+                          }}
+                          className="h-7 px-2.5 text-[10px] font-semibold rounded-lg cursor-pointer"
+                        >
+                          {uploadingCaptionId === video.id ? (
+                            <>
+                              <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                              <span>Uploading...</span>
+                            </>
+                          ) : video.captions?.some((c) => c.languageCode === "en" && c.status === "ready") ? (
+                            "Replace VTT"
+                          ) : (
+                            "Upload VTT"
+                          )}
+                        </Button>
+
+                        {/* Remove Button */}
+                        {video.captions?.some((c) => c.languageCode === "en" && c.status === "ready") && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={deletingCaptionId === video.id}
+                            onClick={() => handleDeleteCaption(video.id, "en")}
+                            className="h-7 px-2 text-[10px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
+                            title="Remove English Captions"
+                          >
+                            {deletingCaptionId === video.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <X className="w-3.5 h-3.5" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Copyable Video ID */}

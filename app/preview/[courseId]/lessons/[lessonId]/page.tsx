@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { lessons } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { lessons, videoCaptions } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 import { HlsPlayer } from "@/components/video-player/HlsPlayer";
 import { MarkdownContent } from "@/components/content/MarkdownContent";
 import Link from "next/link";
@@ -32,6 +32,12 @@ export default async function PreviewLessonPage({ params }: PreviewLessonPagePro
   }
 
   const activeVideoId = lessonObj.videoUrl || lessonObj.id;
+  const captionRecord = activeVideoId
+    ? await db.query.videoCaptions.findFirst({
+        where: and(eq(videoCaptions.videoId, activeVideoId), eq(videoCaptions.status, "ready")),
+      })
+    : null;
+  const captionAvailable = Boolean(captionRecord);
 
   return (
     <div className="min-h-screen bg-background">
@@ -66,6 +72,7 @@ export default async function PreviewLessonPage({ params }: PreviewLessonPagePro
               courseId={courseId}
               lessonId={lessonId}
               watermarkText="preview@airbharath.in"
+              captionAvailable={captionAvailable}
             />
           ) : (
             <div className="aspect-video bg-muted rounded-2xl flex items-center justify-center">

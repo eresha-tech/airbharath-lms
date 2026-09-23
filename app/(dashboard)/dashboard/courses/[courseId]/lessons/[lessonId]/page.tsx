@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { lessons, enrollments, courses, lessonMaterials } from "@/lib/db/schema";
+import { lessons, enrollments, courses, lessonMaterials, videoCaptions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { hasCourseAccess } from "@/lib/course-access";
 import { LessonCompleteButton } from "@/components/LessonCompleteButton";
@@ -207,8 +207,14 @@ export default async function LessonPage({ params }: LessonPageProps) {
   const isAdmin = session.role === "admin";
   const availability = getLessonAvailability(lessonObj);
   const isLocked = !isAdmin && availability.isLocked;
-  const isLiveLesson = availability.state === "live";
+  const isLiveLesson = lessonObj.deliveryType === "live";
   const activeVideoId = !isLocked && !isLiveLesson ? (lessonObj.videoUrl || lessonObj.id) : null;
+  const captionRecord = activeVideoId
+    ? await db.query.videoCaptions.findFirst({
+        where: and(eq(videoCaptions.videoId, activeVideoId), eq(videoCaptions.status, "ready")),
+      })
+    : null;
+  const captionAvailable = Boolean(captionRecord);
 
   return (
     <div className="min-h-full flex flex-col bg-background font-sans">
@@ -353,6 +359,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
               lessonIndex={currentLessonIdx >= 0 ? currentLessonIdx + 1 : undefined}
               watermarkEmail={session.email || session.fullName || "student@airbharath.in"}
               watermarkPhone={session.phone || undefined}
+              captionAvailable={captionAvailable}
             />
           </div>
         ) : null}

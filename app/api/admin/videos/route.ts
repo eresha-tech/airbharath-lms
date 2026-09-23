@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { videos, lessons, modules, courses } from "@/lib/db/schema";
+import { videos, lessons, modules, courses, videoCaptions } from "@/lib/db/schema";
 import { eq, desc, or, inArray } from "drizzle-orm";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client, rawBucket, processedBucket, deleteS3Folder } from "@/lib/aws-video";
@@ -32,6 +32,9 @@ export async function GET(req: Request) {
       .leftJoin(courses, eq(videos.courseId, courses.id))
       .orderBy(desc(videos.createdAt));
 
+    // Fetch all captions
+    const allCaptions = await db.select().from(videoCaptions);
+
     // Fetch all lessons referencing any video
     const referencingLessons = await db
       .select({
@@ -46,11 +49,12 @@ export async function GET(req: Request) {
       .innerJoin(modules, eq(lessons.moduleId, modules.id))
       .innerJoin(courses, eq(modules.courseId, courses.id));
 
-    // Map usage onto each video
+    // Map usage and captions onto each video
     const enrichedVideos = videoList.map((video) => {
       const usages = referencingLessons.filter(
         (l) => l.videoUrl === video.id || (video.lessonId && l.lessonId === video.lessonId)
       );
+      const captions = allCaptions.filter((c) => c.videoId === video.id);
       return {
         ...video,
         usageCount: usages.length,
@@ -59,6 +63,13 @@ export async function GET(req: Request) {
           lessonTitle: u.lessonTitle,
           courseId: u.courseId,
           courseTitle: u.courseTitle,
+        })),
+        captions: captions.map((c) => ({
+          id: c.id,
+          languageCode: c.languageCode,
+          label: c.label,
+          status: c.status,
+          updatedAt: c.updatedAt,
         })),
       };
     });
@@ -155,7 +166,10 @@ export async function DELETE(req: Request) {
       );
     }
 
-    // 4. Delete record from videos table
+    // 4. Delete associated caption records
+    await db.delete(videoCaptions).where(eq(videoCaptions.videoId, videoId));
+
+    // 5. Delete record from videos table
     await db.delete(videos).where(eq(videos.id, videoId));
 
     return NextResponse.json({

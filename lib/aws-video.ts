@@ -1,4 +1,12 @@
-import { S3Client, PutObjectCommand, DeleteObjectsCommand, ListObjectsV2Command, ListObjectsV2CommandOutput } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  DeleteObjectsCommand,
+  ListObjectsV2Command,
+  ListObjectsV2CommandOutput,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl as getS3PresignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getSignedUrl as getCloudFrontSignedUrl } from "@aws-sdk/cloudfront-signer";
 
@@ -210,4 +218,74 @@ export async function releasePlaybackSession(userId: string) {
     console.error("Upstash Redis error releasing session:", err);
   }
 }
+
+/**
+ * Uploads a WebVTT caption file to the processed video S3 bucket under the deterministic prefix:
+ * {courseId}/{videoId}/captions/{languageCode}.vtt
+ */
+export async function uploadCaptionToS3(
+  courseId: string,
+  videoId: string,
+  languageCode: string,
+  vttContent: string | Buffer
+): Promise<string> {
+  const s3Key = `${courseId}/${videoId}/captions/${languageCode}.vtt`;
+
+  await s3Client.send(
+    new PutObjectCommand({
+      Bucket: processedBucket,
+      Key: s3Key,
+      Body: typeof vttContent === "string" ? Buffer.from(vttContent, "utf-8") : vttContent,
+      ContentType: "text/vtt; charset=utf-8",
+    })
+  );
+
+  return s3Key;
+}
+
+/**
+ * Retrieves a WebVTT caption file content directly from the private S3 processed bucket.
+ */
+export async function getCaptionFromS3(s3Key: string): Promise<string | null> {
+  try {
+    const res = await s3Client.send(
+      new GetObjectCommand({
+        Bucket: processedBucket,
+        Key: s3Key,
+      })
+    );
+
+    if (!res.Body) return null;
+    const bodyString = await res.Body.transformToString("utf-8");
+    return bodyString;
+  } catch (err: any) {
+    if (err.name === "NoSuchKey" || err.$metadata?.httpStatusCode === 404) {
+      return null;
+    }
+    console.error("Error retrieving caption from S3:", err);
+    throw err;
+  }
+}
+
+/**
+ * Deletes a caption file from the processed video S3 bucket.
+ */
+export async function deleteCaptionFromS3(s3Key: string): Promise<void> {
+  if (!s3Key) return;
+  try {
+    await s3Client.send(
+      new DeleteObjectCommand({
+        Bucket: processedBucket,
+        Key: s3Key,
+      })
+    );
+  } catch (err: any) {
+    if (err.name === "NoSuchKey" || err.$metadata?.httpStatusCode === 404) {
+      return;
+    }
+    console.error("Error deleting caption from S3:", err);
+    throw err;
+  }
+}
+
 

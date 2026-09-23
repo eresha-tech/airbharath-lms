@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { videos, lessons, modules, enrollments, playbackSessions } from "@/lib/db/schema";
+import { videos, lessons, modules, enrollments, playbackSessions, videoCaptions } from "@/lib/db/schema";
 import { eq, and, or, inArray } from "drizzle-orm";
 import { hasCourseAccess } from "@/lib/course-access";
 import {
@@ -229,11 +229,22 @@ export async function POST(
       active: true,
     });
 
+    // 4. Check available video captions
+    const captions = await db
+      .select({
+        languageCode: videoCaptions.languageCode,
+        label: videoCaptions.label,
+      })
+      .from(videoCaptions)
+      .where(and(eq(videoCaptions.videoId, video.id), eq(videoCaptions.status, "ready")));
+
     return NextResponse.json({
       playbackUrl,
       sessionId,
       title: video.title,
       durationSeconds: video.durationSeconds,
+      hasCaptions: captions.length > 0,
+      captions,
     });
   } catch (error: any) {
     console.error("Error creating playback session:", error);
