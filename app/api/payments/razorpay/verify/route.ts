@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { orders, enrollments, courses } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { generateAndSaveInvoice } from '@/lib/invoice-generator';
+import { serverTrack } from '@/lib/analytics-server';
 
 export async function POST(req: Request) {
   try {
@@ -76,6 +77,21 @@ export async function POST(req: Request) {
           status: 'active',
         });
       }
+
+      // Track authoritative server-side payment success and enrollment completion
+      await serverTrack(existingOrder.userId, 'payment_succeeded', {
+        order_id: existingOrder.id,
+        razorpay_order_id: existingOrder.razorpayOrderId,
+        course_id: existingOrder.courseId,
+        amount: Number(existingOrder.amount) || 0,
+      });
+
+      await serverTrack(existingOrder.userId, 'enrollment_completed', {
+        course_id: existingOrder.courseId,
+        order_id: existingOrder.id,
+        is_free: false,
+        amount: Number(existingOrder.amount) || 0,
+      });
     }
 
     // Generate automatic invoice

@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { enrollments, courses, progress } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { Sidebar } from "@/components/dashboard/Sidebar";
+import { ClassroomLayout } from "@/components/classroom/ClassroomLayout";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +15,7 @@ interface CourseLayoutProps {
 }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 
 export default async function CourseLayout({
   children,
@@ -34,6 +35,15 @@ export default async function CourseLayout({
     ? await db.query.courses.findFirst({
         where: eq(courses.id, courseId),
         with: {
+          sections: {
+            with: {
+              modules: {
+                with: {
+                  lessons: true,
+                },
+              },
+            },
+          },
           modules: {
             with: {
               lessons: true,
@@ -44,6 +54,15 @@ export default async function CourseLayout({
     : await db.query.courses.findFirst({
         where: eq(courses.slug, courseId),
         with: {
+          sections: {
+            with: {
+              modules: {
+                with: {
+                  lessons: true,
+                },
+              },
+            },
+          },
           modules: {
             with: {
               lessons: true,
@@ -53,7 +72,7 @@ export default async function CourseLayout({
       });
 
   if (!courseObj) {
-    return redirect("/my-courses");
+    return redirect("/dashboard/courses");
   }
 
   // Check enrollment
@@ -65,6 +84,19 @@ export default async function CourseLayout({
     return redirect(`/courses/${courseObj.slug || courseObj.id}`);
   }
 
+  const courseSections = (courseObj.sections as any[]) || [];
+  const sortedSections = courseSections
+    .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
+    .map((sec: any) => ({
+      ...sec,
+      modules: (sec.modules || [])
+        .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
+        .map((mod: any) => ({
+          ...mod,
+          lessons: (mod.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0)),
+        })),
+    }));
+
   const courseModules = (courseObj.modules as any[]) || [];
   const sortedModules = courseModules
     .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
@@ -75,6 +107,7 @@ export default async function CourseLayout({
 
   const formattedCourse = {
     ...courseObj,
+    sections: sortedSections,
     modules: sortedModules,
   };
 
@@ -86,9 +119,9 @@ export default async function CourseLayout({
   const completedLessonIds = userProgress.map((p: any) => p.lessonId);
 
   return (
-    <div className="h-full">
-      <Sidebar course={formattedCourse as any} completedLessons={completedLessonIds} />
-      <main className="h-full pl-0 lg:pl-96">{children}</main>
-    </div>
+    <ClassroomLayout course={formattedCourse as any} completedLessons={completedLessonIds}>
+      {children}
+    </ClassroomLayout>
   );
 }
+

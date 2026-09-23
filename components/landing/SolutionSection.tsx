@@ -1,117 +1,128 @@
-import { CheckCircle2, Layers, Compass, Award, Rocket } from "lucide-react";
+import { PlayCircle, LineChart, ShieldCheck, MessageSquare, Briefcase, Sparkles, CheckCircle2 } from "lucide-react";
 
-const STEPS = [
+const PLATFORM_FEATURES = [
   {
-    num: "01",
-    title: "UPSKILL",
+    icon: PlayCircle,
+    title: "HD Video Lessons & Curriculum",
     description:
-      "Build practical skills in AI, digital marketing, entrepreneurship and workplace technology. Learn from IIM alumni and industry practitioners.",
-    icon: Layers,
+      "Carefully structured module-by-module video lectures with clear pacing, actionable examples, and downloadable lesson resources.",
+    tag: "Video Learning",
   },
   {
-    num: "02",
-    title: "PRACTISE",
+    icon: LineChart,
+    title: "Real-Time Progress Tracking",
     description:
-      "Go beyond watching videos. Apply what you learn through practical exercises, assignments and real-world applications.",
-    icon: Compass,
+      "Automated lesson completion tracking that remembers where you left off and lets you resume seamlessly on desktop or mobile.",
+    tag: "Smart Progress",
   },
   {
-    num: "03",
-    title: "BUILD EXPERIENCE",
+    icon: ShieldCheck,
+    title: "QR Verifiable Digital Certificate",
     description:
-      "Use your new skills in practical settings and explore opportunities to gain exposure through internships where applicable.",
-    icon: Award,
+      "Upon course completion, earn a secure PDF certificate equipped with a unique credential ID and instant online verification.",
+    tag: "Credentialing",
   },
   {
-    num: "04",
-    title: "TRANSITION",
+    icon: MessageSquare,
+    title: "Lesson Doubts & Instructor Q&A",
     description:
-      "When you\u2019re ready, explore your next career direction with skills, confidence and experience behind you.",
-    icon: Rocket,
+      "Ask questions directly on lesson pages to clear concepts and receive guidance from faculty and teaching assistants.",
+    tag: "Direct Support",
+  },
+  {
+    icon: Briefcase,
+    title: "Aviation & Career Opportunities",
+    description:
+      "Access exclusive job boards, aviation openings, and career development resources available exclusively to AirBharath students.",
+    tag: "Opportunities",
+  },
+  {
+    icon: Sparkles,
+    title: "100% Self-Paced Learning",
+    description:
+      "Learn at your own pace without rigid batch timings — perfect for working professionals, flying crew, and full-time students.",
+    tag: "Total Flexibility",
   },
 ];
 
 export function SolutionSection() {
   return (
-    <section className="py-20 bg-slate-50/70 border-b border-gray-200/80">
-      <div className="container mx-auto px-4 max-w-6xl space-y-12">
-
+    <section id="benefits" className="py-16 sm:py-24 bg-card border-b border-border">
+      <div className="container mx-auto px-4 max-w-7xl space-y-12">
         {/* Header */}
         <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-[#014a62] bg-[#014a62]/10 px-3.5 py-1.5 rounded-full border border-[#014a62]/20">
-            The Air Bharath Approach
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Platform Capabilities</span>
           </span>
           <h2
-            className="text-3xl md:text-5xl font-bold font-instrument-serif text-[#014a62] leading-tight"
+            className="text-3xl sm:text-4xl md:text-5xl font-bold font-outfit text-foreground leading-tight tracking-tight"
             style={{ textWrap: "balance" } as React.CSSProperties}
           >
-            Don&rsquo;t Put Your Career on Hold to Prepare for Your Next One.
+            Built for Serious, Self-Paced Skill Building
           </h2>
-          <p className="text-base text-slate-700 font-sans max-w-2xl mx-auto">
-            Air Bharath Certificate Courses are designed for people who want to build new
-            capabilities without starting their professional lives from scratch.
+          <p className="text-sm sm:text-base text-muted-foreground font-normal leading-relaxed">
+            AirBharath LMS combines enterprise-grade streaming, automated progress tracking, and verifiable credentialing into one seamless student experience.
           </p>
         </div>
 
-        {/* 4 Step Pillars */}
-        <ol className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 list-none p-0 m-0">
-          {STEPS.map((step) => {
-            const Icon = step.icon;
+        {/* 6 Feature Pillars Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          {PLATFORM_FEATURES.map((feature) => {
+            const Icon = feature.icon;
             return (
-              <li
-                key={step.num}
-                className="bg-white p-7 rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-xl hover:border-[#014a62]/30 transition-all duration-300 flex flex-col justify-between space-y-4"
+              <div
+                key={feature.title}
+                className="bg-muted/30 p-6 sm:p-7 rounded-2xl border border-border hover:border-primary/40 hover:bg-card hover:shadow-lg hover:-translate-y-1.5 transition-all duration-200 flex flex-col justify-between space-y-5 group cursor-pointer"
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-extrabold font-instrument-serif text-[#014a62]">
-                      {step.num}
-                    </span>
                     <div
                       aria-hidden="true"
-                      className="w-10 h-10 rounded-xl bg-[#014a62]/10 text-[#014a62] flex items-center justify-center"
+                      className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110 transition-all duration-200"
                     >
-                      <Icon className="w-5 h-5" />
+                      <Icon className="w-6 h-6" />
                     </div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-md">
+                      {feature.tag}
+                    </span>
                   </div>
 
-                  <h3 className="text-base font-bold tracking-wide uppercase text-[#014a62]">
-                    {step.title}
+                  <h3 className="text-base sm:text-lg font-bold font-outfit text-foreground group-hover:text-primary transition-colors">
+                    {feature.title}
                   </h3>
 
-                  <p className="text-xs md:text-sm text-slate-600 leading-relaxed font-sans font-normal">
-                    {step.description}
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed font-normal">
+                    {feature.description}
                   </p>
                 </div>
 
-                <div className="pt-3 border-t border-slate-100 text-[11px] font-semibold text-emerald-700 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                  <span>Practical Module</span>
+                <div className="pt-3 border-t border-border/60 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>Available in all programs</span>
                 </div>
-              </li>
+              </div>
             );
           })}
-        </ol>
+        </div>
 
-        {/* Process Flow Banner */}
-        <div className="bg-[#014a62] text-white p-6 md:p-8 rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+        {/* Structured Progression Strip */}
+        <div className="bg-primary text-primary-foreground p-6 sm:p-8 rounded-3xl shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <div className="space-y-1">
-            <span className="text-xs font-bold uppercase tracking-widest text-cyan-300">
-              Structured Progression
+            <span className="text-xs font-bold uppercase tracking-widest text-primary-foreground/80">
+              Structured Learning Flow
             </span>
-            <p className="text-lg md:text-xl font-bold font-instrument-serif text-white">
-              Learn &rarr; Practise &rarr; Intern &rarr; Transition
+            <p className="text-lg sm:text-xl font-bold font-outfit text-white">
+              Select Track &rarr; Learn via HD Video &rarr; Clear Doubts &rarr; Earn Verifiable Certificate
             </p>
           </div>
 
-          <div className="bg-white/10 border border-white/20 px-5 py-3 rounded-2xl text-xs md:text-sm font-semibold text-cyan-100">
-            <span className="font-bold text-white">
-              Your current career can help fund your next career.
-            </span>
+          <div className="bg-white/10 border border-white/20 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-white shrink-0">
+            100% Self-Paced · Learn on Your Schedule
           </div>
         </div>
-
       </div>
     </section>
   );
 }
+

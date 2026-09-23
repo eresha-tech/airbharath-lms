@@ -1,0 +1,267 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  User,
+  Settings,
+  BookOpen,
+  Award,
+  LogOut,
+  ChevronDown,
+  Loader2,
+  Sun,
+  Moon,
+  Laptop,
+  Check,
+  Palette,
+} from "lucide-react";
+import { useTheme } from "next-themes";
+
+interface UserProfile {
+  id: string;
+  fullName?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
+  role?: string | null;
+}
+
+import { track, resetUser } from "@/lib/analytics";
+import { APP_VERSION, APP_NAME } from "@/lib/app-version";
+import { getClientUser, clearClientUser } from "@/lib/user-session-client";
+
+export function UserMenu() {
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+    let isSubscribed = true;
+    getClientUser()
+      .then((data) => {
+        if (isSubscribed && data) {
+          setUser(data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isSubscribed) setLoading(false);
+      });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      track("user_signed_out");
+      resetUser();
+      clearClientUser();
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/login");
+      router.refresh();
+    } catch {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const displayName = user?.fullName || "Student";
+  const displayEmail = user?.email || "";
+  const initials =
+    displayName
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "ST";
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          className="relative h-10 flex items-center gap-2.5 px-2 rounded-xl hover:bg-muted/80 focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+          aria-label="User profile menu"
+        >
+          <Avatar className="h-8 w-8 rounded-lg border border-border/80">
+            {user?.avatarUrl && (
+              <AvatarImage
+                src={user.avatarUrl}
+                alt={displayName}
+                className="object-cover"
+              />
+            )}
+            <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold rounded-lg">
+              {loading ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                initials
+              )}
+            </AvatarFallback>
+          </Avatar>
+
+          <div className="hidden md:flex flex-col items-start text-left text-xs leading-tight">
+            <span className="font-semibold text-foreground truncate max-w-[130px]">
+              {displayName}
+            </span>
+            <span className="text-[10px] text-muted-foreground capitalize">
+              {user?.role === "admin" ? "Administrator" : "Student"}
+            </span>
+          </div>
+
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground hidden md:block" />
+        </Button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent
+        className="w-56 p-1.5 shadow-lg border-border"
+        align="end"
+        sideOffset={8}
+      >
+        <DropdownMenuLabel className="font-normal px-2 py-1.5">
+          <div className="flex flex-col space-y-1">
+            <div className="flex items-center gap-1.5">
+              <p className="text-xs font-semibold text-foreground truncate">
+                {displayName}
+              </p>
+              <span className="inline-flex items-center px-1.5 py-0.2 text-[9px] font-bold rounded bg-primary/10 text-primary">
+                {user?.role === "admin" ? "Admin" : "Student"}
+              </span>
+            </div>
+            {displayEmail && (
+              <p className="text-[11px] text-muted-foreground truncate">
+                {displayEmail}
+              </p>
+            )}
+          </div>
+        </DropdownMenuLabel>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuGroup>
+          <DropdownMenuItem asChild>
+            <Link
+              href="/dashboard/settings"
+              className="flex items-center gap-2 cursor-pointer text-xs py-2 px-2 rounded-md"
+            >
+              <User className="h-3.5 w-3.5 text-muted-foreground" />
+              <span>Profile & Account</span>
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem asChild>
+            <Link
+              href="/dashboard/courses"
+              className="flex items-center gap-2 cursor-pointer text-xs py-2 px-2 rounded-md"
+            >
+              <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+              <span>My Learning</span>
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem asChild>
+            <Link
+              href="/dashboard/certificates"
+              className="flex items-center gap-2 cursor-pointer text-xs py-2 px-2 rounded-md"
+            >
+              <Award className="h-3.5 w-3.5 text-muted-foreground" />
+              <span>Certificates</span>
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem asChild>
+            <Link
+              href="/dashboard/settings"
+              className="flex items-center gap-2 cursor-pointer text-xs py-2 px-2 rounded-md"
+            >
+              <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+              <span>Settings</span>
+            </Link>
+          </DropdownMenuItem>
+
+          {/* Appearance / Theme Submenu */}
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer text-xs py-2 px-2 rounded-md">
+              <Palette className="h-3.5 w-3.5 text-muted-foreground" />
+              <span>Theme</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="w-36 p-1 rounded-xl shadow-lg border-border">
+              <DropdownMenuItem
+                onClick={() => setTheme("light")}
+                className="flex items-center justify-between text-xs py-1.5 px-2 rounded-md cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Sun className="h-3.5 w-3.5 text-amber-500" />
+                  <span>Light</span>
+                </div>
+                {mounted && theme === "light" && <Check className="h-3.5 w-3.5 text-primary" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setTheme("dark")}
+                className="flex items-center justify-between text-xs py-1.5 px-2 rounded-md cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Moon className="h-3.5 w-3.5 text-primary" />
+                  <span>Dark</span>
+                </div>
+                {mounted && theme === "dark" && <Check className="h-3.5 w-3.5 text-primary" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setTheme("system")}
+                className="flex items-center justify-between text-xs py-1.5 px-2 rounded-md cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Laptop className="h-3.5 w-3.5 text-slate-500" />
+                  <span>System</span>
+                </div>
+                {mounted && theme === "system" && <Check className="h-3.5 w-3.5 text-primary" />}
+              </DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="flex items-center gap-2 cursor-pointer text-xs py-2 px-2 rounded-md text-destructive focus:bg-destructive/10 focus:text-destructive"
+        >
+          {isLoggingOut ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <LogOut className="h-3.5 w-3.5" />
+          )}
+          <span>{isLoggingOut ? "Signing out..." : "Log out"}</span>
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <div className="px-2 py-1 text-[10px] text-muted-foreground/60 font-mono text-center">
+          {APP_NAME} v{APP_VERSION}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

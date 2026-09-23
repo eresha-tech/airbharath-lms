@@ -17,6 +17,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    // Enable client router cache reuse for dynamic routes on quick return navigation (30s)
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
+  },
 };
 
 export default nextConfig;

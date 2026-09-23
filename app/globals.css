@@ -2,23 +2,143 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --font-inter: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-outfit: var(--font-outfit), 'Outfit', sans-serif;
-  --font-instrument-serif: var(--font-outfit), 'Outfit', 'Plus Jakarta Sans', sans-serif;
-  --font-instrument-sans: var(--font-jakarta), 'Plus Jakarta Sans', sans-serif;
-  --primary: 194 98% 20%; /* #014a62 */
-  --primary-foreground: 0 0% 100%;
-  --background: 0 0% 100%; /* #ffffff */
+@layer base {
+  :root {
+    --font-inter: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-outfit: var(--font-outfit), 'Outfit', sans-serif;
+    --font-instrument-serif: var(--font-outfit), 'Outfit', 'Plus Jakarta Sans', sans-serif;
+    --font-instrument-sans: var(--font-jakarta), 'Plus Jakarta Sans', sans-serif;
+
+    /* Base Surfaces */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    /* Card & Popover */
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    /* Brand Primary (AirBharath Primary Lavender #9089FF) */
+    --primary: 243.6 100% 76.9%;
+    --primary-foreground: 244.4 47.2% 17.1%;
+
+    /* Secondary & Muted */
+    --secondary: 240 25% 98%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 240 25% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    /* Accent & Destructive */
+    --accent: 243.6 100% 76.9%;
+    --accent-foreground: 244.4 47.2% 17.1%;
+    --accent-light: 244.9 100% 90.4%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --success: 146.8 69.4% 55.1%;
+    --success-foreground: 244.4 47.2% 17.1%;
+
+    /* Borders, Inputs & Focus Rings */
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 243.6 100% 76.9%;
+    --radius: 0.5rem;
+
+    /* Dashboard Sidebar Tokens */
+    --sidebar: 0 0% 98.5%;
+    --sidebar-foreground: 222.2 47.4% 18%;
+    --sidebar-primary: 243.6 100% 76.9%;
+    --sidebar-primary-foreground: 244.4 47.2% 17.1%;
+    --sidebar-accent: 243.6 100% 96%;
+    --sidebar-accent-foreground: 244.4 47.2% 17.1%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 243.6 100% 76.9%;
+
+    /* Chart Colors (Primary Lavender / Accent Light / Muted / Success / Amber) */
+    --chart-1: 243.6 100% 76.9%;
+    --chart-2: 244.9 100% 90.4%;
+    --chart-3: 217.2 16.2% 60.2%;
+    --chart-4: 146.8 69.4% 55.1%;
+    --chart-5: 38 92% 50%;
+
+    color-scheme: light;
+  }
+
+  .dark {
+    /* Base Surfaces (Approved #0A0A0A) */
+    --background: 0 0% 3.9%;
+    /* Primary Text (Approved #EEF2F7) */
+    --foreground: 213.3 42.9% 95.1%;
+
+    /* Panel Surfaces (Approved #131313) */
+    --card: 0 0% 7.5%;
+    --card-foreground: 213.3 42.9% 95.1%;
+    --popover: 0 0% 7.5%;
+    --popover-foreground: 213.3 42.9% 95.1%;
+
+    /* Primary Accent (Approved #9089FF) & Text on Accent (#1A1740) */
+    --primary: 243.6 100% 76.9%;
+    --primary-foreground: 244.4 47.2% 17.1%;
+
+    /* Panel secondary / nested surfaces (Approved #191919) */
+    --secondary: 0 0% 9.8%;
+    --secondary-foreground: 213.3 42.9% 95.1%;
+    --muted: 0 0% 9.8%;
+    /* Muted Text (Approved #8B96A8) */
+    --muted-foreground: 217.2 16.2% 60.2%;
+
+    /* Accent Tokens */
+    --accent: 243.6 100% 76.9%;
+    --accent-foreground: 244.4 47.2% 17.1%;
+    --accent-light: 244.9 100% 90.4%; /* #D2CEFF */
+
+    /* Destructive & Success (#3DDC84) */
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --success: 146.8 69.4% 55.1%;
+    --success-foreground: 244.4 47.2% 17.1%;
+
+    /* Border & Input (Approved #2A2A2A) */
+    --border: 0 0% 16.5%;
+    --input: 0 0% 16.5%;
+    --ring: 243.6 100% 76.9%;
+
+    /* Sidebar Dark */
+    --sidebar: 0 0% 7.5%;
+    --sidebar-foreground: 213.3 42.9% 95.1%;
+    --sidebar-primary: 243.6 100% 76.9%;
+    --sidebar-primary-foreground: 244.4 47.2% 17.1%;
+    --sidebar-accent: 0 0% 9.8%;
+    --sidebar-accent-foreground: 213.3 42.9% 95.1%;
+    --sidebar-border: 0 0% 16.5%;
+    --sidebar-ring: 243.6 100% 76.9%;
+
+    /* Chart Colors Dark */
+    --chart-1: 243.6 100% 76.9%; /* Primary series #9089FF */
+    --chart-2: 244.9 100% 90.4%; /* Accent Light #D2CEFF */
+    --chart-3: 217.2 16.2% 60.2%; /* Muted #8B96A8 */
+    --chart-4: 146.8 69.4% 55.1%; /* Success #3DDC84 */
+    --chart-5: 38 92% 50%;
+
+    color-scheme: dark;
+  }
 }
 
-body {
-  font-family: var(--font-inter);
-  background-color: #ffffff;
-  color: #0f172a;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 4rem;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-inter);
+  }
 }
 
-h1, h2, .font-serif-heading, .font-instrument-serif {
+h1, h2, h3, .font-serif-heading, .font-instrument-serif {
   font-family: var(--font-outfit), var(--font-instrument-serif), 'Outfit', sans-serif;
   letter-spacing: -0.02em;
 }
@@ -27,39 +147,150 @@ h1, h2, .font-serif-heading, .font-instrument-serif {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(1, 74, 98, 0.1);
+  border: 1px solid rgba(144, 137, 255, 0.15);
 }
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 215 25% 15%;
-    --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
-    --primary: 194 98% 20%; /* #014a62 */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 194 98% 20%;
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 194 98% 20%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 194 98% 20%;
-    --radius: 0.625rem;
+.dark .glass-card {
+  background: rgba(19, 19, 19, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.25);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.45);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
+}
+
+/* ==================================================
+   Subtle Motion Tokens & GPU-Accelerated Animations
+   ================================================== */
+:root {
+  --motion-fast: 150ms;
+  --motion-normal: 220ms;
+  --motion-slow: 280ms;
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
-  body {
-    @apply bg-background text-foreground;
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--motion-normal) var(--ease-smooth) forwards;
+}
+
+.animate-fade-up {
+  animation: fadeUp var(--motion-slow) var(--ease-spring) forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn var(--motion-normal) var(--ease-spring) forwards;
+}
+
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 3.5s ease-in-out infinite;
+}
+
+@keyframes progressFill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.animate-progress-fill {
+  transform-origin: left;
+  animation: progressFill 6000ms linear forwards;
+}
+
+.card-hover-lift {
+  transition: transform var(--motion-normal) var(--ease-smooth),
+              box-shadow var(--motion-normal) var(--ease-smooth),
+              border-color var(--motion-normal) var(--ease-smooth);
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+/* ==================================================
+   Accessibility: Reduced Motion Preference
+   ================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .card-hover-lift:hover,
+  .hover\:-translate-y-0\.5:hover,
+  .hover\:-translate-y-1:hover,
+  .hover\:-translate-y-1\.5:hover,
+  .group:hover .group-hover\:scale-105,
+  .group:hover .group-hover\:scale-110,
+  .animate-float-slow,
+  .animate-progress-fill {
+    transform: none !important;
+    animation: none !important;
   }
 }

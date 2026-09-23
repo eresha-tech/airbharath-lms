@@ -24,6 +24,9 @@
 /.postgres_data
 .postgres_log
 
+# playwright tests
+.playwright-mcp
+
 # misc
 .DS_Store
 *.pem
@@ -51,3 +54,4 @@ next-env.d.ts
 
 # sanity
 /dist
+fileing.md

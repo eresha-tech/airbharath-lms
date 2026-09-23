@@ -4,9 +4,16 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'airbharath-lms-super-secret-jwt-key-2026'
-);
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('FATAL: JWT_SECRET environment variable is missing in production.');
+    }
+    throw new Error('JWT_SECRET environment variable is not configured. Please set JWT_SECRET in your .env file.');
+  }
+  return new TextEncoder().encode(secret);
+}
 
 const SESSION_COOKIE_NAME = 'ab_session';
 
@@ -19,28 +26,32 @@ export interface UserSession {
 }
 
 export async function createSessionToken(user: UserSession): Promise<string> {
+  const secret = getJwtSecret();
   return await new SignJWT({ ...user })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('30d')
-    .sign(JWT_SECRET);
+    .sign(secret);
 }
 
 export async function verifySessionToken(token: string): Promise<UserSession | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const secret = getJwtSecret();
+    const { payload } = await jwtVerify(token, secret);
     return payload as unknown as UserSession;
   } catch {
     return null;
   }
 }
 
-export async function getSession(): Promise<UserSession | null> {
+import { cache } from 'react';
+
+export const getSession = cache(async (): Promise<UserSession | null> => {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
   return await verifySessionToken(token);
-}
+});
 
 export async function setSessionCookie(user: UserSession) {
   const token = await createSessionToken(user);
@@ -174,8 +185,9 @@ export async function verifyOTP(phone: string, otp: string): Promise<{ success: 
 
   let isVerified = false;
 
-  // 1. Check Test Credentials & Master OTPs (1234 or 123456)
-  const isTestOtp = otp === '1234' || otp === '123456';
+  // 1. Check Test Credentials & Master OTPs (1234 or 123456) ONLY in non-production environments
+  const isTestOtp =
+    process.env.NODE_ENV !== 'production' && (otp === '1234' || otp === '123456');
   if (isTestOtp) {
     isVerified = true;
   }

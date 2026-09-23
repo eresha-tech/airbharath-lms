@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { PostHogProvider } from "@/components/providers/PostHogProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -21,12 +22,18 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Airbharath LMS - Premium Professional & Technical Learning",
-  description: "Accelerate your career with Airbharath LMS courses, certificates, and practical skills.",
+  title: "AirBharath LMS - Premium Professional & Technical Learning",
+  description: "Accelerate your career with AirBharath LMS courses, certificates, and practical skills.",
   icons: {
-    icon: [{ url: "https://assets.airbharath.in/air-bharath-logo.webp", type: "image/webp" }],
-    shortcut: "https://assets.airbharath.in/air-bharath-logo.webp",
-    apple: "https://assets.airbharath.in/air-bharath-logo.webp",
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "https://assets.airbharath.in/eresha-logo.webp", type: "image/webp" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: [
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+      { url: "https://assets.airbharath.in/eresha-logo.webp" },
+    ],
   },
 };
 
@@ -42,12 +49,11 @@ export default async function RootLayout({
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
-          forcedTheme="light"
-          enableSystem={false}
+          defaultTheme="system"
+          enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <PostHogProvider>{children}</PostHogProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -46,16 +46,16 @@ const OUTCOMES = [
 
 export function OutcomesSection() {
   return (
-    <section className="py-20 bg-slate-50/70 border-b border-gray-200/80">
+    <section className="py-20 bg-background border-b border-border">
       <div className="container mx-auto px-4 max-w-6xl space-y-12">
 
         {/* Header */}
         <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-[#014a62] bg-[#014a62]/10 px-3.5 py-1.5 rounded-full border border-[#014a62]/20">
+          <span className="text-xs font-extrabold uppercase tracking-widest text-primary bg-primary/10 px-3.5 py-1.5 rounded-full border border-primary/20">
             Real Value Deliverables
           </span>
           <h2
-            className="text-3xl md:text-5xl font-bold font-instrument-serif text-[#014a62]"
+            className="text-3xl md:text-5xl font-bold font-outfit text-foreground"
             style={{ textWrap: "balance" } as React.CSSProperties}
           >
             Not Just Topics. Build Capabilities.
@@ -69,29 +69,29 @@ export function OutcomesSection() {
             return (
               <li
                 key={item.code}
-                className="bg-white p-7 rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-xl hover:border-[#014a62]/30 transition-all duration-300 flex flex-col justify-between space-y-4"
+                className="bg-card p-7 rounded-3xl border border-border/80 shadow-sm hover:shadow-xl hover:border-primary/40 transition-all duration-300 flex flex-col justify-between space-y-4"
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span
-                      className="text-sm font-mono font-bold text-[#014a62] bg-[#014a62]/10 px-3 py-1 rounded-full border border-[#014a62]/20 tabular-nums"
+                      className="text-sm font-mono font-bold text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20 tabular-nums"
                       aria-label={`Outcome ${item.code}`}
                     >
                       {item.code}
                     </span>
                     <div
                       aria-hidden="true"
-                      className="w-10 h-10 rounded-xl bg-[#014a62] text-white flex items-center justify-center shadow-md"
+                      className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-md"
                     >
                       <Icon className="w-5 h-5" />
                     </div>
                   </div>
 
-                  <h3 className="text-base font-bold tracking-wide uppercase text-[#014a62]">
+                  <h3 className="text-base font-bold tracking-wide uppercase text-foreground">
                     {item.title}
                   </h3>
 
-                  <p className="text-xs md:text-sm text-slate-600 leading-relaxed font-sans font-normal">
+                  <p className="text-xs md:text-sm text-muted-foreground leading-relaxed font-sans font-normal">
                     {item.description}
                   </p>
                 </div>

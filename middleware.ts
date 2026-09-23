@@ -1,9 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'airbharath-lms-super-secret-jwt-key-2026'
-);
+function getJwtSecret(): Uint8Array | null {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error('FATAL: JWT_SECRET environment variable is missing in production.');
+    }
+    return null;
+  }
+  return new TextEncoder().encode(secret);
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -12,8 +19,11 @@ export async function middleware(request: NextRequest) {
   let sessionUser: { id: string; role: string; phone: string } | null = null;
   if (token) {
     try {
-      const { payload } = await jwtVerify(token, JWT_SECRET);
-      sessionUser = payload as any;
+      const secret = getJwtSecret();
+      if (secret) {
+        const { payload } = await jwtVerify(token, secret);
+        sessionUser = payload as any;
+      }
     } catch {
       sessionUser = null;
     }
@@ -31,6 +41,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/courses') ||
     pathname.startsWith('/preview') ||
     pathname.startsWith('/pricing') ||
+    pathname.startsWith('/practice') ||
     pathname.startsWith('/search') ||
     pathname.startsWith('/verify-certificate');
 

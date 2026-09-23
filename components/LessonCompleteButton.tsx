@@ -1,38 +1,50 @@
 "use client";
 
-import { CheckCircle, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, Check } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { track } from "@/lib/analytics";
 
 interface LessonCompleteButtonProps {
   lessonId: string;
   userId: string;
   courseId: string;
+  className?: string;
+  variant?: "default" | "outline" | "compact";
 }
 
 export function LessonCompleteButton({
   lessonId,
   userId,
   courseId,
+  className,
 }: LessonCompleteButtonProps) {
   const [isPending, setIsPending] = useState(false);
   const [isCompleted, setIsCompleted] = useState<boolean | null>(null);
   const router = useRouter();
 
   useEffect(() => {
+    let mounted = true;
     const fetchStatus = async () => {
       try {
         const res = await fetch(`/api/progress?lessonId=${lessonId}`);
         const data = await res.json();
-        setIsCompleted(data.isCompleted || false);
+        if (mounted) {
+          setIsCompleted(data.isCompleted || false);
+        }
       } catch (error) {
         console.error("Error checking lesson completion status:", error);
-        setIsCompleted(false);
+        if (mounted) {
+          setIsCompleted(false);
+        }
       }
     };
     fetchStatus();
+    return () => {
+      mounted = false;
+    };
   }, [lessonId]);
 
   const handleToggle = async () => {
@@ -48,6 +60,19 @@ export function LessonCompleteButton({
       const data = await res.json();
       if (res.ok) {
         setIsCompleted(data.isCompleted);
+        if (data.isCompleted) {
+          track("lesson_completed", {
+            lesson_id: lessonId,
+            course_id: courseId,
+            course_progress_percent: data.progressPercent ?? null,
+          });
+
+          if (data.progressPercent === 100) {
+            track("course_completed", {
+              course_id: courseId,
+            });
+          }
+        }
         router.refresh();
       }
     } catch (error) {
@@ -60,55 +85,40 @@ export function LessonCompleteButton({
   const isLoading = isCompleted === null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm border-t z-50">
-      <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-        <div className="flex-1">
-          <p className="text-sm font-medium">
-            {isCompleted
-              ? "Lesson completed!"
-              : "Ready to complete this lesson?"}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {isCompleted
-              ? "You can mark it as incomplete if you need to revisit it."
-              : "Mark it as complete when you're done."}
-          </p>
-        </div>
-        <Button
-          onClick={handleToggle}
-          disabled={isPending || isLoading}
-          size="lg"
-          variant="default"
-          className={cn(
-            "min-w-[200px] transition-all duration-200 ease-in-out font-bold text-xs rounded-xl",
-            isCompleted
-              ? "bg-rose-600 hover:bg-rose-700 text-white"
-              : "bg-emerald-600 hover:bg-emerald-700 text-white"
-          )}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Loading...
-            </>
-          ) : isPending ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              {isCompleted ? "Uncompleting..." : "Completing..."}
-            </>
-          ) : isCompleted ? (
-            <>
-              <XCircle className="h-4 w-4 mr-2" />
-              Mark as Not Complete
-            </>
-          ) : (
-            <>
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Mark as Complete
-            </>
-          )}
-        </Button>
-      </div>
-    </div>
+    <Button
+      type="button"
+      onClick={handleToggle}
+      disabled={isPending || isLoading}
+      size="sm"
+      className={cn(
+        "font-bold text-xs rounded-xl transition-all shadow-xs h-9 px-4 shrink-0 cursor-pointer",
+        isCompleted
+          ? "border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20"
+          : "bg-primary hover:bg-primary/90 text-primary-foreground",
+        className
+      )}
+    >
+      {isLoading ? (
+        <span className="flex items-center gap-1.5">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <span>Status...</span>
+        </span>
+      ) : isPending ? (
+        <span className="flex items-center gap-1.5">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <span>Updating...</span>
+        </span>
+      ) : isCompleted ? (
+        <span className="flex items-center gap-1.5">
+          <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+          <span>Completed</span>
+        </span>
+      ) : (
+        <span className="flex items-center gap-1.5">
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          <span>Mark Lesson Complete</span>
+        </span>
+      )}
+    </Button>
   );
 }

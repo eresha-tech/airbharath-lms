@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { videos, lessons, enrollments, playbackSessions } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { videos, lessons, modules, enrollments, playbackSessions } from "@/lib/db/schema";
+import { eq, and, or, inArray } from "drizzle-orm";
 import {
   getCloudFrontSignedPlaybackUrl,
   acquirePlaybackSession,
@@ -35,30 +35,203 @@ export async function POST(
       return NextResponse.json({ error: "Video processing failed" }, { status: 400 });
     }
 
-    let isAuthorized = session.role === "admin";
-
-    // Check free preview
-    if (!isAuthorized && video.lessonId) {
-      const [lesson] = await db.select().from(lessons).where(eq(lessons.id, video.lessonId));
-      if (lesson && lesson.isFreePreview) {
-        isAuthorized = true;
+    // Optional context passed by caller (e.g. HlsPlayer)
+    let requestedCourseId: string | undefined;
+    let requestedLessonId: string | undefined;
+    try {
+      const body = await req.json();
+      if (body && typeof body === "object") {
+        if (typeof body.courseId === "string" && body.courseId.trim()) {
+          requestedCourseId = body.courseId.trim();
+        }
+        if (typeof body.lessonId === "string" && body.lessonId.trim()) {
+          requestedLessonId = body.lessonId.trim();
+        }
       }
+    } catch {
+      // Empty or non-JSON body is acceptable
     }
 
-    // Check course enrollment
+    let isAuthorized = session.role === "admin";
+
     if (!isAuthorized) {
-      const [enrollment] = await db
-        .select()
-        .from(enrollments)
-        .where(
-          and(
-            eq(enrollments.userId, session.id),
-            eq(enrollments.courseId, video.courseId),
-            eq(enrollments.status, "active")
-          )
+      const now = new Date();
+
+      if (requestedLessonId) {
+        // Specific lesson requested: authorize strictly against this specific lesson & its parent course
+        const [targetLesson] = await db
+          .select({
+            lessonId: lessons.id,
+            moduleId: lessons.moduleId,
+            videoUrl: lessons.videoUrl,
+            isFreePreview: lessons.isFreePreview,
+            deliveryType: lessons.deliveryType,
+            releaseAt: lessons.releaseAt,
+            courseId: modules.courseId,
+          })
+          .from(lessons)
+          .innerJoin(modules, eq(lessons.moduleId, modules.id))
+          .where(eq(lessons.id, requestedLessonId));
+
+        if (!targetLesson) {
+          return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
+        }
+
+        // Verify that this lesson actually uses this video asset
+        const referencesVideo =
+          targetLesson.videoUrl === video.id ||
+          (video.lessonId ? targetLesson.lessonId === video.lessonId : false);
+
+        if (!referencesVideo) {
+          return NextResponse.json(
+            { error: "Video is not associated with the requested lesson" },
+            { status: 403 }
+          );
+        }
+
+        // If requestedCourseId was also provided, ensure it matches targetLesson.courseId
+        if (requestedCourseId && requestedCourseId !== targetLesson.courseId) {
+          return NextResponse.json(
+            { error: "Lesson does not belong to the requested course" },
+            { status: 403 }
+          );
+        }
+
+        // Check if lesson is scheduled for future release
+        const isNotYetReleased =
+          targetLesson.deliveryType === "recorded" &&
+          targetLesson.releaseAt &&
+          new Date(targetLesson.releaseAt) > now;
+
+        if (isNotYetReleased) {
+          return NextResponse.json(
+            { error: "Lesson is scheduled for future release" },
+            { status: 403 }
+          );
+        }
+
+        // 1. Free preview on this specific lesson
+        if (targetLesson.isFreePreview) {
+          isAuthorized = true;
+        } else {
+          // 2. Active enrollment in this specific course
+          const [enrollment] = await db
+            .select()
+            .from(enrollments)
+            .where(
+              and(
+                eq(enrollments.userId, session.id),
+                eq(enrollments.courseId, targetLesson.courseId),
+                eq(enrollments.status, "active")
+              )
+            );
+
+          if (enrollment) {
+            isAuthorized = true;
+          }
+        }
+      } else if (requestedCourseId) {
+        // Specific course requested without a specific lessonId:
+        // Find lessons in this course that reference the video
+        const courseLessons = await db
+          .select({
+            lessonId: lessons.id,
+            isFreePreview: lessons.isFreePreview,
+            deliveryType: lessons.deliveryType,
+            releaseAt: lessons.releaseAt,
+            courseId: modules.courseId,
+          })
+          .from(lessons)
+          .innerJoin(modules, eq(lessons.moduleId, modules.id))
+          .where(
+            and(
+              eq(modules.courseId, requestedCourseId),
+              or(
+                eq(lessons.videoUrl, video.id),
+                video.lessonId ? eq(lessons.id, video.lessonId) : undefined
+              )
+            )
+          );
+
+        if (courseLessons.length === 0) {
+          return NextResponse.json(
+            { error: "Video is not associated with the requested course" },
+            { status: 403 }
+          );
+        }
+
+        // Check if any referencing lesson in this course is free preview
+        const hasFreePreview = courseLessons.some(
+          (l) =>
+            l.isFreePreview &&
+            !(l.deliveryType === "recorded" && l.releaseAt && new Date(l.releaseAt) > now)
         );
-      if (enrollment) {
-        isAuthorized = true;
+
+        if (hasFreePreview) {
+          isAuthorized = true;
+        } else {
+          // Check active enrollment in THIS requested course
+          const [enrollment] = await db
+            .select()
+            .from(enrollments)
+            .where(
+              and(
+                eq(enrollments.userId, session.id),
+                eq(enrollments.courseId, requestedCourseId),
+                eq(enrollments.status, "active")
+              )
+            );
+
+          if (enrollment) {
+            // Also check that at least one referencing lesson in this course is released
+            const hasReleasedLesson = courseLessons.some(
+              (l) =>
+                !(l.deliveryType === "recorded" && l.releaseAt && new Date(l.releaseAt) > now)
+            );
+            if (hasReleasedLesson) {
+              isAuthorized = true;
+            }
+          }
+        }
+      } else {
+        // Fallback when neither lessonId nor courseId is supplied (e.g. legacy direct video access)
+        if (video.lessonId) {
+          const [originLesson] = await db
+            .select({
+              isFreePreview: lessons.isFreePreview,
+              deliveryType: lessons.deliveryType,
+              releaseAt: lessons.releaseAt,
+            })
+            .from(lessons)
+            .where(eq(lessons.id, video.lessonId));
+
+          if (
+            originLesson?.isFreePreview &&
+            !(
+              originLesson.deliveryType === "recorded" &&
+              originLesson.releaseAt &&
+              new Date(originLesson.releaseAt) > now
+            )
+          ) {
+            isAuthorized = true;
+          }
+        }
+
+        if (!isAuthorized) {
+          const [enrollment] = await db
+            .select()
+            .from(enrollments)
+            .where(
+              and(
+                eq(enrollments.userId, session.id),
+                eq(enrollments.courseId, video.courseId),
+                eq(enrollments.status, "active")
+              )
+            );
+          if (enrollment) {
+            isAuthorized = true;
+          }
+        }
       }
     }
 

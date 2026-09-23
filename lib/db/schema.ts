@@ -23,13 +23,28 @@ export const courses = pgTable('courses', {
   accessDays: integer('access_days'), // null means lifetime access
   isPublished: boolean('is_published').default(false).notNull(),
   instructorId: uuid('instructor_id').references(() => users.id),
+  certificateStatus: text('certificate_status').default('disabled').notNull(), // 'disabled' | 'active' | 'paused'
+  certificateActivatedAt: timestamp('certificate_activated_at', { withTimezone: true }),
+  certificateActivatedBy: uuid('certificate_activated_by').references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Course Sections Table
+export const courseSections = pgTable('course_sections', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  courseId: uuid('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  title: text('title').notNull(),
+  description: text('description'),
+  orderIndex: integer('order_index').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 // Modules Table
 export const modules = pgTable('modules', {
   id: uuid('id').defaultRandom().primaryKey(),
   courseId: uuid('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  sectionId: uuid('section_id').references(() => courseSections.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
   orderIndex: integer('order_index').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -44,6 +59,11 @@ export const lessons = pgTable('lessons', {
   videoUrl: text('video_url'),
   isFreePreview: boolean('is_free_preview').default(false).notNull(),
   orderIndex: integer('order_index').notNull(),
+  deliveryType: text('delivery_type').default('recorded').notNull(), // 'recorded' | 'live'
+  scheduledAt: timestamp('scheduled_at', { withTimezone: true }),
+  releaseAt: timestamp('release_at', { withTimezone: true }),
+  durationMinutes: integer('duration_minutes'),
+  meetingUrl: text('meeting_url'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -113,8 +133,12 @@ export const certificates = pgTable('certificates', {
   courseId: uuid('course_id').references(() => courses.id).notNull(),
   certificateCode: text('certificate_code').unique().notNull(),
   pdfUrl: text('pdf_url').notNull(),
+  status: text('status').default('issued').notNull(), // 'issued' | 'revoked'
+  issuedBy: uuid('issued_by').references(() => users.id), // null = student claim, uuid = admin
   issuedAt: timestamp('issued_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}, (t: any) => [
+  uniqueIndex('user_course_cert_unique_idx').on(t.userId, t.courseId)
+]);
 
 // Feed Posts Table
 export const feedPosts = pgTable('feed_posts', {
@@ -197,15 +221,28 @@ export const coursesRelations = relations(courses, ({ one, many }) => ({
     fields: [courses.instructorId],
     references: [users.id],
   }),
+  sections: many(courseSections),
   modules: many(modules),
   enrollments: many(enrollments),
   videos: many(videos),
+}));
+
+export const courseSectionsRelations = relations(courseSections, ({ one, many }) => ({
+  course: one(courses, {
+    fields: [courseSections.courseId],
+    references: [courses.id],
+  }),
+  modules: many(modules),
 }));
 
 export const modulesRelations = relations(modules, ({ one, many }) => ({
   course: one(courses, {
     fields: [modules.courseId],
     references: [courses.id],
+  }),
+  section: one(courseSections, {
+    fields: [modules.sectionId],
+    references: [courseSections.id],
   }),
   lessons: many(lessons),
 }));

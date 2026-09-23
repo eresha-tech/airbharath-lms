@@ -1,10 +1,2 @@
-import { PostHog } from 'posthog-node'
+export { getServerPostHogClient as PostHogClient, serverTrack } from "@/lib/analytics-server";
 
-export function PostHogClient() {
-  const posthogClient = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-    host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com',
-    flushAt: 1,
-    flushInterval: 0
-  })
-  return posthogClient
-}

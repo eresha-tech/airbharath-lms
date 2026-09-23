@@ -33,14 +33,14 @@ export default async function SearchPage({ params }: SearchPageProps) {
   }
 
   return (
-    <main className="flex-1 pt-12 pb-16">
+    <main className="flex-1 pt-24 pb-16">
         <div className="container mx-auto px-4 max-w-6xl space-y-8">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-[#014a62]/10 text-[#014a62] rounded-2xl">
-              <Search className="h-7 w-7 text-[#014a62]" />
+            <div className="p-3 bg-primary/10 text-primary rounded-2xl">
+              <Search className="h-7 w-7 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold font-instrument-serif text-[#014a62]">
+              <h1 className="text-3xl font-bold font-outfit text-foreground">
                 {decodedTerm.toLowerCase() === "courses" ? "Airbharath Curriculum" : "Search Results"}
               </h1>
               <p className="text-xs text-muted-foreground">
@@ -52,7 +52,7 @@ export default async function SearchPage({ params }: SearchPageProps) {
           </div>
 
           {searchResults.length === 0 ? (
-            <div className="text-center py-16 bg-gray-50 border border-dashed rounded-3xl space-y-4">
+            <div className="text-center py-16 bg-card border border-border border-dashed rounded-3xl space-y-4">
               <h2 className="text-xl font-bold text-foreground">No courses found</h2>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                 Try searching for different keywords or explore our featured courses.

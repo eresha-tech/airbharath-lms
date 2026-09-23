@@ -4,7 +4,20 @@ import { db } from '@/lib/db';
 import { certificates, users, courses } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
-export async function generateAndSaveCertificate(userId: string, courseId: string, baseUrl?: string) {
+export interface GenerateCertificateOptions {
+  issuedBy?: string | null;
+  baseUrl?: string;
+}
+
+export async function generateAndSaveCertificate(
+  userId: string,
+  courseId: string,
+  options?: GenerateCertificateOptions | string
+) {
+  // Support legacy string argument for baseUrl
+  const opts: GenerateCertificateOptions =
+    typeof options === 'string' ? { baseUrl: options } : options || {};
+
   const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
   const course = await db.query.courses.findFirst({ where: eq(courses.id, courseId) });
 
@@ -18,7 +31,7 @@ export async function generateAndSaveCertificate(userId: string, courseId: strin
   if (existing) return existing;
 
   const certificateCode = `AB-CERT-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
-  const domain = baseUrl || process.env.NEXT_PUBLIC_BASE_URL || 'https://lms.airbharath.in';
+  const domain = opts.baseUrl || process.env.NEXT_PUBLIC_BASE_URL || 'https://lms.airbharath.in';
   const verifyUrl = `${domain}/verify-certificate/${certificateCode}`;
 
   // Generate QR Code image (Data URL PNG)
@@ -125,15 +138,29 @@ export async function generateAndSaveCertificate(userId: string, courseId: strin
   const pdfBase64 = Buffer.from(pdfBytes).toString('base64');
   const pdfDataUrl = `data:application/pdf;base64,${pdfBase64}`;
 
-  // Insert into DB certificates table
-  const [certRecord] = await db.insert(certificates).values({
-    userId,
-    courseId,
-    certificateCode,
-    pdfUrl: pdfDataUrl,
-  }).returning();
+  // Insert into DB certificates table with conflict guard
+  try {
+    const [certRecord] = await db
+      .insert(certificates)
+      .values({
+        userId,
+        courseId,
+        certificateCode,
+        pdfUrl: pdfDataUrl,
+        status: 'issued',
+        issuedBy: opts.issuedBy || null,
+      })
+      .returning();
 
-  return certRecord;
+    return certRecord;
+  } catch (err: any) {
+    // If unique conflict on (userId, courseId) or code occurred due to concurrent claim/issue
+    const duplicate = await db.query.certificates.findFirst({
+      where: and(eq(certificates.userId, userId), eq(certificates.courseId, courseId)),
+    });
+    if (duplicate) return duplicate;
+    throw err;
+  }
 }
 
 export const generateCertificatePDF = generateAndSaveCertificate;

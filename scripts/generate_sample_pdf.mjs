@@ -9,15 +9,16 @@ async function generateSamplePdf() {
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-  const purplePrimary = rgb(0.42, 0.23, 0.65); // #6b3ba7
-  const purpleLightBg = rgb(0.95, 0.93, 0.98); // #f3eefb
-  const darkColor = rgb(0.12, 0.12, 0.15);
-  const mutedColor = rgb(0.4, 0.45, 0.55);
+  const brandPrimary = rgb(0.31, 0.27, 0.90); // #4f46e5
+  const brandDark = rgb(0.26, 0.22, 0.79); // #4338ca
+  const brandLightBg = rgb(0.96, 0.95, 1.0); // #f5f3ff
+  const darkColor = rgb(0.09, 0.11, 0.16); // #171c28
+  const mutedColor = rgb(0.39, 0.45, 0.55); // #64748b
 
   // 1. Fetch & Embed Airbharath Logo (Single logo for top right corner)
   let logoImage = null;
   try {
-    const logoRes = await fetch('https://assets.airbharath.in/logo.webp');
+    const logoRes = await fetch('https://assets.airbharath.in/eresha-logo.webp');
     if (logoRes.ok) {
       const webpBuf = Buffer.from(await logoRes.arrayBuffer());
       const pngBuf = await sharp(webpBuf).png().toBuffer();
@@ -33,7 +34,7 @@ async function generateSamplePdf() {
     y: 785,
     size: 30,
     font: fontBold,
-    color: purplePrimary,
+    color: brandPrimary,
   });
 
   page.drawText('Airbharath LMS', {
@@ -41,7 +42,7 @@ async function generateSamplePdf() {
     y: 765,
     size: 11,
     font: fontBold,
-    color: rgb(0.0039, 0.290, 0.384),
+    color: brandDark,
   });
 
   // Top Header Metadata
@@ -69,14 +70,14 @@ async function generateSamplePdf() {
     });
   }
 
-  // 4. Billed By Container (Purple Box matching screenshot)
+  // 4. Billed By Container (Brand Light Box)
   const billedByY = 565;
   page.drawRectangle({
     x: 40,
     y: billedByY,
     width: 280,
     height: 122,
-    color: purpleLightBg,
+    color: brandLightBg,
   });
 
   page.drawText('Billed By', {
@@ -84,7 +85,7 @@ async function generateSamplePdf() {
     y: billedByY + 98,
     size: 11,
     font: fontBold,
-    color: purplePrimary,
+    color: brandDark,
   });
 
   page.drawText('Eresha Technology Innovators Pvt. Ltd.', {
@@ -100,7 +101,7 @@ async function generateSamplePdf() {
     y: billedByY + 66,
     size: 8.5,
     font: fontBold,
-    color: rgb(0.0039, 0.290, 0.384),
+    color: brandDark,
   });
 
   page.drawText('20/36D, Ground Floor, West Patel Nagar,', {
@@ -158,14 +159,14 @@ async function generateSamplePdf() {
     color: darkColor,
   });
 
-  // 5. Itemized Table (Purple Header Bar matching screenshot)
+  // 5. Itemized Table (Brand Header Bar)
   const tableY = 500;
   page.drawRectangle({
     x: 40,
     y: tableY,
     width: 515,
     height: 25,
-    color: purplePrimary,
+    color: brandPrimary,
   });
 
   // White Header Labels
@@ -183,7 +184,7 @@ async function generateSamplePdf() {
     y: rowY,
     width: 515,
     height: 24,
-    color: purpleLightBg,
+    color: brandLightBg,
   });
 
   page.drawText('1. Content Creation & Digital Marketing Masterclass', { x: 50, y: rowY + 7, size: 8.5, font: fontBold, color: darkColor });
@@ -191,9 +192,9 @@ async function generateSamplePdf() {
   page.drawText('1', { x: 320, y: rowY + 7, size: 8.5, font: fontRegular, color: darkColor });
   page.drawText('Rs. 1270.34', { x: 365, y: rowY + 7, size: 8.5, font: fontRegular, color: darkColor });
   page.drawText('Rs. 228.66', { x: 440, y: rowY + 7, size: 8.5, font: fontRegular, color: darkColor });
-  page.drawText('Rs. 1499.00', { x: 500, y: rowY + 7, size: 8.5, font: fontBold, color: purplePrimary });
+  page.drawText('Rs. 1499.00', { x: 500, y: rowY + 7, size: 8.5, font: fontBold, color: brandPrimary });
 
-  // 6. Totals Breakdown Summary (Bottom Right matching screenshot)
+  // 6. Totals Breakdown Summary (Bottom Right)
   const totalsY = 390;
 
   page.drawText('Amount:', { x: 365, y: totalsY, size: 9.5, font: fontRegular, color: mutedColor });
@@ -210,8 +211,8 @@ async function generateSamplePdf() {
     color: darkColor,
   });
 
-  page.drawText('Total (INR)', { x: 365, y: totalsY - 48, size: 12, font: fontBold, color: purplePrimary });
-  page.drawText('Rs. 1499.00', { x: 470, y: totalsY - 48, size: 13, font: fontBold, color: purplePrimary });
+  page.drawText('Total (INR)', { x: 365, y: totalsY - 48, size: 12, font: fontBold, color: brandPrimary });
+  page.drawText('Rs. 1499.00', { x: 470, y: totalsY - 48, size: 13, font: fontBold, color: brandPrimary });
 
   // 7. Footer Note
   page.drawText('This is a computer-generated tax invoice issued by Eresha Technology Innovators Pvt. Ltd. for Airbharath LMS (https://lms.airbharath.in).', {
@@ -223,10 +224,10 @@ async function generateSamplePdf() {
   });
 
   const pdfBytes = await pdfDoc.save();
-  const targetDir = '/home/rishisingh1034/.gemini/antigravity-ide/brain/90d309f7-313c-45c0-9f63-c37170f30aeb';
+  const targetDir = '/home/rishisingh1034/.gemini/antigravity-ide/brain/f4e522ff-1c5a-44a0-bfc6-4b96b3e719d8';
   const pdfPath = path.join(targetDir, 'sample_invoice.pdf');
   fs.writeFileSync(pdfPath, Buffer.from(pdfBytes));
-  console.log('Successfully generated sample_invoice.pdf');
+  console.log('Successfully generated sample_invoice.pdf at ' + pdfPath);
 }
 
 generateSamplePdf().catch(console.error);

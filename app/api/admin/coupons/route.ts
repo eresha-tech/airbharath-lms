@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { coupons } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
+import { serverTrack } from "@/lib/analytics-server";
 
 export async function GET() {
   try {
@@ -45,6 +46,12 @@ export async function POST(req: Request) {
         usageLimit: usageLimit ? parseInt(usageLimit) : null,
       })
       .returning();
+
+    await serverTrack(session.id, "admin_coupon_created", {
+      coupon_code: newCoupon.code,
+      discount_type: newCoupon.discountType,
+      discount_value: Number(newCoupon.discountValue) || 0,
+    });
 
     return NextResponse.json({ coupon: newCoupon });
   } catch (error: any) {
