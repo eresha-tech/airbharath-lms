@@ -266,7 +266,7 @@ function LoginForm() {
       {/* Main Split Layout Container */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-5xl bg-card rounded-3xl shadow-xl border border-border overflow-hidden flex flex-col lg:flex-row transition-all duration-300">
-          
+
           {/* Left Branding & Highlights Panel (Desktop / Tablet Large) */}
           <div className="hidden lg:flex lg:w-5/12 bg-slate-950 dark:bg-card text-white dark:text-foreground p-8 xl:p-10 flex-col justify-between relative overflow-hidden border-r border-border/40">
             {/* Background Aesthetic Layers */}
@@ -277,7 +277,7 @@ function LoginForm() {
             {/* Header Brand */}
             <div className="relative z-10 flex items-center gap-3">
               <img
-                src="https://assets.airbharath.in/logo.webp"
+                src="https://assets.airbharath.in/eresha-logo.webp"
                 alt="AirBharath LMS"
                 className="h-10 w-auto bg-white/10 p-1.5 rounded-xl border border-white/20 shadow-xs"
               />
@@ -355,7 +355,7 @@ function LoginForm() {
               {/* Mobile Branding (Visible only on mobile/tablet) */}
               <div className="lg:hidden text-center space-y-2 pb-2">
                 <img
-                  src="https://assets.airbharath.in/logo.webp"
+                  src="https://assets.airbharath.in/eresha-logo.webp"
                   alt="AirBharath LMS"
                   className="h-9 w-auto mx-auto object-contain"
                 />
@@ -368,11 +368,10 @@ function LoginForm() {
               <div className="flex items-center justify-between gap-2 pb-2 border-b border-border">
                 <div className="flex items-center gap-2">
                   <span
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                      step === 'phone'
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${step === 'phone'
                         ? 'bg-primary text-primary-foreground ring-2 ring-primary/20'
                         : 'bg-success/20 text-success'
-                    }`}
+                      }`}
                   >
                     {step === 'phone' ? '1' : '✓'}
                   </span>
@@ -383,13 +382,12 @@ function LoginForm() {
 
                 <div className="flex items-center gap-2">
                   <span
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                      step === 'otp'
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${step === 'otp'
                         ? 'bg-primary text-primary-foreground ring-2 ring-primary/20'
                         : step === 'profile'
-                        ? 'bg-success/20 text-success'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
+                          ? 'bg-success/20 text-success'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
                   >
                     {step === 'profile' ? '✓' : '2'}
                   </span>
@@ -549,11 +547,10 @@ function LoginForm() {
                       type="button"
                       onClick={handleResendOTP}
                       disabled={resendTimer > 0 || resendLoading || loading}
-                      className={`text-xs font-semibold inline-flex items-center gap-1.5 transition-colors ${
-                        resendTimer > 0 || resendLoading || loading
+                      className={`text-xs font-semibold inline-flex items-center gap-1.5 transition-colors ${resendTimer > 0 || resendLoading || loading
                           ? 'text-muted-foreground/60 cursor-not-allowed'
                           : 'text-primary hover:underline cursor-pointer'
-                      }`}
+                        }`}
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${resendLoading ? 'animate-spin' : ''}`} />
                       {resendLoading ? (
@@ -650,11 +647,10 @@ function LoginForm() {
                 <div
                   role="alert"
                   aria-live="polite"
-                  className={`p-3.5 rounded-xl border flex items-start gap-2.5 transition-all text-xs font-medium ${
-                    isSuccess
+                  className={`p-3.5 rounded-xl border flex items-start gap-2.5 transition-all text-xs font-medium ${isSuccess
                       ? 'bg-success/10 border-success/20 text-success'
                       : 'bg-destructive/10 border-destructive/20 text-destructive'
-                  }`}
+                    }`}
                 >
                   {isSuccess ? (
                     <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />

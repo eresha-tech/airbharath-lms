@@ -31,6 +31,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/courses') ||
     pathname.startsWith('/preview') ||
     pathname.startsWith('/pricing') ||
+    pathname.startsWith('/practice') ||
     pathname.startsWith('/search') ||
     pathname.startsWith('/verify-certificate');
 

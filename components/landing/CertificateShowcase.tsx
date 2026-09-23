@@ -97,7 +97,7 @@ export function CertificateShowcase() {
                 <div className="flex items-center justify-between border-b border-border pb-4 relative z-10">
                   <div className="flex items-center gap-2">
                     <img
-                      src="https://assets.airbharath.in/logo.webp"
+                      src="https://assets.airbharath.in/eresha-logo.webp"
                       alt="AirBharath"
                       className="h-6 w-auto"
                     />

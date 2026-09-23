@@ -148,15 +148,32 @@ export function HeroBanner() {
       />
 
       <div className="container mx-auto px-4 max-w-7xl space-y-12">
-        {/* Top Trust Badge & Main Headline */}
+        {/* Top Badges & Main Headline */}
         <div className="flex flex-col items-center gap-4 text-center max-w-4xl mx-auto animate-fade-up">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card border border-border text-foreground text-xs font-bold tracking-wide shadow-xs animate-float-slow">
-            <span className="flex items-center gap-1 text-amber-500 font-extrabold">
-              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500 animate-pulse" aria-hidden="true" />
-              30+ Years
-            </span>
-            <span aria-hidden="true" className="text-border">|</span>
-            <span className="text-muted-foreground">Aviation, Learning &amp; Technology Heritage</span>
+          <div className="flex flex-wrap items-center justify-center gap-2.5">
+            <Link
+              href="/practice"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card hover:bg-muted/70 border border-primary/35 hover:border-primary text-foreground text-xs font-bold tracking-wide shadow-xs transition-all duration-200 group animate-float-slow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <span className="flex items-center gap-1.5 text-primary font-extrabold">
+                <Sparkles className="w-3.5 h-3.5 text-primary group-hover:rotate-12 transition-transform" aria-hidden="true" />
+                Practice Lab
+              </span>
+              <span aria-hidden="true" className="text-border">|</span>
+              <span className="text-muted-foreground group-hover:text-foreground transition-colors flex items-center gap-1">
+                Explore Hands-on Practice (Preview)
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </Link>
+
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card border border-border text-foreground text-xs font-bold tracking-wide shadow-xs">
+              <span className="flex items-center gap-1 text-amber-500 font-extrabold">
+                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" aria-hidden="true" />
+                30+ Years
+              </span>
+              <span aria-hidden="true" className="text-border">|</span>
+              <span className="text-muted-foreground">Aviation, Learning &amp; Technology Heritage</span>
+            </div>
           </div>
 
           <h1

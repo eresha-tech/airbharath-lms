@@ -34,11 +34,12 @@ export async function generateAndSaveInvoice(orderId: string) {
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-  // Palette matching screenshot
-  const purplePrimary = rgb(0.42, 0.23, 0.65); // #6b3ba7
-  const purpleLightBg = rgb(0.95, 0.93, 0.98); // #f3eefb
-  const darkColor = rgb(0.12, 0.12, 0.15);
-  const mutedColor = rgb(0.4, 0.45, 0.55);
+  // Palette matching AirBharath modern design system
+  const brandPrimary = rgb(0.31, 0.27, 0.90); // #4f46e5
+  const brandDark = rgb(0.26, 0.22, 0.79); // #4338ca
+  const brandLightBg = rgb(0.96, 0.95, 1.0); // #f5f3ff
+  const darkColor = rgb(0.09, 0.11, 0.16); // #171c28
+  const mutedColor = rgb(0.39, 0.45, 0.55); // #64748b
 
   // 1. Fetch & Embed Airbharath Logo (Single logo for top right corner)
   let logoImage = null;
@@ -59,7 +60,7 @@ export async function generateAndSaveInvoice(orderId: string) {
     y: 785,
     size: 30,
     font: fontBold,
-    color: purplePrimary,
+    color: brandPrimary,
   });
 
   page.drawText('Airbharath LMS', {
@@ -67,7 +68,7 @@ export async function generateAndSaveInvoice(orderId: string) {
     y: 765,
     size: 11,
     font: fontBold,
-    color: rgb(0.0039, 0.290, 0.384),
+    color: brandDark,
   });
 
   // Top Header Metadata
@@ -95,14 +96,14 @@ export async function generateAndSaveInvoice(orderId: string) {
     });
   }
 
-  // 4. Billed By Container (Purple Box matching screenshot)
+  // 4. Billed By Container (Brand Light Box)
   const billedByY = 565;
   page.drawRectangle({
     x: 40,
     y: billedByY,
     width: 280,
     height: 122,
-    color: purpleLightBg,
+    color: brandLightBg,
   });
 
   page.drawText('Billed By', {
@@ -110,7 +111,7 @@ export async function generateAndSaveInvoice(orderId: string) {
     y: billedByY + 98,
     size: 11,
     font: fontBold,
-    color: purplePrimary,
+    color: brandDark,
   });
 
   page.drawText('Eresha Technology Innovators Pvt. Ltd.', {
@@ -126,7 +127,7 @@ export async function generateAndSaveInvoice(orderId: string) {
     y: billedByY + 66,
     size: 8.5,
     font: fontBold,
-    color: rgb(0.0039, 0.290, 0.384),
+    color: brandDark,
   });
 
   page.drawText('20/36D, Ground Floor, West Patel Nagar,', {
@@ -184,14 +185,14 @@ export async function generateAndSaveInvoice(orderId: string) {
     color: darkColor,
   });
 
-  // 5. Itemized Table (Purple Header Bar matching screenshot)
+  // 5. Itemized Table (Brand Header Bar)
   const tableY = 500;
   page.drawRectangle({
     x: 40,
     y: tableY,
     width: 515,
     height: 25,
-    color: purplePrimary,
+    color: brandPrimary,
   });
 
   // White Header Labels
@@ -209,7 +210,7 @@ export async function generateAndSaveInvoice(orderId: string) {
     y: rowY,
     width: 515,
     height: 24,
-    color: purpleLightBg,
+    color: brandLightBg,
   });
 
   const courseTitle = course?.title || 'Airbharath Course Enrollment';
@@ -220,9 +221,9 @@ export async function generateAndSaveInvoice(orderId: string) {
   page.drawText('1', { x: 320, y: rowY + 7, size: 8.5, font: fontRegular, color: darkColor });
   page.drawText(`Rs. ${baseAmount}`, { x: 365, y: rowY + 7, size: 8.5, font: fontRegular, color: darkColor });
   page.drawText(`Rs. ${gstAmount}`, { x: 440, y: rowY + 7, size: 8.5, font: fontRegular, color: darkColor });
-  page.drawText(`Rs. ${totalAmount}`, { x: 500, y: rowY + 7, size: 8.5, font: fontBold, color: purplePrimary });
+  page.drawText(`Rs. ${totalAmount}`, { x: 500, y: rowY + 7, size: 8.5, font: fontBold, color: brandPrimary });
 
-  // 6. Totals Breakdown Summary (Bottom Right matching screenshot)
+  // 6. Totals Breakdown Summary (Bottom Right)
   const totalsY = 390;
 
   page.drawText('Amount:', { x: 365, y: totalsY, size: 9.5, font: fontRegular, color: mutedColor });
@@ -239,8 +240,8 @@ export async function generateAndSaveInvoice(orderId: string) {
     color: darkColor,
   });
 
-  page.drawText('Total (INR)', { x: 365, y: totalsY - 48, size: 12, font: fontBold, color: purplePrimary });
-  page.drawText(`Rs. ${totalAmount}`, { x: 470, y: totalsY - 48, size: 13, font: fontBold, color: purplePrimary });
+  page.drawText('Total (INR)', { x: 365, y: totalsY - 48, size: 12, font: fontBold, color: brandPrimary });
+  page.drawText(`Rs. ${totalAmount}`, { x: 470, y: totalsY - 48, size: 13, font: fontBold, color: brandPrimary });
 
   // 7. Footer Note
   page.drawText('This is a computer-generated tax invoice issued by Eresha Technology Innovators Pvt. Ltd. for Airbharath LMS (https://lms.airbharath.in).', {
@@ -272,34 +273,34 @@ export async function generateAndSaveInvoice(orderId: string) {
     const emailSubject = `🎉 Enrollment Confirmed! Course Access Starts Sept 18th - Air Bharath LMS`;
     const emailHtml = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; background: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-        <div style="background-color: #014a62; padding: 32px 24px; text-align: center; color: #ffffff;">
-          <img src="https://assets.airbharath.in/logo.webp" alt="Air Bharath LMS" style="height: 40px; margin-bottom: 12px; border-radius: 8px; background: rgba(255,255,255,0.15); padding: 4px;" />
-          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; font-family: Georgia, serif;">Air Bharath LMS</h2>
-          <p style="margin: 6px 0 0 0; font-size: 13px; color: #bae6fd; letter-spacing: 0.5px; text-transform: uppercase;">Enrollment Confirmed · Course Start Notice</p>
+        <div style="background: linear-gradient(135deg, #3730a3 0%, #4f46e5 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
+          <img src="https://assets.airbharath.in/eresha-logo.webp" alt="Air Bharath LMS" style="height: 40px; margin-bottom: 12px; border-radius: 8px; background: rgba(255,255,255,0.15); padding: 4px;" />
+          <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; font-family: 'Outfit', sans-serif, Georgia, serif;">Air Bharath LMS</h2>
+          <p style="margin: 6px 0 0 0; font-size: 13px; color: #c7d2fe; letter-spacing: 0.5px; text-transform: uppercase;">Enrollment Confirmed · Course Start Notice</p>
         </div>
 
         <div style="padding: 32px 24px; color: #334155; font-size: 15px; line-height: 1.6;">
           <p style="font-size: 16px; margin-top: 0;">Dear <strong>${user.fullName || 'Student'}</strong>,</p>
           <p>Congratulations! Your enrollment in <strong>${course?.title || 'Air Bharath Certificate Course'}</strong> is successfully confirmed.</p>
 
-          <div style="background-color: #f0f9ff; border: 1px solid #bae6fd; border-left: 5px solid #014a62; border-radius: 12px; padding: 20px; margin: 24px 0;">
-            <h3 style="margin: 0 0 8px 0; color: #014a62; font-size: 16px; font-weight: 700;">
+          <div style="background-color: #f5f3ff; border: 1px solid #c7d2fe; border-left: 5px solid #4f46e5; border-radius: 12px; padding: 20px; margin: 24px 0;">
+            <h3 style="margin: 0 0 8px 0; color: #4338ca; font-size: 16px; font-weight: 700;">
               🚀 Important Course Schedule Update
             </h3>
-            <p style="margin: 0; color: #0369a1; font-weight: 600; font-size: 15px;">
+            <p style="margin: 0; color: #4f46e5; font-weight: 600; font-size: 15px;">
               Course content &amp; video lessons will start and become visible on your LMS Dashboard from <u>September 18, 2026</u>.
             </p>
           </div>
 
           <p style="font-weight: 600; color: #0f172a; margin-bottom: 8px;">What happens next?</p>
           <ul style="margin: 0 0 24px 0; padding-left: 20px; color: #475569;">
-            <li style="margin-bottom: 8px;">You can log in to your account at <a href="https://lms.airbharath.in" style="color: #014a62; font-weight: 600;">lms.airbharath.in</a> at any time.</li>
+            <li style="margin-bottom: 8px;">You can log in to your account at <a href="https://lms.airbharath.in" style="color: #4f46e5; font-weight: 600;">lms.airbharath.in</a> at any time.</li>
             <li style="margin-bottom: 8px;">Your enrolled course is safely active under your <strong>Student Dashboard</strong>.</li>
             <li style="margin-bottom: 8px;">Full access to video modules &amp; lesson materials will automatically unlock on <strong>September 18th, 2026</strong>.</li>
           </ul>
 
           <div style="text-align: center; margin: 32px 0 24px 0;">
-            <a href="https://lms.airbharath.in/dashboard/courses" style="background-color: #014a62; color: #ffffff; font-weight: 700; font-size: 14px; text-decoration: none; padding: 14px 28px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 6px rgba(1,74,98,0.2);">
+            <a href="https://lms.airbharath.in/dashboard/courses" style="background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%); color: #ffffff; font-weight: 700; font-size: 14px; text-decoration: none; padding: 14px 28px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 12px rgba(79,70,229,0.25);">
               Visit My Learning Dashboard →
             </a>
           </div>
@@ -307,7 +308,7 @@ export async function generateAndSaveInvoice(orderId: string) {
           <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 28px 0;" />
 
           <p style="font-size: 13px; color: #64748b; margin: 0;">
-            If you have any questions or need assistance, reach out to us at <a href="mailto:academy@airbharath.in" style="color: #014a62; font-weight: 600;">academy@airbharath.in</a>.
+            If you have any questions or need assistance, reach out to us at <a href="mailto:academy@airbharath.in" style="color: #4f46e5; font-weight: 600;">academy@airbharath.in</a>.
           </p>
 
           <p style="margin-top: 20px; font-size: 14px;">

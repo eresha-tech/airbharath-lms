@@ -25,9 +25,9 @@ export const metadata: Metadata = {
   title: "AirBharath LMS - Premium Professional & Technical Learning",
   description: "Accelerate your career with AirBharath LMS courses, certificates, and practical skills.",
   icons: {
-    icon: [{ url: "https://assets.airbharath.in/air-bharath-logo.webp", type: "image/webp" }],
-    shortcut: "https://assets.airbharath.in/air-bharath-logo.webp",
-    apple: "https://assets.airbharath.in/air-bharath-logo.webp",
+    icon: [{ url: "https://assets.airbharath.in/eresha-logo.webp", type: "image/webp" }],
+    shortcut: "https://assets.airbharath.in/eresha-logo.webp",
+    apple: "https://assets.airbharath.in/eresha-logo.webp",
   },
 };
 

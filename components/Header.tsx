@@ -87,7 +87,7 @@ export default function Header() {
               aria-label="AirBharath LMS Homepage"
             >
               <img
-                src="https://assets.airbharath.in/logo.webp"
+                src="https://assets.airbharath.in/eresha-logo.webp"
                 alt="AirBharath LMS"
                 className="h-8 md:h-9 w-auto object-contain transition-transform hover:scale-105"
               />

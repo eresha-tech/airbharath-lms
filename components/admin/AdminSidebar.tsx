@@ -160,7 +160,7 @@ export function AdminSidebar() {
           aria-label="Airbharath Admin Dashboard"
         >
           <img
-            src="https://assets.airbharath.in/logo.webp"
+            src="https://assets.airbharath.in/eresha-logo.webp"
             alt="AirBharath"
             className="h-8 w-auto object-contain shrink-0"
           />

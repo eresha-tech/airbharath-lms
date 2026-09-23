@@ -45,7 +45,7 @@ export function AdminMobileNav() {
             className="flex items-center gap-2.5 overflow-hidden"
           >
             <img
-              src="https://assets.airbharath.in/logo.webp"
+              src="https://assets.airbharath.in/eresha-logo.webp"
               alt="Airbharath"
               className="h-8 w-auto object-contain"
             />

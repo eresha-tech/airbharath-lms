@@ -46,7 +46,7 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
             {/* Certificate Area */}
             <div className="lg:col-span-2 bg-white text-zinc-900 border-[10px] border-primary/20 p-8 md:p-12 rounded-3xl relative shadow-xl min-h-[480px] flex flex-col justify-between items-center text-center font-serif">
               <div className="relative z-10 flex flex-col items-center gap-2 mt-4">
-                <img src="https://assets.airbharath.in/logo.webp" alt="Airbharath LMS" className="h-10 w-auto object-contain" />
+                <img src="https://assets.airbharath.in/eresha-logo.webp" alt="Airbharath LMS" className="h-10 w-auto object-contain" />
                 <div className="text-[10px] tracking-[0.2em] uppercase font-sans font-bold text-primary">
                   AirBharath LMS Finishing School
                 </div>

@@ -14,7 +14,7 @@ export function Footer() {
           <div className="lg:col-span-2 space-y-5">
             <Link href="/" className="flex items-center space-x-3 group">
               <img
-                src="https://assets.airbharath.in/logo.webp"
+                src="https://assets.airbharath.in/eresha-logo.webp"
                 alt="AirBharath LMS"
                 className="h-9 w-auto bg-white/10 p-1.5 rounded-xl border border-white/20 transition-transform group-hover:scale-105"
               />
@@ -100,6 +100,11 @@ export function Footer() {
               <li>
                 <Link href="/courses" className="hover:text-white transition-colors font-medium">
                   Courses Catalog
+                </Link>
+              </li>
+              <li>
+                <Link href="/practice" className="hover:text-white transition-colors font-medium">
+                  Practice Lab
                 </Link>
               </li>
               <li>
