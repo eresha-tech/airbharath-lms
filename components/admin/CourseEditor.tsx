@@ -1104,7 +1104,7 @@ export default function CourseEditor({
       {/* Tabs Layout */}
       <Tabs
         value={activeTab}
-        onValueChange={(val) => setActiveTab(val as any)}
+        onValueChange={(val: string) => setActiveTab(val as any)}
         className="space-y-6"
       >
         <TabsList className="bg-muted/50 p-1.5 rounded-2xl border border-border/80 flex flex-wrap sm:inline-flex max-w-full h-auto">
@@ -2888,7 +2888,7 @@ export default function CourseEditor({
 
                       {Boolean(lessonReleaseAt) && (
                         <div className="space-y-2 pt-1 border-t border-border/60">
-                          <label className="block text-[10px] font-bold text-foreground uppercase tracking-wider flex items-center gap-1">
+                          <label className="text-[10px] font-bold text-foreground uppercase tracking-wider flex items-center gap-1">
                             <Clock className="h-3 w-3 text-amber-600" />
                             <span>Release Date &amp; Time (IST)</span>
                           </label>
@@ -2944,7 +2944,7 @@ export default function CourseEditor({
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <label className="block text-[10px] font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <label className="text-[10px] font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
                           <LinkIcon className="h-3 w-3" />
                           <span>Meeting URL (Zoom, Google Meet, etc.)</span>
                         </label>
