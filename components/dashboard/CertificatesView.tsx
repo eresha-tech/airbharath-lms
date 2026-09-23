@@ -224,7 +224,7 @@ export function CertificatesView({
           onClick={() => setActiveTab("all")}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === "all"
-              ? "bg-white text-primary shadow-xs"
+              ? "bg-card text-foreground shadow-xs border border-border/60"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -235,7 +235,7 @@ export function CertificatesView({
           onClick={() => setActiveTab("earned")}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === "earned"
-              ? "bg-white text-primary shadow-xs"
+              ? "bg-card text-foreground shadow-xs border border-border/60"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -246,7 +246,7 @@ export function CertificatesView({
           onClick={() => setActiveTab("in-progress")}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === "in-progress"
-              ? "bg-white text-primary shadow-xs"
+              ? "bg-card text-foreground shadow-xs border border-border/60"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >

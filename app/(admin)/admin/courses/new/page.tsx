@@ -214,7 +214,7 @@ export default function NewCourse() {
         <Card className="rounded-3xl border border-border/80 shadow-xs">
           <CardHeader className="pb-4 border-b border-border/60">
             <div className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-xl bg-cyan-500/10 text-cyan-600 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                 <ImageIcon className="h-4 w-4" />
               </div>
               <div>

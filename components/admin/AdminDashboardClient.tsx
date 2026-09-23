@@ -547,7 +547,7 @@ export default function AdminDashboardClient({
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
               Active Students
             </span>
-            <div className="h-9 w-9 rounded-2xl bg-cyan-500/10 text-cyan-600 flex items-center justify-center">
+            <div className="h-9 w-9 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
               <Users className="h-4 w-4" />
             </div>
           </CardHeader>
@@ -556,7 +556,7 @@ export default function AdminDashboardClient({
               {activeStudentsCount.toLocaleString()}
             </div>
             <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-cyan-700 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">
                 Registered
               </span>
               <span>Enrolled learner accounts</span>
@@ -570,7 +570,7 @@ export default function AdminDashboardClient({
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
               Completion Rate
             </span>
-            <div className="h-9 w-9 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+            <div className="h-9 w-9 rounded-2xl bg-success/10 text-success flex items-center justify-center">
               <GraduationCap className="h-4 w-4" />
             </div>
           </CardHeader>
@@ -633,7 +633,7 @@ export default function AdminDashboardClient({
                   <span>Revenue (₹)</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <span className="h-2.5 w-2.5 rounded-sm bg-cyan-500" />
+                  <span className="h-2.5 w-2.5 rounded-sm bg-accent-light" />
                   <span>Enrollments</span>
                 </div>
               </div>
@@ -666,17 +666,17 @@ export default function AdminDashboardClient({
                   >
                     {/* Tooltip on hover */}
                     {hoveredBar === idx && (
-                      <div className="absolute bottom-full mb-2 bg-slate-950 text-white text-[10px] font-semibold p-2.5 rounded-xl shadow-xl z-30 flex flex-col gap-1 min-w-[140px] border border-slate-800 pointer-events-none animate-in fade-in zoom-in-95 duration-150">
-                        <p className="text-slate-400 border-b border-slate-800 pb-0.5">{data.label}</p>
-                        <p className="text-slate-200">
+                      <div className="absolute bottom-full mb-2 bg-card text-foreground text-[10px] font-semibold p-2.5 rounded-xl shadow-xl z-30 flex flex-col gap-1 min-w-[140px] border border-border pointer-events-none animate-in fade-in zoom-in-95 duration-150">
+                        <p className="text-muted-foreground border-b border-border pb-0.5">{data.label}</p>
+                        <p className="text-foreground">
                           Revenue:{" "}
-                          <span className="text-cyan-300 font-bold">
+                          <span className="text-primary font-bold">
                             ₹{data.revenue.toLocaleString("en-IN")}
                           </span>
                         </p>
-                        <p className="text-slate-200">
+                        <p className="text-foreground">
                           Enrollments:{" "}
-                          <span className="text-emerald-400 font-bold">{data.count}</span>
+                          <span className="text-success font-bold">{data.count}</span>
                         </p>
                       </div>
                     )}
@@ -690,7 +690,7 @@ export default function AdminDashboardClient({
                       />
                       <div
                         style={{ height: `${Math.max(countPercent, 3)}%` }}
-                        className="w-2.5 sm:w-4 bg-cyan-500/80 group-hover:bg-cyan-500 rounded-t-sm transition-all duration-300"
+                        className="w-2.5 sm:w-4 bg-accent-light/70 group-hover:bg-accent-light rounded-t-sm transition-all duration-300"
                         title={`Enrollments: ${data.count}`}
                       />
                     </div>
@@ -728,7 +728,7 @@ export default function AdminDashboardClient({
                 href="/admin/students"
                 className="flex flex-col gap-1 p-3 rounded-2xl border border-border/70 bg-muted/20 hover:bg-primary/10 hover:border-primary/30 text-xs font-semibold text-foreground transition-all group"
               >
-                <Users className="h-4 w-4 text-cyan-600 group-hover:scale-110 transition-transform" />
+                <Users className="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
                 <span className="truncate font-bold">Students</span>
                 <span className="text-[10px] text-muted-foreground font-normal">Manage rosters</span>
               </Link>
@@ -746,7 +746,7 @@ export default function AdminDashboardClient({
                 href="/admin/coupons"
                 className="flex flex-col gap-1 p-3 rounded-2xl border border-border/70 bg-muted/20 hover:bg-primary/10 hover:border-primary/30 text-xs font-semibold text-foreground transition-all group"
               >
-                <Tag className="h-4 w-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+                <Tag className="h-4 w-4 text-success group-hover:scale-110 transition-transform" />
                 <span className="truncate font-bold">Coupons</span>
                 <span className="text-[10px] text-muted-foreground font-normal">Discounts &amp; codes</span>
               </Link>
@@ -755,7 +755,7 @@ export default function AdminDashboardClient({
                 href="/admin/jobs"
                 className="flex flex-col gap-1 p-3 rounded-2xl border border-border/70 bg-muted/20 hover:bg-primary/10 hover:border-primary/30 text-xs font-semibold text-foreground transition-all group"
               >
-                <Briefcase className="h-4 w-4 text-purple-600 group-hover:scale-110 transition-transform" />
+                <Briefcase className="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
                 <span className="truncate font-bold">Job Board</span>
                 <span className="text-[10px] text-muted-foreground font-normal">Post openings</span>
               </Link>
@@ -764,7 +764,7 @@ export default function AdminDashboardClient({
                 href="/admin/orders"
                 className="flex flex-col gap-1 p-3 rounded-2xl border border-border/70 bg-muted/20 hover:bg-primary/10 hover:border-primary/30 text-xs font-semibold text-foreground transition-all group"
               >
-                <ShoppingBag className="h-4 w-4 text-indigo-600 group-hover:scale-110 transition-transform" />
+                <ShoppingBag className="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
                 <span className="truncate font-bold">All Orders</span>
                 <span className="text-[10px] text-muted-foreground font-normal">Payment ledger</span>
               </Link>
@@ -783,7 +783,7 @@ export default function AdminDashboardClient({
                 <Users className="h-4 w-4 text-primary" />
                 <span>Active Learner Engagement</span>
               </CardTitle>
-              <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[10px] font-bold">
+              <Badge className="bg-success/10 text-success border-success/20 text-[10px] font-bold">
                 {engagementMetrics.engagementRate !== null
                   ? `${engagementMetrics.engagementRate}% Active`
                   : "—"}
@@ -818,9 +818,9 @@ export default function AdminDashboardClient({
                     onMouseLeave={() => setHoveredDal(null)}
                   >
                     {hoveredDal === idx && (
-                      <div className="absolute bottom-full mb-1.5 bg-slate-950 text-white text-[10px] p-2 rounded-xl shadow-xl z-20 whitespace-nowrap font-bold pointer-events-none">
-                        <span>{data.fullDate}: </span>
-                        <span className="text-cyan-300">
+                      <div className="absolute bottom-full mb-1.5 bg-card text-foreground border border-border text-[10px] p-2 rounded-xl shadow-xl z-20 whitespace-nowrap font-bold pointer-events-none">
+                        <span className="text-muted-foreground">{data.fullDate}: </span>
+                        <span className="text-accent-light font-bold">
                           {data.count} {data.count === 1 ? "Learner" : "Learners"}
                         </span>
                       </div>

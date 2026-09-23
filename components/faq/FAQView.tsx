@@ -150,9 +150,9 @@ export function FAQView() {
   return (
     <div className="flex flex-col min-h-screen font-sans bg-background text-foreground pb-20">
       {/* Header Banner */}
-      <section className="bg-gradient-to-b from-primary/10 via-primary/5 to-transparent pt-28 pb-14 border-b border-border/80">
+      <section className="pt-28 pb-14 border-b border-border">
         <div className="container mx-auto px-4 max-w-4xl space-y-4 text-center animate-fade-up">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/15 border border-primary/25 text-primary text-xs font-bold uppercase tracking-wider">
             <HelpCircle className="h-4 w-4" />
             <span>Help Center &amp; Answers</span>
           </div>
@@ -207,7 +207,7 @@ export function FAQView() {
                 onClick={() => setActiveCategory(cat)}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
                   isSelected
-                    ? "bg-primary text-white shadow-xs"
+                    ? "bg-primary text-primary-foreground shadow-xs"
                     : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
                 }`}
               >

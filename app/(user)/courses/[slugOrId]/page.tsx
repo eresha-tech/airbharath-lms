@@ -203,9 +203,9 @@ export default async function CoursePage({ params }: CoursePageProps) {
         isFree={Number(course.price) === 0}
       />
       {/* 1. Hero Section Header */}
-      <div className="relative w-full overflow-hidden text-white bg-gradient-to-br from-[#014a62] via-[#013c50] to-[#012c3b] pt-24 md:pt-28 pb-10 md:pb-16 border-b border-[#014a62]/40">
+      <div className="relative w-full overflow-hidden text-foreground bg-card pt-24 md:pt-28 pb-10 md:pb-16 border-b border-border">
         {course.thumbnailUrl && (
-          <div className="absolute inset-0 z-0 opacity-15 mix-blend-overlay">
+          <div className="absolute inset-0 z-0 opacity-10 mix-blend-overlay">
             <Image
               src={course.thumbnailUrl}
               alt={course.title}
@@ -215,57 +215,56 @@ export default async function CoursePage({ params }: CoursePageProps) {
             />
           </div>
         )}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-cyan-400/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="container mx-auto px-4 relative z-10 max-w-6xl space-y-6 animate-fade-up">
           {/* Breadcrumb Navigation */}
-          <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-semibold text-cyan-200">
-            <Link href="/courses" className="hover:text-white transition-colors flex items-center gap-1">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+            <Link href="/courses" className="hover:text-primary transition-colors flex items-center gap-1">
               <ArrowLeft className="h-3.5 w-3.5" />
               <span>Courses</span>
             </Link>
-            <ChevronRight className="h-3 w-3 text-cyan-200/50" />
-            <span className="text-white truncate max-w-xs">{course.title}</span>
+            <ChevronRight className="h-3 w-3 text-muted-foreground/50" />
+            <span className="text-foreground truncate max-w-xs">{course.title}</span>
           </nav>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
             {/* Left Hero Content */}
             <div className="lg:col-span-8 space-y-5">
               <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 bg-white/10 text-white rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-xs border border-white/15">
+                <span className="px-3 py-1 bg-muted text-foreground rounded-full text-[10px] font-bold uppercase tracking-wider border border-border">
                   Airbharath Certified Program
                 </span>
-                <span className="px-3 py-1 bg-cyan-400/20 text-cyan-200 rounded-full text-[10px] font-bold uppercase tracking-wider border border-cyan-400/30">
+                <span className="px-3 py-1 bg-primary/15 text-primary rounded-full text-[10px] font-bold uppercase tracking-wider border border-primary/25">
                   ⚡ 100% Self-Paced
                 </span>
-                <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-[10px] font-bold uppercase tracking-wider border border-emerald-400/30">
+                <span className="px-3 py-1 bg-success/15 text-success rounded-full text-[10px] font-bold uppercase tracking-wider border border-success/25">
                   Verifiable Credential
                 </span>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold font-outfit text-white leading-tight tracking-tight">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold font-outfit text-foreground leading-tight tracking-tight">
                 {course.title}
               </h1>
 
               {course.description && (
-                <p className="text-xs sm:text-sm md:text-base text-cyan-100/90 leading-relaxed font-sans max-w-2xl">
+                <p className="text-xs sm:text-sm md:text-base text-muted-foreground leading-relaxed font-sans max-w-2xl">
                   {course.description}
                 </p>
               )}
 
               {/* Instant Access Notice */}
-              <div className="p-4 rounded-2xl bg-cyan-950/40 border border-cyan-400/30 text-cyan-100 flex items-start gap-3 backdrop-blur-xs shadow-xs max-w-2xl">
-                <div className="p-2 bg-cyan-500/20 rounded-xl border border-cyan-400/30 text-cyan-300 shrink-0">
+              <div className="p-4 rounded-2xl bg-muted/60 border border-border text-foreground flex items-start gap-3 shadow-xs max-w-2xl">
+                <div className="p-2 bg-primary/15 rounded-xl border border-primary/25 text-primary shrink-0">
                   <PlayCircle className="w-4 h-4" />
                 </div>
                 <div className="space-y-0.5 text-xs">
-                  <h4 className="font-bold text-white flex items-center gap-2">
+                  <h4 className="font-bold text-foreground flex items-center gap-2">
                     <span>Instant Curriculum Access</span>
-                    <span className="text-[10px] font-extrabold uppercase bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-extrabold uppercase bg-success/20 text-success px-2 py-0.5 rounded-full">
                       Immediate
                     </span>
                   </h4>
-                  <p className="text-cyan-100/80 leading-relaxed">
+                  <p className="text-muted-foreground leading-relaxed">
                     {isEnrolled
                       ? "You have full access to all curriculum modules and video lessons on your Student Dashboard."
                       : "Enroll today to instantly unlock all course modules, HD video lessons, and verifiable certification track."}
@@ -274,42 +273,42 @@ export default async function CoursePage({ params }: CoursePageProps) {
               </div>
 
               {/* Key Specs Highlights */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-white/15 max-w-2xl">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-border max-w-2xl">
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/15 text-cyan-300 shrink-0">
+                  <div className="h-9 w-9 rounded-xl bg-muted flex items-center justify-center border border-border text-primary shrink-0">
                     <Clock className="h-4 w-4" />
                   </div>
                   <div>
-                    <div className="text-[10px] font-bold text-cyan-200 uppercase tracking-wider">
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                       Format
                     </div>
-                    <div className="text-xs font-bold text-white">100% Self-Paced</div>
+                    <div className="text-xs font-bold text-foreground">100% Self-Paced</div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/15 text-cyan-300 shrink-0">
+                  <div className="h-9 w-9 rounded-xl bg-muted flex items-center justify-center border border-border text-primary shrink-0">
                     <BookOpen className="h-4 w-4" />
                   </div>
                   <div>
-                    <div className="text-[10px] font-bold text-cyan-200 uppercase tracking-wider">
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                       Curriculum
                     </div>
-                    <div className="text-xs font-bold text-white">
+                    <div className="text-xs font-bold text-foreground">
                       {sortedModules.length} Modules · {totalLessons} Lessons
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 col-span-2 sm:col-span-1">
-                  <div className="h-9 w-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/15 text-cyan-300 shrink-0">
+                  <div className="h-9 w-9 rounded-xl bg-muted flex items-center justify-center border border-border text-primary shrink-0">
                     <Award className="h-4 w-4" />
                   </div>
                   <div>
-                    <div className="text-[10px] font-bold text-cyan-200 uppercase tracking-wider">
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                       Credential
                     </div>
-                    <div className="text-xs font-bold text-white">QR-Verifiable PDF</div>
+                    <div className="text-xs font-bold text-foreground">QR-Verifiable PDF</div>
                   </div>
                 </div>
               </div>
@@ -407,19 +406,19 @@ export default async function CoursePage({ params }: CoursePageProps) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
                 <div className="flex items-start gap-2.5 text-xs sm:text-sm text-foreground/90">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
                   <span>Practical, application-oriented industry skills</span>
                 </div>
                 <div className="flex items-start gap-2.5 text-xs sm:text-sm text-foreground/90">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
                   <span>Structured curriculum with hands-on exercises</span>
                 </div>
                 <div className="flex items-start gap-2.5 text-xs sm:text-sm text-foreground/90">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
                   <span>Real-world case studies and workflow walkthroughs</span>
                 </div>
                 <div className="flex items-start gap-2.5 text-xs sm:text-sm text-foreground/90">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
                   <span>Verifiable PDF credential upon 100% completion</span>
                 </div>
               </div>
@@ -502,11 +501,11 @@ export default async function CoursePage({ params }: CoursePageProps) {
                                       <span>Releases {formatISTDateTime(les.releaseAt, { shortDate: true })}</span>
                                     </span>
                                   ) : null}
-                                  {les.isFreePreview && (!les.releaseAt || new Date(les.releaseAt) <= now) ? (
-                                    <span className="px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold rounded-full border border-emerald-200 dark:border-emerald-800">
+                                  {les.isFreePreview ? (
+                                    <span className="px-2.5 py-0.5 bg-success/15 text-success text-[10px] font-bold rounded-full border border-success/25">
                                       Free Preview
                                     </span>
-                                  ) : !les.releaseAt || new Date(les.releaseAt) <= now ? (
+                                  ) : (!les.releaseAt || new Date(les.releaseAt) <= now) ? (
                                     <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                                       <Lock className="w-3 h-3" />
                                       <span>Enrolled</span>

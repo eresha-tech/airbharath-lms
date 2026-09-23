@@ -70,6 +70,8 @@ function getAdminBreadcrumb(pathname: string): { group: string; page: string } {
 import { track, resetUser } from "@/lib/analytics";
 import { APP_VERSION, APP_NAME } from "@/lib/app-version";
 
+import { DarkModeToggle } from "@/components/DarkModeToggle";
+
 export function AdminHeader() {
   const pathname = usePathname();
   const router = useRouter();
@@ -141,7 +143,7 @@ export function AdminHeader() {
         </nav>
       </div>
 
-      {/* Right Area: Student Portal shortcut & Admin User Menu */}
+      {/* Right Area: Student Portal shortcut, Theme Switcher & Admin User Menu */}
       <div className="flex items-center gap-2 sm:gap-3">
         {/* Switch to Live Student Portal */}
         <Link
@@ -151,6 +153,9 @@ export function AdminHeader() {
           <ExternalLink className="h-3.5 w-3.5 text-primary" />
           <span>Student Portal</span>
         </Link>
+
+        {/* Theme Switcher */}
+        <DarkModeToggle />
 
         {/* Admin Profile Dropdown */}
         <DropdownMenu>

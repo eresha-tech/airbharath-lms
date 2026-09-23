@@ -44,6 +44,8 @@ function getBreadcrumb(pathname: string): { group: string; page: string } {
   return { group: "Student Portal", page: "Dashboard" };
 }
 
+import { DarkModeToggle } from "@/components/DarkModeToggle";
+
 export function DashboardHeader() {
   const pathname = usePathname();
   const { isCollapsed, toggleCollapse, toggleMobile } = useSidebar();
@@ -102,7 +104,7 @@ export function DashboardHeader() {
         </nav>
       </div>
 
-      {/* Right Area: Catalog link & User Profile */}
+      {/* Right Area: Catalog link, Theme Switcher & User Profile */}
       <div className="flex items-center gap-2 sm:gap-3">
         <Link
           href="/courses"
@@ -111,6 +113,9 @@ export function DashboardHeader() {
           <Compass className="h-3.5 w-3.5" />
           <span>Explore Catalog</span>
         </Link>
+
+        {/* Theme Switcher */}
+        <DarkModeToggle />
 
         <div className="h-4 w-px bg-border hidden sm:block" />
 

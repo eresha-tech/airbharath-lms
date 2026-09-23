@@ -28,7 +28,7 @@ export default function VerifyCertificateIndexPage() {
           <div className="bg-primary text-primary-foreground p-8 text-center space-y-3 relative overflow-hidden">
             <div className="relative z-10 flex flex-col items-center">
               <div className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 mb-2">
-                <ShieldCheck className="w-8 h-8 text-cyan-300" />
+                <ShieldCheck className="w-8 h-8 text-primary-foreground" />
               </div>
               <span className="bg-white/15 text-white text-xs font-bold uppercase px-3 py-1 rounded-full border border-white/20 tracking-wider">
                 Credential Verification Portal
@@ -68,7 +68,7 @@ export default function VerifyCertificateIndexPage() {
 
               <Button
                 type="submit"
-                className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-12 rounded-xl text-sm shadow-xs flex items-center justify-center gap-2"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 rounded-xl text-sm shadow-xs flex items-center justify-center gap-2"
               >
                 <span>Verify Certificate</span>
                 <ArrowRight className="w-4 h-4" />
@@ -77,7 +77,7 @@ export default function VerifyCertificateIndexPage() {
 
             <div className="pt-4 border-t border-border/80 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-muted-foreground">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
                 <span>Instant QR-code verification</span>
               </div>
               <div className="flex items-center gap-2">

@@ -369,7 +369,7 @@ export function ClassroomSidebar({
                             {moduleCompletedCount}/{moduleTotalCount} completed
                           </span>
                           {isModuleComplete && (
-                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                            <span className="text-success font-bold">
                               ✓ Done
                             </span>
                           )}
@@ -419,7 +419,7 @@ export function ClassroomSidebar({
                                     "h-4 w-4",
                                     isActive
                                       ? "text-primary-foreground"
-                                      : "text-emerald-600 dark:text-emerald-400"
+                                      : "text-success"
                                   )}
                                 />
                               ) : isScheduledRecorded ? (
@@ -460,7 +460,7 @@ export function ClassroomSidebar({
 
                                 <div className="flex items-center gap-1 shrink-0 mt-0.5">
                                   {lesson.isFreePreview && (
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded">
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 bg-success/15 text-success rounded border border-success/25">
                                       Preview
                                     </span>
                                   )}
@@ -518,16 +518,16 @@ export function ClassroomSidebar({
       {/* Course Completion & Credential Center Footer */}
       {progress === 100 && (
         <div className="p-3 border-t border-sidebar-border shrink-0">
-          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between gap-2">
+          <div className="p-3 bg-success/15 border border-success/25 rounded-xl flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <Award className="h-4 w-4 text-emerald-600" />
-              <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
+              <Award className="h-4 w-4 text-success" />
+              <span className="text-xs font-bold text-success">
                 Curriculum Complete!
               </span>
             </div>
             <Link
               href="/dashboard/certificates"
-              className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 underline hover:no-underline"
+              className="text-[10px] font-bold text-success underline hover:no-underline"
             >
               Credentials
             </Link>

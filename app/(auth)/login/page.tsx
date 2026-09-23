@@ -241,7 +241,7 @@ function LoginForm() {
 
   if (checkingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <p className="text-xs font-semibold text-muted-foreground">Checking authentication...</p>
@@ -251,12 +251,12 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-slate-50/80 font-sans text-foreground">
+    <div className="min-h-screen flex flex-col justify-between bg-background font-sans text-foreground">
       {/* Top Floating Back Link */}
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-primary transition-colors py-1.5 px-3 rounded-full hover:bg-slate-200/60"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary transition-colors py-1.5 px-3 rounded-full hover:bg-muted"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to AirBharath LMS</span>
@@ -265,7 +265,7 @@ function LoginForm() {
 
       {/* Main Split Layout Container */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-        <div className="w-full max-w-5xl bg-white rounded-3xl shadow-xl shadow-slate-900/5 border border-slate-200/80 overflow-hidden flex flex-col lg:flex-row transition-all duration-300">
+        <div className="w-full max-w-5xl bg-card rounded-3xl shadow-xl border border-border overflow-hidden flex flex-col lg:flex-row transition-all duration-300">
           
           {/* Left Branding & Highlights Panel (Desktop / Tablet Large) */}
           <div className="hidden lg:flex lg:w-5/12 bg-primary text-white p-8 xl:p-10 flex-col justify-between relative overflow-hidden">
@@ -349,7 +349,7 @@ function LoginForm() {
           </div>
 
           {/* Right Auth Form Panel */}
-          <div className="w-full lg:w-7/12 p-6 sm:p-10 xl:p-12 flex flex-col justify-center bg-white">
+          <div className="w-full lg:w-7/12 p-6 sm:p-10 xl:p-12 flex flex-col justify-center bg-card">
             <div className="max-w-md w-full mx-auto space-y-6">
 
               {/* Mobile Branding (Visible only on mobile/tablet) */}
@@ -365,21 +365,21 @@ function LoginForm() {
               </div>
 
               {/* Stepper Progress Bar */}
-              <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+              <div className="flex items-center justify-between gap-2 pb-2 border-b border-border">
                 <div className="flex items-center gap-2">
                   <span
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
                       step === 'phone'
                         ? 'bg-primary text-white ring-2 ring-primary/20'
-                        : 'bg-emerald-100 text-emerald-700'
+                        : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
                     }`}
                   >
                     {step === 'phone' ? '1' : '✓'}
                   </span>
-                  <span className="text-xs font-semibold text-slate-700">Mobile Number</span>
+                  <span className="text-xs font-semibold text-foreground">Mobile Number</span>
                 </div>
 
-                <div className="h-0.5 flex-1 bg-slate-200 mx-2" />
+                <div className="h-0.5 flex-1 bg-border mx-2" />
 
                 <div className="flex items-center gap-2">
                   <span
@@ -387,23 +387,23 @@ function LoginForm() {
                       step === 'otp'
                         ? 'bg-primary text-white ring-2 ring-primary/20'
                         : step === 'profile'
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-slate-100 text-slate-400'
+                        ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                        : 'bg-muted text-muted-foreground'
                     }`}
                   >
                     {step === 'profile' ? '✓' : '2'}
                   </span>
-                  <span className="text-xs font-semibold text-slate-700">Verification</span>
+                  <span className="text-xs font-semibold text-foreground">Verification</span>
                 </div>
 
                 {step === 'profile' && (
                   <>
-                    <div className="h-0.5 flex-1 bg-slate-200 mx-2" />
+                    <div className="h-0.5 flex-1 bg-border mx-2" />
                     <div className="flex items-center gap-2">
                       <span className="w-6 h-6 rounded-full bg-primary text-white ring-2 ring-primary/20 flex items-center justify-center text-xs font-bold">
                         3
                       </span>
-                      <span className="text-xs font-semibold text-slate-700">Profile</span>
+                      <span className="text-xs font-semibold text-foreground">Profile</span>
                     </div>
                   </>
                 )}
@@ -422,11 +422,11 @@ function LoginForm() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="phone-input" className="text-xs font-bold text-slate-700">
+                    <Label htmlFor="phone-input" className="text-xs font-bold text-foreground">
                       Mobile Phone Number <span className="text-rose-500">*</span>
                     </Label>
                     <div className="relative">
-                      <div className="absolute left-3.5 top-3 text-xs font-bold text-slate-600 flex items-center gap-1.5 border-r border-slate-200 pr-2.5 z-10 select-none">
+                      <div className="absolute left-3.5 top-3 text-xs font-bold text-muted-foreground flex items-center gap-1.5 border-r border-border pr-2.5 z-10 select-none">
                         <span>🇮🇳 +91</span>
                       </div>
                       <Input
@@ -438,12 +438,12 @@ function LoginForm() {
                         onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                         placeholder="9876543210"
                         maxLength={10}
-                        className="pl-20 pr-10 h-12 text-sm font-semibold rounded-xl border-slate-200 focus-visible:ring-primary"
+                        className="pl-20 pr-10 h-12 text-sm font-semibold rounded-xl border-border focus-visible:ring-primary"
                         required
                         autoFocus
                         disabled={loading}
                       />
-                      <Phone className="absolute right-3.5 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
+                      <Phone className="absolute right-3.5 top-3.5 h-4 w-4 text-muted-foreground pointer-events-none" />
                     </div>
                     <p className="text-[11px] text-muted-foreground">
                       Works for both existing and new students automatically.
@@ -493,7 +493,7 @@ function LoginForm() {
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground font-normal">
                       We sent a 4-digit code to{' '}
-                      <span className="font-bold text-slate-900">
+                      <span className="font-bold text-foreground">
                         +91 {phone.slice(0, 3)}••••{phone.slice(-3)}
                       </span>
                     </p>
@@ -501,7 +501,7 @@ function LoginForm() {
 
                   {/* 4-Box InputOTP Component */}
                   <div className="space-y-3 flex flex-col items-center justify-center py-2">
-                    <Label className="text-xs font-bold text-slate-700 text-center">
+                    <Label className="text-xs font-bold text-foreground text-center">
                       Enter 4-Digit Verification Code
                     </Label>
 
@@ -551,7 +551,7 @@ function LoginForm() {
                       disabled={resendTimer > 0 || resendLoading || loading}
                       className={`text-xs font-semibold inline-flex items-center gap-1.5 transition-colors ${
                         resendTimer > 0 || resendLoading || loading
-                          ? 'text-slate-400 cursor-not-allowed'
+                          ? 'text-muted-foreground/60 cursor-not-allowed'
                           : 'text-primary hover:underline cursor-pointer'
                       }`}
                     >
@@ -581,7 +581,7 @@ function LoginForm() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="fullname-input" className="text-xs font-bold text-slate-700">
+                    <Label htmlFor="fullname-input" className="text-xs font-bold text-foreground">
                       Full Legal Name <span className="text-rose-500">*</span>
                     </Label>
                     <div className="relative">
@@ -591,12 +591,12 @@ function LoginForm() {
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="e.g. Captain Rajesh Sharma"
-                        className="pr-10 h-12 text-sm font-semibold rounded-xl border-slate-200 focus-visible:ring-primary"
+                        className="pr-10 h-12 text-sm font-semibold rounded-xl border-border focus-visible:ring-primary"
                         required
                         autoFocus
                         disabled={loading}
                       />
-                      <User className="absolute right-3.5 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
+                      <User className="absolute right-3.5 top-3.5 h-4 w-4 text-muted-foreground pointer-events-none" />
                     </div>
                     <p className="text-[11px] text-muted-foreground">
                       This name will be printed on your official verifiable PDF certificate.
@@ -604,7 +604,7 @@ function LoginForm() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email-input" className="text-xs font-bold text-slate-700">
+                    <Label htmlFor="email-input" className="text-xs font-bold text-foreground">
                       Email Address <span className="text-rose-500">*</span>
                     </Label>
                     <div className="relative">
@@ -614,11 +614,11 @@ function LoginForm() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="rajesh.sharma@example.com"
-                        className="pr-10 h-12 text-sm font-semibold rounded-xl border-slate-200 focus-visible:ring-primary"
+                        className="pr-10 h-12 text-sm font-semibold rounded-xl border-border focus-visible:ring-primary"
                         required
                         disabled={loading}
                       />
-                      <Mail className="absolute right-3.5 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
+                      <Mail className="absolute right-3.5 top-3.5 h-4 w-4 text-muted-foreground pointer-events-none" />
                     </div>
                     <p className="text-[11px] text-muted-foreground">
                       Used for enrollment invoices, course announcements, and certificate delivery.
@@ -652,8 +652,8 @@ function LoginForm() {
                   aria-live="polite"
                   className={`p-3.5 rounded-xl border flex items-start gap-2.5 transition-all text-xs font-medium ${
                     isSuccess
-                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                      : 'bg-rose-50 border-rose-200 text-rose-800'
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
                   }`}
                 >
                   {isSuccess ? (
@@ -666,7 +666,7 @@ function LoginForm() {
               )}
 
               {/* Footer Legal Agreement */}
-              <div className="pt-2 border-t border-slate-100 text-center text-[11px] text-muted-foreground">
+              <div className="pt-2 border-t border-border text-center text-[11px] text-muted-foreground">
                 <p>
                   By continuing, you agree to AirBharath LMS{' '}
                   <Link href="/terms" className="text-primary font-semibold hover:underline">
@@ -686,7 +686,7 @@ function LoginForm() {
       </div>
 
       {/* Page Footer */}
-      <footer className="w-full px-6 py-4 text-center text-xs text-slate-500 font-medium border-t border-slate-200/60 bg-white/50 backdrop-blur-xs">
+      <footer className="w-full px-6 py-4 text-center text-xs text-muted-foreground font-medium border-t border-border bg-card/50 backdrop-blur-xs">
         <p>&copy; {new Date().getFullYear()} AirBharath LMS. All rights reserved.</p>
       </footer>
     </div>

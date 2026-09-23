@@ -42,22 +42,22 @@ export function ChallengesSection() {
   const [activeTab, setActiveTab] = useState(0);
 
   return (
-    <section className="py-20 bg-white border-b border-gray-200/80">
+    <section className="py-20 bg-background border-b border-border/80">
       <div className="container mx-auto px-4 max-w-6xl space-y-12">
 
         {/* Header */}
         <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-[#014a62] bg-[#014a62]/10 px-3.5 py-1.5 rounded-full border border-[#014a62]/20">
+          <span className="text-xs font-extrabold uppercase tracking-widest text-primary bg-primary/10 px-3.5 py-1.5 rounded-full border border-primary/20">
             Real Workplace Challenges
           </span>
           <h2
-            className="text-3xl md:text-5xl font-bold font-instrument-serif text-[#014a62]"
+            className="text-3xl md:text-5xl font-bold font-instrument-serif text-foreground"
             style={{ textWrap: "balance" } as React.CSSProperties}
           >
             Experienced. Capable. But Feeling Stuck?
           </h2>
-          <div className="text-sm md:text-base text-slate-700 leading-relaxed font-sans space-y-2 text-left md:text-center">
-            <p className="font-semibold text-slate-900">
+          <div className="text-sm md:text-base text-muted-foreground leading-relaxed font-sans space-y-2 text-left md:text-center">
+            <p className="font-semibold text-foreground">
               Are you an experienced Cabin Crew member or aviation professional?
             </p>
             <p>
@@ -65,7 +65,7 @@ export function ChallengesSection() {
               learned how to communicate, manage people, handle pressure, follow processes, solve
               problems and perform when it matters.
             </p>
-            <p className="font-medium text-[#014a62] pt-1">
+            <p className="font-medium text-primary pt-1">
               But perhaps you&rsquo;re now asking:{" "}
               <em>&ldquo;What comes next?&rdquo;</em>
             </p>
@@ -89,21 +89,21 @@ export function ChallengesSection() {
                   aria-label={`Challenge: ${challenge.tag}`}
                   onClick={() => setActiveTab(idx)}
                   onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setActiveTab(idx)}
-                  className={`p-7 rounded-3xl border transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-4 h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#014a62] focus-visible:ring-offset-2 ${
+                  className={`p-7 rounded-3xl border transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-4 h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                     isSelected
-                      ? "bg-[#014a62]/5 border-[#014a62] shadow-lg ring-1 ring-[#014a62]/30 scale-[1.01]"
-                      : "bg-slate-50/70 border-slate-200/90 hover:bg-white hover:border-[#014a62]/40 hover:shadow-md"
+                      ? "bg-primary/5 border-primary shadow-lg ring-1 ring-primary/30 scale-[1.01]"
+                      : "bg-card border-border/80 hover:bg-card/80 hover:border-primary/40 hover:shadow-md"
                   }`}
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#014a62] bg-white border border-[#014a62]/20 px-3 py-1 rounded-full">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-primary bg-background border border-primary/20 px-3 py-1 rounded-full">
                         {challenge.tag}
                       </span>
                       <div
                         aria-hidden="true"
                         className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                          isSelected ? "bg-[#014a62] text-white" : "bg-slate-200/80 text-slate-700"
+                          isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                         }`}
                       >
                         <Icon className="w-5 h-5" />
@@ -111,7 +111,7 @@ export function ChallengesSection() {
                     </div>
 
                     <h3
-                      className="text-base md:text-lg font-bold font-instrument-serif text-[#014a62] leading-snug"
+                      className="text-base md:text-lg font-bold font-instrument-serif text-foreground leading-snug"
                       style={{ textWrap: "balance" } as React.CSSProperties}
                     >
                       {challenge.quote}

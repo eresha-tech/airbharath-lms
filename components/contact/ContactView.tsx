@@ -48,9 +48,9 @@ export function ContactView() {
   return (
     <div className="flex flex-col min-h-screen font-sans bg-background text-foreground pb-20">
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-primary/10 via-primary/5 to-transparent pt-28 pb-14 border-b border-border/80">
+      <section className="pt-28 pb-14 border-b border-border">
         <div className="container mx-auto px-4 max-w-5xl space-y-4 text-center animate-fade-up">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/15 border border-primary/25 text-primary text-xs font-bold uppercase tracking-wider">
             <Mail className="h-4 w-4" />
             <span>Get in Touch</span>
           </div>
@@ -207,7 +207,7 @@ export function ContactView() {
             {/* Corporate Location Card */}
             <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-7 shadow-xs space-y-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-cyan-500/10 text-cyan-600 flex items-center justify-center shrink-0">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                   <Building className="h-5 w-5" />
                 </div>
                 <div>

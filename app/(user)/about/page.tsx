@@ -34,21 +34,21 @@ export default function AboutPage() {
       title: "Taught by IIM Alumni & Industry Practitioners",
       description:
         "Every curriculum is designed and taught by seasoned practitioners who bring corporate decision-making and real-world execution into every lesson.",
-      color: "text-cyan-600 bg-cyan-500/10",
+      color: "text-primary bg-primary/10",
     },
     {
       icon: ShieldCheck,
       title: "Tamper-Proof QR-Verifiable Certificates",
       description:
         "Students who complete all modules receive an official, cryptographically verifiable certificate with a permanent public verification link.",
-      color: "text-emerald-600 bg-emerald-500/10",
+      color: "text-success bg-success/15",
     },
     {
       icon: Briefcase,
       title: "Integrated Placement & Career Hub",
       description:
         "Enrolled students gain direct access to our Job Board, featuring verified technical, aviation, and corporate openings from partner organizations.",
-      color: "text-amber-600 bg-amber-500/10",
+      color: "text-amber-500 bg-amber-500/15",
     },
   ];
 
@@ -94,9 +94,9 @@ export default function AboutPage() {
   return (
     <div className="flex flex-col min-h-screen font-sans bg-background text-foreground pb-20">
       {/* Hero Header Section */}
-      <section className="bg-gradient-to-b from-primary/10 via-primary/5 to-transparent pt-28 pb-16 border-b border-border/80">
+      <section className="pt-28 pb-16 border-b border-border">
         <div className="container mx-auto px-4 max-w-5xl space-y-6 text-center animate-fade-up">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/15 border border-primary/25 text-primary text-xs font-bold uppercase tracking-wider">
             <GraduationCap className="h-4 w-4" />
             <span>About AirBharath LMS</span>
           </div>
@@ -110,16 +110,16 @@ export default function AboutPage() {
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2 text-xs font-semibold">
-            <span className="inline-flex items-center gap-1.5 bg-card border border-border/80 px-3.5 py-1.5 rounded-full shadow-2xs">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="inline-flex items-center gap-1.5 bg-card border border-border px-3.5 py-1.5 rounded-full shadow-2xs">
+              <CheckCircle2 className="w-3.5 h-3.5 text-success" />
               <span>100% Self-Paced Learning</span>
             </span>
-            <span className="inline-flex items-center gap-1.5 bg-card border border-border/80 px-3.5 py-1.5 rounded-full shadow-2xs">
+            <span className="inline-flex items-center gap-1.5 bg-card border border-border px-3.5 py-1.5 rounded-full shadow-2xs">
               <ShieldCheck className="w-3.5 h-3.5 text-primary" />
               <span>QR-Verifiable Credentials</span>
             </span>
-            <span className="inline-flex items-center gap-1.5 bg-card border border-border/80 px-3.5 py-1.5 rounded-full shadow-2xs">
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+            <span className="inline-flex items-center gap-1.5 bg-card border border-border px-3.5 py-1.5 rounded-full shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>IIM Alumni Led</span>
             </span>
           </div>
@@ -230,10 +230,10 @@ export default function AboutPage() {
         </div>
 
         {/* Institutional Heritage Section */}
-        <div className="bg-slate-900 text-white rounded-3xl p-8 sm:p-12 border border-slate-800 shadow-md flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
+        <div className="bg-slate-900 dark:bg-card text-white dark:text-foreground rounded-3xl p-8 sm:p-12 border border-slate-800 dark:border-border shadow-md flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
           <div className="space-y-3 max-w-2xl relative z-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-cyan-300 text-xs font-bold uppercase tracking-wider">
-              <Compass className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 dark:bg-accent-soft text-cyan-300 dark:text-accent-light text-xs font-bold uppercase tracking-wider border border-white/10 dark:border-primary/20">
+              <Compass className="w-3.5 h-3.5 text-primary" />
               <span>Organizational Heritage</span>
             </div>
             <h3 className="text-2xl sm:text-3xl font-bold font-outfit text-white">

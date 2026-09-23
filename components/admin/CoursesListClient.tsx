@@ -188,7 +188,7 @@ export default function CoursesListClient({ initialCourses = [] }: CoursesListCl
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
               Enrolled Seats
             </span>
-            <div className="h-9 w-9 rounded-2xl bg-cyan-500/10 text-cyan-600 flex items-center justify-center">
+            <div className="h-9 w-9 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
               <Users className="h-4 w-4" />
             </div>
           </CardHeader>
@@ -378,7 +378,7 @@ export default function CoursesListClient({ initialCourses = [] }: CoursesListCl
 
                     {/* Enrolled Students */}
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border border-cyan-500/20">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
                         <Users className="h-3 w-3" />
                         <span>{course.studentCount} enrolled</span>
                       </span>
@@ -390,7 +390,7 @@ export default function CoursesListClient({ initialCourses = [] }: CoursesListCl
                         className={cn(
                           "inline-flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-bold rounded-full tracking-wider uppercase border",
                           course.isPublished
-                            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
+                            ? "bg-success/10 text-success border-success/20"
                             : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
                         )}
                       >

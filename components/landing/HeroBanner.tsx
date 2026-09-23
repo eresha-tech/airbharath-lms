@@ -132,13 +132,13 @@ export function HeroBanner() {
 
   return (
     <section
-      className="relative pt-24 pb-16 lg:pt-32 lg:pb-24 overflow-hidden bg-gradient-to-b from-slate-50/80 via-white to-white"
+      className="relative pt-24 pb-16 lg:pt-32 lg:pb-24 overflow-hidden bg-background"
       aria-label="Featured courses hero"
     >
       {/* Decorative Dot Matrix Grid Background */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-[radial-gradient(#014a62_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.05] pointer-events-none -z-10"
+        className="absolute inset-0 bg-[radial-gradient(#9089FF_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.04] pointer-events-none -z-10"
       />
 
       {/* Atmospheric Glow Highlights */}
@@ -150,17 +150,17 @@ export function HeroBanner() {
       <div className="container mx-auto px-4 max-w-7xl space-y-12">
         {/* Top Trust Badge & Main Headline */}
         <div className="flex flex-col items-center gap-4 text-center max-w-4xl mx-auto animate-fade-up">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-primary/20 text-primary text-xs font-bold tracking-wide shadow-xs animate-float-slow">
-            <span className="flex items-center gap-1 text-amber-600 font-extrabold">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card border border-border text-foreground text-xs font-bold tracking-wide shadow-xs animate-float-slow">
+            <span className="flex items-center gap-1 text-amber-500 font-extrabold">
               <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500 animate-pulse" aria-hidden="true" />
               30+ Years
             </span>
-            <span aria-hidden="true" className="text-slate-300">|</span>
-            <span className="text-slate-700">Aviation, Learning &amp; Technology Heritage</span>
+            <span aria-hidden="true" className="text-border">|</span>
+            <span className="text-muted-foreground">Aviation, Learning &amp; Technology Heritage</span>
           </div>
 
           <h1
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-outfit text-slate-900 leading-[1.1] tracking-tight"
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-outfit text-foreground leading-[1.1] tracking-tight"
             style={{ textWrap: "balance" } as React.CSSProperties}
           >
             Practical, Future-Ready Skills with{" "}
@@ -169,7 +169,7 @@ export function HeroBanner() {
             </span>
           </h1>
 
-          <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-2xl">
+          <p className="text-base sm:text-lg text-muted-foreground font-normal leading-relaxed max-w-2xl">
             Self-paced certificate programs in AI tools, digital marketing, entrepreneurship, and workplace productivity. Taught by IIM alumni and industry practitioners.
           </p>
 
@@ -177,7 +177,7 @@ export function HeroBanner() {
             <Button
               asChild
               size="lg"
-              className="bg-primary hover:bg-primary/90 text-white font-bold px-7 h-12 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-[0.98]"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-7 h-12 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-[0.98]"
             >
               <Link href="/courses" className="flex items-center gap-2">
                 <span>Explore All Courses</span>
@@ -189,7 +189,7 @@ export function HeroBanner() {
               asChild
               variant="outline"
               size="lg"
-              className="border-slate-300 text-slate-700 hover:text-primary hover:bg-slate-50 font-bold px-6 h-12 rounded-xl active:scale-[0.98] transition-all"
+              className="border-border bg-card text-foreground hover:text-primary hover:bg-muted font-bold px-6 h-12 rounded-xl active:scale-[0.98] transition-all"
             >
               <Link href="/login" className="flex items-center gap-2">
                 <PlayCircle className="w-4 h-4 text-primary" />
@@ -204,7 +204,7 @@ export function HeroBanner() {
           {/* Subtle 3D Card Stack Layer Behind */}
           <div
             aria-hidden="true"
-            className="absolute -bottom-2 inset-x-6 h-10 bg-slate-200/70 rounded-3xl border border-slate-300/50 shadow-xs -z-10 transform scale-[0.98]"
+            className="absolute -bottom-2 inset-x-6 h-10 bg-muted/50 rounded-3xl border border-border shadow-xs -z-10 transform scale-[0.98]"
           />
 
           {/* MAIN FEATURED SLIDE DISPLAY CARD */}

@@ -10,6 +10,9 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,7 +25,13 @@ import {
   LogOut,
   ChevronDown,
   Loader2,
+  Sun,
+  Moon,
+  Laptop,
+  Check,
+  Palette,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 
 interface UserProfile {
   id: string;
@@ -40,23 +49,26 @@ export function UserMenu() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
   const router = useRouter();
 
   useEffect(() => {
-    let mounted = true;
+    setMounted(true);
+    let isSubscribed = true;
     getClientUser()
       .then((data) => {
-        if (mounted && data) {
+        if (isSubscribed && data) {
           setUser(data);
         }
       })
       .catch(() => {})
       .finally(() => {
-        if (mounted) setLoading(false);
+        if (isSubscribed) setLoading(false);
       });
 
     return () => {
-      mounted = false;
+      isSubscribed = false;
     };
   }, []);
 
@@ -187,6 +199,46 @@ export function UserMenu() {
               <span>Settings</span>
             </Link>
           </DropdownMenuItem>
+
+          {/* Appearance / Theme Submenu */}
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer text-xs py-2 px-2 rounded-md">
+              <Palette className="h-3.5 w-3.5 text-muted-foreground" />
+              <span>Theme</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="w-36 p-1 rounded-xl shadow-lg border-border">
+              <DropdownMenuItem
+                onClick={() => setTheme("light")}
+                className="flex items-center justify-between text-xs py-1.5 px-2 rounded-md cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Sun className="h-3.5 w-3.5 text-amber-500" />
+                  <span>Light</span>
+                </div>
+                {mounted && theme === "light" && <Check className="h-3.5 w-3.5 text-primary" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setTheme("dark")}
+                className="flex items-center justify-between text-xs py-1.5 px-2 rounded-md cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Moon className="h-3.5 w-3.5 text-primary" />
+                  <span>Dark</span>
+                </div>
+                {mounted && theme === "dark" && <Check className="h-3.5 w-3.5 text-primary" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setTheme("system")}
+                className="flex items-center justify-between text-xs py-1.5 px-2 rounded-md cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Laptop className="h-3.5 w-3.5 text-slate-500" />
+                  <span>System</span>
+                </div>
+                {mounted && theme === "system" && <Check className="h-3.5 w-3.5 text-primary" />}
+              </DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />

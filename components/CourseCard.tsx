@@ -112,7 +112,7 @@ export function CourseCard({ course, progress, href }: CourseCardProps) {
                 <span>{course.lessonsCount} Lessons</span>
               </div>
             )}
-            <div className="flex items-center gap-1.5 font-medium ml-auto text-[11px] text-emerald-600 dark:text-emerald-400">
+            <div className="flex items-center gap-1.5 font-medium ml-auto text-[11px] text-success">
               <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
               <span>Self-Paced</span>
             </div>
@@ -149,7 +149,7 @@ export function CourseCard({ course, progress, href }: CourseCardProps) {
                   </span>
                 )}
               </div>
-              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+              <span className="text-[10px] font-bold text-success uppercase tracking-wider flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3" />
                 <span>Verified PDF</span>
               </span>

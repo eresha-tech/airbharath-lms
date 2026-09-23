@@ -128,11 +128,11 @@ export function JobsView({ jobs }: JobsViewProps) {
               <span>{jobs.length} Available Opportunities</span>
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-muted text-foreground text-xs font-semibold">
-              <Building className="w-3.5 h-3.5 text-cyan-600" />
+              <Building className="w-3.5 h-3.5 text-primary" />
               <span>{uniqueCompaniesCount} Organizations</span>
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-muted text-foreground text-xs font-semibold">
-              <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+              <MapPin className="w-3.5 h-3.5 text-success" />
               <span>{uniqueLocations.length} Hub Locations</span>
             </span>
           </div>

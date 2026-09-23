@@ -60,7 +60,7 @@ export function ContinueLearningCard({ course }: ContinueLearningCardProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
           <div className="absolute bottom-2.5 left-3 right-3 flex justify-between items-center text-[11px] text-white font-semibold">
             <span className="flex items-center gap-1">
-              <Layers className="h-3.5 w-3.5 text-cyan-300" />
+              <Layers className="h-3.5 w-3.5 text-accent-light" />
               <span>{course.completedLessons} of {course.totalLessons} Lessons</span>
             </span>
           </div>

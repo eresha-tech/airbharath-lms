@@ -42,7 +42,7 @@ export function DashboardStats({
           ? `${completedCount} completed tracks`
           : "Start your first module",
       icon: CheckCircle2,
-      iconColor: "bg-emerald-500/10 text-emerald-600",
+      iconColor: "bg-success/15 text-success",
     },
     {
       title: "Average Progress",

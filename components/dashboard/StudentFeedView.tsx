@@ -138,12 +138,12 @@ export function StudentFeedView({
             </span>
             {activeCourse && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-muted text-foreground text-xs font-semibold">
-                <Layers className="w-3.5 h-3.5 text-cyan-600" />
+                <Layers className="w-3.5 h-3.5 text-primary" />
                 <span>Active Track: {activeCourse.percent}%</span>
               </span>
             )}
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-muted text-foreground text-xs font-semibold">
-              <Award className="w-3.5 h-3.5 text-emerald-600" />
+              <Award className="w-3.5 h-3.5 text-success" />
               <span>{certificatesCount} {certificatesCount === 1 ? "Credential Earned" : "Credentials Earned"}</span>
             </span>
           </div>
@@ -468,7 +468,7 @@ export function StudentFeedView({
                 className="flex items-center justify-between p-2.5 rounded-xl hover:bg-muted text-foreground transition-colors font-semibold"
               >
                 <span className="flex items-center gap-2">
-                  <Compass className="w-3.5 h-3.5 text-cyan-600" />
+                  <Compass className="w-3.5 h-3.5 text-primary" />
                   <span>Course Catalog</span>
                 </span>
                 <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />

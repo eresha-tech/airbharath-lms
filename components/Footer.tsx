@@ -34,13 +34,13 @@ export function Footer() {
 
             <div className="space-y-2.5 text-xs text-slate-400 pt-2 border-t border-slate-800/80">
               <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-cyan-400 shrink-0" />
+                <Mail className="w-4 h-4 text-primary shrink-0" />
                 <a href="mailto:academy@airbharath.in" className="hover:text-white transition-colors">
                   academy@airbharath.in
                 </a>
               </div>
               <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <span>Eresha Technology Innovators Pvt. Ltd., West Patel Nagar, New Delhi 110008</span>
               </div>
             </div>
@@ -78,7 +78,7 @@ export function Footer() {
                 </Link>
               </li>
               <li className="pt-1">
-                <Link href="/courses" className="text-cyan-400 font-bold hover:underline inline-flex items-center gap-1">
+                <Link href="/courses" className="text-primary font-bold hover:underline inline-flex items-center gap-1">
                   <span>View All Programs</span>
                   <span>&rarr;</span>
                 </Link>

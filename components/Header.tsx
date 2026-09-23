@@ -29,6 +29,7 @@ const NAV_LINKS = [
 ];
 
 import { getClientUser, ClientUser } from "@/lib/user-session-client";
+import { DarkModeToggle } from "@/components/DarkModeToggle";
 
 export default function Header() {
   const pathname = usePathname();
@@ -72,8 +73,8 @@ export default function Header() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? "bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-[0_4px_20px_-4px_rgba(1,74,98,0.08)]"
-          : "bg-white/80 backdrop-blur-sm border-b border-slate-200/50"
+          ? "bg-background/95 backdrop-blur-md border-b border-border/80 shadow-[0_4px_20px_-4px_rgba(1,74,98,0.08)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)]"
+          : "bg-background/80 backdrop-blur-sm border-b border-border/50"
       }`}
     >
       <div className="container mx-auto px-4 max-w-7xl">
@@ -96,12 +97,12 @@ export default function Header() {
             </Link>
 
             {/* Desktop Navigation Links */}
-            <nav className="hidden lg:flex items-center space-x-1 text-xs font-semibold text-slate-700">
+            <nav className="hidden lg:flex items-center space-x-1 text-xs font-semibold text-foreground/80">
               <Link
                 href="/courses"
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all ${
                   pathname === "/courses"
-                    ? "bg-primary text-white shadow-xs font-bold"
+                    ? "bg-primary text-primary-foreground shadow-xs font-bold"
                     : "bg-primary/10 text-primary hover:bg-primary/15 font-bold border border-primary/20"
                 }`}
               >
@@ -113,8 +114,8 @@ export default function Header() {
                 href="/pricing"
                 className={`px-3 py-1.5 rounded-lg transition-colors ${
                   pathname === "/pricing"
-                    ? "text-primary font-bold bg-slate-100"
-                    : "hover:text-primary hover:bg-slate-100"
+                    ? "text-primary font-bold bg-muted"
+                    : "hover:text-primary hover:bg-muted"
                 }`}
               >
                 Pricing
@@ -124,8 +125,8 @@ export default function Header() {
                 href="/faq"
                 className={`px-3 py-1.5 rounded-lg transition-colors ${
                   pathname === "/faq"
-                    ? "text-primary font-bold bg-slate-100"
-                    : "hover:text-primary hover:bg-slate-100"
+                    ? "text-primary font-bold bg-muted"
+                    : "hover:text-primary hover:bg-muted"
                 }`}
               >
                 FAQ
@@ -135,8 +136,8 @@ export default function Header() {
                 href="/about"
                 className={`px-3 py-1.5 rounded-lg transition-colors ${
                   pathname === "/about"
-                    ? "text-primary font-bold bg-slate-100"
-                    : "hover:text-primary hover:bg-slate-100"
+                    ? "text-primary font-bold bg-muted"
+                    : "hover:text-primary hover:bg-muted"
                 }`}
               >
                 About
@@ -146,8 +147,8 @@ export default function Header() {
                 href="/contact"
                 className={`px-3 py-1.5 rounded-lg transition-colors ${
                   pathname === "/contact"
-                    ? "text-primary font-bold bg-slate-100"
-                    : "hover:text-primary hover:bg-slate-100"
+                    ? "text-primary font-bold bg-muted"
+                    : "hover:text-primary hover:bg-muted"
                 }`}
               >
                 Contact
@@ -155,11 +156,14 @@ export default function Header() {
             </nav>
           </div>
 
-          {/* Right Actions (Search + Auth / CTA + Mobile Menu Button) */}
-          <div className="flex items-center space-x-2.5 sm:space-x-4">
-            <div className="hidden md:block w-48 xl:w-60">
+          {/* Right Actions (Search + Theme + Auth / CTA + Mobile Menu Button) */}
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="hidden md:block w-44 xl:w-56">
               <SearchInput />
             </div>
+
+            {/* Theme Switcher */}
+            <DarkModeToggle />
 
             {/* Authenticated vs Unauthenticated Actions */}
             {user ? (
@@ -168,7 +172,7 @@ export default function Header() {
                   asChild
                   variant="outline"
                   size="sm"
-                  className="hidden sm:inline-flex border-slate-200 text-slate-700 hover:text-primary hover:bg-slate-50 text-xs font-semibold h-9 rounded-xl"
+                  className="hidden sm:inline-flex border-border text-foreground hover:text-primary hover:bg-muted text-xs font-semibold h-9 rounded-xl"
                 >
                   <Link href="/dashboard/courses" prefetch={true}>
                     <BookOpen className="w-3.5 h-3.5 mr-1.5 text-primary" />
@@ -179,7 +183,7 @@ export default function Header() {
                 <Button
                   asChild
                   size="sm"
-                  className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-9 px-4 rounded-xl shadow-xs"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-9 px-4 rounded-xl shadow-xs"
                 >
                   <Link href={user.role === "admin" ? "/admin" : "/dashboard"} prefetch={true}>
                     <User className="w-3.5 h-3.5 mr-1.5" />
@@ -193,7 +197,7 @@ export default function Header() {
                   asChild
                   variant="ghost"
                   size="sm"
-                  className="text-slate-700 hover:text-primary hover:bg-slate-100 text-xs font-bold h-9 px-3 sm:px-4 rounded-xl"
+                  className="text-foreground/80 hover:text-primary hover:bg-muted text-xs font-bold h-9 px-3 sm:px-4 rounded-xl"
                 >
                   <Link href="/login" prefetch={true}>Sign In</Link>
                 </Button>
@@ -201,7 +205,7 @@ export default function Header() {
                 <Button
                   asChild
                   size="sm"
-                  className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-9 px-3.5 sm:px-4 rounded-xl shadow-xs"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-9 px-3.5 sm:px-4 rounded-xl shadow-xs"
                 >
                   <Link href="/courses" prefetch={true} className="flex items-center gap-1.5">
                     <span>Get Started</span>
@@ -215,7 +219,7 @@ export default function Header() {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl text-slate-700 hover:text-primary hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="lg:hidden p-2 rounded-xl text-foreground hover:text-primary hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileMenuOpen}
             >
@@ -227,12 +231,12 @@ export default function Header() {
 
       {/* Mobile Drawer / Navigation Dropdown */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-b border-slate-200 bg-white/98 backdrop-blur-xl px-4 pt-3 pb-6 space-y-4 shadow-xl animate-in slide-in-from-top-2 duration-200">
+        <div className="lg:hidden border-b border-border bg-background/98 backdrop-blur-xl px-4 pt-3 pb-6 space-y-4 shadow-xl animate-in slide-in-from-top-2 duration-200">
           <div className="pt-1">
             <SearchInput />
           </div>
 
-          <nav className="flex flex-col space-y-1 text-sm font-semibold text-slate-700 pt-2 border-t border-slate-100">
+          <nav className="flex flex-col space-y-1 text-sm font-semibold text-foreground/90 pt-2 border-t border-border/60">
             {NAV_LINKS.map((link) => {
               const Icon = link.icon;
               const isActive = pathname === link.href;
@@ -244,7 +248,7 @@ export default function Header() {
                   className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition-colors ${
                     isActive
                       ? "bg-primary/10 text-primary font-bold"
-                      : "hover:bg-slate-100 hover:text-primary"
+                      : "hover:bg-muted hover:text-primary"
                   }`}
                 >
                   {Icon && <Icon className="w-4 h-4 text-primary shrink-0" />}
@@ -254,24 +258,24 @@ export default function Header() {
             })}
           </nav>
 
-          <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+          <div className="pt-2 border-t border-border/60 flex flex-col gap-2">
             {user ? (
               <>
-                <Button asChild className="w-full bg-primary text-white font-bold h-10 rounded-xl">
+                <Button asChild className="w-full bg-primary text-primary-foreground font-bold h-10 rounded-xl">
                   <Link href={user.role === "admin" ? "/admin" : "/dashboard"}>
                     Go to {user.role === "admin" ? "Admin Portal" : "Student Dashboard"}
                   </Link>
                 </Button>
-                <Button asChild variant="outline" className="w-full text-slate-700 h-10 rounded-xl">
+                <Button asChild variant="outline" className="w-full text-foreground h-10 rounded-xl">
                   <Link href="/dashboard/courses">My Enrolled Courses</Link>
                 </Button>
               </>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                <Button asChild variant="outline" className="w-full text-slate-700 h-10 rounded-xl font-bold text-xs">
+                <Button asChild variant="outline" className="w-full text-foreground h-10 rounded-xl font-bold text-xs">
                   <Link href="/login">Sign In</Link>
                 </Button>
-                <Button asChild className="w-full bg-primary text-white font-bold h-10 rounded-xl text-xs">
+                <Button asChild className="w-full bg-primary text-primary-foreground font-bold h-10 rounded-xl text-xs">
                   <Link href="/courses">Explore Courses</Link>
                 </Button>
               </div>

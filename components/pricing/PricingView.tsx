@@ -49,9 +49,9 @@ export function PricingView({ courses }: PricingViewProps) {
   return (
     <div className="flex flex-col min-h-screen font-sans bg-background text-foreground pb-20">
       {/* Header Banner */}
-      <section className="bg-gradient-to-b from-primary/10 via-primary/5 to-transparent pt-28 pb-16 border-b border-border/80">
+      <section className="pt-28 pb-16 border-b border-border">
         <div className="container mx-auto px-4 max-w-5xl space-y-4 text-center animate-fade-up">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/15 border border-primary/25 text-primary text-xs font-bold uppercase tracking-wider">
             <Sparkles className="h-4 w-4" />
             <span>Transparent Pricing</span>
           </div>
@@ -71,7 +71,7 @@ export function PricingView({ courses }: PricingViewProps) {
         {/* Tier Cards: Individual vs Combo Pass */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           {/* Plan 1: Individual Certificate Course (5 cols) */}
-          <div className="lg:col-span-5 bg-card border border-border/80 rounded-3xl p-6 sm:p-8 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between space-y-6">
+          <div className="lg:col-span-5 bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between space-y-6">
             <div className="space-y-6">
               <div className="space-y-2">
                 <Badge className="bg-muted text-foreground border-border text-[10px] font-bold uppercase tracking-wider">
@@ -86,7 +86,7 @@ export function PricingView({ courses }: PricingViewProps) {
               </div>
 
               {/* Price */}
-              <div className="p-4 bg-muted/40 rounded-2xl border border-border/60 space-y-1">
+              <div className="p-4 bg-muted/60 rounded-2xl border border-border space-y-1">
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-3xl sm:text-4xl font-black font-outfit text-foreground">
                     ₹{singlePrice}
@@ -107,23 +107,23 @@ export function PricingView({ courses }: PricingViewProps) {
                 </span>
                 <ul className="space-y-2.5 text-xs text-foreground">
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <Check className="w-4 h-4 text-success shrink-0" />
                     <span>Complete access to selected course curriculum</span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <Check className="w-4 h-4 text-success shrink-0" />
                     <span>100% Self-paced video lessons &amp; resources</span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <Check className="w-4 h-4 text-success shrink-0" />
                     <span>Official QR-verifiable certificate upon completion</span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <Check className="w-4 h-4 text-success shrink-0" />
                     <span>Access to student placement opportunities &amp; Job Board</span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <Check className="w-4 h-4 text-success shrink-0" />
                     <span>Official GST invoice generated automatically</span>
                   </li>
                 </ul>
@@ -133,7 +133,7 @@ export function PricingView({ courses }: PricingViewProps) {
             <Button
               asChild
               variant="outline"
-              className="w-full border-slate-200 text-slate-800 hover:text-primary hover:bg-slate-100 font-bold h-12 rounded-xl text-xs"
+              className="w-full border-border bg-muted/30 text-foreground hover:bg-muted font-bold h-12 rounded-xl text-xs"
             >
               <Link href="/courses">
                 <span>Browse Single Courses</span>
@@ -143,14 +143,14 @@ export function PricingView({ courses }: PricingViewProps) {
           </div>
 
           {/* Plan 2: All-in-One Combo Pass (7 cols, Featured) */}
-          <div className="lg:col-span-7 bg-card border-2 border-primary rounded-3xl p-6 sm:p-8 shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-200 relative overflow-hidden flex flex-col justify-between space-y-6">
-            <div className="absolute top-0 right-0 bg-primary text-white text-[10px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-bl-2xl shadow-xs">
+          <div className="lg:col-span-7 bg-card border-2 border-primary/70 rounded-3xl p-6 sm:p-8 shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-200 relative overflow-hidden flex flex-col justify-between space-y-6">
+            <div className="absolute top-0 right-0 bg-primary/20 border-b border-l border-primary/30 text-primary text-[10px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-bl-2xl">
               Most Popular · All 4 Programs
             </div>
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] font-bold uppercase tracking-wider">
+                <Badge className="bg-primary/15 text-primary border-primary/25 text-[10px] font-bold uppercase tracking-wider">
                   Comprehensive Bundle
                 </Badge>
                 <h3 className="text-xl sm:text-2xl font-bold font-outfit text-foreground">
@@ -162,7 +162,7 @@ export function PricingView({ courses }: PricingViewProps) {
               </div>
 
               {/* Price & Coupon Pill */}
-              <div className="p-4 bg-primary/5 rounded-2xl border border-primary/20 space-y-2">
+              <div className="p-4 bg-muted/80 rounded-2xl border border-border space-y-2">
                 <div className="flex flex-wrap items-baseline gap-2">
                   <span className="text-3xl sm:text-4xl font-black font-outfit text-primary">
                     ₹{comboPrice}
@@ -176,7 +176,7 @@ export function PricingView({ courses }: PricingViewProps) {
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
                   <span>Base: ₹{comboBase} + 18% GST: ₹{comboGst} (Inclusive)</span>
-                  <span className="inline-flex items-center gap-1 font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                  <span className="inline-flex items-center gap-1 font-mono font-bold text-accent-light bg-primary/15 border border-primary/25 px-2.5 py-0.5 rounded-md text-xs">
                     <span>Coupon:</span>
                     <span>ABCOMBO</span>
                   </span>
@@ -190,27 +190,27 @@ export function PricingView({ courses }: PricingViewProps) {
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-foreground">
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <Check className="w-4 h-4 text-success shrink-0" />
                     <span>AI Skills for Future of Work</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <Check className="w-4 h-4 text-success shrink-0" />
                     <span>Content &amp; Digital Marketing</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <Check className="w-4 h-4 text-success shrink-0" />
                     <span>MS Office Productivity Suite</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <Check className="w-4 h-4 text-success shrink-0" />
                     <span>Entrepreneurship Basics</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <Check className="w-4 h-4 text-success shrink-0" />
                     <span>4 Independent QR Certificates</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <Check className="w-4 h-4 text-success shrink-0" />
                     <span>Priority Placement Hub Access</span>
                   </div>
                 </div>
@@ -219,7 +219,7 @@ export function PricingView({ courses }: PricingViewProps) {
 
             <Button
               asChild
-              className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-12 rounded-xl text-xs shadow-xs cursor-pointer"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 rounded-xl text-xs shadow-xs cursor-pointer"
             >
               <Link href={comboCourse ? `/courses/${comboCourse.slug}` : "/courses/combo-pack"}>
                 <span>Enroll in All-in-One Combo Pass</span>

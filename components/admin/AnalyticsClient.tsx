@@ -793,7 +793,7 @@ export default function AnalyticsClient({
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                 Enrollments
               </span>
-              <div className="h-7 w-7 rounded-lg bg-cyan-500/10 text-cyan-600 flex items-center justify-center shrink-0">
+              <div className="h-7 w-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
                 <BookOpen className="h-3.5 w-3.5" />
               </div>
             </div>
@@ -801,7 +801,7 @@ export default function AnalyticsClient({
               {analytics.periodEnrollmentsCount}
             </div>
             <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1 truncate">
-              <span className="h-1.5 w-1.5 rounded-full bg-cyan-500 inline-block shrink-0" />
+              <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block shrink-0" />
               Course seats allocated
             </p>
           </Card>
