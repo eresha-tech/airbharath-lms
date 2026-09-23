@@ -15,6 +15,13 @@
       "when": 1790099480260,
       "tag": "0001_careful_warhawk",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790162267688,
+      "tag": "0002_silky_living_tribunal",
+      "breakpoints": true
     }
   ]
 }

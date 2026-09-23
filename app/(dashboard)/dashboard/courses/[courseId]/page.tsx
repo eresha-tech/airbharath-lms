@@ -29,6 +29,15 @@ export default async function CoursePage({ params }: CoursePageProps) {
     ? await db.query.courses.findFirst({
         where: eq(courses.id, courseId),
         with: {
+          sections: {
+            with: {
+              modules: {
+                with: {
+                  lessons: true,
+                },
+              },
+            },
+          },
           modules: {
             with: {
               lessons: true,
@@ -39,6 +48,15 @@ export default async function CoursePage({ params }: CoursePageProps) {
     : await db.query.courses.findFirst({
         where: eq(courses.slug, courseId),
         with: {
+          sections: {
+            with: {
+              modules: {
+                with: {
+                  lessons: true,
+                },
+              },
+            },
+          },
           modules: {
             with: {
               lessons: true,
@@ -59,18 +77,38 @@ export default async function CoursePage({ params }: CoursePageProps) {
     return redirect(`/courses/${courseObj.slug || courseObj.id}`);
   }
 
-  const courseModules = (courseObj.modules as any[]) || [];
-  const sortedModules = courseModules.sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+  // Find first lesson across sections or top-level modules
+  const courseSections = (courseObj.sections as any[]) || [];
+  const sortedSections = courseSections.sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
 
-  if (sortedModules.length > 0) {
-    const firstModule = sortedModules[0];
-    const sortedLessons = (firstModule.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+  let firstLessonId: string | null = null;
 
-    if (sortedLessons.length > 0) {
-      return redirect(
-        `/dashboard/courses/${courseId}/lessons/${sortedLessons[0].id}`
-      );
+  for (const section of sortedSections) {
+    const sModules = (section.modules || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+    for (const mod of sModules) {
+      const sLessons = (mod.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+      if (sLessons.length > 0) {
+        firstLessonId = sLessons[0].id;
+        break;
+      }
     }
+    if (firstLessonId) break;
+  }
+
+  if (!firstLessonId) {
+    const courseModules = (courseObj.modules as any[]) || [];
+    const sortedModules = courseModules.sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+    for (const mod of sortedModules) {
+      const sLessons = (mod.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+      if (sLessons.length > 0) {
+        firstLessonId = sLessons[0].id;
+        break;
+      }
+    }
+  }
+
+  if (firstLessonId) {
+    return redirect(`/dashboard/courses/${courseId}/lessons/${firstLessonId}`);
   }
 
   return (

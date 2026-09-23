@@ -35,6 +35,15 @@ export default async function CourseLayout({
     ? await db.query.courses.findFirst({
         where: eq(courses.id, courseId),
         with: {
+          sections: {
+            with: {
+              modules: {
+                with: {
+                  lessons: true,
+                },
+              },
+            },
+          },
           modules: {
             with: {
               lessons: true,
@@ -45,6 +54,15 @@ export default async function CourseLayout({
     : await db.query.courses.findFirst({
         where: eq(courses.slug, courseId),
         with: {
+          sections: {
+            with: {
+              modules: {
+                with: {
+                  lessons: true,
+                },
+              },
+            },
+          },
           modules: {
             with: {
               lessons: true,
@@ -66,6 +84,19 @@ export default async function CourseLayout({
     return redirect(`/courses/${courseObj.slug || courseObj.id}`);
   }
 
+  const courseSections = (courseObj.sections as any[]) || [];
+  const sortedSections = courseSections
+    .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
+    .map((sec: any) => ({
+      ...sec,
+      modules: (sec.modules || [])
+        .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
+        .map((mod: any) => ({
+          ...mod,
+          lessons: (mod.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0)),
+        })),
+    }));
+
   const courseModules = (courseObj.modules as any[]) || [];
   const sortedModules = courseModules
     .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
@@ -76,6 +107,7 @@ export default async function CourseLayout({
 
   const formattedCourse = {
     ...courseObj,
+    sections: sortedSections,
     modules: sortedModules,
   };
 

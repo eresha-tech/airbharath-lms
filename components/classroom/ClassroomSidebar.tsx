@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -46,18 +46,30 @@ interface Lesson {
   deliveryType?: string | null;
   scheduledAt?: string | Date | null;
   releaseAt?: string | Date | null;
+  orderIndex?: number | null;
 }
 
 interface Module {
   id: string;
   title: string;
+  orderIndex?: number | null;
+  sectionId?: string | null;
   lessons: Lesson[];
+}
+
+interface Section {
+  id: string;
+  title: string;
+  description?: string | null;
+  orderIndex?: number | null;
+  modules: Module[];
 }
 
 interface Course {
   id: string;
   title: string;
   slug?: string;
+  sections?: Section[];
   modules: Module[];
 }
 
@@ -78,12 +90,36 @@ export function ClassroomSidebar({
   const { isOpen, toggle, close } = useSidebar();
   const [isMounted, setIsMounted] = useState(false);
   const [openModules, setOpenModules] = useState<string[]>([]);
+  const [openSections, setOpenSections] = useState<string[]>([]);
   const [showRoadmapList, setShowRoadmapList] = useState(false);
 
-  // Automatically expand the module containing the active lesson
+  // Initialize all sections as open
   useEffect(() => {
-    if (pathname && course?.modules) {
-      const currentModuleId = course.modules.find((module) =>
+    if (course?.sections && course.sections.length > 0) {
+      setOpenSections((prev) => {
+        const allIds = course.sections?.map((s) => s.id) || [];
+        return prev.length === 0 ? allIds : prev;
+      });
+    }
+  }, [course]);
+
+  // Collect all modules across sections and top-level
+  const hasSections = (course?.sections && course.sections.length > 0);
+  const allModules: Module[] = useMemo(() => {
+    return hasSections
+      ? [
+          ...(course.sections?.flatMap((s) => s.modules || []) || []),
+          ...(course.modules || []).filter(
+            (m) => !course.sections?.some((s) => s.modules?.some((sm) => sm.id === m.id))
+          ),
+        ]
+      : course?.modules || [];
+  }, [hasSections, course]);
+
+  // Automatically expand the section and module containing the active lesson
+  useEffect(() => {
+    if (pathname && allModules.length > 0) {
+      const currentModuleId = allModules.find((module) =>
         module.lessons?.some(
           (lesson) =>
             pathname ===
@@ -95,7 +131,28 @@ export function ClassroomSidebar({
         setOpenModules((prev) => [...prev, currentModuleId]);
       }
     }
-  }, [pathname, course, openModules]);
+
+    if (pathname && course?.sections && course.sections.length > 0) {
+      const activeSection = course.sections.find((sec) =>
+        sec.modules?.some((m) =>
+          m.lessons?.some(
+            (l) => pathname === `/dashboard/courses/${course.id}/lessons/${l.id}`
+          )
+        )
+      );
+      if (activeSection && !openSections.includes(activeSection.id)) {
+        setOpenSections((prev) => [...prev, activeSection.id]);
+      }
+    }
+  }, [pathname, course, allModules, openModules, openSections]);
+
+  const toggleSection = (sectionId: string) => {
+    setOpenSections((prev) =>
+      prev.includes(sectionId)
+        ? prev.filter((id) => id !== sectionId)
+        : [...prev, sectionId]
+    );
+  };
 
   useEffect(() => {
     setIsMounted(true);
@@ -108,19 +165,19 @@ export function ClassroomSidebar({
   const now = new Date();
 
   const progress = calculateCourseProgress(
-    course.modules as unknown as Module[],
+    allModules,
     completedLessons
   );
 
-  const totalLessons = course.modules?.reduce(
+  const totalLessons = allModules.reduce(
     (acc, m) => acc + (m.lessons?.length || 0),
     0
-  ) || 0;
+  );
 
   const completedCount = completedLessons.length;
 
   // Flatten and categorize all lessons for roadmap & what's next detection
-  const allLessonsWithAvailability = (course.modules || []).flatMap((mod, mIdx) =>
+  const allLessonsWithAvailability = allModules.flatMap((mod, mIdx) =>
     (mod.lessons || []).map((l, lIdx) => {
       const availability = getLessonAvailability(l, now);
       const isCompleted = completedLessons.includes(l.id);
@@ -297,13 +354,12 @@ export function ClassroomSidebar({
       {/* Curriculum Module Accordion */}
       <ScrollArea className="flex-1">
         <div className="p-3 lg:p-4">
-          <Accordion
-            type="multiple"
-            className="w-full space-y-3"
-            value={openModules}
-            onValueChange={setOpenModules}
-          >
-            {course.modules?.map((module, moduleIndex) => {
+          {(() => {
+            const renderModuleItem = (
+              module: Module,
+              moduleIndex: number,
+              _sectionIndex?: number
+            ) => {
               const moduleLessons = module.lessons || [];
               const moduleTotalCount = moduleLessons.length;
               const moduleCompletedCount =
@@ -355,7 +411,7 @@ export function ClassroomSidebar({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <p className="text-xs font-bold text-foreground font-outfit leading-snug break-words">
-                            {module.title}
+                            Module {moduleIndex + 1} — {module.title}
                           </p>
                           {isUpcomingModule && (
                             <span className="text-[9px] font-bold px-1.5 py-0.5 bg-amber-500/15 text-amber-800 dark:text-amber-300 rounded uppercase tracking-wider shrink-0">
@@ -385,7 +441,7 @@ export function ClassroomSidebar({
 
                   <AccordionContent className="pt-1 pb-2 px-1">
                     <div className="space-y-1">
-                      {module.lessons?.map((lesson) => {
+                      {moduleLessons.map((lesson, lIdx) => {
                         const isActive =
                           pathname ===
                           `/dashboard/courses/${course.id}/lessons/${lesson.id}`;
@@ -393,6 +449,7 @@ export function ClassroomSidebar({
                         const availability = getLessonAvailability(lesson, now);
                         const isScheduledRecorded = availability.isLocked;
                         const isLive = availability.state === "live";
+                        const derivedLessonNumber = `${moduleIndex + 1}.${lIdx + 1}`;
 
                         return (
                           <Link
@@ -455,6 +512,9 @@ export function ClassroomSidebar({
                                     isCompleted && !isActive && "text-muted-foreground/90 font-medium"
                                   )}
                                 >
+                                  <span className="font-mono text-[11px] opacity-75 mr-1 font-semibold">
+                                    {derivedLessonNumber}
+                                  </span>
                                   {lesson.title}
                                 </span>
 
@@ -510,8 +570,107 @@ export function ClassroomSidebar({
                   </AccordionContent>
                 </AccordionItem>
               );
-            })}
-          </Accordion>
+            };
+
+            if (hasSections && course.sections && course.sections.length > 0) {
+              const unassignedModules = (course.modules || []).filter(
+                (m) => !course.sections?.some((s) => s.modules?.some((sm) => sm.id === m.id))
+              );
+
+              return (
+                <div className="space-y-4">
+                  {course.sections.map((section, secIdx) => {
+                    const secModules = section.modules || [];
+                    const secLessons = secModules.flatMap((m) => m.lessons || []);
+                    const secTotal = secLessons.length;
+                    const secCompleted = secLessons.filter((l) =>
+                      completedLessons.includes(l.id)
+                    ).length;
+                    const isSectionOpen = openSections.includes(section.id);
+
+                    return (
+                      <div key={section.id} className="space-y-2 rounded-xl border border-sidebar-border/50 bg-sidebar-accent/10 p-1.5 transition-colors">
+                        {/* Interactive Collapsible Section Header */}
+                        <button
+                          type="button"
+                          onClick={() => toggleSection(section.id)}
+                          aria-expanded={isSectionOpen}
+                          className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-sidebar-accent/40 transition-colors group cursor-pointer text-left"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">
+                              Section {secIdx + 1}
+                            </span>
+                            <h2 className="text-xs font-bold text-foreground font-outfit uppercase tracking-wider truncate group-hover:text-primary transition-colors">
+                              {section.title}
+                            </h2>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 ml-2">
+                            <span className="text-[10px] font-semibold text-muted-foreground">
+                              {secCompleted}/{secTotal}
+                            </span>
+                            {isSectionOpen ? (
+                              <ChevronUp className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-transform" />
+                            ) : (
+                              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-transform" />
+                            )}
+                          </div>
+                        </button>
+
+                        {/* Section Modules (Shown when section is expanded) */}
+                        {isSectionOpen && (
+                          <Accordion
+                            type="multiple"
+                            className="w-full space-y-2 pt-0.5"
+                            value={openModules}
+                            onValueChange={setOpenModules}
+                          >
+                            {secModules.map((module, moduleIndex) =>
+                              renderModuleItem(module, moduleIndex, secIdx)
+                            )}
+                          </Accordion>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Fallback for unassigned modules if any */}
+                  {unassignedModules.length > 0 && (
+                    <div className="space-y-2.5 pt-2">
+                      <div className="flex items-center justify-between px-1 pb-0.5 border-b border-sidebar-border/60">
+                        <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          Additional Modules
+                        </h2>
+                      </div>
+                      <Accordion
+                        type="multiple"
+                        className="w-full space-y-2.5"
+                        value={openModules}
+                        onValueChange={setOpenModules}
+                      >
+                        {unassignedModules.map((module, moduleIndex) =>
+                          renderModuleItem(module, moduleIndex)
+                        )}
+                      </Accordion>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              <Accordion
+                type="multiple"
+                className="w-full space-y-3"
+                value={openModules}
+                onValueChange={setOpenModules}
+              >
+                {course.modules?.map((module, moduleIndex) =>
+                  renderModuleItem(module, moduleIndex)
+                )}
+              </Accordion>
+            );
+          })()}
         </div>
       </ScrollArea>
 

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { courses, modules, lessons, videos, lessonMaterials } from "@/lib/db/schema";
+import { courses, courseSections, modules, lessons, videos, lessonMaterials } from "@/lib/db/schema";
 import { eq, inArray, asc } from "drizzle-orm";
 import CourseEditor from "@/components/admin/CourseEditor";
 import { notFound } from "next/navigation";
@@ -34,6 +34,17 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
 
   if (!courseObj) {
     notFound();
+  }
+
+  let sectionsList: any[] = [];
+  try {
+    sectionsList = await db
+      .select()
+      .from(courseSections)
+      .where(eq(courseSections.courseId, courseObj.id))
+      .orderBy(asc(courseSections.orderIndex));
+  } catch (err) {
+    console.error("Error fetching course sections in EditCoursePage:", err);
   }
 
   let modulesList: any[] = [];
@@ -102,9 +113,18 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
     }
   }
 
+  const formattedSections = sectionsList.map((s: any) => ({
+    id: s.id,
+    course_id: s.courseId,
+    title: s.title,
+    description: s.description || "",
+    order_index: s.orderIndex,
+  }));
+
   const formattedModules = modulesList.map((m: any) => ({
     id: m.id,
     course_id: m.courseId,
+    section_id: m.sectionId || null,
     title: m.title,
     order_index: m.orderIndex,
   }));
@@ -142,6 +162,7 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
         certificate_activated_at: courseObj.certificateActivatedAt ? new Date(courseObj.certificateActivatedAt).toISOString() : null,
         certificate_activated_by: courseObj.certificateActivatedBy || null,
       }}
+      initialSections={formattedSections}
       initialModules={formattedModules}
       initialLessons={formattedLessons}
     />

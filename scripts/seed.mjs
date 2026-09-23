@@ -18,20 +18,31 @@ async function seed() {
     role: 'admin',
   }).onConflictDoNothing().returning();
 
-  const adminId = adminUser?.id;
+  const [studentUser] = await db.insert(schema.users).values({
+    phone: '919999999999',
+    email: 'student@airbharath.in',
+    fullName: 'Rahul Sharma (Student)',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
+    role: 'student',
+  }).onConflictDoNothing().returning();
 
-  // Clear existing records to ensure fresh 4 courses seed
+  const adminId = adminUser?.id;
+  const studentId = studentUser?.id;
+
+  // Clear existing records to ensure fresh seed
   try {
-    await client`TRUNCATE TABLE invoices, certificates, progress, orders, lessons, modules, courses CASCADE`;
+    await client`TRUNCATE TABLE invoices, certificates, progress, orders, lessons, modules, course_sections, videos, courses CASCADE`;
   } catch (e) {
     // If some optional tables don't exist yet, clear main tables directly
     await client`DELETE FROM lessons`;
     await client`DELETE FROM modules`;
+    await client`DELETE FROM course_sections`;
+    await client`DELETE FROM videos`;
     await client`DELETE FROM courses`;
   }
 
   // ==========================================
-  // Course 1: AI Skills Masterclass (₹825)
+  // Course 1: AI Skills Masterclass (₹825) - Standalone (No Sections)
   // ==========================================
   const [course1] = await db.insert(schema.courses).values({
     title: 'AI Tools & Practical AI Skills Masterclass',
@@ -43,16 +54,68 @@ async function seed() {
     instructorId: adminId,
   }).returning();
 
+  // ==========================================
+  // Sample Physical Video Library Assets (AWS HLS Transcoded)
+  // ==========================================
+  const sampleVideos = await db.insert(schema.videos).values([
+    {
+      courseId: course1.id,
+      title: 'ChatGPT Prompting Frameworks (ROLE, TASK, CONTEXT)',
+      status: 'ready',
+      durationSeconds: 745,
+      rawS3Key: `raw-uploads/${course1.id}/vid-chatgpt.mp4`,
+      processedS3Prefix: `processed-videos/${course1.id}/vid-chatgpt/`,
+    },
+    {
+      courseId: course1.id,
+      title: 'Commercial Graphics with Midjourney & DALL-E',
+      status: 'ready',
+      durationSeconds: 620,
+      rawS3Key: `raw-uploads/${course1.id}/vid-midjourney.mp4`,
+      processedS3Prefix: `processed-videos/${course1.id}/vid-midjourney/`,
+    },
+    {
+      courseId: course1.id,
+      title: 'High-Impact Digital Storytelling & Hook Design',
+      status: 'ready',
+      durationSeconds: 510,
+      rawS3Key: `raw-uploads/${course1.id}/vid-storytelling.mp4`,
+      processedS3Prefix: `processed-videos/${course1.id}/vid-storytelling/`,
+    },
+    {
+      courseId: course1.id,
+      title: 'Excel Advanced Formulas: XLOOKUP & Dynamic Arrays',
+      status: 'ready',
+      durationSeconds: 890,
+      rawS3Key: `raw-uploads/${course1.id}/vid-excel.mp4`,
+      processedS3Prefix: `processed-videos/${course1.id}/vid-excel/`,
+    },
+    {
+      courseId: course1.id,
+      title: 'Startup Unit Economics: CAC, LTV & Margins',
+      status: 'ready',
+      durationSeconds: 680,
+      rawS3Key: `raw-uploads/${course1.id}/vid-startup.mp4`,
+      processedS3Prefix: `processed-videos/${course1.id}/vid-startup/`,
+    },
+  ]).returning();
+
+  const vidChatGPT = sampleVideos[0]?.id;
+  const vidMidjourney = sampleVideos[1]?.id;
+  const vidMarketing = sampleVideos[2]?.id;
+  const vidExcel = sampleVideos[3]?.id;
+  const vidStartup = sampleVideos[4]?.id;
+
   if (course1) {
     const [mod1] = await db.insert(schema.modules).values({
       courseId: course1.id,
-      title: 'Module 1: Prompt Engineering & ChatGPT Mastery',
+      title: 'Prompt Engineering & ChatGPT Mastery',
       orderIndex: 1,
     }).returning();
 
     const [mod2] = await db.insert(schema.modules).values({
       courseId: course1.id,
-      title: 'Module 2: AI Visuals & Media Generation',
+      title: 'AI Visuals & Media Generation',
       orderIndex: 2,
     }).returning();
 
@@ -60,15 +123,15 @@ async function seed() {
       await db.insert(schema.lessons).values([
         {
           moduleId: mod1.id,
-          title: 'Lesson 1.1: Core Prompting Frameworks (ROLE, TASK, CONTEXT)',
+          title: 'Core Prompting Frameworks (ROLE, TASK, CONTEXT)',
           content: '<h3>Structuring Prompts for Zero-Shot & Few-Shot Output</h3><p>Master precise prompt design to extract professional reports, code, and copy from AI models.</p>',
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          videoUrl: vidChatGPT || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
           isFreePreview: true,
           orderIndex: 1,
         },
         {
           moduleId: mod1.id,
-          title: 'Lesson 1.2: Automating Email & Document Drafting',
+          title: 'Automating Email & Document Drafting',
           content: '<p>Use custom GPTs and prompt templates to automate client emails, meeting minutes, and executive summaries.</p>',
           videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
           isFreePreview: false,
@@ -81,9 +144,9 @@ async function seed() {
       await db.insert(schema.lessons).values([
         {
           moduleId: mod2.id,
-          title: 'Lesson 2.1: Commercial Graphics with Midjourney & DALL-E',
+          title: 'Commercial Graphics with Midjourney & DALL-E',
           content: '<p>Learn camera angles, aspect ratios, style parameters, and prompt syntax for realistic AI imagery.</p>',
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          videoUrl: vidMidjourney || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
           isFreePreview: false,
           orderIndex: 1,
         },
@@ -107,13 +170,13 @@ async function seed() {
   if (course2) {
     const [mod1] = await db.insert(schema.modules).values({
       courseId: course2.id,
-      title: 'Module 1: Digital Marketing Strategy & Brand Positioning',
+      title: 'Digital Marketing Strategy & Brand Positioning',
       orderIndex: 1,
     }).returning();
 
     const [mod2] = await db.insert(schema.modules).values({
       courseId: course2.id,
-      title: 'Module 2: SEO, Social Media Ads & Content Creation',
+      title: 'SEO, Social Media Ads & Content Creation',
       orderIndex: 2,
     }).returning();
 
@@ -121,15 +184,15 @@ async function seed() {
       await db.insert(schema.lessons).values([
         {
           moduleId: mod1.id,
-          title: 'Lesson 1.1: Foundations of High-Impact Storytelling',
+          title: 'Foundations of High-Impact Storytelling',
           content: '<h3>Hooking Your Audience in 3 Seconds</h3><p>Learn how to craft powerful hooks, structure narratives, and hold viewer attention across video and text formats.</p>',
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          videoUrl: vidMarketing || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
           isFreePreview: true,
           orderIndex: 1,
         },
         {
           moduleId: mod1.id,
-          title: 'Lesson 1.2: Defining Your Niche & Audience Persona',
+          title: 'Defining Your Niche & Audience Persona',
           content: '<p>Identify your ideal audience demographic, pinpoint content pillars, and position your personal or business brand effectively.</p>',
           videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
           isFreePreview: false,
@@ -142,7 +205,7 @@ async function seed() {
       await db.insert(schema.lessons).values([
         {
           moduleId: mod2.id,
-          title: 'Lesson 2.1: Smartphone Video Shooting & Lighting Secrets',
+          title: 'Smartphone Video Shooting & Lighting Secrets',
           content: '<p>Master natural lighting, framing, audio capture, and smartphone camera settings for high quality video output.</p>',
           videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
           isFreePreview: true,
@@ -168,13 +231,13 @@ async function seed() {
   if (course3) {
     const [mod1] = await db.insert(schema.modules).values({
       courseId: course3.id,
-      title: 'Module 1: Idea Validation & Market Research',
+      title: 'Idea Validation & Market Research',
       orderIndex: 1,
     }).returning();
 
     const [mod2] = await db.insert(schema.modules).values({
       courseId: course3.id,
-      title: 'Module 2: Building MVP & Unit Economics',
+      title: 'Building MVP & Unit Economics',
       orderIndex: 2,
     }).returning();
 
@@ -182,7 +245,7 @@ async function seed() {
       await db.insert(schema.lessons).values([
         {
           moduleId: mod1.id,
-          title: 'Lesson 1.1: Validating Your Startup Idea Before Building',
+          title: 'Validating Your Startup Idea Before Building',
           content: '<h3>Customer Discovery & Problem Definition</h3><p>Learn how to interview potential customers, analyze market demand, and de-risk your business model.</p>',
           videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
           isFreePreview: true,
@@ -195,9 +258,9 @@ async function seed() {
       await db.insert(schema.lessons).values([
         {
           moduleId: mod2.id,
-          title: 'Lesson 2.1: Calculating CAC, LTV, and Margins',
+          title: 'Calculating CAC, LTV, and Margins',
           content: '<p>Understand Customer Acquisition Cost, Lifetime Value, gross margins, and runway management for sustainable growth.</p>',
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          videoUrl: vidStartup || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
           isFreePreview: false,
           orderIndex: 1,
         },
@@ -221,13 +284,13 @@ async function seed() {
   if (course4) {
     const [mod1] = await db.insert(schema.modules).values({
       courseId: course4.id,
-      title: 'Module 1: Advanced Excel Formulas & Lookup Tools',
+      title: 'Advanced Excel Formulas & Lookup Tools',
       orderIndex: 1,
     }).returning();
 
     const [mod2] = await db.insert(schema.modules).values({
       courseId: course4.id,
-      title: 'Module 2: Executive PowerPoint Presentations',
+      title: 'Executive PowerPoint Presentations',
       orderIndex: 2,
     }).returning();
 
@@ -235,9 +298,9 @@ async function seed() {
       await db.insert(schema.lessons).values([
         {
           moduleId: mod1.id,
-          title: 'Lesson 1.1: XLOOKUP, VLOOKUP, and INDEX-MATCH Mastery',
+          title: 'XLOOKUP, VLOOKUP, and INDEX-MATCH Mastery',
           content: '<h3>Mastering Data Lookups</h3><p>Learn error handling with IFERROR and perform two-dimensional dynamic lookups seamlessly.</p>',
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          videoUrl: vidExcel || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
           isFreePreview: true,
           orderIndex: 1,
         },
@@ -248,7 +311,7 @@ async function seed() {
       await db.insert(schema.lessons).values([
         {
           moduleId: mod2.id,
-          title: 'Lesson 2.1: Crafting Pitch Decks & Executive Slide Layouts',
+          title: 'Crafting Pitch Decks & Executive Slide Layouts',
           content: '<p>Design high-converting presentation slides, data charts, and visual storytelling for boardroom meetings.</p>',
           videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
           isFreePreview: false,
@@ -259,12 +322,12 @@ async function seed() {
   }
 
   // ==========================================
-  // Course 5: All-in-One 4-Course Combo Pass (₹3300 list, ₹1900 with ABCOMBO coupon)
+  // Course 5: All-in-One 4-Course Combo Pass (4 SECTIONS + REUSED VIDEOS)
   // ==========================================
   const [course5] = await db.insert(schema.courses).values({
     title: 'All-in-One Masterclass Combo Pass (All 4 Courses)',
     slug: 'combo-pack',
-    description: 'Get complete access to all 4 Airbharath certificate courses: AI Skills Masterclass, Content Creation Blueprint, Entrepreneurship Basics, and MS Office Productivity Suite.',
+    description: 'Get complete access to all 4 Airbharath certificate courses: AI Skills Masterclass, Digital Marketing, Excel Suite, and Entrepreneurship.',
     thumbnailUrl: 'https://assets.airbharath.in/lms/combo.webp',
     price: '3300.00',
     isPublished: true,
@@ -272,43 +335,274 @@ async function seed() {
   }).returning();
 
   if (course5) {
-    const [modCombo] = await db.insert(schema.modules).values({
+    // Section 1: AI Skills
+    const [secAI] = await db.insert(schema.courseSections).values({
       courseId: course5.id,
-      title: 'Module 1: All 4 Masterclass Tracks Combined Access',
+      title: 'AI Skills',
+      description: 'Master prompt engineering, generative models, and AI workflows.',
       orderIndex: 1,
     }).returning();
 
-    if (modCombo) {
-      await db.insert(schema.lessons).values([
-        {
-          moduleId: modCombo.id,
-          title: 'Lesson 1.1: Welcome to the All-in-One Airbharath Combo Pass',
-          content: '<h3>Welcome to the Full Airbharath Certificate Bundle</h3><p>Enjoy access to all AI, Content Creation, Entrepreneurship, and MS Office modules and QR-verified PDF certificates.</p>',
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          isFreePreview: true,
-          orderIndex: 1,
-        },
-      ]);
+    if (secAI) {
+      const [m1] = await db.insert(schema.modules).values({
+        courseId: course5.id,
+        sectionId: secAI.id,
+        title: 'Introduction to AI',
+        orderIndex: 1,
+      }).returning();
+
+      const [m2] = await db.insert(schema.modules).values({
+        courseId: course5.id,
+        sectionId: secAI.id,
+        title: 'Generative AI',
+        orderIndex: 2,
+      }).returning();
+
+      if (m1) {
+        await db.insert(schema.lessons).values([
+          {
+            moduleId: m1.id,
+            title: 'What is AI?',
+            content: '<p>Fundamental concepts of artificial intelligence and machine learning.</p>',
+            videoUrl: vidChatGPT || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            isFreePreview: true,
+            orderIndex: 1,
+          },
+          {
+            moduleId: m1.id,
+            title: 'AI in Everyday Life',
+            content: '<p>How consumer and enterprise AI applications function today.</p>',
+            videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            isFreePreview: false,
+            orderIndex: 2,
+          },
+          {
+            moduleId: m1.id,
+            title: 'AI Ethics & Future Trends',
+            content: '<p>Safety, hallucination management, and upcoming frontier model advancements.</p>',
+            videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            isFreePreview: false,
+            orderIndex: 3,
+          },
+        ]);
+      }
+
+      if (m2) {
+        await db.insert(schema.lessons).values([
+          {
+            moduleId: m2.id,
+            title: 'What is Generative AI?',
+            content: '<p>Large Language Models and diffusion networks explained.</p>',
+            videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            isFreePreview: true,
+            orderIndex: 1,
+          },
+          {
+            moduleId: m2.id,
+            title: 'ChatGPT & Prompt Engineering Masterclass',
+            content: '<p>Deep dive into production prompting techniques.</p>',
+            videoUrl: vidChatGPT || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            isFreePreview: false,
+            orderIndex: 2,
+          },
+        ]);
+      }
+    }
+
+    // Section 2: Digital Marketing
+    const [secMarketing] = await db.insert(schema.courseSections).values({
+      courseId: course5.id,
+      title: 'Digital Marketing',
+      description: 'Foundations of audience research, funnel strategy, and social growth.',
+      orderIndex: 2,
+    }).returning();
+
+    if (secMarketing) {
+      const [m1] = await db.insert(schema.modules).values({
+        courseId: course5.id,
+        sectionId: secMarketing.id,
+        title: 'Marketing Fundamentals',
+        orderIndex: 1,
+      }).returning();
+
+      const [m2] = await db.insert(schema.modules).values({
+        courseId: course5.id,
+        sectionId: secMarketing.id,
+        title: 'Social Media Marketing',
+        orderIndex: 2,
+      }).returning();
+
+      if (m1) {
+        await db.insert(schema.lessons).values([
+          {
+            moduleId: m1.id,
+            title: 'Introduction to Digital Strategy',
+            content: '<p>Core elements of omni-channel digital marketing.</p>',
+            videoUrl: vidMarketing || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            isFreePreview: true,
+            orderIndex: 1,
+          },
+          {
+            moduleId: m1.id,
+            title: 'Audience Research & Persona Development',
+            content: '<p>Mapping customer journeys and building high-converting buyer personas.</p>',
+            videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            isFreePreview: false,
+            orderIndex: 2,
+          },
+        ]);
+      }
+
+      if (m2) {
+        await db.insert(schema.lessons).values([
+          {
+            moduleId: m2.id,
+            title: 'Meta Ads & Campaign Setup',
+            content: '<p>Configuring pixel, custom audiences, and campaign optimization.</p>',
+            videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            isFreePreview: false,
+            orderIndex: 1,
+          },
+          {
+            moduleId: m2.id,
+            title: 'Content Strategy & Virality Loops',
+            content: '<p>Designing short-form reels and organic growth funnels.</p>',
+            videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            isFreePreview: false,
+            orderIndex: 2,
+          },
+        ]);
+      }
+    }
+
+    // Section 3: Excel
+    const [secExcel] = await db.insert(schema.courseSections).values({
+      courseId: course5.id,
+      title: 'Excel',
+      description: 'Master spreadsheets, data analysis, formulas, and dashboards.',
+      orderIndex: 3,
+    }).returning();
+
+    if (secExcel) {
+      const [m1] = await db.insert(schema.modules).values({
+        courseId: course5.id,
+        sectionId: secExcel.id,
+        title: 'Excel Basics',
+        orderIndex: 1,
+      }).returning();
+
+      const [m2] = await db.insert(schema.modules).values({
+        courseId: course5.id,
+        sectionId: secExcel.id,
+        title: 'Advanced Excel',
+        orderIndex: 2,
+      }).returning();
+
+      if (m1) {
+        await db.insert(schema.lessons).values([
+          {
+            moduleId: m1.id,
+            title: 'Spreadsheet Foundations & Navigation',
+            content: '<p>Essential UI navigation, shortcuts, and table structuring.</p>',
+            videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            isFreePreview: true,
+            orderIndex: 1,
+          },
+          {
+            moduleId: m1.id,
+            title: 'Essential Formulas (SUM, AVERAGE, IF)',
+            content: '<p>Mastering core statistical and conditional formulas.</p>',
+            videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            isFreePreview: false,
+            orderIndex: 2,
+          },
+        ]);
+      }
+
+      if (m2) {
+        await db.insert(schema.lessons).values([
+          {
+            moduleId: m2.id,
+            title: 'Pivot Tables & Dynamic Slicers',
+            content: '<p>Creating interactive summary reports from large datasets.</p>',
+            videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            isFreePreview: false,
+            orderIndex: 1,
+          },
+          {
+            moduleId: m2.id,
+            title: 'Advanced Lookup & Matrix Calculations',
+            content: '<p>Nested XLOOKUP, INDEX-MATCH, and array arithmetic.</p>',
+            videoUrl: vidExcel || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            isFreePreview: false,
+            orderIndex: 2,
+          },
+        ]);
+      }
+    }
+
+    // Section 4: Entrepreneurship
+    const [secEnt] = await db.insert(schema.courseSections).values({
+      courseId: course5.id,
+      title: 'Entrepreneurship',
+      description: 'Idea validation, business models, unit economics, and execution.',
+      orderIndex: 4,
+    }).returning();
+
+    if (secEnt) {
+      const [m1] = await db.insert(schema.modules).values({
+        courseId: course5.id,
+        sectionId: secEnt.id,
+        title: 'Entrepreneurship Fundamentals',
+        orderIndex: 1,
+      }).returning();
+
+      if (m1) {
+        await db.insert(schema.lessons).values([
+          {
+            moduleId: m1.id,
+            title: 'Problem-Solution Fit & Market Validation',
+            content: '<p>How to test customer willingness to pay and validate startup hypotheses.</p>',
+            videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            isFreePreview: true,
+            orderIndex: 1,
+          },
+          {
+            moduleId: m1.id,
+            title: 'Business Models & Unit Economics',
+            content: '<p>Calculating contribution margin, payback periods, and financial health.</p>',
+            videoUrl: vidStartup || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            isFreePreview: false,
+            orderIndex: 2,
+          },
+        ]);
+      }
     }
   }
 
-  // ABCOMBO Auto-Applied Coupon Code (Flat ₹1400 discount -> ₹3300 - ₹1400 = ₹1900)
-  await db.insert(schema.coupons).values({
-    code: 'ABCOMBO',
-    discountType: 'flat',
-    discountValue: '1400.00',
-    usageLimit: 10000,
-  }).onConflictDoNothing();
+  // Enroll student user in Combo Pass
+  if (studentId && course5) {
+    await db.insert(schema.enrollments).values({
+      userId: studentId,
+      courseId: course5.id,
+      status: 'active',
+    }).onConflictDoNothing();
 
-  // Sample Coupon Code
-  await db.insert(schema.coupons).values({
-    code: 'AIRBHARATH20',
-    discountType: 'percentage',
-    discountValue: '20.00',
-    usageLimit: 500,
-  }).onConflictDoNothing();
+    // Query some lessons from Section 1 to mark completed
+    const comboLessons = await db.query.lessons.findMany({
+      limit: 3,
+    });
 
-  console.log('✅ Successfully seeded 4 courses (₹825) + 1 Combo Pass (₹3300 -> ₹1900 with ABCOMBO coupon)!');
+    for (const l of comboLessons) {
+      await db.insert(schema.progress).values({
+        userId: studentId,
+        lessonId: l.id,
+        isCompleted: true,
+      }).onConflictDoNothing();
+    }
+  }
+
+  console.log('✅ Successfully seeded 4 standalone courses + 1 4-section Combo Pass with student enrollment and reusable Video Library assets!');
   await client.end();
 }
 

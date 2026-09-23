@@ -18,9 +18,11 @@ import {
   ShieldCheck,
   Server,
   PlayCircle,
+  FolderOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { VideoLibraryModal, VideoAsset } from "@/components/admin/VideoLibraryModal";
 
 type UploadState =
   | { tag: "idle" }
@@ -36,7 +38,7 @@ interface VideoUploaderProps {
   courseId: string;
   lessonId: string;
   lessonTitle: string;
-  /** Called once S3 upload completes and video record is created. */
+  /** Called once S3 upload completes or video is selected from library and linked. */
   onDone: (videoId: string) => void;
   /** Called once video is successfully deleted. */
   onDelete?: () => void;
@@ -63,6 +65,22 @@ export function VideoUploader({
   const [deleteSuccessMsg, setDeleteSuccessMsg] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [showLibraryModal, setShowLibraryModal] = useState(false);
+
+  function handleSelectFromLibrary(video: VideoAsset) {
+    if (video.status === "ready") {
+      setState({ tag: "ready", videoId: video.id });
+    } else if (video.status === "failed") {
+      setState({
+        tag: "failed",
+        message: "Selected video asset transcoding failed.",
+        videoId: video.id,
+      });
+    } else {
+      setState({ tag: "processing", videoId: video.id });
+    }
+    onDone(video.id);
+  }
 
   // Seed state from existing video if present
   const [state, setState] = useState<UploadState>(() => {
@@ -356,47 +374,67 @@ export function VideoUploader({
         </div>
       )}
 
-      {/* State 1: Idle (Dropzone) */}
+      {/* State 1: Idle (Dropzone + Library Selector) */}
       {s.tag === "idle" && (
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setIsDragging(true);
-          }}
-          onDragLeave={() => setIsDragging(false)}
-          onDrop={handleDrop}
-          className={cn(
-            "relative rounded-3xl border-2 border-dashed p-6 sm:p-8 text-center transition-all duration-200 cursor-pointer",
-            isDragging
-              ? "border-primary bg-primary/10 scale-[1.01]"
-              : "border-border/80 hover:border-primary/60 bg-muted/20 hover:bg-primary/5"
-          )}
-          onClick={pickFile}
-        >
-          <div className="flex flex-col items-center justify-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Upload className="h-6 w-6" />
+        <div className="space-y-3">
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            className={cn(
+              "relative rounded-3xl border-2 border-dashed p-6 sm:p-7 text-center transition-all duration-200 cursor-pointer",
+              isDragging
+                ? "border-primary bg-primary/10 scale-[1.01]"
+                : "border-border/80 hover:border-primary/60 bg-muted/20 hover:bg-primary/5"
+            )}
+            onClick={pickFile}
+          >
+            <div className="flex flex-col items-center justify-center gap-3">
+              <div className="h-11 w-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Upload className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs sm:text-sm font-bold text-foreground font-outfit">
+                  Upload New Video Lecture
+                </p>
+                <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
+                  MP4 or MOV container up to 4 GB. Direct S3 upload &amp; MediaConvert HLS transcode.
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-background border border-border/80 text-[10px] font-bold text-muted-foreground">
+                <ShieldCheck className="h-3 w-3 text-primary" />
+                <span>AWS S3 Direct • Multi-Bitrate HLS</span>
+              </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs sm:text-sm font-bold text-foreground font-outfit">
-                Click to upload or drag &amp; drop video lecture
-              </p>
-              <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
-                MP4 or MOV container up to 4 GB. Automatically converted to encrypted HLS streams.
-              </p>
-            </div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-background border border-border/80 text-[10px] font-bold text-muted-foreground">
-              <ShieldCheck className="h-3 w-3 text-primary" />
-              <span>AWS S3 Direct Upload • MediaConvert HLS</span>
-            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="video/mp4,video/quicktime"
+              className="hidden"
+              onChange={onFileChange}
+            />
           </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="video/mp4,video/quicktime"
-            className="hidden"
-            onChange={onFileChange}
-          />
+
+          <div className="flex items-center gap-3 px-2">
+            <div className="h-px bg-border flex-1" />
+            <span className="text-[10px] font-bold text-muted-foreground tracking-wider uppercase">
+              OR REUSE ASSET
+            </span>
+            <div className="h-px bg-border flex-1" />
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowLibraryModal(true)}
+            className="w-full h-11 rounded-2xl border-dashed border-primary/40 hover:border-primary bg-primary/5 hover:bg-primary/10 text-primary font-bold text-xs gap-2 cursor-pointer transition-all shadow-2xs"
+          >
+            <FolderOpen className="w-4 h-4 text-primary" />
+            <span>Select Existing Video from Library</span>
+          </Button>
         </div>
       )}
 
@@ -546,7 +584,18 @@ export function VideoUploader({
           )}
 
           {/* Actions */}
-          <div className="flex gap-2 pt-1">
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isDeleting}
+              onClick={() => setShowLibraryModal(true)}
+              className="flex-1 rounded-xl text-xs font-semibold gap-1.5 text-primary hover:bg-primary/10 border-primary/30 h-9 cursor-pointer"
+            >
+              <FolderOpen className="h-3.5 w-3.5 text-primary" />
+              <span>Library</span>
+            </Button>
             <Button
               type="button"
               variant="outline"
@@ -556,7 +605,7 @@ export function VideoUploader({
               className="flex-1 rounded-xl text-xs font-semibold gap-1.5 text-muted-foreground hover:text-foreground h-9 cursor-pointer"
             >
               <RefreshCw className="h-3.5 w-3.5" />
-              <span>Replace File</span>
+              <span>Upload New</span>
             </Button>
             <Button
               type="button"
@@ -625,7 +674,18 @@ export function VideoUploader({
           )}
 
           {/* Actions */}
-          <div className="flex gap-2 pt-1">
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isDeleting}
+              onClick={() => setShowLibraryModal(true)}
+              className="flex-1 rounded-xl text-xs font-semibold gap-1.5 text-primary hover:bg-primary/10 border-primary/30 h-9 cursor-pointer"
+            >
+              <FolderOpen className="h-3.5 w-3.5 text-primary" />
+              <span>Choose from Library</span>
+            </Button>
             <Button
               type="button"
               variant="outline"
@@ -635,7 +695,7 @@ export function VideoUploader({
               className="flex-1 rounded-xl text-xs font-semibold gap-1.5 text-muted-foreground hover:text-foreground h-9 cursor-pointer"
             >
               <RefreshCw className="h-3.5 w-3.5" />
-              <span>Replace Video</span>
+              <span>Upload New</span>
             </Button>
             <Button
               type="button"
@@ -706,14 +766,22 @@ export function VideoUploader({
               variant="outline"
               size="sm"
               disabled={isDeleting}
+              onClick={() => setShowLibraryModal(true)}
+              className="flex-1 rounded-xl text-xs font-semibold gap-1.5 text-primary hover:bg-primary/10 border-primary/30 h-9 cursor-pointer"
+            >
+              <FolderOpen className="h-3.5 w-3.5 text-primary" />
+              <span>Choose from Library</span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isDeleting}
               onClick={pickFile}
-              className={cn(
-                "rounded-xl text-xs font-semibold gap-1.5 h-9 cursor-pointer",
-                targetVideoId ? "flex-1" : "w-full"
-              )}
+              className="rounded-xl text-xs font-semibold gap-1.5 h-9 cursor-pointer"
             >
               <Upload className="h-3.5 w-3.5" />
-              <span>Replace File</span>
+              <span>Upload New</span>
             </Button>
             {targetVideoId && (
               <Button
@@ -740,6 +808,14 @@ export function VideoUploader({
           />
         </div>
       )}
+
+      {/* Video Library Modal Picker */}
+      <VideoLibraryModal
+        open={showLibraryModal}
+        onOpenChange={setShowLibraryModal}
+        onSelectVideo={handleSelectFromLibrary}
+        selectedVideoId={targetVideoId}
+      />
     </div>
   );
 }

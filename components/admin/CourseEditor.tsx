@@ -78,9 +78,18 @@ export interface FormattedLesson {
   materials?: FormattedMaterial[];
 }
 
+export interface FormattedSection {
+  id: string;
+  course_id: string;
+  title: string;
+  description?: string | null;
+  order_index: number;
+}
+
 export interface FormattedModule {
   id: string;
   course_id: string;
+  section_id?: string | null;
   title: string;
   order_index: number;
 }
@@ -99,12 +108,14 @@ export interface CourseEditorProps {
     certificate_activated_at?: string | null;
     certificate_activated_by?: string | null;
   };
+  initialSections?: FormattedSection[];
   initialModules: FormattedModule[];
   initialLessons: FormattedLesson[];
 }
 
 export default function CourseEditor({
   course,
+  initialSections = [],
   initialModules = [],
   initialLessons = [],
 }: CourseEditorProps) {
@@ -284,12 +295,22 @@ export default function CourseEditor({
   };
 
   // Curriculum State
+  const [sections, setSections] = useState<FormattedSection[]>(initialSections || []);
   const [modules, setModules] = useState<FormattedModule[]>(initialModules || []);
   const [lessons, setLessons] = useState<FormattedLesson[]>(initialLessons || []);
 
+  // Section state
+  const [showSectionInput, setShowSectionInput] = useState(false);
+  const [editingSection, setEditingSection] = useState<FormattedSection | null>(null);
+  const [newSectionTitle, setNewSectionTitle] = useState("");
+  const [newSectionDescription, setNewSectionDescription] = useState("");
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+
   // Module state
   const [showModuleInput, setShowModuleInput] = useState(false);
+  const [editingModule, setEditingModule] = useState<FormattedModule | null>(null);
   const [newModuleTitle, setNewModuleTitle] = useState("");
+  const [newModuleSectionId, setNewModuleSectionId] = useState<string | null>(null);
   const [collapsedModules, setCollapsedModules] = useState<Record<string, boolean>>({});
 
   // Lesson Modal state
@@ -317,11 +338,17 @@ export default function CourseEditor({
   // Delete Modals
   const [deletingCourse, setDeletingCourse] = useState(false);
   const [showDeleteCourseModal, setShowDeleteCourseModal] = useState(false);
+  const [sectionToDelete, setSectionToDelete] = useState<FormattedSection | null>(null);
   const [moduleToDelete, setModuleToDelete] = useState<FormattedModule | null>(null);
   const [lessonToDelete, setLessonToDelete] = useState<FormattedLesson | null>(null);
 
   // Thumbnail Upload state
   const [uploadingThumb, setUploadingThumb] = useState(false);
+
+  // Toggle Section Collapse
+  const toggleSectionCollapse = (secId: string) => {
+    setCollapsedSections((prev) => ({ ...prev, [secId]: !prev[secId] }));
+  };
 
   // Toggle Module Collapse
   const toggleModuleCollapse = (modId: string) => {
@@ -451,18 +478,117 @@ export default function CourseEditor({
     }
   };
 
-  // Add Module
-  const handleAddModule = async () => {
+  // Section Handlers
+  const openAddSection = () => {
+    setEditingSection(null);
+    setNewSectionTitle("");
+    setNewSectionDescription("");
+    setShowSectionInput(true);
+  };
+
+  const openEditSection = (sec: FormattedSection) => {
+    setEditingSection(sec);
+    setNewSectionTitle(sec.title);
+    setNewSectionDescription(sec.description || "");
+    setShowSectionInput(true);
+  };
+
+  const handleSaveSection = async () => {
+    if (!newSectionTitle.trim()) return;
+
+    try {
+      const orderIndex = editingSection ? editingSection.order_index : sections.length + 1;
+      const res = await fetch("/api/admin/curriculum", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "section",
+          sectionId: editingSection?.id,
+          courseId: course.id,
+          title: newSectionTitle.trim(),
+          description: newSectionDescription.trim() || null,
+          orderIndex,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.section) {
+        const formatted: FormattedSection = {
+          id: data.section.id,
+          course_id: data.section.courseId,
+          title: data.section.title,
+          description: data.section.description || "",
+          order_index: data.section.orderIndex,
+        };
+
+        if (editingSection) {
+          setSections(sections.map((s) => (s.id === formatted.id ? formatted : s)));
+        } else {
+          setSections([...sections, formatted]);
+        }
+        setNewSectionTitle("");
+        setNewSectionDescription("");
+        setEditingSection(null);
+        setShowSectionInput(false);
+      } else {
+        alert(data.error || "Failed to save section");
+      }
+    } catch (err: any) {
+      alert(err.message || "Failed to save section");
+    }
+  };
+
+  const confirmDeleteSection = async () => {
+    if (!sectionToDelete) return;
+    try {
+      const res = await fetch(`/api/admin/curriculum?type=section&id=${sectionToDelete.id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setSections(sections.filter((s) => s.id !== sectionToDelete.id));
+        setModules(
+          modules.map((m) => (m.section_id === sectionToDelete.id ? { ...m, section_id: null } : m))
+        );
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete section");
+      }
+    } catch (err: any) {
+      alert(err.message || "Failed to delete section");
+    } finally {
+      setSectionToDelete(null);
+    }
+  };
+
+  // Module Handlers
+  const openAddModule = (sectionId?: string | null) => {
+    setEditingModule(null);
+    setNewModuleTitle("");
+    setNewModuleSectionId(sectionId || null);
+    setShowModuleInput(true);
+  };
+
+  const openEditModule = (mod: FormattedModule) => {
+    setEditingModule(mod);
+    setNewModuleTitle(mod.title);
+    setNewModuleSectionId(mod.section_id || null);
+    setShowModuleInput(true);
+  };
+
+  const handleSaveModule = async () => {
     if (!newModuleTitle.trim()) return;
 
-    const orderIndex = modules.length + 1;
     try {
+      const orderIndex = editingModule ? editingModule.order_index : modules.length + 1;
       const res = await fetch("/api/admin/curriculum", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "module",
+          moduleId: editingModule?.id,
           courseId: course.id,
+          sectionId: newModuleSectionId || null,
           title: newModuleTitle.trim(),
           orderIndex,
         }),
@@ -470,20 +596,28 @@ export default function CourseEditor({
 
       const data = await res.json();
       if (res.ok && data.module) {
-        setModules([
-          ...modules,
-          {
-            id: data.module.id,
-            course_id: data.module.courseId,
-            title: data.module.title,
-            order_index: data.module.orderIndex,
-          },
-        ]);
+        const formatted: FormattedModule = {
+          id: data.module.id,
+          course_id: data.module.courseId,
+          section_id: data.module.sectionId || null,
+          title: data.module.title,
+          order_index: data.module.orderIndex,
+        };
+
+        if (editingModule) {
+          setModules(modules.map((m) => (m.id === formatted.id ? formatted : m)));
+        } else {
+          setModules([...modules, formatted]);
+        }
         setNewModuleTitle("");
+        setNewModuleSectionId(null);
+        setEditingModule(null);
         setShowModuleInput(false);
+      } else {
+        alert(data.error || "Failed to save module");
       }
     } catch (err: any) {
-      alert(err.message || "Failed to add module");
+      alert(err.message || "Failed to save module");
     }
   };
 
@@ -748,6 +882,49 @@ export default function CourseEditor({
         </div>
       )}
 
+      {/* Delete Section Confirmation Modal */}
+      {sectionToDelete && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-card text-card-foreground w-full max-w-md border border-border/80 rounded-3xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-destructive/10 text-destructive rounded-2xl shrink-0">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-foreground font-outfit">Delete Section?</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Section removal</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Are you sure you want to delete section <strong>{sectionToDelete.title}</strong>? Any modules inside will become standalone unassigned modules.
+            </p>
+
+            <div className="flex justify-end gap-2.5 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSectionToDelete(null)}
+                className="rounded-xl text-xs font-semibold"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={confirmDeleteSection}
+                className="rounded-xl text-xs font-bold gap-1.5 shadow-sm cursor-pointer"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>Delete Section</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Module Confirmation Modal */}
       {moduleToDelete && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-150">
@@ -966,67 +1143,536 @@ export default function CourseEditor({
               <div>
                 <CardTitle className="text-base font-bold font-outfit text-foreground flex items-center gap-2">
                   <Layers className="h-4 w-4 text-primary" />
-                  <span>Curriculum Structure &amp; Syllabus</span>
+                  <span>Curriculum Structure &amp; Learning Hierarchy</span>
                 </CardTitle>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Organize syllabus modules and add video lectures, quizzes, and downloadable files.
+                  Organize courses with Sections, Modules, and reusable Video Lessons with derived numbering.
                 </p>
               </div>
 
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => setShowModuleInput(true)}
-                className="rounded-xl text-xs font-bold gap-1.5 shadow-sm cursor-pointer"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>Add Module</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={openAddSection}
+                  className="rounded-xl text-xs font-bold gap-1.5 border-primary/30 text-primary hover:bg-primary/10 cursor-pointer shadow-2xs"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Add Section</span>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => openAddModule(null)}
+                  className="rounded-xl text-xs font-bold gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Add Module</span>
+                </Button>
+              </div>
             </CardHeader>
 
-            <CardContent className="p-6 space-y-4">
-              {/* Add Module Inline Form */}
-              {showModuleInput && (
-                <div className="p-4 bg-muted/30 border border-primary/20 rounded-2xl space-y-3 animate-in fade-in duration-150">
-                  <span className="text-xs font-bold uppercase tracking-wider text-primary block">
-                    Create New Syllabus Module
-                  </span>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Input
-                      placeholder="e.g. Module 1: Aircraft Systems & Aerodynamics"
-                      value={newModuleTitle}
-                      onChange={(e) => setNewModuleTitle(e.target.value)}
-                      className="h-10 text-xs sm:text-sm font-semibold rounded-xl bg-background"
-                      autoFocus
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={handleAddModule}
-                        className="rounded-xl text-xs font-bold h-10 px-4"
-                      >
-                        Create
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setShowModuleInput(false);
-                          setNewModuleTitle("");
-                        }}
-                        className="rounded-xl text-xs font-semibold h-10 px-3"
-                      >
-                        Cancel
-                      </Button>
+            <CardContent className="p-6 space-y-6">
+              {/* Add / Edit Section Inline Form */}
+              {showSectionInput && (
+                <div className="p-5 bg-primary/5 border border-primary/30 rounded-3xl space-y-4 animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-primary font-outfit">
+                      {editingSection ? "Edit Course Section" : "Create New Course Section"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSectionInput(false);
+                        setEditingSection(null);
+                      }}
+                      className="text-muted-foreground hover:text-foreground text-xs"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-foreground uppercase tracking-wider">
+                        Section Title <span className="text-destructive">*</span>
+                      </label>
+                      <Input
+                        placeholder="e.g. AI Skills, Digital Marketing, Excel Mastery"
+                        value={newSectionTitle}
+                        onChange={(e) => setNewSectionTitle(e.target.value)}
+                        className="h-10 text-xs sm:text-sm font-semibold rounded-xl bg-background"
+                        autoFocus
+                      />
                     </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-foreground uppercase tracking-wider">
+                        Short Description (Optional)
+                      </label>
+                      <Input
+                        placeholder="e.g. Master generative AI tools, prompt engineering, and LLMs"
+                        value={newSectionDescription}
+                        onChange={(e) => setNewSectionDescription(e.target.value)}
+                        className="h-10 text-xs sm:text-sm rounded-xl bg-background"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowSectionInput(false);
+                        setEditingSection(null);
+                      }}
+                      className="rounded-xl text-xs font-semibold h-9 px-4"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleSaveSection}
+                      className="rounded-xl text-xs font-bold h-9 px-5 shadow-xs"
+                    >
+                      {editingSection ? "Update Section" : "Create Section"}
+                    </Button>
                   </div>
                 </div>
               )}
 
-              {/* Modules List */}
-              {modules.length > 0 ? (
+              {/* Add / Edit Module Inline Form */}
+              {showModuleInput && (
+                <div className="p-5 bg-muted/40 border border-border/80 rounded-3xl space-y-4 animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-foreground font-outfit">
+                      {editingModule ? "Edit Syllabus Module" : "Create New Syllabus Module"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowModuleInput(false);
+                        setEditingModule(null);
+                        setNewModuleSectionId(null);
+                      }}
+                      className="text-muted-foreground hover:text-foreground text-xs"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-foreground uppercase tracking-wider">
+                        Module Title <span className="text-destructive">*</span>
+                      </label>
+                      <Input
+                        placeholder="e.g. Introduction to AI, Marketing Fundamentals"
+                        value={newModuleTitle}
+                        onChange={(e) => setNewModuleTitle(e.target.value)}
+                        className="h-10 text-xs sm:text-sm font-semibold rounded-xl bg-background"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-foreground uppercase tracking-wider">
+                        Assign to Section
+                      </label>
+                      <select
+                        value={newModuleSectionId || ""}
+                        onChange={(e) => setNewModuleSectionId(e.target.value || null)}
+                        className="w-full h-10 px-3 text-xs sm:text-sm font-medium rounded-xl bg-background border border-border/80 focus:border-primary focus:outline-none"
+                      >
+                        <option value="">No Section (Standalone Module)</option>
+                        {sections.map((s, idx) => (
+                          <option key={s.id} value={s.id}>
+                            Section {idx + 1}: {s.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowModuleInput(false);
+                        setEditingModule(null);
+                        setNewModuleSectionId(null);
+                      }}
+                      className="rounded-xl text-xs font-semibold h-9 px-4"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleSaveModule}
+                      className="rounded-xl text-xs font-bold h-9 px-5 shadow-xs"
+                    >
+                      {editingModule ? "Update Module" : "Create Module"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Sections & Modules Hierarchical Rendering */}
+              {sections.length > 0 ? (
+                <div className="space-y-6">
+                  {sections
+                    .slice()
+                    .sort((a, b) => a.order_index - b.order_index)
+                    .map((sec, secIdx) => {
+                      const sectionModules = modules
+                        .filter((m) => m.section_id === sec.id)
+                        .sort((a, b) => a.order_index - b.order_index);
+                      const sectionLessons = lessons.filter((l) =>
+                        sectionModules.some((m) => m.id === l.module_id)
+                      );
+                      const isSecCollapsed = !!collapsedSections[sec.id];
+
+                      return (
+                        <div
+                          key={sec.id}
+                          className="border-2 border-primary/20 rounded-3xl overflow-hidden bg-card/60 shadow-xs transition-all duration-200"
+                        >
+                          {/* Section Header */}
+                          <div className="p-4 sm:p-5 bg-primary/5 border-b border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <div className="h-10 w-10 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                                {secIdx + 1}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-bold text-base text-foreground truncate font-outfit">
+                                    Section {secIdx + 1} — {sec.title}
+                                  </h3>
+                                  <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] font-bold px-2 py-0.5">
+                                    {sectionModules.length} {sectionModules.length === 1 ? "module" : "modules"}
+                                  </Badge>
+                                </div>
+                                {sec.description && (
+                                  <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xl">
+                                    {sec.description}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openAddModule(sec.id)}
+                                className="rounded-xl text-xs font-bold text-primary hover:bg-primary/10 border-primary/30 h-8 px-3 gap-1.5 cursor-pointer shadow-2xs"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                                <span>Add Module</span>
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => openEditSection(sec)}
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-xl cursor-pointer"
+                                title="Edit Section"
+                              >
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setSectionToDelete(sec)}
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl cursor-pointer"
+                                title="Delete Section"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+
+                              <button
+                                type="button"
+                                onClick={() => toggleSectionCollapse(sec.id)}
+                                className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg cursor-pointer"
+                                aria-label="Toggle Section"
+                              >
+                                {isSecCollapsed ? (
+                                  <ChevronDown className="h-4 w-4" />
+                                ) : (
+                                  <ChevronUp className="h-4 w-4" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Modules inside Section */}
+                          {!isSecCollapsed && (
+                            <div className="p-4 sm:p-5 space-y-4 bg-muted/10">
+                              {sectionModules.length > 0 ? (
+                                sectionModules.map((mod, modIdx) => {
+                                  const moduleLessons = lessons
+                                    .filter((l) => l.module_id === mod.id)
+                                    .sort((a, b) => a.order_index - b.order_index);
+                                  const isModCollapsed = !!collapsedModules[mod.id];
+
+                                  return (
+                                    <div
+                                      key={mod.id}
+                                      className="border border-border/80 rounded-2xl overflow-hidden bg-card shadow-2xs transition-all duration-200"
+                                    >
+                                      {/* Module Header */}
+                                      <div className="p-3.5 sm:p-4 bg-muted/40 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                          <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                                            {modIdx + 1}
+                                          </div>
+                                          <div className="min-w-0">
+                                            <h4 className="font-bold text-sm text-foreground truncate font-outfit">
+                                              Module {modIdx + 1} — {mod.title}
+                                            </h4>
+                                            <span className="text-[11px] text-muted-foreground font-medium">
+                                              {moduleLessons.length} {moduleLessons.length === 1 ? "lesson" : "lessons"}
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => openAddLesson(mod.id)}
+                                            className="rounded-xl text-xs font-bold text-primary hover:bg-primary/10 border-primary/20 h-8 px-3 gap-1.5 cursor-pointer"
+                                          >
+                                            <Plus className="h-3.5 w-3.5" />
+                                            <span>Add Lesson</span>
+                                          </Button>
+
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => openEditModule(mod)}
+                                            className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-xl cursor-pointer"
+                                            title="Edit Module"
+                                          >
+                                            <Edit2 className="h-3.5 w-3.5" />
+                                          </Button>
+
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => setModuleToDelete(mod)}
+                                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl cursor-pointer"
+                                            title="Delete Module"
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+
+                                          <button
+                                            type="button"
+                                            onClick={() => toggleModuleCollapse(mod.id)}
+                                            className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg cursor-pointer"
+                                            aria-label="Toggle Module"
+                                          >
+                                            {isModCollapsed ? (
+                                              <ChevronDown className="h-4 w-4" />
+                                            ) : (
+                                              <ChevronUp className="h-4 w-4" />
+                                            )}
+                                          </button>
+                                        </div>
+                                      </div>
+
+                                      {/* Lessons inside Module */}
+                                      {!isModCollapsed && (
+                                        <div className="p-3 divide-y divide-border/40">
+                                          {moduleLessons.length > 0 ? (
+                                            moduleLessons.map((les, lesIdx) => (
+                                              <div
+                                                key={les.id}
+                                                className="py-3 px-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/30 rounded-2xl transition-colors group"
+                                              >
+                                                <div className="flex items-center gap-3.5 min-w-0">
+                                                  <div
+                                                    className={cn(
+                                                      "h-9 w-9 rounded-2xl flex items-center justify-center shrink-0 transition-colors",
+                                                      les.video_id || les.video_url
+                                                        ? "bg-primary/10 text-primary"
+                                                        : "bg-muted text-muted-foreground"
+                                                    )}
+                                                  >
+                                                    {les.video_id || les.video_url ? (
+                                                      <Video className="h-4 w-4 text-primary" />
+                                                    ) : (
+                                                      <FileText className="h-4 w-4" />
+                                                    )}
+                                                  </div>
+
+                                                  <div className="min-w-0 space-y-0.5">
+                                                    <p className="text-xs sm:text-sm font-bold text-foreground font-outfit group-hover:text-primary transition-colors">
+                                                      Lesson {modIdx + 1}.{lesIdx + 1} — {les.title}
+                                                    </p>
+                                                    <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+                                                      {les.is_free_preview && (
+                                                        <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 rounded-full font-bold uppercase text-[9px]">
+                                                          Free Preview
+                                                        </span>
+                                                      )}
+
+                                                      {les.delivery_type === 'live' ? (
+                                                        <span className="px-2 py-0.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded-full font-bold uppercase text-[9px] inline-flex items-center gap-1">
+                                                          <Radio className="h-2.5 w-2.5" />
+                                                          <span>LIVE {les.scheduled_at ? `(${formatISTDateTime(les.scheduled_at, { shortDate: true })})` : ''}</span>
+                                                        </span>
+                                                      ) : les.release_at && new Date(les.release_at) > new Date() ? (
+                                                        <span className="px-2 py-0.5 bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 rounded-full font-bold uppercase text-[9px] inline-flex items-center gap-1">
+                                                          <Lock className="h-2.5 w-2.5" />
+                                                          <span>SCHEDULED ({formatISTDateTime(les.release_at, { shortDate: true })})</span>
+                                                        </span>
+                                                      ) : null}
+
+                                                      {les.video_status === "ready" ? (
+                                                        <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold">
+                                                          <CheckCircle2 className="h-3 w-3" />
+                                                          <span>HLS Ready</span>
+                                                        </span>
+                                                      ) : les.video_status === "processing" ? (
+                                                        <span className="inline-flex items-center gap-1 text-blue-600 font-semibold">
+                                                          <Loader2 className="h-3 w-3 animate-spin" />
+                                                          <span>Transcoding</span>
+                                                        </span>
+                                                      ) : les.video_id || les.video_url ? (
+                                                        <span className="text-primary font-medium">
+                                                          ✓ Video Attached
+                                                        </span>
+                                                      ) : (
+                                                        <span className="text-muted-foreground/60">
+                                                          No video
+                                                        </span>
+                                                      )}
+
+                                                      {les.materials && les.materials.length > 0 && (
+                                                        <span className="inline-flex items-center gap-1 text-muted-foreground bg-muted/60 px-1.5 py-0.2 rounded-md font-semibold">
+                                                          <Paperclip className="h-3 w-3" />
+                                                          <span>{les.materials.length} resources</span>
+                                                        </span>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                                                  <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => openEditLesson(les)}
+                                                    className="h-8 rounded-xl text-xs font-semibold gap-1.5 px-3 border-border/80 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors cursor-pointer"
+                                                  >
+                                                    <Edit2 className="h-3 w-3" />
+                                                    <span>Edit</span>
+                                                  </Button>
+
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => setLessonToDelete(les)}
+                                                    className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl cursor-pointer"
+                                                    title="Delete Lesson"
+                                                  >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                  </Button>
+                                                </div>
+                                              </div>
+                                            ))
+                                          ) : (
+                                            <div className="py-6 text-center text-xs text-muted-foreground">
+                                              No lessons inside this module yet. Click &quot;+ Add Lesson&quot; above.
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <div className="py-8 text-center text-xs text-muted-foreground border-2 border-dashed border-border/60 rounded-2xl">
+                                  No modules created in this section yet. Click &quot;+ Add Module&quot; to begin.
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                  {/* Standalone / Unassigned Modules if any */}
+                  {modules.some((m) => !m.section_id) && (
+                    <div className="border border-border/80 rounded-3xl p-5 bg-card space-y-4">
+                      <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                        <h4 className="font-bold text-sm text-foreground font-outfit">
+                          Standalone / Unassigned Modules
+                        </h4>
+                        <span className="text-xs text-muted-foreground">
+                          {modules.filter((m) => !m.section_id).length} unassigned modules
+                        </span>
+                      </div>
+                      <div className="space-y-3">
+                        {modules
+                          .filter((m) => !m.section_id)
+                          .sort((a, b) => a.order_index - b.order_index)
+                          .map((mod, modIdx) => {
+                            const moduleLessons = lessons
+                              .filter((l) => l.module_id === mod.id)
+                              .sort((a, b) => a.order_index - b.order_index);
+                            return (
+                              <div
+                                key={mod.id}
+                                className="border border-border/80 rounded-2xl p-4 bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                              >
+                                <div>
+                                  <h5 className="font-bold text-sm text-foreground font-outfit">
+                                    {mod.title}
+                                  </h5>
+                                  <span className="text-xs text-muted-foreground">
+                                    {moduleLessons.length} lessons
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openAddLesson(mod.id)}
+                                    className="rounded-xl text-xs font-semibold h-8"
+                                  >
+                                    Add Lesson
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => openEditModule(mod)}
+                                    className="h-8 w-8 text-muted-foreground rounded-xl"
+                                  >
+                                    <Edit2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setModuleToDelete(mod)}
+                                    className="h-8 w-8 text-destructive rounded-xl"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : modules.length > 0 ? (
+                /* Flat Module Rendering for Standalone Courses without Sections */
                 <div className="space-y-4">
                   {modules.map((mod, modIdx) => {
                     const moduleLessons = (lessons || [])
@@ -1047,7 +1693,7 @@ export default function CourseEditor({
                             </div>
                             <div className="min-w-0">
                               <h4 className="font-bold text-sm text-foreground truncate font-outfit">
-                                {mod.title}
+                                Module {modIdx + 1} — {mod.title}
                               </h4>
                               <span className="text-[11px] text-muted-foreground font-medium">
                                 {moduleLessons.length} {moduleLessons.length === 1 ? "lesson" : "lessons"} in module
@@ -1055,168 +1701,195 @@ export default function CourseEditor({
                             </div>
                           </div>
 
-                            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openAddLesson(mod.id)}
-                                className="rounded-xl text-xs font-bold text-primary hover:bg-primary/10 border-primary/20 h-8 px-3 gap-1.5 cursor-pointer"
-                              >
-                                <Plus className="h-3.5 w-3.5" />
-                                <span>Add Lesson</span>
-                              </Button>
+                          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openAddLesson(mod.id)}
+                              className="rounded-xl text-xs font-bold text-primary hover:bg-primary/10 border-primary/20 h-8 px-3 gap-1.5 cursor-pointer"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              <span>Add Lesson</span>
+                            </Button>
 
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setModuleToDelete(mod)}
-                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl cursor-pointer"
-                                title="Delete Module"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEditModule(mod)}
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-xl cursor-pointer"
+                              title="Edit Module"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </Button>
 
-                              <button
-                                type="button"
-                                onClick={() => toggleModuleCollapse(mod.id)}
-                                className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg cursor-pointer"
-                                aria-label="Toggle Module"
-                              >
-                                {isCollapsed ? (
-                                  <ChevronDown className="h-4 w-4" />
-                                ) : (
-                                  <ChevronUp className="h-4 w-4" />
-                                )}
-                              </button>
-                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setModuleToDelete(mod)}
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl cursor-pointer"
+                              title="Delete Module"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+
+                            <button
+                              type="button"
+                              onClick={() => toggleModuleCollapse(mod.id)}
+                              className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg cursor-pointer"
+                              aria-label="Toggle Module"
+                            >
+                              {isCollapsed ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronUp className="h-4 w-4" />
+                              )}
+                            </button>
                           </div>
+                        </div>
 
-                          {/* Lessons inside Module */}
-                          {!isCollapsed && (
-                            <div className="p-3 divide-y divide-border/40">
-                              {moduleLessons.length > 0 ? (
-                                moduleLessons.map((les) => (
-                                  <div
-                                    key={les.id}
-                                    className="py-3 px-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/30 rounded-2xl transition-colors group"
-                                  >
-                                    <div className="flex items-center gap-3.5 min-w-0">
-                                      <div
-                                        className={cn(
-                                          "h-9 w-9 rounded-2xl flex items-center justify-center shrink-0 transition-colors",
-                                          les.video_id || les.video_url
-                                            ? "bg-primary/10 text-primary"
-                                            : "bg-muted text-muted-foreground"
-                                        )}
-                                      >
-                                        {les.video_id || les.video_url ? (
-                                          <Video className="h-4 w-4 text-primary" />
-                                        ) : (
-                                          <FileText className="h-4 w-4" />
-                                        )}
-                                      </div>
-
-                                      <div className="min-w-0 space-y-0.5">
-                                        <p className="text-xs sm:text-sm font-bold text-foreground font-outfit group-hover:text-primary transition-colors">
-                                          {les.title}
-                                        </p>
-                                        <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
-                                          <span className="font-semibold text-muted-foreground">
-                                            Lesson {les.order_index}
-                                          </span>
-
-                                          {les.is_free_preview && (
-                                            <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 rounded-full font-bold uppercase text-[9px]">
-                                              Free Preview
-                                            </span>
-                                          )}
-
-                                          {les.delivery_type === 'live' ? (
-                                            <span className="px-2 py-0.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded-full font-bold uppercase text-[9px] inline-flex items-center gap-1">
-                                              <Radio className="h-2.5 w-2.5" />
-                                              <span>LIVE {les.scheduled_at ? `(${formatISTDateTime(les.scheduled_at, { shortDate: true })})` : ''}</span>
-                                            </span>
-                                          ) : les.release_at && new Date(les.release_at) > new Date() ? (
-                                            <span className="px-2 py-0.5 bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 rounded-full font-bold uppercase text-[9px] inline-flex items-center gap-1">
-                                              <Lock className="h-2.5 w-2.5" />
-                                              <span>SCHEDULED ({formatISTDateTime(les.release_at, { shortDate: true })})</span>
-                                            </span>
-                                          ) : null}
-
-                                          {les.video_status === "ready" ? (
-                                            <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold">
-                                              <CheckCircle2 className="h-3 w-3" />
-                                              <span>HLS Ready</span>
-                                            </span>
-                                          ) : les.video_status === "processing" ? (
-                                            <span className="inline-flex items-center gap-1 text-blue-600 font-semibold">
-                                              <Loader2 className="h-3 w-3 animate-spin" />
-                                              <span>Transcoding</span>
-                                            </span>
-                                          ) : les.video_id || les.video_url ? (
-                                            <span className="text-primary font-medium">
-                                              ✓ Video Attached
-                                            </span>
-                                          ) : (
-                                            <span className="text-muted-foreground/60">
-                                              No video
-                                            </span>
-                                          )}
-
-                                          {les.materials && les.materials.length > 0 && (
-                                            <span className="inline-flex items-center gap-1 text-muted-foreground bg-muted/60 px-1.5 py-0.2 rounded-md font-semibold">
-                                              <Paperclip className="h-3 w-3" />
-                                              <span>{les.materials.length} resources</span>
-                                            </span>
-                                          )}
-                                        </div>
-                                      </div>
+                        {/* Lessons inside Module */}
+                        {!isCollapsed && (
+                          <div className="p-3 divide-y divide-border/40">
+                            {moduleLessons.length > 0 ? (
+                              moduleLessons.map((les, lesIdx) => (
+                                <div
+                                  key={les.id}
+                                  className="py-3 px-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/30 rounded-2xl transition-colors group"
+                                >
+                                  <div className="flex items-center gap-3.5 min-w-0">
+                                    <div
+                                      className={cn(
+                                        "h-9 w-9 rounded-2xl flex items-center justify-center shrink-0 transition-colors",
+                                        les.video_id || les.video_url
+                                          ? "bg-primary/10 text-primary"
+                                          : "bg-muted text-muted-foreground"
+                                      )}
+                                    >
+                                      {les.video_id || les.video_url ? (
+                                        <Video className="h-4 w-4 text-primary" />
+                                      ) : (
+                                        <FileText className="h-4 w-4" />
+                                      )}
                                     </div>
 
-                                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => openEditLesson(les)}
-                                        className="h-8 rounded-xl text-xs font-semibold gap-1.5 px-3 border-border/80 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors cursor-pointer"
-                                      >
-                                        <Edit2 className="h-3 w-3" />
-                                        <span>Edit</span>
-                                      </Button>
+                                    <div className="min-w-0 space-y-0.5">
+                                      <p className="text-xs sm:text-sm font-bold text-foreground font-outfit group-hover:text-primary transition-colors">
+                                        Lesson {modIdx + 1}.{lesIdx + 1} — {les.title}
+                                      </p>
+                                      <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+                                        {les.is_free_preview && (
+                                          <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 rounded-full font-bold uppercase text-[9px]">
+                                            Free Preview
+                                          </span>
+                                        )}
 
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => setLessonToDelete(les)}
-                                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl cursor-pointer"
-                                        title="Delete Lesson"
-                                      >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                      </Button>
+                                        {les.delivery_type === 'live' ? (
+                                          <span className="px-2 py-0.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded-full font-bold uppercase text-[9px] inline-flex items-center gap-1">
+                                            <Radio className="h-2.5 w-2.5" />
+                                            <span>LIVE {les.scheduled_at ? `(${formatISTDateTime(les.scheduled_at, { shortDate: true })})` : ''}</span>
+                                          </span>
+                                        ) : les.release_at && new Date(les.release_at) > new Date() ? (
+                                          <span className="px-2 py-0.5 bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 rounded-full font-bold uppercase text-[9px] inline-flex items-center gap-1">
+                                            <Lock className="h-2.5 w-2.5" />
+                                            <span>SCHEDULED ({formatISTDateTime(les.release_at, { shortDate: true })})</span>
+                                          </span>
+                                        ) : null}
+
+                                        {les.video_status === "ready" ? (
+                                          <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold">
+                                            <CheckCircle2 className="h-3 w-3" />
+                                            <span>HLS Ready</span>
+                                          </span>
+                                        ) : les.video_status === "processing" ? (
+                                          <span className="inline-flex items-center gap-1 text-blue-600 font-semibold">
+                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                            <span>Transcoding</span>
+                                          </span>
+                                        ) : les.video_id || les.video_url ? (
+                                          <span className="text-primary font-medium">
+                                            ✓ Video Attached
+                                          </span>
+                                        ) : (
+                                          <span className="text-muted-foreground/60">
+                                            No video
+                                          </span>
+                                        )}
+
+                                        {les.materials && les.materials.length > 0 && (
+                                          <span className="inline-flex items-center gap-1 text-muted-foreground bg-muted/60 px-1.5 py-0.2 rounded-md font-semibold">
+                                            <Paperclip className="h-3 w-3" />
+                                            <span>{les.materials.length} resources</span>
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
-                                ))
-                              ) : (
-                                <div className="py-8 text-center text-xs text-muted-foreground">
-                                  No lessons inside this module yet. Click &quot;+ Add Lesson&quot; to build syllabus lectures.
+
+                                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => openEditLesson(les)}
+                                      className="h-8 rounded-xl text-xs font-semibold gap-1.5 px-3 border-border/80 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors cursor-pointer"
+                                    >
+                                      <Edit2 className="h-3 w-3" />
+                                      <span>Edit</span>
+                                    </Button>
+
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => setLessonToDelete(les)}
+                                      className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl cursor-pointer"
+                                      title="Delete Lesson"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
                                 </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                              ))
+                            ) : (
+                              <div className="py-8 text-center text-xs text-muted-foreground">
+                                No lessons inside this module yet. Click &quot;+ Add Lesson&quot; to build syllabus lectures.
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
-                <div className="py-16 border-2 border-dashed border-border/80 rounded-3xl text-center text-muted-foreground bg-muted/10 space-y-3">
+                <div className="py-16 border-2 border-dashed border-border/80 rounded-3xl text-center text-muted-foreground bg-muted/10 space-y-4">
                   <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto">
                     <BookOpen className="h-6 w-6" />
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm font-bold text-foreground font-outfit">Curriculum is currently empty</p>
                     <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                      Click &quot;Add New Module&quot; above to create the first syllabus unit and begin uploading lecture videos.
+                      Create your first Section or Module to start structuring course lectures and uploading video assets.
                     </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 pt-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={openAddSection}
+                      className="rounded-xl text-xs font-bold gap-1.5 border-primary/30 text-primary"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Add Section</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => openAddModule(null)}
+                      className="rounded-xl text-xs font-bold gap-1.5"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Add Module</span>
+                    </Button>
                   </div>
                 </div>
               )}

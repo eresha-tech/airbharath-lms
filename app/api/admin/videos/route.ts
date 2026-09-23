@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { videos, lessons } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { videos, lessons, modules, courses } from "@/lib/db/schema";
+import { eq, desc, or, inArray } from "drizzle-orm";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client, rawBucket, processedBucket, deleteS3Folder } from "@/lib/aws-video";
 
@@ -13,8 +13,57 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const videoList = await db.select().from(videos).orderBy(desc(videos.createdAt));
-    return NextResponse.json({ videos: videoList });
+    const videoList = await db
+      .select({
+        id: videos.id,
+        courseId: videos.courseId,
+        lessonId: videos.lessonId,
+        title: videos.title,
+        status: videos.status,
+        rawS3Key: videos.rawS3Key,
+        processedS3Prefix: videos.processedS3Prefix,
+        durationSeconds: videos.durationSeconds,
+        errorMessage: videos.errorMessage,
+        createdAt: videos.createdAt,
+        updatedAt: videos.updatedAt,
+        courseTitle: courses.title,
+      })
+      .from(videos)
+      .leftJoin(courses, eq(videos.courseId, courses.id))
+      .orderBy(desc(videos.createdAt));
+
+    // Fetch all lessons referencing any video
+    const referencingLessons = await db
+      .select({
+        lessonId: lessons.id,
+        lessonTitle: lessons.title,
+        videoUrl: lessons.videoUrl,
+        moduleId: lessons.moduleId,
+        courseId: modules.courseId,
+        courseTitle: courses.title,
+      })
+      .from(lessons)
+      .innerJoin(modules, eq(lessons.moduleId, modules.id))
+      .innerJoin(courses, eq(modules.courseId, courses.id));
+
+    // Map usage onto each video
+    const enrichedVideos = videoList.map((video) => {
+      const usages = referencingLessons.filter(
+        (l) => l.videoUrl === video.id || (video.lessonId && l.lessonId === video.lessonId)
+      );
+      return {
+        ...video,
+        usageCount: usages.length,
+        usedIn: usages.map((u) => ({
+          lessonId: u.lessonId,
+          lessonTitle: u.lessonTitle,
+          courseId: u.courseId,
+          courseTitle: u.courseTitle,
+        })),
+      };
+    });
+
+    return NextResponse.json({ videos: enrichedVideos });
   } catch (error: any) {
     console.error("Error listing videos:", error);
     return NextResponse.json({ error: error.message || "Failed to list videos" }, { status: 500 });
@@ -30,6 +79,7 @@ export async function DELETE(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const videoId = searchParams.get("id");
+    const force = searchParams.get("force") === "true";
 
     if (!videoId) {
       return NextResponse.json({ error: "Missing video ID parameter" }, { status: 400 });
@@ -38,6 +88,26 @@ export async function DELETE(req: Request) {
     const [video] = await db.select().from(videos).where(eq(videos.id, videoId));
     if (!video) {
       return NextResponse.json({ error: "Video not found" }, { status: 404 });
+    }
+
+    // Check usage across lessons
+    const referencingLessons = await db
+      .select({
+        id: lessons.id,
+        title: lessons.title,
+      })
+      .from(lessons)
+      .where(or(eq(lessons.videoUrl, videoId), video.lessonId ? eq(lessons.id, video.lessonId) : undefined));
+
+    if (referencingLessons.length > 0 && !force) {
+      return NextResponse.json(
+        {
+          error: `Cannot delete video: referenced by ${referencingLessons.length} lesson(s) (${referencingLessons.map((l) => `"${l.title}"`).join(", ")}). Unlink from lessons first or confirm force deletion.`,
+          usageCount: referencingLessons.length,
+          referencingLessons,
+        },
+        { status: 400 }
+      );
     }
 
     // Determine target S3 keys/prefixes with canonical fallbacks

@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ShieldCheck,
   ExternalLink,
+  Film,
 } from "lucide-react";
 import {
   Tooltip,
@@ -64,6 +65,11 @@ export const adminNavGroups: AdminNavGroup[] = [
         title: "Course Management",
         href: "/admin/courses",
         icon: BookOpen,
+      },
+      {
+        title: "Video Library",
+        href: "/admin/videos",
+        icon: Film,
       },
       {
         title: "Student Doubts & QA",

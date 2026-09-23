@@ -63,6 +63,15 @@ export default async function LessonPage({ params }: LessonPageProps) {
     ? await db.query.courses.findFirst({
         where: eq(courses.id, courseId),
         with: {
+          sections: {
+            with: {
+              modules: {
+                with: {
+                  lessons: true,
+                },
+              },
+            },
+          },
           modules: {
             with: {
               lessons: true,
@@ -73,6 +82,15 @@ export default async function LessonPage({ params }: LessonPageProps) {
     : await db.query.courses.findFirst({
         where: eq(courses.slug, courseId),
         with: {
+          sections: {
+            with: {
+              modules: {
+                with: {
+                  lessons: true,
+                },
+              },
+            },
+          },
           modules: {
             with: {
               lessons: true,
@@ -101,37 +119,80 @@ export default async function LessonPage({ params }: LessonPageProps) {
     return redirect(`/courses/${courseObj.slug || courseObj.id}`);
   }
 
-  // Flatten and sort all lessons to calculate sequential navigation
-  const courseModules = (courseObj.modules as any[]) || [];
-  const sortedModules = courseModules
-    .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
-    .map((mod: any) => ({
-      ...mod,
-      lessons: (mod.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0)),
-    }));
-
+  // Flatten and sort all lessons to calculate sequential navigation across sections and modules
   const allLessonsInOrder: {
     id: string;
     title: string;
     moduleId: string;
     moduleTitle: string;
+    sectionTitle?: string;
     deliveryType?: string | null;
     scheduledAt?: Date | string | null;
     releaseAt?: Date | string | null;
   }[] = [];
-  sortedModules.forEach((m: any) => {
-    (m.lessons || []).forEach((l: any) => {
-      allLessonsInOrder.push({
-        id: l.id,
-        title: l.title,
-        moduleId: m.id,
-        moduleTitle: m.title,
-        deliveryType: l.deliveryType,
-        scheduledAt: l.scheduledAt,
-        releaseAt: l.releaseAt,
+
+  const courseSections = (courseObj.sections as any[]) || [];
+  if (courseSections.length > 0) {
+    const sortedSections = courseSections.sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+    sortedSections.forEach((sec: any) => {
+      const secModules = (sec.modules || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+      secModules.forEach((m: any) => {
+        const modLessons = (m.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+        modLessons.forEach((l: any) => {
+          allLessonsInOrder.push({
+            id: l.id,
+            title: l.title,
+            moduleId: m.id,
+            moduleTitle: m.title,
+            sectionTitle: sec.title,
+            deliveryType: l.deliveryType,
+            scheduledAt: l.scheduledAt,
+            releaseAt: l.releaseAt,
+          });
+        });
       });
     });
-  });
+    // Also include unassigned modules if present
+    const unassignedModules = ((courseObj.modules as any[]) || [])
+      .filter((m: any) => !m.sectionId)
+      .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+    unassignedModules.forEach((m: any) => {
+      const modLessons = (m.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+      modLessons.forEach((l: any) => {
+        allLessonsInOrder.push({
+          id: l.id,
+          title: l.title,
+          moduleId: m.id,
+          moduleTitle: m.title,
+          deliveryType: l.deliveryType,
+          scheduledAt: l.scheduledAt,
+          releaseAt: l.releaseAt,
+        });
+      });
+    });
+  } else {
+    const courseModules = (courseObj.modules as any[]) || [];
+    const sortedModules = courseModules
+      .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
+      .map((mod: any) => ({
+        ...mod,
+        lessons: (mod.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0)),
+      }));
+
+    sortedModules.forEach((m: any) => {
+      (m.lessons || []).forEach((l: any) => {
+        allLessonsInOrder.push({
+          id: l.id,
+          title: l.title,
+          moduleId: m.id,
+          moduleTitle: m.title,
+          deliveryType: l.deliveryType,
+          scheduledAt: l.scheduledAt,
+          releaseAt: l.releaseAt,
+        });
+      });
+    });
+  }
 
   const currentLessonIdx = allLessonsInOrder.findIndex((l) => l.id === lessonId);
   const previousLesson = currentLessonIdx > 0 ? allLessonsInOrder[currentLessonIdx - 1] : null;

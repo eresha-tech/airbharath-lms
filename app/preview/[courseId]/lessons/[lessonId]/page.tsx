@@ -62,6 +62,8 @@ export default async function PreviewLessonPage({ params }: PreviewLessonPagePro
           {activeVideoId ? (
             <HlsPlayer
               videoId={activeVideoId}
+              courseId={courseId}
+              lessonId={lessonId}
               watermarkText="preview@airbharath.in"
             />
           ) : (

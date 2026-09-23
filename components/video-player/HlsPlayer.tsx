@@ -147,6 +147,7 @@ export function HlsPlayer({
         const res = await fetch(`/api/videos/${videoId}/playback-session`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ courseId, lessonId }),
         });
 
         if (!res.ok) {
@@ -180,7 +181,7 @@ export function HlsPlayer({
       isMounted = false;
       fetch(`/api/videos/${videoId}/playback-session`, { method: "DELETE" }).catch(() => {});
     };
-  }, [videoId]);
+  }, [videoId, courseId, lessonId]);
 
   // 2. Initialize Hls.js player with signed URL propagation and 720p initial resolution
   useEffect(() => {

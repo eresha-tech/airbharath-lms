@@ -80,6 +80,15 @@ export default async function CoursePage({ params }: CoursePageProps) {
       ? await db.query.courses.findFirst({
           where: eq(courses.id, slugOrId),
           with: {
+            sections: {
+              with: {
+                modules: {
+                  with: {
+                    lessons: true,
+                  },
+                },
+              },
+            },
             modules: {
               with: {
                 lessons: true,
@@ -90,6 +99,15 @@ export default async function CoursePage({ params }: CoursePageProps) {
       : await db.query.courses.findFirst({
           where: eq(courses.slug, slugOrId),
           with: {
+            sections: {
+              with: {
+                modules: {
+                  with: {
+                    lessons: true,
+                  },
+                },
+              },
+            },
             modules: {
               with: {
                 lessons: true,
@@ -159,6 +177,24 @@ export default async function CoursePage({ params }: CoursePageProps) {
   const rawPrice = Number(course.price) || 0;
   const basePrice = Math.round((rawPrice / 1.18) * 100) / 100;
   const gstAmount = Math.round((rawPrice - basePrice) * 100) / 100;
+
+  const rawSections = (course.sections as any[]) || [];
+  const sortedSections = rawSections
+    .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
+    .map((sec: any) => ({
+      ...sec,
+      modules: (sec.modules || [])
+        .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
+        .map((mod: any) => ({
+          ...mod,
+          lessons: (mod.lessons || [])
+            .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
+            .map((les: any) => ({
+              ...les,
+              meetingUrl: isEnrolled ? les.meetingUrl : null,
+            })),
+        })),
+    }));
 
   const rawCourseModules = (course.modules as any[]) || [];
   // Ensure meetingUrl is never exposed to non-enrolled / unauthenticated visitors
@@ -436,15 +472,128 @@ export default async function CoursePage({ params }: CoursePageProps) {
                   </h2>
                 </div>
                 <Badge variant="secondary" className="text-xs font-semibold px-3 py-1 rounded-xl">
-                  {sortedModules.length} Modules · {totalLessons} Lessons
+                  {sortedSections.length > 0 ? `${sortedSections.length} Sections · ` : ""}{sortedModules.length} Modules · {totalLessons} Lessons
                 </Badge>
               </div>
 
-              {sortedModules.length === 0 ? (
+              {sortedSections.length > 0 ? (
+                /* 1. Hierarchical Section-based Syllabus */
+                <div className="space-y-6">
+                  {sortedSections.map((sec: any, secIdx: number) => {
+                    const secModules = sec.modules || [];
+                    const secTotalLessons = secModules.reduce(
+                      (acc: number, m: any) => acc + (m.lessons?.length || 0),
+                      0
+                    );
+
+                    return (
+                      <div
+                        key={sec.id}
+                        className="border-2 border-primary/20 rounded-3xl overflow-hidden bg-muted/10 space-y-3 p-4 sm:p-5"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-primary/20">
+                          <div className="flex items-center gap-3">
+                            <span className="h-7 w-7 rounded-xl bg-primary text-primary-foreground font-bold text-xs flex items-center justify-center font-outfit shrink-0">
+                              {secIdx + 1}
+                            </span>
+                            <div>
+                              <h3 className="text-base sm:text-lg font-bold font-outfit text-foreground">
+                                Section {secIdx + 1} — {sec.title}
+                              </h3>
+                              {sec.description && (
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {sec.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-xs font-semibold text-muted-foreground shrink-0 pl-10 sm:pl-0">
+                            {secModules.length} {secModules.length === 1 ? "module" : "modules"} · {secTotalLessons} lessons
+                          </span>
+                        </div>
+
+                        {/* Modules Accordion within Section */}
+                        <Accordion type="single" collapsible className="w-full space-y-2.5">
+                          {secModules.map((mod: any, modIdx: number) => {
+                            const lessonsList = mod.lessons || [];
+
+                            return (
+                              <AccordionItem
+                                key={mod.id}
+                                value={`sec-${sec.id}-mod-${mod.id}`}
+                                className="border border-border/80 rounded-2xl overflow-hidden bg-card px-4 py-0.5 data-[state=open]:bg-card transition-colors shadow-2xs"
+                              >
+                                <AccordionTrigger className="hover:no-underline text-foreground font-semibold text-xs sm:text-sm py-3.5">
+                                  <div className="flex items-center justify-between w-full pr-3 text-left">
+                                    <div className="flex items-center gap-2.5">
+                                      <span className="text-[10px] font-mono font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-md">
+                                        Module {modIdx + 1}
+                                      </span>
+                                      <span className="font-bold font-outfit text-foreground text-xs sm:text-sm">
+                                        {mod.title}
+                                      </span>
+                                    </div>
+                                    <span className="text-[11px] font-medium text-muted-foreground">
+                                      {lessonsList.length} Lessons
+                                    </span>
+                                  </div>
+                                </AccordionTrigger>
+
+                                <AccordionContent className="pt-1 pb-3">
+                                  <div className="divide-y divide-border/60 bg-muted/20 rounded-xl border border-border/60 overflow-hidden">
+                                    {lessonsList.map((les: any, lesIdx: number) => (
+                                      <div
+                                        key={les.id}
+                                        className="p-3 flex items-center justify-between text-xs hover:bg-muted/40 transition-colors"
+                                      >
+                                        <div className="flex items-center gap-2.5 font-medium text-foreground">
+                                          <span className="w-5 h-5 rounded-md bg-background border border-border text-muted-foreground flex items-center justify-center text-[10px] font-mono font-bold shrink-0">
+                                            {modIdx + 1}.{lesIdx + 1}
+                                          </span>
+                                          <span>{les.title}</span>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                          {les.deliveryType === 'live' ? (
+                                            <span className="px-2 py-0.5 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-[9px] font-bold rounded-full border border-rose-200 dark:border-rose-800 uppercase inline-flex items-center gap-1">
+                                              <Radio className="w-2.5 h-2.5" />
+                                              Live
+                                            </span>
+                                          ) : les.releaseAt && new Date(les.releaseAt) > now ? (
+                                            <span className="px-2 py-0.5 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-[9px] font-bold rounded-full border border-amber-200 dark:border-amber-800 uppercase inline-flex items-center gap-1">
+                                              <Lock className="w-2.5 h-2.5" />
+                                              <span>Releases {formatISTDateTime(les.releaseAt, { shortDate: true })}</span>
+                                            </span>
+                                          ) : null}
+                                          {les.isFreePreview ? (
+                                            <span className="px-2.5 py-0.5 bg-success/15 text-success text-[10px] font-bold rounded-full border border-success/25">
+                                              Free Preview
+                                            </span>
+                                          ) : (!les.releaseAt || new Date(les.releaseAt) <= now) ? (
+                                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                              <Lock className="w-3 h-3" />
+                                              <span>Enrolled</span>
+                                            </span>
+                                          ) : null}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            );
+                          })}
+                        </Accordion>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : sortedModules.length === 0 ? (
                 <p className="text-sm text-muted-foreground italic">
                   Modules and lessons for this course will be published shortly.
                 </p>
               ) : (
+                /* 2. Flat Module Syllabus for Legacy/Standalone Courses */
                 <Accordion type="single" collapsible className="w-full space-y-3">
                   {sortedModules.map((mod: any, idx: number) => {
                     const lessonsList =
@@ -463,7 +612,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                           <div className="flex items-center justify-between w-full pr-3 text-left">
                             <div className="flex items-center gap-3">
                               <span className="text-[11px] font-mono font-bold bg-primary text-primary-foreground px-2 py-0.5 rounded-md">
-                                {String(idx + 1).padStart(2, "0")}
+                                Module {idx + 1}
                               </span>
                               <span className="text-sm sm:text-base font-bold font-outfit text-foreground">
                                 {mod.title}
@@ -484,7 +633,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                               >
                                 <div className="flex items-center gap-2.5 font-medium text-foreground">
                                   <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-mono font-bold shrink-0">
-                                    {lesIdx + 1}
+                                    {idx + 1}.{lesIdx + 1}
                                   </span>
                                   <span>{les.title}</span>
                                 </div>
