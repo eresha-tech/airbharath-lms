@@ -51,9 +51,14 @@ export default async function LessonPage({ params }: LessonPageProps) {
 
   if (!session) return redirect("/login");
 
+  const isLessonUUID = UUID_REGEX.test(lessonId);
+  if (!isLessonUUID) {
+    return redirect(`/dashboard/courses/${courseId}`);
+  }
+
   const [lessonObj, materialsList] = await Promise.all([
-    db.query.lessons.findFirst({ where: eq(lessons.id, lessonId) }),
-    db.query.lessonMaterials.findMany({ where: eq(lessonMaterials.lessonId, lessonId) }),
+    db.query.lessons.findFirst({ where: eq(lessons.id, lessonId) }).catch(() => null),
+    db.query.lessonMaterials.findMany({ where: eq(lessonMaterials.lessonId, lessonId) }).catch(() => []),
   ]);
 
   if (!lessonObj) {
@@ -209,10 +214,11 @@ export default async function LessonPage({ params }: LessonPageProps) {
   const isLocked = !isAdmin && availability.isLocked;
   const isLiveLesson = lessonObj.deliveryType === "live";
   const activeVideoId = !isLocked && !isLiveLesson ? (lessonObj.videoUrl || lessonObj.id) : null;
-  const captionRecord = activeVideoId
+  const isVideoUUID = Boolean(activeVideoId && UUID_REGEX.test(activeVideoId));
+  const captionRecord = isVideoUUID
     ? await db.query.videoCaptions.findFirst({
-        where: and(eq(videoCaptions.videoId, activeVideoId), eq(videoCaptions.status, "ready")),
-      })
+        where: and(eq(videoCaptions.videoId, activeVideoId!), eq(videoCaptions.status, "ready")),
+      }).catch(() => null)
     : null;
   const captionAvailable = Boolean(captionRecord);
 

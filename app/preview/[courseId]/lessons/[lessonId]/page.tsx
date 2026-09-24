@@ -16,12 +16,19 @@ interface PreviewLessonPageProps {
   }>;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default async function PreviewLessonPage({ params }: PreviewLessonPageProps) {
   const { courseId, lessonId } = await params;
 
+  const isLessonUUID = UUID_REGEX.test(lessonId);
+  if (!isLessonUUID) {
+    return redirect(`/courses/${courseId}`);
+  }
+
   const lessonObj = await db.query.lessons.findFirst({
     where: eq(lessons.id, lessonId),
-  });
+  }).catch(() => null);
 
   if (
     !lessonObj ||
@@ -32,10 +39,11 @@ export default async function PreviewLessonPage({ params }: PreviewLessonPagePro
   }
 
   const activeVideoId = lessonObj.videoUrl || lessonObj.id;
-  const captionRecord = activeVideoId
+  const isVideoUUID = Boolean(activeVideoId && UUID_REGEX.test(activeVideoId));
+  const captionRecord = isVideoUUID
     ? await db.query.videoCaptions.findFirst({
-        where: and(eq(videoCaptions.videoId, activeVideoId), eq(videoCaptions.status, "ready")),
-      })
+        where: and(eq(videoCaptions.videoId, activeVideoId!), eq(videoCaptions.status, "ready")),
+      }).catch(() => null)
     : null;
   const captionAvailable = Boolean(captionRecord);
 

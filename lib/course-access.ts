@@ -22,12 +22,14 @@ export interface CourseAccessResult {
  * @param courseId Target course UUID
  * @param userRole Optional user role (if already known from session)
  */
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function hasCourseAccess(
   userId: string,
   courseId: string,
   userRole?: string
 ): Promise<CourseAccessResult> {
-  if (!userId || !courseId) {
+  if (!userId || !courseId || !UUID_REGEX.test(userId) || !UUID_REGEX.test(courseId)) {
     return { hasAccess: false, accessType: null, isExpired: false };
   }
 
