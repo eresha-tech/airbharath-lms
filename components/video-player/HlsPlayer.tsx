@@ -141,6 +141,9 @@ export function HlsPlayer({
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverPos, setHoverPos] = useState<number>(0);
 
+  // Adaptive Intrinsic Dimensions & Aspect Ratio
+  const [intrinsicDimensions, setIntrinsicDimensions] = useState<{ width: number; height: number } | null>(null);
+
   // Captions state
   const [hasServerCaptions, setHasServerCaptions] = useState<boolean>(false);
   const [isCaptionsOn, setIsCaptionsOn] = useState<boolean>(false);
@@ -400,10 +403,32 @@ export function HlsPlayer({
   }, []);
 
   // Video HTML5 event handlers
+  const checkVideoDimensions = useCallback(() => {
+    const video = videoRef.current;
+    if (video && video.videoWidth > 0 && video.videoHeight > 0) {
+      setIntrinsicDimensions((prev) => {
+        if (!prev || prev.width !== video.videoWidth || prev.height !== video.videoHeight) {
+          return { width: video.videoWidth, height: video.videoHeight };
+        }
+        return prev;
+      });
+    }
+  }, []);
+
+  const handleLoadedMetadata = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (isFinite(video.duration) && video.duration > 0) {
+      setDuration(video.duration);
+    }
+    checkVideoDimensions();
+  };
+
   const handleTimeUpdate = () => {
     const video = videoRef.current;
     if (!video) return;
     setCurrentTime(video.currentTime);
+    checkVideoDimensions();
 
     // Update duration if available
     const activeDuration = video.duration && isFinite(video.duration) && video.duration > 0 ? video.duration : duration;
@@ -447,6 +472,7 @@ export function HlsPlayer({
     if (video && isFinite(video.duration) && video.duration > 0) {
       setDuration(video.duration);
     }
+    checkVideoDimensions();
   };
 
   // Playback control actions
@@ -613,7 +639,7 @@ export function HlsPlayer({
     }
     setIsCaptionsOn(nextState);
     resetHideTimer();
-  }, [isCaptionsOn]);
+  }, [isCaptionsOn, resetHideTimer]);
 
   // Keyboard controls
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -692,6 +718,25 @@ export function HlsPlayer({
       ? [watermarkEmail, formattedPhone].filter(Boolean).join("\n")
       : watermarkText;
 
+  const isVertical = intrinsicDimensions
+    ? intrinsicDimensions.height > intrinsicDimensions.width
+    : false;
+
+  const containerAspectRatioStyle: React.CSSProperties = isFullscreen
+    ? {}
+    : isVertical
+    ? {
+        aspectRatio: `${intrinsicDimensions!.width} / ${intrinsicDimensions!.height}`,
+        maxHeight: "min(78vh, 740px)",
+        maxWidth: "100%",
+      }
+    : intrinsicDimensions
+    ? {
+        aspectRatio: `${intrinsicDimensions.width} / ${intrinsicDimensions.height}`,
+        maxHeight: "min(80vh, 800px)",
+      }
+    : {};
+
   return (
     <div
       ref={containerRef}
@@ -704,7 +749,8 @@ export function HlsPlayer({
           setShowControls(false);
         }
       }}
-      className={`relative overflow-hidden bg-black aspect-video rounded-xl group select-none outline-none border border-zinc-800/60 shadow-2xl ${
+      style={containerAspectRatioStyle}
+      className={`relative overflow-hidden bg-black ${!intrinsicDimensions && !isFullscreen ? "aspect-video" : ""} ${isVertical ? "mx-auto" : "w-full"} rounded-2xl group select-none outline-none border border-zinc-800/60 shadow-2xl transition-all duration-200 ${
         !showControls && isPlaying ? "cursor-none" : "cursor-default"
       } ${className}`}
       onContextMenu={(e) => e.preventDefault()}
@@ -718,6 +764,7 @@ export function HlsPlayer({
         onPlay={() => {
           setIsPlaying(true);
           setIsBuffering(false);
+          checkVideoDimensions();
           if (!hasTrackedStartRef.current) {
             hasTrackedStartRef.current = true;
             if (lessonId || courseId) {
@@ -734,10 +781,17 @@ export function HlsPlayer({
         onPause={() => setIsPlaying(false)}
         onTimeUpdate={handleTimeUpdate}
         onDurationChange={handleDurationChange}
-        onLoadedMetadata={handleDurationChange}
+        onLoadedMetadata={handleLoadedMetadata}
+        onResize={checkVideoDimensions}
         onWaiting={() => setIsBuffering(true)}
-        onPlaying={() => setIsBuffering(false)}
-        onCanPlay={() => setIsBuffering(false)}
+        onPlaying={() => {
+          setIsBuffering(false);
+          checkVideoDimensions();
+        }}
+        onCanPlay={() => {
+          setIsBuffering(false);
+          checkVideoDimensions();
+        }}
         onSeeked={() => setIsBuffering(false)}
         className="w-full h-full object-contain cursor-pointer"
       >
@@ -798,7 +852,7 @@ export function HlsPlayer({
         <div
           onClick={(e) => e.stopPropagation()}
           className={`absolute bottom-14 right-2 sm:bottom-16 sm:right-4 z-40 bg-zinc-900/95 backdrop-blur-md border border-zinc-700/60 rounded-2xl p-2.5 text-xs text-zinc-200 shadow-2xl animate-in fade-in zoom-in-95 duration-150 ${
-            activeMenu === "captions" ? "w-64 max-w-[calc(100vw-24px)]" : "w-48 max-w-[calc(100vw-32px)]"
+            activeMenu === "captions" ? "w-64 max-w-[calc(100%-16px)]" : "w-48 max-w-[calc(100%-16px)]"
           }`}
         >
           {/* Main Settings Menu */}
