@@ -24,6 +24,8 @@ if (!posthogKey || posthogKey === "your-posthog-key") {
     disable_surveys: true,
     person_profiles: "identified_only",
     capture_exceptions: true,
+    persistence: "localStorage",
+    cross_subdomain_cookie: false,
     tracing_headers: typeof window !== "undefined" ? [window.location.hostname] : [],
     debug: false,
   });
