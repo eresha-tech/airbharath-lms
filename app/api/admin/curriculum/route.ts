@@ -19,6 +19,8 @@ export async function POST(req: Request) {
       moduleId,
       title,
       description,
+      practicalTask,
+      practical_task,
       summary,
       content,
       formulas,
@@ -34,6 +36,8 @@ export async function POST(req: Request) {
       itemType,
       items,
     } = body;
+
+    const modulePracticalTask = practicalTask !== undefined ? practicalTask : practical_task;
 
     // 1. SECTION CRUD
     if (type === "section") {
@@ -81,6 +85,8 @@ export async function POST(req: Request) {
           .update(modules)
           .set({
             title: title.trim(),
+            description: description !== undefined ? (description?.trim() || null) : undefined,
+            practicalTask: modulePracticalTask !== undefined ? (modulePracticalTask?.trim() || null) : undefined,
             sectionId: sectionId || null,
             orderIndex: orderIndex || 1,
           })
@@ -97,6 +103,8 @@ export async function POST(req: Request) {
             courseId,
             sectionId: sectionId || null,
             title: title.trim(),
+            description: description?.trim() || null,
+            practicalTask: modulePracticalTask?.trim() || null,
             orderIndex: orderIndex || 1,
           })
           .returning();

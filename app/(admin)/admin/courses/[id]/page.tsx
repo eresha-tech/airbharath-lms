@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { courses, courseSections, modules, lessons, videos, lessonMaterials } from "@/lib/db/schema";
+import { courses, courseSections, modules, lessons, videos, lessonMaterials, courseAuthors } from "@/lib/db/schema";
 import { eq, inArray, asc } from "drizzle-orm";
 import CourseEditor from "@/components/admin/CourseEditor";
 import { notFound } from "next/navigation";
@@ -113,6 +113,18 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
     }
   }
 
+  // Fetch authors for the course
+  let authorsList: any[] = [];
+  try {
+    authorsList = await db
+      .select()
+      .from(courseAuthors)
+      .where(eq(courseAuthors.courseId, courseObj.id))
+      .orderBy(asc(courseAuthors.orderIndex), asc(courseAuthors.createdAt));
+  } catch (err) {
+    console.error("Error fetching course authors in EditCoursePage:", err);
+  }
+
   const formattedSections = sectionsList.map((s: any) => ({
     id: s.id,
     course_id: s.courseId,
@@ -126,6 +138,8 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
     course_id: m.courseId,
     section_id: m.sectionId || null,
     title: m.title,
+    description: m.description || "",
+    practical_task: m.practicalTask || "",
     order_index: m.orderIndex,
   }));
 
@@ -149,6 +163,17 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
     materials: materialsByLessonId[l.id] || [],
   }));
 
+  const formattedAuthors = authorsList.map((a: any) => ({
+    id: a.id,
+    course_id: a.courseId,
+    name: a.name,
+    photo_url: a.photoUrl || "",
+    designation: a.designation || "",
+    bio: a.bio || "",
+    profile_url: a.profileUrl || "",
+    order_index: a.orderIndex,
+  }));
+
   return (
     <CourseEditor
       course={{
@@ -156,6 +181,14 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
         title: courseObj.title,
         slug: courseObj.slug || null,
         description: courseObj.description || "",
+        short_description: courseObj.shortDescription || "",
+        about_course: courseObj.aboutCourse || "",
+        what_you_will_learn: courseObj.whatYouWillLearn || "",
+        who_is_this_for: courseObj.whoIsThisFor || "",
+        prerequisites: courseObj.prerequisites || "",
+        content_overview: courseObj.contentOverview || "",
+        seo_title: courseObj.seoTitle || "",
+        seo_description: courseObj.seoDescription || "",
         price: Number(courseObj.price || 0),
         thumbnail_url: courseObj.thumbnailUrl || "",
         is_published: !!courseObj.isPublished,
@@ -168,6 +201,7 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
       initialSections={formattedSections}
       initialModules={formattedModules}
       initialLessons={formattedLessons}
+      initialAuthors={formattedAuthors}
     />
   );
 }
