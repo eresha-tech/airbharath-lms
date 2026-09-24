@@ -367,24 +367,36 @@ export default async function LessonPage({ params }: LessonPageProps) {
         {/* Learning Tabs (Only accessible if lesson is not locked) */}
         {!isLocked && (
           <Tabs defaultValue="notes" className="space-y-6">
-            <TabsList className="bg-muted/50 p-1 rounded-xl border border-border/60 grid grid-cols-2 max-w-xs">
+            <TabsList className="bg-muted/50 p-1 rounded-xl border border-border/60 grid grid-cols-3 max-w-md">
               <TabsTrigger
                 value="notes"
-                className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-xs flex items-center gap-1.5 focus-visible:ring-primary cursor-pointer"
+                className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 focus-visible:ring-primary cursor-pointer"
               >
                 <FileText className="h-3.5 w-3.5" />
-                <span>Notes &amp; Files</span>
+                <span>Notes</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="files"
+                className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 focus-visible:ring-primary cursor-pointer"
+              >
+                <Paperclip className="h-3.5 w-3.5" />
+                <span>Reference Files</span>
+                {materialsList && materialsList.length > 0 && (
+                  <span className="text-[10px] font-bold bg-primary/15 text-primary px-1.5 py-0.2 rounded-full hidden sm:inline-block">
+                    {materialsList.length}
+                  </span>
+                )}
               </TabsTrigger>
               <TabsTrigger
                 value="discussion"
-                className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-xs flex items-center gap-1.5 focus-visible:ring-primary cursor-pointer"
+                className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 focus-visible:ring-primary cursor-pointer"
               >
                 <MessageSquare className="h-3.5 w-3.5" />
                 <span>Doubts</span>
               </TabsTrigger>
             </TabsList>
 
-            {/* Tab 1: Lesson Notes & Materials */}
+            {/* Tab 1: Lesson Notes & Summaries */}
             <TabsContent value="notes" className="space-y-6 mt-0">
               {/* Lesson Summary */}
               {lessonObj.summary?.trim() && (
@@ -419,8 +431,8 @@ export default async function LessonPage({ params }: LessonPageProps) {
                 </div>
               )}
 
-              {/* Fallback if no content or materials */}
-              {!lessonObj.summary?.trim() && !lessonObj.content?.trim() && !lessonObj.formulas?.trim() && (!materialsList || materialsList.length === 0) && (
+              {/* Fallback if no notes, summary, or formulas */}
+              {!lessonObj.summary?.trim() && !lessonObj.content?.trim() && !lessonObj.formulas?.trim() && (
                 <div className="bg-card border border-dashed border-border/80 rounded-3xl p-8 text-center text-xs text-muted-foreground space-y-2 shadow-xs">
                   <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto text-primary">
                     <PlayCircle className="h-5 w-5" />
@@ -428,14 +440,16 @@ export default async function LessonPage({ params }: LessonPageProps) {
                   <div className="space-y-1">
                     <p className="font-bold text-sm text-foreground font-outfit">Video Lesson Track</p>
                     <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                      Focus on the lesson video module above. Additional reference notes are not required for this lesson.
+                      Focus on the lesson video module above. Written lecture notes have not been published for this lesson.
                     </p>
                   </div>
                 </div>
               )}
+            </TabsContent>
 
-              {/* Reference Materials */}
-              {materialsList && materialsList.length > 0 && (
+            {/* Tab 2: Downloadable Reference Files */}
+            <TabsContent value="files" className="space-y-6 mt-0">
+              {materialsList && materialsList.length > 0 ? (
                 <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 space-y-4 shadow-xs">
                   <div className="flex items-center justify-between pb-3 border-b border-border/60">
                     <div className="flex items-center gap-2">
@@ -485,10 +499,22 @@ export default async function LessonPage({ params }: LessonPageProps) {
                     ))}
                   </div>
                 </div>
+              ) : (
+                <div className="bg-card border border-dashed border-border/80 rounded-3xl p-8 text-center text-xs text-muted-foreground space-y-2 shadow-xs">
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto text-primary">
+                    <Paperclip className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-bold text-sm text-foreground font-outfit">No Reference Files Attached</p>
+                    <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                      There are no downloadable attachments or PDF files attached to this specific lesson.
+                    </p>
+                  </div>
+                </div>
               )}
             </TabsContent>
 
-            {/* Tab 2: Doubts & Discussion */}
+            {/* Tab 3: Doubts & Discussion */}
             <TabsContent value="discussion" className="mt-0">
               <LessonComments
                 lessonId={lessonObj.id}
