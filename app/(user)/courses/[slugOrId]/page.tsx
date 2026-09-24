@@ -886,8 +886,8 @@ export default async function CoursePage({ params }: CoursePageProps) {
                                       ))}
                                     </div>
 
-                                    {/* Practical Task Callout */}
-                                    {mod.practicalTask && (
+                                    {/* Practical Task Callout (Visible only to enrolled students) */}
+                                    {isEnrolled && mod.practicalTask && (
                                       <div className="p-3.5 rounded-xl bg-primary/5 border border-primary/20 space-y-1.5">
                                         <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
                                           <Sparkles className="w-3.5 h-3.5 shrink-0" />
@@ -990,8 +990,8 @@ export default async function CoursePage({ params }: CoursePageProps) {
                             ))}
                           </div>
 
-                          {/* Practical Task Callout */}
-                          {mod.practicalTask && (
+                          {/* Practical Task Callout (Visible only to enrolled students) */}
+                          {isEnrolled && mod.practicalTask && (
                             <div className="p-3.5 rounded-xl bg-primary/5 border border-primary/20 space-y-1.5">
                               <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
                                 <Sparkles className="w-3.5 h-3.5 shrink-0" />

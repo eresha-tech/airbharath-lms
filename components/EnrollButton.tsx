@@ -99,17 +99,25 @@ export default function EnrollButton({
     setEnrollError("");
     let activeUser = user;
     if (!activeUser) {
+      const redirectToLogin = () => {
+        const currentPath =
+          typeof window !== "undefined"
+            ? window.location.pathname + window.location.search
+            : `/courses/${courseId}`;
+        router.push(`/login?callbackUrl=${encodeURIComponent(currentPath)}`);
+      };
+
       try {
         const res = await fetch("/api/auth/me");
         const data = await res.json();
         if (!data?.user) {
-          router.push("/login");
+          redirectToLogin();
           return;
         }
         activeUser = data.user;
         setUser(data.user);
       } catch {
-        router.push("/login");
+        redirectToLogin();
         return;
       }
     }
