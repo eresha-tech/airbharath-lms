@@ -11,6 +11,7 @@ export interface CatalogCourseItem {
   title: string;
   slug?: string | null;
   description: string | null;
+  shortDescription?: string | null;
   thumbnailUrl?: string | null;
   price: number | string;
   accessDays?: number | null;
@@ -40,6 +41,7 @@ function matchesCourse(
   const matchesSearch =
     !normalizedQuery ||
     course.title.toLowerCase().includes(normalizedQuery) ||
+    course.shortDescription?.toLowerCase().includes(normalizedQuery) ||
     course.description?.toLowerCase().includes(normalizedQuery) ||
     course.slug?.toLowerCase().includes(normalizedQuery);
 

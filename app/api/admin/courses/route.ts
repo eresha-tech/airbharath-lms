@@ -12,13 +12,36 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { title, description, price, thumbnailUrl, accessDays, isPublished } = await req.json();
+    const {
+      title,
+      description,
+      shortDescription,
+      aboutCourse,
+      whatYouWillLearn,
+      whoIsThisFor,
+      prerequisites,
+      contentOverview,
+      seoTitle,
+      seoDescription,
+      price,
+      thumbnailUrl,
+      accessDays,
+      isPublished,
+    } = await req.json();
 
     const [newCourse] = await db
       .insert(courses)
       .values({
         title,
         description,
+        shortDescription: shortDescription || null,
+        aboutCourse: aboutCourse || null,
+        whatYouWillLearn: whatYouWillLearn || null,
+        whoIsThisFor: whoIsThisFor || null,
+        prerequisites: prerequisites || null,
+        contentOverview: contentOverview || null,
+        seoTitle: seoTitle || null,
+        seoDescription: seoDescription || null,
         price: String(price),
         thumbnailUrl: thumbnailUrl || null,
         accessDays: accessDays ? parseInt(accessDays) : null,
@@ -47,13 +70,37 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { id, title, description, price, thumbnailUrl, accessDays, isPublished } = await req.json();
+    const {
+      id,
+      title,
+      description,
+      shortDescription,
+      aboutCourse,
+      whatYouWillLearn,
+      whoIsThisFor,
+      prerequisites,
+      contentOverview,
+      seoTitle,
+      seoDescription,
+      price,
+      thumbnailUrl,
+      accessDays,
+      isPublished,
+    } = await req.json();
 
     const [updatedCourse] = await db
       .update(courses)
       .set({
         title,
         description,
+        shortDescription: shortDescription !== undefined ? (shortDescription || null) : undefined,
+        aboutCourse: aboutCourse !== undefined ? (aboutCourse || null) : undefined,
+        whatYouWillLearn: whatYouWillLearn !== undefined ? (whatYouWillLearn || null) : undefined,
+        whoIsThisFor: whoIsThisFor !== undefined ? (whoIsThisFor || null) : undefined,
+        prerequisites: prerequisites !== undefined ? (prerequisites || null) : undefined,
+        contentOverview: contentOverview !== undefined ? (contentOverview || null) : undefined,
+        seoTitle: seoTitle !== undefined ? (seoTitle || null) : undefined,
+        seoDescription: seoDescription !== undefined ? (seoDescription || null) : undefined,
         price: String(price),
         thumbnailUrl: thumbnailUrl || null,
         accessDays: accessDays ? parseInt(accessDays) : null,

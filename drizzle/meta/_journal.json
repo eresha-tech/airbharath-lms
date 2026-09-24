@@ -43,6 +43,13 @@
       "when": 1790197129493,
       "tag": "0005_sharp_grey_gargoyle",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790236152530,
+      "tag": "0006_great_kate_bishop",
+      "breakpoints": true
     }
   ]
 }

@@ -12,6 +12,8 @@ export interface CourseCardProps {
     id: string;
     title: string;
     description: string | null;
+    shortDescription?: string | null;
+    short_description?: string | null;
     thumbnail_url?: string | null;
     thumbnailUrl?: string | null;
     price: number | string;
@@ -91,9 +93,9 @@ export function CourseCard({ course, progress, href }: CourseCardProps) {
                 {course.title}
               </h3>
             </Link>
-            {course.description && (
+            {(course.shortDescription || course.short_description || course.description) && (
               <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                {course.description}
+                {course.shortDescription || course.short_description || course.description}
               </p>
             )}
           </div>

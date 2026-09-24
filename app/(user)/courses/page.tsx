@@ -85,6 +85,7 @@ export default async function CoursesPage() {
       title: c.title,
       slug: c.slug || c.id,
       description: c.description || null,
+      shortDescription: c.shortDescription || null,
       thumbnailUrl: c.thumbnailUrl || null,
       price: Number(c.price) || 0,
       accessDays: c.accessDays || null,

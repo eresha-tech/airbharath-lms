@@ -94,6 +94,19 @@ export interface FormattedModule {
   course_id: string;
   section_id?: string | null;
   title: string;
+  description?: string | null;
+  practical_task?: string | null;
+  order_index: number;
+}
+
+export interface FormattedAuthor {
+  id: string;
+  course_id: string;
+  name: string;
+  photo_url?: string | null;
+  designation?: string | null;
+  bio?: string | null;
+  profile_url?: string | null;
   order_index: number;
 }
 
@@ -103,6 +116,14 @@ export interface CourseEditorProps {
     title: string;
     slug?: string | null;
     description: string;
+    short_description?: string | null;
+    about_course?: string | null;
+    what_you_will_learn?: string | null;
+    who_is_this_for?: string | null;
+    prerequisites?: string | null;
+    content_overview?: string | null;
+    seo_title?: string | null;
+    seo_description?: string | null;
     price: number;
     thumbnail_url: string;
     is_published: boolean;
@@ -115,6 +136,7 @@ export interface CourseEditorProps {
   initialSections?: FormattedSection[];
   initialModules: FormattedModule[];
   initialLessons: FormattedLesson[];
+  initialAuthors?: FormattedAuthor[];
 }
 
 export default function CourseEditor({
@@ -122,17 +144,34 @@ export default function CourseEditor({
   initialSections = [],
   initialModules = [],
   initialLessons = [],
+  initialAuthors = [],
 }: CourseEditorProps) {
   const router = useRouter();
 
   // Active Tab: Prioritize bundle management if course is configured as a bundle
-  const [activeTab, setActiveTab] = useState<"curriculum" | "settings" | "certificates" | "bundle">(
+  const [activeTab, setActiveTab] = useState<"curriculum" | "info" | "authors" | "settings" | "certificates" | "bundle">(
     course.is_bundle ? "bundle" : "curriculum"
   );
 
   // Course Properties State
   const [title, setTitle] = useState(course.title || "");
   const [description, setDescription] = useState(course.description || "");
+  const [shortDescription, setShortDescription] = useState(course.short_description || "");
+  const [aboutCourse, setAboutCourse] = useState(course.about_course || "");
+  const [whatYouWillLearn, setWhatYouWillLearn] = useState(course.what_you_will_learn || "");
+  const [whoIsThisFor, setWhoIsThisFor] = useState(course.who_is_this_for || "");
+  const [prerequisites, setPrerequisites] = useState(course.prerequisites || "");
+  const [contentOverview, setContentOverview] = useState(course.content_overview || "");
+  const [seoTitle, setSeoTitle] = useState(course.seo_title || "");
+  const [seoDescription, setSeoDescription] = useState(course.seo_description || "");
+
+  // Markdown Live Preview Toggles for Course Info
+  const [showAboutPreview, setShowAboutPreview] = useState(false);
+  const [showLearnPreview, setShowLearnPreview] = useState(false);
+  const [showWhoForPreview, setShowWhoForPreview] = useState(false);
+  const [showPrereqPreview, setShowPrereqPreview] = useState(false);
+  const [showOverviewPreview, setShowOverviewPreview] = useState(false);
+
   const [thumbnailUrl, setThumbnailUrl] = useState(course.thumbnail_url || "");
   const [price, setPrice] = useState(course.price ? String(course.price) : "");
   const [accessDays, setAccessDays] = useState(
@@ -378,8 +417,27 @@ export default function CourseEditor({
   const [showModuleInput, setShowModuleInput] = useState(false);
   const [editingModule, setEditingModule] = useState<FormattedModule | null>(null);
   const [newModuleTitle, setNewModuleTitle] = useState("");
+  const [newModuleDescription, setNewModuleDescription] = useState("");
+  const [newModulePracticalTask, setNewModulePracticalTask] = useState("");
+  const [showModuleDescPreview, setShowModuleDescPreview] = useState(false);
+  const [showModuleTaskPreview, setShowModuleTaskPreview] = useState(false);
   const [newModuleSectionId, setNewModuleSectionId] = useState<string | null>(null);
   const [collapsedModules, setCollapsedModules] = useState<Record<string, boolean>>({});
+
+  // Authors state
+  const [authors, setAuthors] = useState<FormattedAuthor[]>(initialAuthors || []);
+  const [showAuthorModal, setShowAuthorModal] = useState(false);
+  const [editingAuthor, setEditingAuthor] = useState<FormattedAuthor | null>(null);
+  const [authorName, setAuthorName] = useState("");
+  const [authorPhotoUrl, setAuthorPhotoUrl] = useState("");
+  const [authorDesignation, setAuthorDesignation] = useState("");
+  const [authorBio, setAuthorBio] = useState("");
+  const [authorProfileUrl, setAuthorProfileUrl] = useState("");
+  const [authorOrderIndex, setAuthorOrderIndex] = useState(1);
+  const [showAuthorBioPreview, setShowAuthorBioPreview] = useState(false);
+  const [savingAuthor, setSavingAuthor] = useState(false);
+  const [uploadingAuthorPhoto, setUploadingAuthorPhoto] = useState(false);
+  const [authorToDelete, setAuthorToDelete] = useState<FormattedAuthor | null>(null);
 
   // Lesson Modal state
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
@@ -443,6 +501,14 @@ export default function CourseEditor({
           id: course.id,
           title: title.trim(),
           description: description.trim(),
+          shortDescription: shortDescription.trim() || null,
+          aboutCourse: aboutCourse.trim() || null,
+          whatYouWillLearn: whatYouWillLearn.trim() || null,
+          whoIsThisFor: whoIsThisFor.trim() || null,
+          prerequisites: prerequisites.trim() || null,
+          contentOverview: contentOverview.trim() || null,
+          seoTitle: seoTitle.trim() || null,
+          seoDescription: seoDescription.trim() || null,
           thumbnailUrl: thumbnailUrl.trim() || null,
           price: parseFloat(price),
           accessDays: accessDays ? parseInt(accessDays) : null,
@@ -478,6 +544,14 @@ export default function CourseEditor({
           id: course.id,
           title: title.trim(),
           description: description.trim(),
+          shortDescription: shortDescription.trim() || null,
+          aboutCourse: aboutCourse.trim() || null,
+          whatYouWillLearn: whatYouWillLearn.trim() || null,
+          whoIsThisFor: whoIsThisFor.trim() || null,
+          prerequisites: prerequisites.trim() || null,
+          contentOverview: contentOverview.trim() || null,
+          seoTitle: seoTitle.trim() || null,
+          seoDescription: seoDescription.trim() || null,
           thumbnailUrl: thumbnailUrl.trim() || null,
           price: parseFloat(price),
           accessDays: accessDays ? parseInt(accessDays) : null,
@@ -496,6 +570,141 @@ export default function CourseEditor({
     } finally {
       setLoadingCourse(false);
     }
+  };
+
+  // Author Management Handlers
+  const openAddAuthor = () => {
+    setEditingAuthor(null);
+    setAuthorName("");
+    setAuthorPhotoUrl("");
+    setAuthorDesignation("");
+    setAuthorBio("");
+    setAuthorProfileUrl("");
+    setAuthorOrderIndex(authors.length + 1);
+    setShowAuthorBioPreview(false);
+    setShowAuthorModal(true);
+  };
+
+  const openEditAuthor = (author: FormattedAuthor) => {
+    setEditingAuthor(author);
+    setAuthorName(author.name || "");
+    setAuthorPhotoUrl(author.photo_url || "");
+    setAuthorDesignation(author.designation || "");
+    setAuthorBio(author.bio || "");
+    setAuthorProfileUrl(author.profile_url || "");
+    setAuthorOrderIndex(author.order_index ?? 0);
+    setShowAuthorBioPreview(false);
+    setShowAuthorModal(true);
+  };
+
+  const handleSaveAuthor = async () => {
+    if (!authorName.trim()) {
+      alert("Please enter the instructor's name.");
+      return;
+    }
+    setSavingAuthor(true);
+    try {
+      if (editingAuthor) {
+        const res = await fetch(`/api/admin/courses/${course.id}/authors`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: editingAuthor.id,
+            name: authorName.trim(),
+            photoUrl: authorPhotoUrl.trim() || null,
+            designation: authorDesignation.trim() || null,
+            bio: authorBio.trim() || null,
+            profileUrl: authorProfileUrl.trim() || null,
+            orderIndex: Number(authorOrderIndex) || 0,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to update author");
+        const updated: FormattedAuthor = {
+          id: data.author.id,
+          course_id: data.author.courseId,
+          name: data.author.name,
+          photo_url: data.author.photoUrl || "",
+          designation: data.author.designation || "",
+          bio: data.author.bio || "",
+          profile_url: data.author.profileUrl || "",
+          order_index: data.author.orderIndex,
+        };
+        setAuthors(authors.map((a) => (a.id === updated.id ? updated : a)));
+      } else {
+        const res = await fetch(`/api/admin/courses/${course.id}/authors`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: authorName.trim(),
+            photoUrl: authorPhotoUrl.trim() || null,
+            designation: authorDesignation.trim() || null,
+            bio: authorBio.trim() || null,
+            profileUrl: authorProfileUrl.trim() || null,
+            orderIndex: Number(authorOrderIndex) || (authors.length + 1),
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to create author");
+        const created: FormattedAuthor = {
+          id: data.author.id,
+          course_id: data.author.courseId,
+          name: data.author.name,
+          photo_url: data.author.photoUrl || "",
+          designation: data.author.designation || "",
+          bio: data.author.bio || "",
+          profile_url: data.author.profileUrl || "",
+          order_index: data.author.orderIndex,
+        };
+        setAuthors([...authors, created]);
+      }
+      setShowAuthorModal(false);
+      setEditingAuthor(null);
+      setSaveSuccessMsg("Instructor saved successfully!");
+      setTimeout(() => setSaveSuccessMsg(null), 3000);
+    } catch (err: any) {
+      alert(err.message || "Failed to save author");
+    } finally {
+      setSavingAuthor(false);
+    }
+  };
+
+  const handleDeleteAuthor = async (authorId: string) => {
+    try {
+      const res = await fetch(`/api/admin/courses/${course.id}/authors?id=${authorId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to delete author");
+      }
+      setAuthors(authors.filter((a) => a.id !== authorId));
+      setAuthorToDelete(null);
+      setSaveSuccessMsg("Instructor deleted.");
+      setTimeout(() => setSaveSuccessMsg(null), 3000);
+    } catch (err: any) {
+      alert(err.message || "Failed to delete author");
+    }
+  };
+
+  const handleAuthorPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      alert("Image file too large. Max 3MB.");
+      return;
+    }
+    setUploadingAuthorPhoto(true);
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      setAuthorPhotoUrl(uploadEvent.target?.result as string);
+      setUploadingAuthorPhoto(false);
+    };
+    reader.onerror = () => {
+      alert("Failed to read image file.");
+      setUploadingAuthorPhoto(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   // Handle Thumbnail File Upload
@@ -638,14 +847,22 @@ export default function CourseEditor({
   const openAddModule = (sectionId?: string | null) => {
     setEditingModule(null);
     setNewModuleTitle("");
+    setNewModuleDescription("");
+    setNewModulePracticalTask("");
     setNewModuleSectionId(sectionId || null);
+    setShowModuleDescPreview(false);
+    setShowModuleTaskPreview(false);
     setShowModuleInput(true);
   };
 
   const openEditModule = (mod: FormattedModule) => {
     setEditingModule(mod);
     setNewModuleTitle(mod.title);
+    setNewModuleDescription(mod.description || "");
+    setNewModulePracticalTask(mod.practical_task || "");
     setNewModuleSectionId(mod.section_id || null);
+    setShowModuleDescPreview(false);
+    setShowModuleTaskPreview(false);
     setShowModuleInput(true);
   };
 
@@ -663,6 +880,8 @@ export default function CourseEditor({
           courseId: course.id,
           sectionId: newModuleSectionId || null,
           title: newModuleTitle.trim(),
+          description: newModuleDescription.trim() || null,
+          practicalTask: newModulePracticalTask.trim() || null,
           orderIndex,
         }),
       });
@@ -674,6 +893,8 @@ export default function CourseEditor({
           course_id: data.module.courseId,
           section_id: data.module.sectionId || null,
           title: data.module.title,
+          description: data.module.description || "",
+          practical_task: data.module.practicalTask || "",
           order_index: data.module.orderIndex,
         };
 
@@ -683,6 +904,8 @@ export default function CourseEditor({
           setModules([...modules, formatted]);
         }
         setNewModuleTitle("");
+        setNewModuleDescription("");
+        setNewModulePracticalTask("");
         setNewModuleSectionId(null);
         setEditingModule(null);
         setShowModuleInput(false);
@@ -1098,6 +1321,232 @@ export default function CourseEditor({
         </div>
       )}
 
+      {/* Delete Author Confirmation Modal */}
+      {authorToDelete && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-card text-card-foreground w-full max-w-md border border-border/80 rounded-3xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-destructive/10 text-destructive rounded-2xl shrink-0">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-foreground font-outfit">Delete Instructor?</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Author removal</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Are you sure you want to remove <strong>{authorToDelete.name}</strong> from this course?
+            </p>
+
+            <div className="flex justify-end gap-2.5 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAuthorToDelete(null)}
+                className="rounded-xl text-xs font-semibold"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={() => handleDeleteAuthor(authorToDelete.id)}
+                className="rounded-xl text-xs font-bold gap-1.5 shadow-sm cursor-pointer"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>Delete Instructor</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add / Edit Author Modal */}
+      {showAuthorModal && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-card text-card-foreground w-full max-w-lg border border-border/80 rounded-3xl shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-primary/10 text-primary rounded-xl shrink-0">
+                  <Users className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-foreground font-outfit">
+                    {editingAuthor ? "Edit Course Instructor" : "Add Course Instructor"}
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    Featured author details displayed on the public course page.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAuthorModal(false)}
+                className="text-muted-foreground hover:text-foreground text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Name */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-foreground uppercase tracking-wider">
+                  Instructor Name <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  placeholder="e.g. Rishi Singh, Capt. Arun Sharma"
+                  value={authorName}
+                  onChange={(e) => setAuthorName(e.target.value)}
+                  className="h-10 text-xs sm:text-sm font-semibold rounded-xl bg-background"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              {/* Designation */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-foreground uppercase tracking-wider">
+                  Designation / Role
+                </label>
+                <Input
+                  placeholder="e.g. AI & Digital Skills Instructor, Senior Captain"
+                  value={authorDesignation}
+                  onChange={(e) => setAuthorDesignation(e.target.value)}
+                  className="h-10 text-xs sm:text-sm rounded-xl bg-background"
+                />
+              </div>
+
+              {/* Photo URL & File Upload */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-foreground uppercase tracking-wider">
+                  Profile Photo
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="https://assets.airbharath.in/instructors/photo.jpg or data URL"
+                    value={authorPhotoUrl}
+                    onChange={(e) => setAuthorPhotoUrl(e.target.value)}
+                    className="flex-1 h-10 text-xs font-mono rounded-xl bg-background"
+                  />
+                  <label className="inline-flex items-center justify-center gap-1.5 px-3 h-10 border border-border/80 rounded-xl bg-muted/40 hover:bg-muted text-xs font-semibold text-foreground transition-colors cursor-pointer shrink-0">
+                    {uploadingAuthorPhoto ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                    ) : (
+                      <Upload className="h-3.5 w-3.5 text-primary" />
+                    )}
+                    <span>{uploadingAuthorPhoto ? "Reading…" : "Upload"}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAuthorPhotoUpload}
+                      disabled={uploadingAuthorPhoto}
+                    />
+                  </label>
+                </div>
+                {authorPhotoUrl && (
+                  <div className="flex items-center gap-3 p-2 bg-muted/30 border border-border/80 rounded-2xl w-fit">
+                    <img
+                      src={authorPhotoUrl}
+                      alt="Instructor preview"
+                      className="w-10 h-10 rounded-xl object-cover border border-border"
+                    />
+                    <span className="text-[11px] text-muted-foreground font-medium pr-2">Photo preview</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Bio */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-foreground uppercase tracking-wider">
+                    Short Biography (Markdown Supported)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowAuthorBioPreview(!showAuthorBioPreview)}
+                    className="text-[10px] font-bold text-primary hover:underline inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <Eye className="h-3 w-3" />
+                    <span>{showAuthorBioPreview ? "Edit Bio" : "Live Preview"}</span>
+                  </button>
+                </div>
+                {showAuthorBioPreview ? (
+                  <div className="rounded-xl border border-border/60 p-3 bg-background min-h-[70px] max-h-[160px] overflow-y-auto text-xs">
+                    {authorBio?.trim() ? (
+                      <MarkdownContent content={authorBio} variant="compact" />
+                    ) : (
+                      <span className="text-muted-foreground italic text-xs">No biography written yet.</span>
+                    )}
+                  </div>
+                ) : (
+                  <Textarea
+                    placeholder="Brief background, industry achievements, credentials, or teaching focus..."
+                    value={authorBio}
+                    onChange={(e) => setAuthorBio(e.target.value)}
+                    rows={3}
+                    className="rounded-xl text-xs sm:text-sm bg-background border-border/80 focus:border-primary leading-relaxed font-sans"
+                  />
+                )}
+              </div>
+
+              {/* Profile URL & Display Order */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground uppercase tracking-wider">
+                    Profile / LinkedIn URL (Optional)
+                  </label>
+                  <Input
+                    placeholder="https://linkedin.com/in/..."
+                    value={authorProfileUrl}
+                    onChange={(e) => setAuthorProfileUrl(e.target.value)}
+                    className="h-10 text-xs sm:text-sm rounded-xl bg-background font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground uppercase tracking-wider">
+                    Display Order
+                  </label>
+                  <Input
+                    type="number"
+                    value={authorOrderIndex}
+                    onChange={(e) => setAuthorOrderIndex(parseInt(e.target.value) || 1)}
+                    className="h-10 text-xs sm:text-sm font-bold rounded-xl bg-background"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-border/60">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAuthorModal(false)}
+                className="rounded-xl text-xs font-semibold"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={savingAuthor}
+                onClick={handleSaveAuthor}
+                className="rounded-xl text-xs font-bold gap-1.5 shadow-sm cursor-pointer"
+              >
+                <Save className="h-3.5 w-3.5" />
+                <span>{savingAuthor ? "Saving…" : "Save Instructor"}</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Save Success Alert */}
       {saveSuccessMsg && (
         <div className="fixed top-20 right-6 z-50 flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-2xl shadow-xl text-xs font-bold animate-in fade-in slide-in-from-top-4 duration-200">
@@ -1201,6 +1650,20 @@ export default function CourseEditor({
           >
             <Layers className="h-4 w-4" />
             <span>Curriculum &amp; Syllabus ({modules.length})</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="info"
+            className="rounded-xl px-5 py-2.5 text-xs font-bold gap-2 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-xs transition-all flex-1 sm:flex-initial"
+          >
+            <FileText className="h-4 w-4" />
+            <span>Course Information &amp; SEO</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="authors"
+            className="rounded-xl px-5 py-2.5 text-xs font-bold gap-2 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-xs transition-all flex-1 sm:flex-initial"
+          >
+            <Users className="h-4 w-4" />
+            <span>Instructors &amp; Authors ({authors.length})</span>
           </TabsTrigger>
           <TabsTrigger
             value="settings"
@@ -1413,6 +1876,77 @@ export default function CourseEditor({
                       </select>
                     </div>
                   </div>
+
+                  {/* Module Description */}
+                  <div className="space-y-1.5 p-3 rounded-2xl border border-border/60 bg-background/50">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-foreground uppercase tracking-wider">
+                        Module Overview / Description (Optional)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowModuleDescPreview(!showModuleDescPreview)}
+                        className="text-[10px] font-bold text-primary hover:underline inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="h-3 w-3" />
+                        <span>{showModuleDescPreview ? "Edit Text" : "Live Preview"}</span>
+                      </button>
+                    </div>
+                    {showModuleDescPreview ? (
+                      <div className="rounded-xl border border-border/60 p-2.5 bg-background min-h-[60px] text-xs">
+                        {newModuleDescription?.trim() ? (
+                          <MarkdownContent content={newModuleDescription} variant="compact" />
+                        ) : (
+                          <span className="text-muted-foreground italic text-xs">No description entered yet.</span>
+                        )}
+                      </div>
+                    ) : (
+                      <Textarea
+                        placeholder="e.g. Learn the fundamentals of AI, automation and machine learning..."
+                        value={newModuleDescription}
+                        onChange={(e) => setNewModuleDescription(e.target.value)}
+                        rows={2}
+                        className="rounded-xl text-xs bg-background border-border/80 focus:border-primary leading-relaxed font-sans"
+                      />
+                    )}
+                  </div>
+
+                  {/* Module Practical Task */}
+                  <div className="space-y-1.5 p-3 rounded-2xl border border-primary/20 bg-primary/5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-primary" />
+                        <label className="text-[11px] font-bold text-primary uppercase tracking-wider">
+                          Module Practical Task (Optional)
+                        </label>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowModuleTaskPreview(!showModuleTaskPreview)}
+                        className="text-[10px] font-bold text-primary hover:underline inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="h-3 w-3" />
+                        <span>{showModuleTaskPreview ? "Edit Text" : "Live Preview"}</span>
+                      </button>
+                    </div>
+                    {showModuleTaskPreview ? (
+                      <div className="rounded-xl border border-border/60 p-2.5 bg-background min-h-[60px] text-xs">
+                        {newModulePracticalTask?.trim() ? (
+                          <MarkdownContent content={newModulePracticalTask} variant="compact" />
+                        ) : (
+                          <span className="text-muted-foreground italic text-xs">No practical task entered yet.</span>
+                        )}
+                      </div>
+                    ) : (
+                      <Textarea
+                        placeholder="e.g. List 3 tasks in your daily life that AI could help with. For each task, describe: 1. The task, 2. How AI could help, 3. What the human should still do."
+                        value={newModulePracticalTask}
+                        onChange={(e) => setNewModulePracticalTask(e.target.value)}
+                        rows={3}
+                        className="rounded-xl text-xs bg-background border-border/80 focus:border-primary leading-relaxed font-sans"
+                      />
+                    )}
+                  </div>
                   <div className="flex justify-end gap-2 pt-1">
                     <Button
                       type="button"
@@ -1553,9 +2087,22 @@ export default function CourseEditor({
                                             <h4 className="font-bold text-sm text-foreground truncate font-outfit">
                                               Module {modIdx + 1} — {mod.title}
                                             </h4>
-                                            <span className="text-[11px] text-muted-foreground font-medium">
-                                              {moduleLessons.length} {moduleLessons.length === 1 ? "lesson" : "lessons"}
-                                            </span>
+                                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground font-medium">
+                                              <span>
+                                                {moduleLessons.length} {moduleLessons.length === 1 ? "lesson" : "lessons"}
+                                              </span>
+                                              {mod.practical_task && (
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                                                  <Sparkles className="w-2.5 h-2.5" />
+                                                  <span>Task Added</span>
+                                                </span>
+                                              )}
+                                            </div>
+                                            {mod.description && (
+                                              <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xl">
+                                                {mod.description}
+                                              </p>
+                                            )}
                                           </div>
                                         </div>
 
@@ -1816,9 +2363,22 @@ export default function CourseEditor({
                               <h4 className="font-bold text-sm text-foreground truncate font-outfit">
                                 Module {modIdx + 1} — {mod.title}
                               </h4>
-                              <span className="text-[11px] text-muted-foreground font-medium">
-                                {moduleLessons.length} {moduleLessons.length === 1 ? "lesson" : "lessons"} in module
-                              </span>
+                              <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground font-medium">
+                                <span>
+                                  {moduleLessons.length} {moduleLessons.length === 1 ? "lesson" : "lessons"} in module
+                                </span>
+                                {mod.practical_task && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                                    <Sparkles className="w-2.5 h-2.5" />
+                                    <span>Task Added</span>
+                                  </span>
+                                )}
+                              </div>
+                              {mod.description && (
+                                <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xl">
+                                  {mod.description}
+                                </p>
+                              )}
                             </div>
                           </div>
 
@@ -2018,7 +2578,477 @@ export default function CourseEditor({
           </Card>
         </TabsContent>
 
-        {/* TAB 2: COURSE SETTINGS & METADATA */}
+        {/* TAB: COURSE INFORMATION & SEO */}
+        <TabsContent value="info" className="space-y-6 m-0">
+          <Card className="rounded-3xl border border-border/80 shadow-xs">
+            <CardHeader className="pb-4 border-b border-border/60">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <div>
+                  <CardTitle className="text-sm font-bold font-outfit text-foreground">
+                    Editorial Information &amp; SEO
+                  </CardTitle>
+                  <p className="text-[11px] text-muted-foreground">
+                    Manage short overview, About section, learning outcomes, audience, prerequisites, content overview, and SEO tags.
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="pt-6 space-y-6">
+              {/* 1. Short Description */}
+              <div className="space-y-1.5 p-4 rounded-2xl border border-border/80 bg-background">
+                <label className="block text-xs font-bold text-foreground uppercase tracking-wider">
+                  Short Course Description
+                </label>
+                <p className="text-[11px] text-muted-foreground">
+                  Concise plain-text overview (1-2 sentences). Used in catalog cards, bundle previews, search results, and quick previews.
+                </p>
+                <Textarea
+                  placeholder="e.g. Build practical AI skills for modern workplaces. Master generative tools, prompt workflows, and practical applications."
+                  value={shortDescription}
+                  onChange={(e) => setShortDescription(e.target.value)}
+                  rows={3}
+                  className="rounded-xl text-xs sm:text-sm bg-background border-border/80 focus:border-primary leading-relaxed font-sans"
+                />
+              </div>
+
+              {/* 2. About This Course */}
+              <div className="space-y-2 p-4 rounded-2xl border border-border/80 bg-muted/10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider">
+                      About This Course
+                    </label>
+                    <p className="text-[11px] text-muted-foreground">
+                      In-depth overview and philosophy of the course. Displayed prominently on the public course detail page.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAboutPreview(!showAboutPreview)}
+                    className="text-[11px] font-bold text-primary hover:underline inline-flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Eye className="h-3 w-3" />
+                    <span>{showAboutPreview ? "Edit Raw Markdown" : "Live Preview"}</span>
+                  </button>
+                </div>
+
+                {showAboutPreview ? (
+                  <div className="rounded-xl border border-border/80 p-3.5 bg-background min-h-[120px] max-h-[280px] overflow-y-auto">
+                    {aboutCourse?.trim() ? (
+                      <MarkdownContent content={aboutCourse} />
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">
+                        No &quot;About This Course&quot; content written yet.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <Textarea
+                    placeholder="## About This Course&#10;&#10;This course introduces learners to practical AI concepts, tools and workplace applications...&#10;&#10;It focuses on understanding AI and applying it to real tasks rather than learning theory alone."
+                    value={aboutCourse}
+                    onChange={(e) => setAboutCourse(e.target.value)}
+                    rows={6}
+                    className="rounded-xl text-xs sm:text-sm font-mono bg-background border-border/80 focus:border-primary leading-relaxed"
+                  />
+                )}
+
+                <p className="text-[11px] text-muted-foreground leading-relaxed flex items-center gap-1.5 pt-0.5">
+                  <Sparkles className="h-3 w-3 text-primary shrink-0" />
+                  <span>Supports Markdown: <strong>**bold**</strong>, <em>*italic*</em>, ## headings, - lists, tables, and LaTeX: $inline$ / $$block$$.</span>
+                </p>
+              </div>
+
+              {/* 3. What You'll Learn */}
+              <div className="space-y-2 p-4 rounded-2xl border border-border/80 bg-muted/10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider">
+                      What You&apos;ll Learn (Key Takeaways &amp; Outcomes)
+                    </label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Structured learning outcomes and capabilities students will acquire by completing the course.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowLearnPreview(!showLearnPreview)}
+                    className="text-[11px] font-bold text-primary hover:underline inline-flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Eye className="h-3 w-3" />
+                    <span>{showLearnPreview ? "Edit Raw Markdown" : "Live Preview"}</span>
+                  </button>
+                </div>
+
+                {showLearnPreview ? (
+                  <div className="rounded-xl border border-border/80 p-3.5 bg-background min-h-[120px] max-h-[280px] overflow-y-auto">
+                    {whatYouWillLearn?.trim() ? (
+                      <MarkdownContent content={whatYouWillLearn} />
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">
+                        No &quot;What You&apos;ll Learn&quot; content written yet.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <Textarea
+                    placeholder="## What You'll Learn&#10;&#10;By the end of the course, you will be able to:&#10;&#10;- Understand core AI concepts&#10;- Distinguish AI, automation and machine learning&#10;- Use practical AI tools&#10;- Apply AI to everyday workflows"
+                    value={whatYouWillLearn}
+                    onChange={(e) => setWhatYouWillLearn(e.target.value)}
+                    rows={6}
+                    className="rounded-xl text-xs sm:text-sm font-mono bg-background border-border/80 focus:border-primary leading-relaxed"
+                  />
+                )}
+
+                <p className="text-[11px] text-muted-foreground leading-relaxed flex items-center gap-1.5 pt-0.5">
+                  <Sparkles className="h-3 w-3 text-primary shrink-0" />
+                  <span>Supports Markdown: ## headings, - bullet lists, **bold**.</span>
+                </p>
+              </div>
+
+              {/* 4. Who Is This Course For? */}
+              <div className="space-y-2 p-4 rounded-2xl border border-border/80 bg-muted/10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider">
+                      Who Is This Course For?
+                    </label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Target audience, professional backgrounds, and student demographics who will benefit most.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowWhoForPreview(!showWhoForPreview)}
+                    className="text-[11px] font-bold text-primary hover:underline inline-flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Eye className="h-3 w-3" />
+                    <span>{showWhoForPreview ? "Edit Raw Markdown" : "Live Preview"}</span>
+                  </button>
+                </div>
+
+                {showWhoForPreview ? (
+                  <div className="rounded-xl border border-border/80 p-3.5 bg-background min-h-[100px] max-h-[250px] overflow-y-auto">
+                    {whoIsThisFor?.trim() ? (
+                      <MarkdownContent content={whoIsThisFor} />
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">
+                        No &quot;Who Is This Course For?&quot; content written yet.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <Textarea
+                    placeholder="### This course is designed for:&#10;&#10;- Students and fresh graduates&#10;- Working professionals across non-technical domains&#10;- Aviation, hospitality and service professionals&#10;- Beginners exploring practical AI"
+                    value={whoIsThisFor}
+                    onChange={(e) => setWhoIsThisFor(e.target.value)}
+                    rows={5}
+                    className="rounded-xl text-xs sm:text-sm font-mono bg-background border-border/80 focus:border-primary leading-relaxed"
+                  />
+                )}
+
+                <p className="text-[11px] text-muted-foreground leading-relaxed flex items-center gap-1.5 pt-0.5">
+                  <Sparkles className="h-3 w-3 text-primary shrink-0" />
+                  <span>Supports Markdown: ### headings, - bullet points.</span>
+                </p>
+              </div>
+
+              {/* 5. Prerequisites */}
+              <div className="space-y-2 p-4 rounded-2xl border border-border/80 bg-muted/10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider">
+                      Prerequisites (Optional)
+                    </label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Prior knowledge, tools, or background needed. If empty, the public prerequisites section is omitted.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPrereqPreview(!showPrereqPreview)}
+                    className="text-[11px] font-bold text-primary hover:underline inline-flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Eye className="h-3 w-3" />
+                    <span>{showPrereqPreview ? "Edit Raw Markdown" : "Live Preview"}</span>
+                  </button>
+                </div>
+
+                {showPrereqPreview ? (
+                  <div className="rounded-xl border border-border/80 p-3.5 bg-background min-h-[90px] max-h-[220px] overflow-y-auto">
+                    {prerequisites?.trim() ? (
+                      <MarkdownContent content={prerequisites} />
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">
+                        No prerequisites specified (none required).
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <Textarea
+                    placeholder="- Basic computer and internet familiarity&#10;- No prior programming experience required&#10;- Suitable for absolute beginners"
+                    value={prerequisites}
+                    onChange={(e) => setPrerequisites(e.target.value)}
+                    rows={4}
+                    className="rounded-xl text-xs sm:text-sm font-mono bg-background border-border/80 focus:border-primary leading-relaxed"
+                  />
+                )}
+              </div>
+
+              {/* 6. Course Content Overview */}
+              <div className="space-y-2 p-4 rounded-2xl border border-border/80 bg-muted/10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground uppercase tracking-wider">
+                      Course Content Overview (Optional Editorial Pillars)
+                    </label>
+                    <p className="text-[11px] text-muted-foreground">
+                      High-level architectural summary of major learning pillars (the detailed syllabus is generated automatically from real modules/lessons below).
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowOverviewPreview(!showOverviewPreview)}
+                    className="text-[11px] font-bold text-primary hover:underline inline-flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Eye className="h-3 w-3" />
+                    <span>{showOverviewPreview ? "Edit Raw Markdown" : "Live Preview"}</span>
+                  </button>
+                </div>
+
+                {showOverviewPreview ? (
+                  <div className="rounded-xl border border-border/80 p-3.5 bg-background min-h-[90px] max-h-[220px] overflow-y-auto">
+                    {contentOverview?.trim() ? (
+                      <MarkdownContent content={contentOverview} />
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">
+                        No content overview written yet.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <Textarea
+                    placeholder="This course is organized into four major learning areas:&#10;&#10;- AI Foundations&#10;- Generative AI Tools&#10;- AI Productivity Workflows&#10;- AI in Modern Workplaces"
+                    value={contentOverview}
+                    onChange={(e) => setContentOverview(e.target.value)}
+                    rows={4}
+                    className="rounded-xl text-xs sm:text-sm font-mono bg-background border-border/80 focus:border-primary leading-relaxed"
+                  />
+                )}
+              </div>
+
+              {/* 7. SEO Configuration */}
+              <div className="space-y-4 p-5 rounded-2xl border border-border/80 bg-background">
+                <div className="space-y-0.5">
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                    Search Engine Optimization (SEO)
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground">
+                    Customize search engine title and meta description. These values are used in Google search results and link previews.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-bold text-foreground uppercase tracking-wider">
+                      SEO Title (Optional)
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder={`e.g. ${title || "Course"} | Official Certification | Airbharath LMS`}
+                      value={seoTitle}
+                      onChange={(e) => setSeoTitle(e.target.value)}
+                      className="h-10 rounded-xl text-xs sm:text-sm bg-background border-border/80 focus:border-primary"
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      Defaults to: {title || "Course Title"} | Airbharath LMS
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-bold text-foreground uppercase tracking-wider">
+                      SEO Meta Description (Optional)
+                    </label>
+                    <Textarea
+                      placeholder="e.g. Master practical career-ready capabilities with self-paced HD video modules and QR-verifiable certificate."
+                      value={seoDescription}
+                      onChange={(e) => setSeoDescription(e.target.value)}
+                      rows={3}
+                      className="rounded-xl text-xs sm:text-sm bg-background border-border/80 focus:border-primary leading-relaxed font-sans"
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      Target 140–160 characters for optimal search snippet display.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Save Button for Info */}
+              <div className="flex justify-end pt-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => handleSaveCourse()}
+                  disabled={loadingCourse}
+                  className="rounded-xl text-xs font-bold h-10 px-6 gap-2 shadow-sm cursor-pointer"
+                >
+                  <Save className="h-4 w-4" />
+                  <span>{loadingCourse ? "Saving..." : "Save Course Information"}</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB: INSTRUCTORS & AUTHORS */}
+        <TabsContent value="authors" className="space-y-6 m-0">
+          <Card className="rounded-3xl border border-border/80 shadow-xs">
+            <CardHeader className="pb-4 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                  <Users className="h-4 w-4" />
+                </div>
+                <div>
+                  <CardTitle className="text-sm font-bold font-outfit text-foreground">
+                    Course Authors &amp; Instructors ({authors.length})
+                  </CardTitle>
+                  <p className="text-[11px] text-muted-foreground">
+                    Manage instructors and subject matter experts featured on the public course page.
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                size="sm"
+                onClick={openAddAuthor}
+                className="rounded-xl text-xs font-bold gap-1.5 h-9 px-4 shadow-2xs self-start sm:self-auto cursor-pointer"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Instructor</span>
+              </Button>
+            </CardHeader>
+
+            <CardContent className="pt-6 space-y-5">
+              {authors.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {authors
+                    .slice()
+                    .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+                    .map((author, aIdx) => (
+                      <div
+                        key={author.id}
+                        className="border border-border/80 rounded-2xl p-5 bg-card hover:border-primary/40 transition-all shadow-2xs flex flex-col justify-between space-y-4"
+                      >
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3.5">
+                              {author.photo_url ? (
+                                <img
+                                  src={author.photo_url}
+                                  alt={author.name}
+                                  className="w-12 h-12 rounded-2xl object-cover border border-border/80 shrink-0"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary font-bold font-outfit flex items-center justify-center text-sm shrink-0">
+                                  {author.name.charAt(0)}
+                                </div>
+                              )}
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-bold text-sm text-foreground font-outfit">
+                                    {author.name}
+                                  </h4>
+                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground">
+                                    #{aIdx + 1}
+                                  </span>
+                                </div>
+                                {author.designation && (
+                                  <p className="text-xs text-primary font-medium mt-0.5">
+                                    {author.designation}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {author.bio && (
+                            <div className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+                              {author.bio}
+                            </div>
+                          )}
+
+                          {author.profile_url && (
+                            <a
+                              href={author.profile_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              <span>View Profile</span>
+                            </a>
+                          )}
+                        </div>
+
+                        <div className="pt-3 border-t border-border/50 flex items-center justify-between">
+                          <span className="text-[11px] text-muted-foreground font-medium">
+                            Display Order: {author.order_index}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditAuthor(author)}
+                              className="h-8 rounded-xl text-xs font-semibold gap-1.5 px-3"
+                            >
+                              <Edit2 className="h-3 w-3" />
+                              <span>Edit</span>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setAuthorToDelete(author)}
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl"
+                              title="Delete Instructor"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="py-14 text-center text-muted-foreground border-2 border-dashed border-border/80 rounded-3xl bg-muted/10 space-y-3">
+                  <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto">
+                    <Users className="h-6 w-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-bold text-foreground font-outfit">No instructors configured yet</p>
+                    <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                      Add authors or instructors with their photo, designation, and short biography. If none are added, the public &quot;Meet Your Instructors&quot; section is hidden.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={openAddAuthor}
+                    className="rounded-xl text-xs font-bold gap-1.5 mt-2"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Add First Instructor</span>
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB: COURSE SETTINGS & METADATA */}
         <TabsContent value="settings" className="space-y-6 m-0">
           <Card className="rounded-3xl border border-border/80 shadow-xs">
             <CardHeader className="pb-4 border-b border-border/60">

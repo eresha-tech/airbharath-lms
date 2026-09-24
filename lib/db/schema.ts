@@ -18,6 +18,14 @@ export const courses = pgTable('courses', {
   title: text('title').notNull(),
   slug: text('slug'),
   description: text('description'),
+  shortDescription: text('short_description'),
+  aboutCourse: text('about_course'),
+  whatYouWillLearn: text('what_you_will_learn'),
+  whoIsThisFor: text('who_is_this_for'),
+  prerequisites: text('prerequisites'),
+  contentOverview: text('content_overview'),
+  seoTitle: text('seo_title'),
+  seoDescription: text('seo_description'),
   thumbnailUrl: text('thumbnail_url'),
   price: numeric('price', { precision: 10, scale: 2 }).notNull(),
   accessDays: integer('access_days'), // null means lifetime access
@@ -58,8 +66,24 @@ export const modules = pgTable('modules', {
   courseId: uuid('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
   sectionId: uuid('section_id').references(() => courseSections.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
+  description: text('description'),
+  practicalTask: text('practical_task'),
   orderIndex: integer('order_index').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Course Authors Table
+export const courseAuthors = pgTable('course_authors', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  courseId: uuid('course_id').references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  name: text('name').notNull(),
+  photoUrl: text('photo_url'),
+  designation: text('designation'),
+  bio: text('bio'),
+  profileUrl: text('profile_url'),
+  orderIndex: integer('order_index').default(0).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 // Lessons Table
@@ -249,12 +273,20 @@ export const coursesRelations = relations(courses, ({ one, many }) => ({
     fields: [courses.instructorId],
     references: [users.id],
   }),
+  authors: many(courseAuthors),
   sections: many(courseSections),
   modules: many(modules),
   enrollments: many(enrollments),
   videos: many(videos),
   bundleItems: many(courseBundleItems, { relationName: 'bundleItems' }),
   bundledIn: many(courseBundleItems, { relationName: 'bundledIn' }),
+}));
+
+export const courseAuthorsRelations = relations(courseAuthors, ({ one }) => ({
+  course: one(courses, {
+    fields: [courseAuthors.courseId],
+    references: [courses.id],
+  }),
 }));
 
 export const courseBundleItemsRelations = relations(courseBundleItems, ({ one }) => ({

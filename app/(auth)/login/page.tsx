@@ -28,13 +28,27 @@ import { track, identifyUser } from '@/lib/analytics';
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const rawCallbackUrl = searchParams.get('callbackUrl');
+  const rawCallbackUrl =
+    searchParams.get('callbackUrl') ||
+    searchParams.get('returnTo') ||
+    searchParams.get('redirect');
 
-  // Sanitize callback URL (must be internal relative path)
-  const callbackUrl =
-    rawCallbackUrl && rawCallbackUrl.startsWith('/') && !rawCallbackUrl.startsWith('//')
-      ? rawCallbackUrl
-      : null;
+  // Sanitize callback URL (must be internal relative path to prevent open redirect vulnerabilities)
+  const sanitizeCallbackUrl = (url: string | null): string | null => {
+    if (!url) return null;
+    const trimmed = url.trim();
+    // Must start with single '/' and not '//' or '/\' or contain '\'
+    if (!trimmed.startsWith('/') || trimmed.startsWith('//') || trimmed.startsWith('/\\') || trimmed.includes('\\')) {
+      return null;
+    }
+    // Reject explicit protocol schemes (e.g. /http: or /javascript:)
+    if (/^\/[a-z0-9+.-]+:/i.test(trimmed)) {
+      return null;
+    }
+    return trimmed;
+  };
+
+  const callbackUrl = sanitizeCallbackUrl(rawCallbackUrl);
 
   const [step, setStep] = useState<'phone' | 'otp' | 'profile'>('phone');
   const [phone, setPhone] = useState('');
