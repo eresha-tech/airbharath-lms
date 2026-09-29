@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthorizedAdminSession } from "@/lib/admin-authorization";
 import { db } from "@/lib/db";
 import { videos, videoCaptions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -12,8 +12,8 @@ interface RouteParams {
 
 export async function GET(req: Request, { params }: RouteParams) {
   try {
-    const session = await getSession();
-    if (!session || session.role !== "admin") {
+    const session = await getAuthorizedAdminSession();
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -45,8 +45,8 @@ export async function GET(req: Request, { params }: RouteParams) {
 
 export async function POST(req: Request, { params }: RouteParams) {
   try {
-    const session = await getSession();
-    if (!session || session.role !== "admin") {
+    const session = await getAuthorizedAdminSession();
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -160,8 +160,8 @@ export async function POST(req: Request, { params }: RouteParams) {
 
 export async function DELETE(req: Request, { params }: RouteParams) {
   try {
-    const session = await getSession();
-    if (!session || session.role !== "admin") {
+    const session = await getAuthorizedAdminSession();
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

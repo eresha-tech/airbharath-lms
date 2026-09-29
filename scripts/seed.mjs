@@ -1,32 +1,42 @@
-import postgres from 'postgres';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import * as schema from '../lib/db/schema.ts';
+import { assertDestructiveDatabaseOperation } from './database-safety.mjs';
 
-const connectionString = process.env.DATABASE_URL || 'postgres://postgres@localhost:5433/airbharath_lms';
+assertDestructiveDatabaseOperation({
+  databaseEnv: process.env.DATABASE_ENV,
+  databaseUrl: process.env.DATABASE_URL,
+  acknowledgement: process.env.ALLOW_DESTRUCTIVE_DB_OPERATION,
+});
+
+const [{ default: postgres }, { drizzle }, schema] = await Promise.all([
+  import('postgres'),
+  import('drizzle-orm/postgres-js'),
+  import('../lib/db/schema.ts'),
+]);
+
+const connectionString = process.env.DATABASE_URL;
 const client = postgres(connectionString, { prepare: false });
 const db = drizzle(client, { schema });
 
 async function seed() {
   console.log('🌱 Seeding Airbharath LMS 4 production courses (₹825 each)...');
 
-  // 1. Create Admin & Student Test Users
-  const [adminUser] = await db.insert(schema.users).values({
-    phone: '919876543210',
+  // 1. Create non-privileged development fixture users
+  const [contentAuthor] = await db.insert(schema.users).values({
+    phone: '910000000001',
     email: 'admin@airbharath.in',
-    fullName: 'Captain Vikram Singh (Admin)',
+    fullName: 'Sample Content Author',
     avatarUrl: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=400',
-    role: 'admin',
+    role: 'student',
   }).onConflictDoNothing().returning();
 
   const [studentUser] = await db.insert(schema.users).values({
-    phone: '919999999999',
+    phone: '910000000002',
     email: 'student@airbharath.in',
     fullName: 'Rahul Sharma (Student)',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
     role: 'student',
   }).onConflictDoNothing().returning();
 
-  const adminId = adminUser?.id;
+  const contentAuthorId = contentAuthor?.id;
   const studentId = studentUser?.id;
 
   // Clear existing records to ensure fresh seed
@@ -51,7 +61,7 @@ async function seed() {
     thumbnailUrl: 'https://assets.airbharath.in/lms/ai-skills.webp',
     price: '825.00',
     isPublished: true,
-    instructorId: adminId,
+    instructorId: contentAuthorId,
   }).returning();
 
   // ==========================================
@@ -164,7 +174,7 @@ async function seed() {
     thumbnailUrl: 'https://assets.airbharath.in/lms/content-creation.webp',
     price: '825.00',
     isPublished: true,
-    instructorId: adminId,
+    instructorId: contentAuthorId,
   }).returning();
 
   if (course2) {
@@ -225,7 +235,7 @@ async function seed() {
     thumbnailUrl: 'https://assets.airbharath.in/lms/entrepreneurship.webp',
     price: '825.00',
     isPublished: true,
-    instructorId: adminId,
+    instructorId: contentAuthorId,
   }).returning();
 
   if (course3) {
@@ -278,7 +288,7 @@ async function seed() {
     thumbnailUrl: 'https://assets.airbharath.in/lms/ms-office.webp',
     price: '825.00',
     isPublished: true,
-    instructorId: adminId,
+    instructorId: contentAuthorId,
   }).returning();
 
   if (course4) {
@@ -331,7 +341,7 @@ async function seed() {
     thumbnailUrl: 'https://assets.airbharath.in/lms/combo.webp',
     price: '3300.00',
     isPublished: true,
-    instructorId: adminId,
+    instructorId: contentAuthorId,
   }).returning();
 
   if (course5) {
@@ -606,7 +616,7 @@ async function seed() {
   await client.end();
 }
 
-seed().catch((err) => {
-  console.error('❌ Seeding error:', err);
+seed().catch(() => {
+  console.error('❌ Seeding failed. Database error details are intentionally omitted.');
   process.exit(1);
 });

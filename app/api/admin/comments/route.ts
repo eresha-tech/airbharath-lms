@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthorizedAdminSession } from "@/lib/admin-authorization";
 import { db } from "@/lib/db";
 import { lessonComments, lessons, modules, courses, users } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 export async function GET() {
   try {
-    const session = await getSession();
-    if (!session || session.role !== "admin") {
+    const session = await getAuthorizedAdminSession();
+    if (!session) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

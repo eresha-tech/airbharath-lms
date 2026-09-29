@@ -1,5 +1,5 @@
 import React from "react";
-import { getSession } from "@/lib/auth";
+import { getAuthorizedAdminSession } from "@/lib/admin-authorization";
 import { redirect } from "next/navigation";
 import VideoLibraryClient from "@/components/admin/VideoLibraryClient";
 
@@ -11,8 +11,8 @@ export const metadata = {
 };
 
 export default async function AdminVideosPage() {
-  const session = await getSession();
-  if (!session || session.role !== "admin") {
+  const session = await getAuthorizedAdminSession();
+  if (!session) {
     redirect("/login");
   }
 

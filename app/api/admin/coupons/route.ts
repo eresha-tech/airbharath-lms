@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthorizedAdminSession } from "@/lib/admin-authorization";
 import { db } from "@/lib/db";
 import { coupons } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
@@ -7,6 +7,11 @@ import { serverTrack } from "@/lib/analytics-server";
 
 export async function GET() {
   try {
+    const session = await getAuthorizedAdminSession();
+    if (!session) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const couponsList = await db.query.coupons.findMany({
       orderBy: [asc(coupons.expiryDate)],
     });
@@ -29,8 +34,8 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const session = await getSession();
-    if (!session || session.role !== "admin") {
+    const session = await getAuthorizedAdminSession();
+    if (!session) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -61,8 +66,8 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const session = await getSession();
-    if (!session || session.role !== "admin") {
+    const session = await getAuthorizedAdminSession();
+    if (!session) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

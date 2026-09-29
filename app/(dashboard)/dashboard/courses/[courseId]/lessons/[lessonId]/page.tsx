@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
+import { hasPersistedAdminRole } from "@/lib/admin-authorization";
 import { db } from "@/lib/db";
 import { lessons, enrollments, courses, lessonMaterials, videoCaptions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -50,6 +51,8 @@ export default async function LessonPage({ params }: LessonPageProps) {
   const session = await getSession();
 
   if (!session) return redirect("/login");
+
+  const isAdmin = await hasPersistedAdminRole(session);
 
   const isLessonUUID = UUID_REGEX.test(lessonId);
   if (!isLessonUUID) {
@@ -113,7 +116,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
   }
 
   // Check enrollment unless free preview or admin
-  let isEnrolled = lessonObj.isFreePreview || session.role === "admin";
+  let isEnrolled = lessonObj.isFreePreview || isAdmin;
 
   if (!isEnrolled) {
     const access = await hasCourseAccess(session.id, courseObj.id, session.role);
@@ -209,7 +212,6 @@ export default async function LessonPage({ params }: LessonPageProps) {
       : null;
   const currentLessonInfo = currentLessonIdx >= 0 ? allLessonsInOrder[currentLessonIdx] : null;
 
-  const isAdmin = session.role === "admin";
   const availability = getLessonAvailability(lessonObj);
   const isLocked = !isAdmin && availability.isLocked;
   const isLiveLesson = lessonObj.deliveryType === "live";

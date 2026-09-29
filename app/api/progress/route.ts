@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
+import { hasPersistedAdminRole } from '@/lib/admin-authorization';
 import { db } from '@/lib/db';
 import { progress, lessons } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -48,9 +49,10 @@ export async function POST(request: Request) {
       where: eq(lessons.id, lessonId),
     });
 
+    const isAdmin = await hasPersistedAdminRole(session);
     if (
       targetLesson &&
-      session.role !== "admin" &&
+      !isAdmin &&
       targetLesson.deliveryType === "recorded" &&
       targetLesson.releaseAt &&
       new Date(targetLesson.releaseAt) > new Date()

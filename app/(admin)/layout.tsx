@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getSession } from "@/lib/auth";
+import { hasPersistedAdminRole } from "@/lib/admin-authorization";
 import { redirect } from "next/navigation";
 import { SidebarProvider } from "@/components/providers/sidebar-provider";
 import { AdminLayoutWrapper } from "@/components/admin/AdminLayoutWrapper";
@@ -22,7 +23,7 @@ export default async function AdminLayout({
     return redirect("/login");
   }
 
-  if (session.role !== "admin") {
+  if (!(await hasPersistedAdminRole(session))) {
     return redirect("/dashboard");
   }
 
@@ -32,4 +33,3 @@ export default async function AdminLayout({
     </SidebarProvider>
   );
 }
-

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { hasPersistedAdminRole } from "@/lib/admin-authorization";
 import { db } from "@/lib/db";
 import { invoices, orders } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -27,7 +28,8 @@ export async function GET(
     }
 
     // Verify user owns order or is admin
-    if (order.userId !== session.id && session.role !== "admin") {
+    const isAdmin = await hasPersistedAdminRole(session);
+    if (order.userId !== session.id && !isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

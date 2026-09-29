@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { hasPersistedAdminRole } from "@/lib/admin-authorization";
 import { db } from "@/lib/db";
 import { lessons, modules, videoCaptions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -49,7 +50,7 @@ export async function GET(req: Request, { params }: RouteParams) {
     }
 
     // 4. Verify scheduled release
-    const isAdmin = session.role === "admin";
+    const isAdmin = await hasPersistedAdminRole(session);
     const availability = getLessonAvailability(lesson);
     if (!isAdmin && availability.isLocked) {
       return NextResponse.json(

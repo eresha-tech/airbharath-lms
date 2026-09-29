@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { getAuthorizedAdminSession } from '@/lib/admin-authorization';
 import { adminIssueCertificates } from '@/lib/certificate-service';
 import { serverTrack } from '@/lib/analytics-server';
 
 export async function POST(req: Request) {
   try {
-    const session = await getSession();
-    if (!session || session.role !== 'admin') {
+    const session = await getAuthorizedAdminSession();
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized. Admin access required.' }, { status: 403 });
     }
 

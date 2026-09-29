@@ -58,12 +58,6 @@ export async function middleware(request: NextRequest) {
 
   const role = sessionUser.role || 'student';
 
-  if (role === 'admin' && pathname.startsWith('/dashboard')) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/admin';
-    return NextResponse.redirect(url);
-  }
-
   if (role !== 'admin' && pathname.startsWith('/admin')) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
