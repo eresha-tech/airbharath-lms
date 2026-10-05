@@ -108,6 +108,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/workspace" className="hover:text-white transition-colors font-medium">
+                  Workspace — Founding Creators
+                </Link>
+              </li>
+              <li>
                 <Link href="/verify-certificate" className="hover:text-white transition-colors font-medium">
                   Verify Certificate
                 </Link>

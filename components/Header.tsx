@@ -19,6 +19,7 @@ import { useEffect, useState } from "react";
 
 const NAV_LINKS = [
   { href: "/courses", label: "All Courses", icon: LayoutGrid },
+  { href: "/workspace", label: "Workspace", icon: BookOpen },
   { href: "/#benefits", label: "Platform", icon: Sparkles },
   { href: "/#how-it-works", label: "How It Works", icon: BookOpen },
   { href: "/#certificate", label: "Certificates", icon: ShieldCheck },
@@ -98,6 +99,9 @@ export default function Header() {
 
             {/* Desktop Navigation Links */}
             <nav className="hidden lg:flex items-center space-x-1 text-xs font-semibold text-foreground/80">
+              <Link href="/workspace" className={`hidden xl:block px-3 py-1.5 rounded-lg transition-colors ${pathname === "/workspace" ? "text-primary font-bold bg-muted" : "hover:text-primary hover:bg-muted"}`}>
+                Workspace
+              </Link>
               <Link
                 href="/courses"
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all ${

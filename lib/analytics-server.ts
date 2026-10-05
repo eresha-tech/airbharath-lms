@@ -1,4 +1,5 @@
 import { PostHog } from "posthog-node";
+import { getPostHogConfig } from "@/lib/posthog-config";
 
 let serverPostHogClient: PostHog | null = null;
 
@@ -6,32 +7,13 @@ let serverPostHogClient: PostHog | null = null;
  * Get or initialize the singleton server-side PostHog client
  */
 export function getServerPostHogClient(): PostHog | null {
+  const config = getPostHogConfig();
+  if (!config) return null;
   if (serverPostHogClient) return serverPostHogClient;
 
-  const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-  const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
-
-  if (!posthogKey || posthogKey === "your-posthog-key" || posthogKey === "your_posthog_project_api_key") {
-    if (process.env.NODE_ENV === "development") {
-      console.error(
-        "NEXT_PUBLIC_POSTHOG_KEY variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once NEXT_PUBLIC_POSTHOG_KEY is configured"
-      );
-    }
-    return null;
-  }
-
-  if (!posthogHost) {
-    if (process.env.NODE_ENV === "development") {
-      console.error(
-        "NEXT_PUBLIC_POSTHOG_HOST variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once NEXT_PUBLIC_POSTHOG_HOST is configured"
-      );
-    }
-    return null;
-  }
-
   try {
-    serverPostHogClient = new PostHog(posthogKey, {
-      host: posthogHost,
+    serverPostHogClient = new PostHog(config.key, {
+      host: config.host,
       flushAt: 1,
       flushInterval: 0,
       enableExceptionAutocapture: true,
@@ -54,9 +36,6 @@ export async function serverTrack(
   try {
     const client = getServerPostHogClient();
     if (!client) {
-      if (process.env.NODE_ENV === "development") {
-        console.debug(`[Server Analytics Dev] ${eventName} for user ${distinctId}:`, properties);
-      }
       return;
     }
 

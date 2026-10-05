@@ -1,5 +1,6 @@
-import { pgTable, uuid, text, numeric, boolean, integer, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, uuid, text, numeric, boolean, integer, timestamp, uniqueIndex, index, jsonb } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import { APPLICATION_STATUSES, APPROVAL_EMAIL_STATUSES, type ReviewAssessments } from '@/lib/workspace/options';
 
 // Users Table
 export const users = pgTable('users', {
@@ -11,6 +12,66 @@ export const users = pgTable('users', {
   role: text('role').default('student').notNull(), // 'admin' | 'student'
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+// Applications are separate from LMS accounts and course ownership.
+export const workspaceApplicationStatus = pgEnum('workspace_application_status', APPLICATION_STATUSES);
+export const workspaceApprovalEmailStatus = pgEnum('workspace_approval_email_status', APPROVAL_EMAIL_STATUSES);
+export const workspaceApplications = pgTable('workspace_applications', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  applicationReference: text('application_reference').unique().notNull(),
+  submissionKey: uuid('submission_key').unique().notNull(),
+  payloadHash: text('payload_hash').notNull(),
+  fullName: text('full_name').notNull(),
+  email: text('email').notNull(),
+  mobile: text('mobile').notNull(),
+  city: text('city').notNull(),
+  country: text('country').notNull(),
+  aviationBackground: text('aviation_background').notNull(),
+  currentRole: text('current_role').notNull(),
+  organisation: text('organisation'),
+  yearsExperience: text('years_experience').notNull(),
+  professionalProfileUrl: text('professional_profile_url'),
+  proposedCourseTopic: text('proposed_course_topic').notNull(),
+  courseDescription: text('course_description').notNull(),
+  targetLearner: text('target_learner').notNull(),
+  learnerOutcome: text('learner_outcome').notNull(),
+  courseReadiness: text('course_readiness').notNull(),
+  teachingExperienceType: text('teaching_experience_type').notNull(),
+  teachingExperienceDescription: text('teaching_experience_description'),
+  sampleContentUrl: text('sample_content_url'),
+  audienceStatus: text('audience_status').notNull(),
+  audienceChannels: text('audience_channels').array().notNull(),
+  audienceSize: text('audience_size'),
+  joiningReason: text('joining_reason').notNull(),
+  additionalInformation: text('additional_information'),
+  applicationStatus: workspaceApplicationStatus('application_status').default('submitted').notNull(),
+  submittedAt: timestamp('submitted_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  consentAccuracy: boolean('consent_accuracy').notNull(),
+  consentContact: boolean('consent_contact').notNull(),
+  consentAccuracyAt: timestamp('consent_accuracy_at', { withTimezone: true }).notNull(),
+  consentContactAt: timestamp('consent_contact_at', { withTimezone: true }).notNull(),
+  consentVersion: text('consent_version').notNull(),
+  reviewAssessments: jsonb('review_assessments').$type<ReviewAssessments>().default({}).notNull(),
+  internalNotes: text('internal_notes').default('').notNull(),
+  decisionReason: text('decision_reason').default('').notNull(),
+  potentialDuplicate: boolean('potential_duplicate').default(false).notNull(),
+  reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+  reviewedBy: uuid('reviewed_by').references(() => users.id, { onDelete: 'set null' }),
+  statusChangedAt: timestamp('status_changed_at', { withTimezone: true }),
+  receiptSentAt: timestamp('receipt_sent_at', { withTimezone: true }),
+  approvalEmailStatus: workspaceApprovalEmailStatus('approval_email_status').default('not_sent').notNull(),
+  approvalEmailSentAt: timestamp('approval_email_sent_at', { withTimezone: true }),
+  approvalEmailSentBy: uuid('approval_email_sent_by').references(() => users.id, { onDelete: 'set null' }),
+  approvalEmailAttemptedAt: timestamp('approval_email_attempted_at', { withTimezone: true }),
+  approvalEmailAttemptedBy: uuid('approval_email_attempted_by').references(() => users.id, { onDelete: 'set null' }),
+  approvalEmailAttemptId: uuid('approval_email_attempt_id'),
+  approvalEmailErrorCategory: text('approval_email_error_category'),
+  approvalEmailPersonalNote: text('approval_email_personal_note').default('').notNull(),
+}, (t) => [
+  index('workspace_applications_status_submitted_idx').on(t.applicationStatus, t.submittedAt),
+  index('workspace_applications_email_idx').on(t.email),
+]);
 
 // Courses Table
 export const courses = pgTable('courses', {
@@ -409,4 +470,3 @@ export const playbackSessionsRelations = relations(playbackSessions, ({ one }) =
     references: [videos.id],
   }),
 }));
-

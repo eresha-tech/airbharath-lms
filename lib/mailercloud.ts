@@ -9,17 +9,19 @@ export async function sendMailercloudEmail({
   name,
   subject,
   html,
+  privateDelivery = false,
 }: {
   to: string;
   name?: string;
   subject: string;
   html: string;
+  privateDelivery?: boolean;
 }) {
   const apiKey = process.env.MAILERCLOUD_API_KEY;
 
   if (!apiKey) {
-    console.log(`[MAILERCLOUD DEV NOTICE] MAILERCLOUD_API_KEY is not set. Email to ${to} skipped without error.`);
-    return { success: false, skipped: true, reason: "No API key configured" };
+    if (!privateDelivery) console.log(`[MAILERCLOUD DEV NOTICE] MAILERCLOUD_API_KEY is not set. Email to ${to} skipped without error.`);
+    return { success: false, skipped: true, reason: "No API key configured", errorCategory: 'not_configured' };
   }
 
   try {
@@ -43,18 +45,28 @@ export async function sendMailercloudEmail({
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
+      ...(privateDelivery ? { signal: AbortSignal.timeout(8_000) } : {}),
     });
 
     if (!response.ok) {
+      if (privateDelivery) {
+        await response.body?.cancel();
+        return { success: false, errorCategory: 'provider_rejected' };
+      }
       const errText = await response.text();
       console.warn(`[MAILERCLOUD NOTICE] HTTP ${response.status}: Email delivery skipped cleanly without interrupting checkout. Response:`, errText);
       return { success: false, status: response.status, skipped: true, error: errText };
     }
 
+    if (privateDelivery) {
+      await response.body?.cancel();
+      return { success: true };
+    }
     const data = await response.json();
     console.log(`[MAILERCLOUD SUCCESS] Email sent to ${to}. Message ID:`, data?.id || data?.message_id || 'OK');
     return { success: true, data };
   } catch (err: any) {
+    if (privateDelivery) return { success: false, errorCategory: err?.name === 'TimeoutError' || err?.name === 'AbortError' ? 'timeout' : 'delivery_unknown' };
     // Suppress network or quota errors completely so transaction completes smoothly
     console.warn(`[MAILERCLOUD ERROR SUPPRESSED] Email delivery failed (${err.message}). Flow continuing cleanly.`);
     return { success: false, error: err.message, skipped: true };

@@ -87,6 +87,11 @@ export const adminNavGroups: AdminNavGroup[] = [
         icon: Users,
       },
       {
+        title: "Workspace Applications",
+        href: "/admin/workspace-applications",
+        icon: Briefcase,
+      },
+      {
         title: "Orders & Invoices",
         href: "/admin/orders",
         icon: CreditCard,
