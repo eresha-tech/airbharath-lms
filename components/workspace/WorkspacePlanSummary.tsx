@@ -1,0 +1,8 @@
+import { getCurrentPlans } from '@/lib/workspace/membership/service';
+import { calculatePrice, formatPaise } from '@/lib/workspace/membership/model';
+export async function WorkspacePlanSummary() {
+  try {
+    const plans = await getCurrentPlans();
+    return <section className="ph-no-capture space-y-4"><h2 className="font-outfit text-2xl font-semibold">Membership plan definitions</h2><p className="text-sm text-muted-foreground">Read-only versioned catalog. A new price requires a reviewed successor version; historical prices are preserved.</p><div className="grid gap-4 md:grid-cols-3">{plans.map(plan => <div key={plan.id} className="rounded-xl border border-border bg-card p-5"><h3 className="font-semibold">{plan.displayName} · v{plan.version}</h3><dl className="mt-4 space-y-2 text-sm">{[['Base', formatPaise(plan.basePricePaise)], ['GST @ 18%', formatPaise(calculatePrice(plan.basePricePaise, plan.taxRateBps).gstAmountPaise)], ['Total', formatPaise(calculatePrice(plan.basePricePaise, plan.taxRateBps).totalPaise)], ['Term', `${plan.durationMonths} calendar months · INR`], ['Status', `Current · ${plan.available ? 'Available' : 'Unavailable'}`]].map(([label, value]) => <div key={label} className="flex justify-between gap-3"><dt className="text-muted-foreground">{label}</dt><dd>{value}</dd></div>)}</dl></div>)}</div></section>;
+  } catch { return <section role="status" className="rounded-xl border border-border p-5"><h2 className="font-semibold">Membership plans unavailable</h2><p className="mt-2 text-sm text-muted-foreground">The catalog could not be loaded. Check migration/configuration readiness before exposing plan previews.</p></section>; }
+}

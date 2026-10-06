@@ -62,7 +62,7 @@ describe('eligibility validation and pure decisions', () => {
     expect(eligible.eligibleUntil!.getTime() - now.getTime()).toBe(30 * 86400000);
     expect(resolveJourney(false, eligible, now).state).toBe('authentication_required');
     expect(resolveJourney(true, null, now).state).toBe('eligibility_required');
-    expect(resolveJourney(true, eligible, now)).toMatchObject({ hasCreatorAccess: false, hasPaidEntitlement: false, destination: '/workspace/eligibility-result' });
+    expect(resolveJourney(true, eligible, now)).toMatchObject({ hasCreatorAccess: false, hasPaidEntitlement: false, destination: '/workspace/activate' });
     expect(DEFAULT_SETTINGS.launchAt).toBe('2026-11-08T18:30:00.000Z');
   });
 });

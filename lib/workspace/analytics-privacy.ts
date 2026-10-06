@@ -1,13 +1,15 @@
 import type { CaptureResult } from 'posthog-js';
+import { COUPON_ERRORS, isPlanCode } from './membership/model';
 import { EVALUATOR_VERSION, ELIGIBILITY_POLICY_VERSION } from './eligibility/model';
 export function workspaceAnalyticsPath(pathname: string) {
   if (pathname === '/workspace') return '/workspace';
   if (pathname.startsWith('/workspace/')) {
-    const known = ['/workspace/apply', '/workspace/eligibility-result', '/workspace/manual-application'];
+    const known = ['/workspace/apply', '/workspace/eligibility-result', '/workspace/manual-application', '/workspace/activate'];
     return known.includes(pathname) ? pathname : '/workspace/[path]';
   }
+  if (pathname.startsWith('/admin/workspace/coupons/')) return '/admin/workspace/coupons/[id]';
   if (pathname.startsWith('/admin/workspace/eligibility/')) return '/admin/workspace/eligibility/[id]';
-  if (pathname.startsWith('/admin/workspace/')) return ['/admin/workspace/eligibility', '/admin/workspace/settings'].includes(pathname) ? pathname : '/admin/workspace/[path]';
+  if (pathname.startsWith('/admin/workspace/')) return ['/admin/workspace/eligibility', '/admin/workspace/settings', '/admin/workspace/coupons'].includes(pathname) ? pathname : '/admin/workspace/[path]';
   if (pathname.startsWith('/admin/workspace-applications/')) return '/admin/workspace-applications/[id]';
   if (pathname === '/admin/workspace-applications') return pathname;
   return null;
@@ -25,23 +27,36 @@ export function sanitizeWorkspaceAnalytics(event: CaptureResult | null): Capture
   if (!path && !login && !event.event.startsWith('workspace_')) return event;
   if (login) return null;
   if (!event.event.startsWith('workspace_') && !['$pageview', '$pageleave'].includes(event.event)) return null;
-  const eligibility = event.event.startsWith('workspace_eligibility_') || !!path?.startsWith('/admin/workspace/') || (!!path?.startsWith('/workspace/') && path !== '/workspace/manual-application');
+  const membership = event.event.startsWith('workspace_plan_') || event.event.startsWith('workspace_coupon_');
+  const eligibility = membership || event.event.startsWith('workspace_eligibility_') || !!path?.startsWith('/admin/workspace/') || (!!path?.startsWith('/workspace/') && path !== '/workspace/manual-application');
   const technical = ['$current_url', 'pathname', '$device_id', '$session_id', '$window_id', '$lib', '$lib_version', '$browser', '$browser_version', '$os', '$os_version', '$device_type', '$screen_height', '$screen_width', '$viewport_height', '$viewport_width'];
-  const allowed = new Set([...technical, 'feature', 'eventVersion', ...(eligibility ? ['evaluatorVersion', 'policyVersion'] : ['aviationBackground', 'courseReadiness', 'audienceStatus', 'audienceSize', 'stepNumber', 'failureCategory', 'entryPoint', 'distinct_id', '$is_identified', '$process_person_profile'])]);
+  const allowed = new Set([...technical, 'feature', 'eventVersion', ...(eligibility ? ['evaluatorVersion', 'policyVersion', ...(membership ? ['planCode', 'outcome', 'discountType', 'hasCoupon'] : [])] : ['aviationBackground', 'courseReadiness', 'audienceStatus', 'audienceSize', 'stepNumber', 'failureCategory', 'entryPoint', 'distinct_id', '$is_identified', '$process_person_profile'])]);
   const properties: CaptureResult['properties'] = {};
   for (const [key, value] of Object.entries(event.properties)) if (allowed.has(key) && ['string', 'number', 'boolean'].includes(typeof value)) properties[key] = value;
   if (url) properties.$current_url = `${url.origin}${path || '/workspace'}`;
   else delete properties.$current_url;
   if (typeof properties.pathname === 'string') properties.pathname = workspaceAnalyticsPath(properties.pathname) || '/workspace';
   if (eligibility) {
-    if (!['workspace_eligibility_started', 'workspace_eligibility_passed', 'workspace_eligibility_failed', '$pageview', '$pageleave'].includes(event.event)) return null;
+    if (!['workspace_eligibility_started', 'workspace_eligibility_passed', 'workspace_eligibility_failed', 'workspace_plan_selected', 'workspace_coupon_applied', '$pageview', '$pageleave'].includes(event.event)) return null;
     const device = properties.$device_id;
     if (typeof device !== 'string' || !/^[a-zA-Z0-9_-]{8,100}$/.test(device)) return null;
     properties.distinct_id = `workspace-device:${device}`;
     properties.$is_identified = false; properties.$process_person_profile = false;
     if (properties.evaluatorVersion !== EVALUATOR_VERSION) delete properties.evaluatorVersion;
     if (properties.policyVersion !== ELIGIBILITY_POLICY_VERSION) delete properties.policyVersion;
-    properties.feature = 'workspace'; properties.eventVersion = '2';
+    properties.feature = 'workspace'; properties.eventVersion = membership ? '3' : '2';
+    if (membership) {
+      delete properties.evaluatorVersion; delete properties.policyVersion;
+      if (event.event === 'workspace_plan_selected') {
+        if (!isPlanCode(properties.planCode)) return null;
+        delete properties.outcome; delete properties.discountType; delete properties.hasCoupon;
+      } else {
+        delete properties.planCode;
+        if (properties.outcome !== 'success' && !(COUPON_ERRORS as readonly unknown[]).includes(properties.outcome)) return null;
+        if (properties.outcome !== 'success' || !['fixed', 'percentage'].includes(String(properties.discountType))) delete properties.discountType;
+        properties.hasCoupon = true;
+      }
+    }
   }
   return { uuid: event.uuid, event: event.event, timestamp: event.timestamp, properties };
 }

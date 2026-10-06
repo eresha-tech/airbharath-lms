@@ -10,12 +10,12 @@ export default async function EligibilityResult() {
   const journey = await getWorkspaceJourneyState(user.id);
   if (!['eligibility_active', 'ineligible_cooldown'].includes(journey.state) || !journey.attempt) redirect('/workspace/apply');
   const attempt = journey.attempt; const eligible = journey.state === 'eligibility_active';
-  return <EligibilityShell title={eligible ? 'You meet the eligibility requirements.' : 'Eligibility requirements not met yet.'} intro={eligible ? 'Your aviation background meets the current automated onboarding rules. Workspace activation is coming in the next phase.' : 'This decision uses your submitted answers and the rules in effect when you submitted.'}>
+  return <EligibilityShell title={eligible ? 'You meet the eligibility requirements.' : 'Eligibility requirements not met yet.'} intro={eligible ? 'Your aviation background meets the current automated onboarding rules. Choose your membership plan and preview pricing. Payment activation is coming next.' : 'This decision uses your submitted answers and the rules in effect when you submitted.'}>
     <section className="rounded-2xl border border-border bg-card p-7 sm:p-10">{eligible ? <CheckCircle2 aria-hidden className="size-8 text-primary" /> : <Clock3 aria-hidden className="size-8 text-muted-foreground" />}
       <h2 className="mt-6 text-xl font-semibold">{eligible ? 'Eligibility valid until' : 'You can check again from'}</h2><p className="mt-3 text-lg">{formatWorkspaceDate((eligible ? attempt.eligibleUntil : attempt.reapplyAt)!)} IST</p>
       {!eligible && <ul className="mt-6 list-disc space-y-2 pl-5 text-sm leading-6">{attempt.reasons.map(reason => <li key={reason}>{REASON_LABELS[reason]}</li>)}</ul>}
       <p className="mt-7 border-t border-border pt-6 text-sm leading-7 text-muted-foreground">Eligibility is a self-declared assessment. It does not grant creator access, activate membership or approve courses. No payment is required for this check.</p>
-      <Link href="/workspace" className="mt-7 inline-block rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground">Back to Workspace</Link>
+      <Link href={eligible ? '/workspace/activate' : '/workspace'} className="mt-7 inline-block rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground">{eligible ? 'Choose a plan' : 'Back to Workspace'}</Link>
     </section>
   </EligibilityShell>;
 }

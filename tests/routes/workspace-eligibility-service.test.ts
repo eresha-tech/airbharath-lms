@@ -30,7 +30,7 @@ beforeEach(() => {
         },
         update: () => ({ set: (patch: object) => ({ where: async () => { Object.assign(versions.find(v => v.isCurrent)!, patch); } }) }),
         insert: (table: unknown) => ({ values: (values: Record<string, unknown>) => {
-          const row = { id: `generated-${saved.length + versions.length + audits.length}`, ...values };
+          const row = { id: `generated-${saved.length + versions.length + audits.length}`, ...(table === attempts || table === settings ? {} : { action: 'eligibility_settings_published' }), ...values };
           if (table === attempts) saved.push(row); else if (table === settings) versions.push(row as unknown as typeof setting); else audits.push(row);
           return { returning: async () => [row] };
         } }),

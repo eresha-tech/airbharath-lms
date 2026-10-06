@@ -133,7 +133,7 @@ export function resolveJourney(userExists: boolean, attempt: JourneyAttempt | nu
     attempt.result === 'eligible' ? (attempt.eligibleUntil && now < attempt.eligibleUntil ? 'eligibility_active' : 'eligibility_expired') :
     attempt.reapplyAt && now < attempt.reapplyAt ? 'ineligible_cooldown' : 'eligibility_available';
   const destination = state === 'authentication_required' ? '/login?callbackUrl=%2Fworkspace%2Fapply' :
-    ['eligibility_active', 'ineligible_cooldown'].includes(state) ? '/workspace/eligibility-result' : '/workspace/apply';
+    state === 'eligibility_active' ? '/workspace/activate' : state === 'ineligible_cooldown' ? '/workspace/eligibility-result' : '/workspace/apply';
   return { state, destination, serverNow: now.toISOString(), hasCreatorAccess: false as const, hasPaidEntitlement: false as const };
 }
 export function formatWorkspaceDate(value: Date | string) { return new Intl.DateTimeFormat('en-IN', { dateStyle: 'long', timeStyle: 'short', timeZone: BUSINESS_TIMEZONE }).format(new Date(value)); }

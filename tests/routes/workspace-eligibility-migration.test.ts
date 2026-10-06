@@ -10,7 +10,7 @@ it('adds exactly the Phase 1.3 tables and enum without changing existing table s
   for (const [name, table] of Object.entries(before.tables)) expect(after.tables[name]).toEqual(table);
   for (const [name, type] of Object.entries(before.enums)) expect(after.enums[name]).toEqual(type);
   expect(Object.keys(after.enums).filter(name => !before.enums[name])).toEqual(['public.workspace_eligibility_result']);
-  const journal = JSON.parse(read('meta/_journal.json')); expect(journal.entries.at(-1).tag).toBe('0009_normal_baron_zemo'); expect(journal.entries.at(-2).tag).toBe('0008_eager_energizer');
+  const journal = JSON.parse(read('meta/_journal.json')); expect(journal.entries[9].tag).toBe('0009_normal_baron_zemo'); expect(journal.entries[8].tag).toBe('0008_eager_energizer');
 });
 it('SQL contains immutable-history triggers, unique current pointers and exact approved static defaults', () => {
   const sql = read('0009_normal_baron_zemo.sql');

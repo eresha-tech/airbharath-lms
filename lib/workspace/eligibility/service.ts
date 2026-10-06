@@ -68,7 +68,7 @@ export async function publishSettings(actorId: string, input: { expectedSettings
     const [current] = await tx.select().from(settings).where(eq(settings.isCurrent, true)).for('update');
     const prior = await tx.query.workspaceAuditEvents.findFirst({ where: and(eq(audits.actorId, actorId), eq(audits.requestKey, input.requestKey)) });
     if (prior) {
-      if (prior.payloadHash !== hash) throw new EligibilityError('conflict');
+      if (prior.payloadHash !== hash || prior.action !== 'eligibility_settings_published' || !prior.settingsId) throw new EligibilityError('conflict');
       return await tx.query.workspaceEligibilitySettings.findFirst({ where: eq(settings.id, prior.settingsId) });
     }
     if (!current || current.id !== input.expectedSettingsId) throw new EligibilityError('conflict');

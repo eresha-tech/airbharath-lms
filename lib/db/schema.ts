@@ -1,5 +1,6 @@
-import { pgTable, pgEnum, uuid, text, numeric, boolean, integer, timestamp, uniqueIndex, index, jsonb, check } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, uuid, text, numeric, boolean, integer, timestamp, uniqueIndex, index, jsonb, check, primaryKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
+import type { PlanCode, CouponStatus, CouponDefinition } from '@/lib/workspace/membership/model';
 import type { SettingsConfig, Declarations, DecisionReason } from '@/lib/workspace/eligibility/model';
 import { APPLICATION_STATUSES, APPROVAL_EMAIL_STATUSES, type ReviewAssessments } from '@/lib/workspace/options';
 
@@ -531,13 +532,42 @@ export const workspaceEligibilityAttempts = pgTable('workspace_eligibility_attem
 export const workspaceAuditEvents = pgTable('workspace_audit_events', {
   id: uuid('id').defaultRandom().primaryKey(),
   actorId: uuid('actor_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
-  settingsId: uuid('settings_id').notNull().references(() => workspaceEligibilitySettings.id, { onDelete: 'restrict' }),
+  settingsId: uuid('settings_id').references(() => workspaceEligibilitySettings.id, { onDelete: 'restrict' }),
+  couponId: uuid('coupon_id').references(() => workspaceCoupons.id, { onDelete: 'restrict' }),
+  beforeStatus: text('before_status').$type<CouponStatus>(), afterStatus: text('after_status').$type<CouponStatus>(),
   action: text('action').default('eligibility_settings_published').notNull(),
-  previousSettingsId: uuid('previous_settings_id').notNull().references(() => workspaceEligibilitySettings.id, { onDelete: 'restrict' }),
+  previousSettingsId: uuid('previous_settings_id').references(() => workspaceEligibilitySettings.id, { onDelete: 'restrict' }),
   requestKey: uuid('request_key').notNull(), payloadHash: text('payload_hash').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [
   uniqueIndex('workspace_audit_events_actor_key_idx').on(t.actorId, t.requestKey),
   index('workspace_audit_events_settings_created_idx').on(t.settingsId, t.createdAt),
-  check('workspace_audit_events_action_check', sql`${t.action} = 'eligibility_settings_published'`),
+  index('workspace_audit_events_coupon_created_idx').on(t.couponId, t.createdAt),
+  check('workspace_audit_events_action_check', sql`(${t.action} = 'eligibility_settings_published' AND ${t.settingsId} IS NOT NULL AND ${t.previousSettingsId} IS NOT NULL AND ${t.couponId} IS NULL AND ${t.beforeStatus} IS NULL AND ${t.afterStatus} IS NULL) OR (${t.action} IN ('coupon_created', 'coupon_status_changed') AND ${t.settingsId} IS NULL AND ${t.previousSettingsId} IS NULL AND ${t.couponId} IS NOT NULL AND ${t.afterStatus} IS NOT NULL AND ${t.afterStatus} IN ('active','paused','archived') AND ((${t.action} = 'coupon_created' AND ${t.beforeStatus} IS NULL AND ${t.afterStatus} = 'active') OR (${t.action} = 'coupon_status_changed' AND ${t.beforeStatus} IS NOT NULL AND ${t.beforeStatus} IN ('active','paused') AND ${t.beforeStatus} <> ${t.afterStatus})))`),
 ]);
+
+// Phase 1.4: definitions and advisory economics only; no financial/redemption records.
+export const workspaceMembershipPlans = pgTable('workspace_membership_plans', {
+  id: uuid('id').defaultRandom().primaryKey(), code: text('code').$type<PlanCode>().notNull(), version: integer('version').notNull(),
+  displayName: text('display_name').notNull(), durationMonths: integer('duration_months').notNull(),
+  basePricePaise: integer('base_price_paise').notNull(), taxRateBps: integer('tax_rate_bps').default(1800).notNull(), currency: text('currency').$type<'INR'>().default('INR').notNull(),
+  isCurrent: boolean('is_current').default(false).notNull(), available: boolean('available').default(true).notNull(),
+  publishedAt: timestamp('published_at', { withTimezone: true }).defaultNow().notNull(), publishedBy: uuid('published_by').references(() => users.id, { onDelete: 'restrict' }),
+}, t => [
+  uniqueIndex('workspace_plans_code_version_idx').on(t.code, t.version), uniqueIndex('workspace_plans_current_idx').on(t.code).where(sql`${t.isCurrent} = true`),
+  check('workspace_plans_definition_check', sql`${t.version} > 0 AND length(${t.displayName}) BETWEEN 1 AND 80 AND ${t.basePricePaise} BETWEEN 1 AND 100000000 AND ${t.taxRateBps} = 1800 AND ${t.currency} = 'INR' AND ((${t.code} = 'quarterly' AND ${t.durationMonths} = 3) OR (${t.code} = 'half_yearly' AND ${t.durationMonths} = 6) OR (${t.code} = 'yearly' AND ${t.durationMonths} = 12))`),
+]);
+export const workspaceCoupons = pgTable('workspace_coupons', {
+  id: uuid('id').defaultRandom().primaryKey(), scope: text('scope').default('workspace_membership').notNull(), code: text('code').notNull(),
+  status: text('status').$type<CouponStatus>().default('active').notNull(), discountType: text('discount_type').$type<CouponDefinition['discountType']>().notNull(), discountValue: integer('discount_value').notNull(),
+  startsAt: timestamp('starts_at', { withTimezone: true }), expiresAt: timestamp('expires_at', { withTimezone: true }), usageLimit: integer('usage_limit'),
+  campaignName: text('campaign_name').notNull(), sourceType: text('source_type').$type<CouponDefinition['sourceType']>().notNull(), sourceName: text('source_name').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(), createdBy: uuid('created_by').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(), version: integer('version').default(1).notNull(),
+}, t => [
+  uniqueIndex('workspace_coupons_scope_code_idx').on(t.scope, t.code), index('workspace_coupons_status_created_idx').on(t.status, t.createdAt),
+  check('workspace_coupons_definition_check', sql`${t.scope} = 'workspace_membership' AND ${t.code} ~ '^[A-Z0-9][A-Z0-9_-]{2,31}$' AND ${t.status} IN ('active','paused','archived') AND ((${t.discountType} = 'fixed' AND ${t.discountValue} BETWEEN 1 AND 100000000) OR (${t.discountType} = 'percentage' AND ${t.discountValue} BETWEEN 1 AND 9999)) AND (${t.usageLimit} IS NULL OR ${t.usageLimit} > 0) AND (${t.startsAt} IS NULL OR ${t.expiresAt} IS NULL OR ${t.startsAt} < ${t.expiresAt}) AND length(${t.campaignName}) BETWEEN 1 AND 120 AND length(${t.sourceName}) BETWEEN 1 AND 120 AND ${t.sourceType} IN ('influencer','partner','institution','founder','organic_campaign','internal','other') AND ${t.version} > 0`),
+]);
+export const workspaceCouponPlans = pgTable('workspace_coupon_plans', {
+  couponId: uuid('coupon_id').notNull().references(() => workspaceCoupons.id, { onDelete: 'restrict' }), planCode: text('plan_code').$type<PlanCode>().notNull(),
+}, t => [primaryKey({ columns: [t.couponId, t.planCode] }), check('workspace_coupon_plans_code_check', sql`${t.planCode} IN ('quarterly','half_yearly','yearly')`)]);
