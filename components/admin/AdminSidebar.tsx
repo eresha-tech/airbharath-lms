@@ -87,11 +87,6 @@ export const adminNavGroups: AdminNavGroup[] = [
         icon: Users,
       },
       {
-        title: "Workspace Applications",
-        href: "/admin/workspace-applications",
-        icon: Briefcase,
-      },
-      {
         title: "Orders & Invoices",
         href: "/admin/orders",
         icon: CreditCard,
@@ -101,6 +96,14 @@ export const adminNavGroups: AdminNavGroup[] = [
         href: "/admin/coupons",
         icon: Tag,
       },
+    ],
+  },
+  {
+    groupTitle: "Workspace",
+    items: [
+      { title: "Eligibility", href: "/admin/workspace/eligibility", icon: ShieldCheck },
+      { title: "Eligibility Settings", href: "/admin/workspace/settings", icon: Tag },
+      { title: "Manual Applications", href: "/admin/workspace-applications", icon: Briefcase },
     ],
   },
   {

@@ -1,0 +1,2 @@
+'use client';
+export default function WorkspaceAdminError({ reset }: { error: Error & { digest?: string }; reset: () => void }) { return <div className="ph-no-capture space-y-5"><h1 className="text-2xl font-bold">Workspace information is unavailable</h1><p className="text-sm text-muted-foreground">Please try again. An interrupted settings publication can be recovered by retrying the same request.</p><button onClick={reset} className="rounded-lg bg-primary px-5 py-3 text-primary-foreground">Try again</button></div>; }

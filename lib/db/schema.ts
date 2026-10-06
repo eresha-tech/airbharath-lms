@@ -1,5 +1,6 @@
-import { pgTable, pgEnum, uuid, text, numeric, boolean, integer, timestamp, uniqueIndex, index, jsonb } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { pgTable, pgEnum, uuid, text, numeric, boolean, integer, timestamp, uniqueIndex, index, jsonb, check } from 'drizzle-orm/pg-core';
+import { relations, sql } from 'drizzle-orm';
+import type { SettingsConfig, Declarations, DecisionReason } from '@/lib/workspace/eligibility/model';
 import { APPLICATION_STATUSES, APPROVAL_EMAIL_STATUSES, type ReviewAssessments } from '@/lib/workspace/options';
 
 // Users Table
@@ -470,3 +471,73 @@ export const playbackSessionsRelations = relations(playbackSessions, ({ one }) =
     references: [videos.id],
   }),
 }));
+
+
+// Phase 1.3: eligibility is independent of learner roles and paid creator capability.
+export const workspaceEligibilitySettings = pgTable('workspace_eligibility_settings', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  version: integer('version').notNull().unique(),
+  config: jsonb('config').$type<SettingsConfig>().notNull(),
+  configurationHash: text('configuration_hash').notNull(),
+  evaluatorVersion: text('evaluator_version').notNull(),
+  isCurrent: boolean('is_current').default(false).notNull(),
+  publishedAt: timestamp('published_at', { withTimezone: true }).defaultNow().notNull(),
+  publishedBy: uuid('published_by').references(() => users.id, { onDelete: 'restrict' }),
+}, (t) => [
+  uniqueIndex('workspace_eligibility_settings_current_idx').on(t.isCurrent).where(sql`${t.isCurrent} = true`),
+  check('workspace_eligibility_settings_version_check', sql`${t.version} > 0`),
+  check('workspace_eligibility_settings_bounds_check', sql`(${t.config}->>'minimumExperienceMonths')::integer BETWEEN 1 AND 600 AND (${t.config}->>'eligibilityValidityDays')::integer BETWEEN 1 AND 90 AND (${t.config}->>'cooldownDays')::integer BETWEEN 1 AND 90 AND ${t.config}->>'timezone' = 'Asia/Kolkata' AND jsonb_typeof(${t.config}->'profileRequired') = 'boolean' AND jsonb_array_length(${t.config}->'allowedCategories') BETWEEN 1 AND 15`),
+]);
+export const workspacePolicyVersions = pgTable('workspace_policy_versions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  version: text('version').notNull().unique(),
+  kind: text('kind').default('eligibility').notNull(),
+  declarations: jsonb('declarations').$type<Record<keyof Declarations, string>>().notNull(),
+  contentHash: text('content_hash').notNull(),
+  isCurrent: boolean('is_current').default(false).notNull(),
+  publishedAt: timestamp('published_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex('workspace_policy_versions_current_idx').on(t.kind).where(sql`${t.isCurrent} = true`),
+  check('workspace_policy_versions_kind_check', sql`${t.kind} = 'eligibility'`),
+]);
+export const workspaceEligibilityResult = pgEnum('workspace_eligibility_result', ['eligible', 'ineligible']);
+export const workspaceEligibilityAttempts = pgTable('workspace_eligibility_attempts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  settingsId: uuid('settings_id').notNull().references(() => workspaceEligibilitySettings.id, { onDelete: 'restrict' }),
+  policyId: uuid('policy_id').notNull().references(() => workspacePolicyVersions.id, { onDelete: 'restrict' }),
+  submissionKey: uuid('submission_key').notNull(), payloadHash: text('payload_hash').notNull(),
+  category: text('category').notNull(), aviationProfession: text('aviation_profession').default('').notNull(),
+  experienceOption: text('experience_option').notNull(), experienceMonths: integer('experience_months').notNull(),
+  professionalStatus: text('professional_status').notNull(), professionalStatusDetail: text('professional_status_detail').default('').notNull(),
+  professionalProfileUrl: text('professional_profile_url').notNull(), teachingCategory: text('teaching_category').notNull(),
+  courseIdea: text('course_idea').notNull(), declarations: jsonb('declarations').$type<Declarations>().notNull(),
+  source: text('source').default('automatic').notNull(), evaluatorVersion: text('evaluator_version').notNull(),
+  result: workspaceEligibilityResult('result').notNull(), reasons: jsonb('reasons').$type<DecisionReason[]>().notNull(),
+  submittedAt: timestamp('submitted_at', { withTimezone: true }).notNull(),
+  decidedAt: timestamp('decided_at', { withTimezone: true }).notNull(),
+  eligibleUntil: timestamp('eligible_until', { withTimezone: true }), reapplyAt: timestamp('reapply_at', { withTimezone: true }),
+  acceptedAt: timestamp('accepted_at', { withTimezone: true }).notNull(),
+}, (t) => [
+  uniqueIndex('workspace_eligibility_attempts_user_key_idx').on(t.userId, t.submissionKey),
+  index('workspace_eligibility_attempts_user_decided_idx').on(t.userId, t.decidedAt),
+  index('workspace_eligibility_attempts_result_decided_idx').on(t.result, t.decidedAt),
+  check('workspace_eligibility_attempts_dates_check', sql`(${t.result} = 'eligible' AND ${t.eligibleUntil} IS NOT NULL AND ${t.eligibleUntil} > ${t.decidedAt} AND ${t.reapplyAt} IS NULL) OR (${t.result} = 'ineligible' AND ${t.reapplyAt} IS NOT NULL AND ${t.reapplyAt} > ${t.decidedAt} AND ${t.eligibleUntil} IS NULL)`),
+  check('workspace_eligibility_attempts_source_check', sql`${t.source} = 'automatic'`),
+  check('workspace_eligibility_attempts_text_check', sql`length(${t.courseIdea}) BETWEEN 1 AND 200 AND length(${t.professionalProfileUrl}) <= 2048 AND length(${t.aviationProfession}) <= 120 AND length(${t.professionalStatusDetail}) <= 120`),
+  check('workspace_eligibility_attempts_experience_check', sql`${t.experienceMonths} = CASE ${t.experienceOption} WHEN 'under_one' THEN 0 WHEN 'one_year' THEN 12 WHEN 'two_years' THEN 24 WHEN 'three_to_five' THEN 36 WHEN 'six_to_ten' THEN 72 WHEN 'eleven_to_fifteen' THEN 132 WHEN 'sixteen_to_twenty' THEN 192 WHEN 'twenty_plus' THEN 240 ELSE -1 END AND ${t.experienceMonths} >= 0`),
+  check('workspace_eligibility_attempts_declarations_check', sql`${t.declarations} @> '{"adult":true,"expertise":true,"accuracy":true,"eligibilityOnly":true,"courseReview":true,"audience":true,"authorizedClaims":true}'::jsonb`),
+]);
+export const workspaceAuditEvents = pgTable('workspace_audit_events', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  actorId: uuid('actor_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  settingsId: uuid('settings_id').notNull().references(() => workspaceEligibilitySettings.id, { onDelete: 'restrict' }),
+  action: text('action').default('eligibility_settings_published').notNull(),
+  previousSettingsId: uuid('previous_settings_id').notNull().references(() => workspaceEligibilitySettings.id, { onDelete: 'restrict' }),
+  requestKey: uuid('request_key').notNull(), payloadHash: text('payload_hash').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex('workspace_audit_events_actor_key_idx').on(t.actorId, t.requestKey),
+  index('workspace_audit_events_settings_created_idx').on(t.settingsId, t.createdAt),
+  check('workspace_audit_events_action_check', sql`${t.action} = 'eligibility_settings_published'`),
+]);

@@ -12,7 +12,7 @@ export default function PrivacyPage() {
           Privacy Policy
         </h1>
         <p className="text-xs md:text-sm text-muted-foreground">
-          Last Updated: September 1, 2026
+          Last Updated: October 6, 2026
         </p>
       </div>
 
@@ -55,6 +55,13 @@ export default function PrivacyPage() {
             <li>Improve platform performance and user experience.</li>
           </ul>
         </div>
+
+        <section className="space-y-4">
+          <h2 className="text-base font-bold text-foreground">Workspace eligibility and manual applications</h2>
+          <p>For Workspace onboarding, we use your existing account identity, aviation profession, experience selection, professional status, professional profile link, teaching category, short course idea and explicit declarations to evaluate eligibility and maintain a versioned decision history. The adult and legal-capacity confirmation is a self-declaration, not identity or document verification. Authorized administrators can review answers and decisions for onboarding and fraud and abuse prevention, security, support and operational purposes.</p>
+          <p>Eligibility checks do not fetch or verify professional profile links. Workspace analytics exclude names, email addresses, phone numbers, profile links, free-text answers and declaration contents. Required onboarding declarations do not constitute marketing consent. The separate manual application and its review communications continue to use the information submitted through that pathway.</p>
+          <p>Decision validity and reapplication periods are not data-retention periods. Our general retention policy and account-rights process below apply to Workspace information.</p>
+        </section>
 
         <div className="space-y-4">
           <h2 className="text-base font-bold text-foreground">3. Payment Information</h2>

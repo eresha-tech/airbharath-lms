@@ -180,7 +180,7 @@ function LoginForm() {
         setMessage('Mobile verified! Please tell us your name to set up your learning profile.');
         setIsSuccess(true);
       } else {
-        if (data.user?.id) {
+        if (data.user?.id && !callbackUrl?.startsWith('/workspace')) {
           identifyUser(data.user.id, {
             email: data.user.email,
             name: data.user.fullName,
@@ -229,7 +229,7 @@ function LoginForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update profile');
 
-      if (data.user?.id) {
+      if (data.user?.id && !callbackUrl?.startsWith('/workspace')) {
         identifyUser(data.user.id, {
           email: data.user.email,
           name: data.user.fullName,

@@ -32,6 +32,7 @@ export async function middleware(request: NextRequest) {
   const isPublic =
     pathname === '/' ||
     pathname === '/workspace' ||
+    pathname === '/workspace/manual-application' ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/auth') ||
     pathname.startsWith('/about') ||
@@ -50,6 +51,10 @@ export async function middleware(request: NextRequest) {
     if (!isPublic) {
       const url = request.nextUrl.clone();
       url.pathname = '/login';
+      if (pathname.startsWith('/workspace/')) {
+        url.search = '';
+        url.searchParams.set('callbackUrl', '/workspace/apply');
+      }
       const redirectRes = NextResponse.redirect(url);
       redirectRes.cookies.delete('ab_session');
       return redirectRes;

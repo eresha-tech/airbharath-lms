@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { ArrowDown, ArrowRight, ArrowUpRight, BookOpen, Check, CheckCircle2, CircleDollarSign, Layers3, ListChecks, Plane, Play, ShieldCheck, Users, BarChart3, Compass, GraduationCap, Wrench, Headphones, Building2, Radio, HeartHandshake, LockKeyhole } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ApplicationForm } from './ApplicationForm';
+import Link from 'next/link';
 import { trackWorkspace } from '@/lib/workspace/analytics';
 
 const journey = [
@@ -29,9 +29,9 @@ const categories = [
   [GraduationCap, 'Aviation Careers'], [ShieldCheck, 'Defence Aviation'], [BookOpen, 'Other aviation specializations'],
 ] as const;
 const selection = [
-  ['Apply', 'Tell us about your aviation background and course idea.'],
-  ['AirBharath Review', 'We evaluate expertise, course concept and platform fit.'],
-  ['Creator Approval', 'Selected creators receive an invitation.'],
+  ['Sign in', 'Use your normal AirBharath account.'],
+  ['Check eligibility', 'Complete the short, self-declared aviation eligibility check.'],
+  ['Get your result', 'See your eligibility validity or next reapplication date.'],
   ['Activate Workspace', 'Later, review commercial terms and activate membership.'],
   ['Build', 'Course creation begins in a future Workspace phase.'],
 ];
@@ -39,9 +39,9 @@ const selection = [
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="mb-4 text-xs font-bold uppercase tracking-[.2em] text-muted-foreground">{children}</p>;
 }
-function ApplyLink({ label = 'Apply as a Founding Creator', className = '', entryPoint = 'hero' }: { label?: string; className?: string; entryPoint?: 'hero' | 'founding_cohort' }) {
+function ApplyLink({ label = 'Become a Creator', className = '', entryPoint = 'hero' }: { label?: string; className?: string; entryPoint?: 'hero' | 'founding_cohort' }) {
   return <Button asChild className={`h-auto min-h-12 whitespace-normal rounded-xl px-6 py-3 text-sm ${className}`}>
-    <a href="#apply" onClick={() => trackWorkspace('workspace_apply_clicked', undefined, undefined, { entryPoint })}>{label}<ArrowUpRight aria-hidden="true" /></a>
+    <a href="/workspace/apply" onClick={() => trackWorkspace('workspace_apply_clicked', undefined, undefined, { entryPoint })}>{label}<ArrowUpRight aria-hidden="true" /></a>
   </Button>;
 }
 
@@ -128,11 +128,11 @@ export function WorkspaceLanding() {
         <div className="flex flex-col justify-center rounded-2xl border border-primary/30 bg-primary/10 p-8"><CheckCircle2 className="mb-4 size-6 text-[#6358c8] dark:text-primary" aria-hidden="true" /><h3 className="text-2xl font-semibold">No payment is required to apply.</h3><p className="mt-3 text-sm leading-7 text-muted-foreground">Pricing and fees are not finalized. You will be able to review the terms before deciding to activate Workspace.</p></div>
       </section>
 
-      <section className="border-y border-border bg-muted/30 px-5 py-20 sm:px-8 sm:py-24"><div className="mx-auto max-w-7xl"><Eyebrow>A considered selection process</Eyebrow><h2 className="workspace-heading text-3xl font-semibold sm:text-4xl">How creator selection works</h2><ol className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">{selection.map(([title, copy], i) => <li key={title}><span className="mb-5 flex size-9 items-center justify-center rounded-full border border-border bg-card font-mono text-xs">0{i + 1}</span><h3 className="text-base font-semibold">{title}</h3><p className="mt-3 text-sm leading-6 text-muted-foreground">{copy}</p></li>)}</ol><div className="mt-9 flex items-start gap-3 rounded-xl border border-border bg-card p-5"><ShieldCheck className="mt-0.5 size-5 shrink-0 text-[#6358c8] dark:text-primary" aria-hidden="true" /><p className="text-sm leading-6">Creator approval does not automatically approve every course. Courses will be reviewed separately before publication.</p></div></div></section>
+      <section className="border-y border-border bg-muted/30 px-5 py-20 sm:px-8 sm:py-24"><div className="mx-auto max-w-7xl"><Eyebrow>A considered selection process</Eyebrow><h2 className="workspace-heading text-3xl font-semibold sm:text-4xl">How creator eligibility works</h2><ol className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">{selection.map(([title, copy], i) => <li key={title}><span className="mb-5 flex size-9 items-center justify-center rounded-full border border-border bg-card font-mono text-xs">0{i + 1}</span><h3 className="text-base font-semibold">{title}</h3><p className="mt-3 text-sm leading-6 text-muted-foreground">{copy}</p></li>)}</ol><div className="mt-9 flex items-start gap-3 rounded-xl border border-border bg-card p-5"><ShieldCheck className="mt-0.5 size-5 shrink-0 text-[#6358c8] dark:text-primary" aria-hidden="true" /><p className="text-sm leading-6">Eligibility does not activate Workspace or approve a course. Courses will be reviewed separately before publication.</p></div></div></section>
 
       <section id="apply" className="workspace-section mx-auto grid max-w-7xl gap-10 px-5 py-20 sm:px-8 sm:py-24 lg:grid-cols-[.75fr_1.25fr] lg:gap-16">
-        <div><Eyebrow>Your next chapter</Eyebrow><h2 className="workspace-heading text-3xl font-semibold leading-tight sm:text-4xl">Apply as a<br />Founding Creator.</h2><p className="mt-5 max-w-md text-sm leading-7 text-muted-foreground">Tell us about the experience you&apos;ve built and the course you&apos;d like to teach. An idea is enough to start the conversation.</p><ul className="mt-8 space-y-4 text-sm">{['No payment required', 'No creator account needed', 'Every application reviewed by our team'].map(t => <li key={t} className="flex items-start gap-3"><Check className="mt-0.5 size-4 shrink-0 text-[#6358c8] dark:text-primary" aria-hidden="true" />{t}</li>)}</ul><div className="mt-9 max-w-sm border-t border-border pt-6"><p className="text-xs leading-6 text-muted-foreground">Questions before you apply?<br /><a className="font-semibold text-foreground underline underline-offset-4" href="mailto:academy@airbharath.in">academy@airbharath.in</a></p></div></div>
-        <ApplicationForm />
+        <div><Eyebrow>Your next chapter</Eyebrow><h2 className="workspace-heading text-3xl font-semibold leading-tight sm:text-4xl">Become a<br />Creator.</h2><p className="mt-5 max-w-md text-sm leading-7 text-muted-foreground">Tell us about the experience you&apos;ve built and the course you&apos;d like to teach. An idea is enough to start the conversation.</p><ul className="mt-8 space-y-4 text-sm">{['No payment required', 'Use your normal AirBharath account', 'A short automated eligibility check'].map(t => <li key={t} className="flex items-start gap-3"><Check className="mt-0.5 size-4 shrink-0 text-[#6358c8] dark:text-primary" aria-hidden="true" />{t}</li>)}</ul><div className="mt-9 max-w-sm border-t border-border pt-6"><p className="text-xs leading-6 text-muted-foreground">Questions before you apply?<br /><a className="font-semibold text-foreground underline underline-offset-4" href="mailto:academy@airbharath.in">academy@airbharath.in</a></p></div></div>
+        <div className="self-center rounded-2xl border border-border bg-card p-8"><h3 className="text-2xl font-semibold">Start with your aviation background.</h3><p className="mt-4 text-sm leading-7 text-muted-foreground">Sign in, complete a short eligibility check, and see your result. Workspace activation comes in a later phase.</p><div className="mt-7"><ApplyLink /></div><p className="mt-6 text-sm text-muted-foreground">Prefer a detailed team review? <Link href="/workspace/manual-application" className="underline underline-offset-4">Submit a manual application</Link>.</p></div>
       </section>
     </div>
   );

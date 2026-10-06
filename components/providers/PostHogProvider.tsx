@@ -6,13 +6,13 @@ import posthog from "posthog-js";
 import { getClientUser } from "@/lib/user-session-client";
 import { identifyUser } from "@/lib/analytics";
 import { getPostHogConfig } from "@/lib/posthog-config";
-import { workspaceAnalyticsPath } from "@/lib/workspace/analytics-privacy";
+import { workspaceAnalyticsPath, workspaceLoginUrl } from "@/lib/workspace/analytics-privacy";
 
 function PostHogIdentityTracker() {
   const pathname = usePathname();
   const identified = useRef(false);
   useEffect(() => {
-    if (identified.current || !getPostHogConfig() || (pathname && workspaceAnalyticsPath(pathname))) return;
+    if (identified.current || !getPostHogConfig() || (pathname && workspaceAnalyticsPath(pathname)) || (typeof window !== "undefined" && workspaceLoginUrl(new URL(window.location.href)))) return;
     let isMounted = true;
 
     getClientUser()
