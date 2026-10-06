@@ -102,6 +102,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     groupTitle: "Workspace",
     items: [
       { title: "Eligibility", href: "/admin/workspace/eligibility", icon: ShieldCheck },
+      { title: "Workspace Financial Orders", href: "/admin/workspace/orders", icon: CreditCard },
       { title: "Workspace Coupons", href: "/admin/workspace/coupons", icon: Tag },
       { title: "Workspace Settings", href: "/admin/workspace/settings", icon: Tag },
       { title: "Manual Applications", href: "/admin/workspace-applications", icon: Briefcase },

@@ -7,9 +7,11 @@ export function workspaceAnalyticsPath(pathname: string) {
     const known = ['/workspace/apply', '/workspace/eligibility-result', '/workspace/manual-application', '/workspace/activate'];
     return known.includes(pathname) ? pathname : '/workspace/[path]';
   }
+  if (pathname.startsWith('/workspace/membership/orders/')) return '/workspace/membership/orders/[id]';
+  if (pathname.startsWith('/admin/workspace/orders/')) return '/admin/workspace/orders/[id]';
   if (pathname.startsWith('/admin/workspace/coupons/')) return '/admin/workspace/coupons/[id]';
   if (pathname.startsWith('/admin/workspace/eligibility/')) return '/admin/workspace/eligibility/[id]';
-  if (pathname.startsWith('/admin/workspace/')) return ['/admin/workspace/eligibility', '/admin/workspace/settings', '/admin/workspace/coupons'].includes(pathname) ? pathname : '/admin/workspace/[path]';
+  if (pathname.startsWith('/admin/workspace/')) return ['/admin/workspace/eligibility', '/admin/workspace/settings', '/admin/workspace/coupons', '/admin/workspace/orders'].includes(pathname) ? pathname : '/admin/workspace/[path]';
   if (pathname.startsWith('/admin/workspace-applications/')) return '/admin/workspace-applications/[id]';
   if (pathname === '/admin/workspace-applications') return pathname;
   return null;
@@ -20,6 +22,8 @@ export function workspaceLoginUrl(url: URL) {
 }
 export function sanitizeWorkspaceAnalytics(event: CaptureResult | null): CaptureResult | null {
   if (!event) return event;
+  // Financial/provider events are never behavioral telemetry, even outside Workspace paths.
+  if (/^workspace_(?:payment|financial|order|reservation|redemption|refund)(?:_|$)/.test(event.event)) return null;
   let url: URL | null = null;
   try { if (typeof event.properties.$current_url === 'string') url = new URL(event.properties.$current_url); } catch { /* Prefix still enforces privacy. */ }
   const path = url ? workspaceAnalyticsPath(url.pathname) : typeof event.properties.pathname === 'string' ? workspaceAnalyticsPath(event.properties.pathname) : null;

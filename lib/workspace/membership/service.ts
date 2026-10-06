@@ -21,36 +21,42 @@ export async function getWorkspaceMembershipQuote(userId: string, input: QuoteIn
   input = normalized;
   // One read-only snapshot; preview never writes an order, hold, use counter or entitlement.
   return db.transaction(async tx => {
-    const user = await tx.query.users.findFirst({ where: eq(users.id, userId), columns: { id: true } });
-    if (!user) throw new MembershipError('authentication');
-    const attempt = await tx.query.workspaceEligibilityAttempts.findFirst({ where: eq(attempts.userId, userId), orderBy: [desc(attempts.decidedAt), desc(attempts.id)] });
-    const [plan, currentSettings, policy, coupon] = await Promise.all([
-      tx.query.workspaceMembershipPlans.findFirst({ where: and(eq(plans.code, input.planCode), eq(plans.isCurrent, true)) }),
-      tx.query.workspaceEligibilitySettings.findFirst({ where: eq(settings.isCurrent, true) }),
-      tx.query.workspacePolicyVersions.findFirst({ where: eq(policies.isCurrent, true) }),
-      input.couponCode ? tx.query.workspaceCoupons.findFirst({ where: and(eq(coupons.scope, 'workspace_membership'), eq(coupons.code, input.couponCode)) }) : Promise.resolve(undefined),
-    ]);
-    const couponPlans = coupon ? await tx.query.workspaceCouponPlans.findMany({ where: eq(applicability.couponId, coupon.id) }) : [];
-    const now = clock();
-    const journey = resolveJourney(true, attempt || null, now);
-    if (journey.state !== 'eligibility_active') throw new MembershipError('eligibility_required', journey.destination);
-    if (!plan || plan.id !== input.planVersionId) throw new MembershipError('stale_plan');
-    if (!validPlan(plan) || !currentSettings || !policy || !validateSettings(currentSettings.config) || currentSettings.evaluatorVersion !== EVALUATOR_VERSION || policy.version !== ELIGIBILITY_POLICY_VERSION) throw new MembershipError('unavailable');
-    if (!plan.available) throw new MembershipError('plan_unavailable');
-    if (input.couponCode) {
-      const failure = couponFailure(coupon ? { ...coupon, planCodes: couponPlans.map(row => row.planCode) } : null, plan, now);
-      if (failure) throw new MembershipError(failure);
-    }
-    const amounts = calculatePrice(plan.basePricePaise, plan.taxRateBps, coupon);
-    const expiry = Math.min(now.getTime() + 10 * 60_000, attempt!.eligibleUntil!.getTime(), coupon?.expiresAt?.getTime() ?? Infinity);
-    const quote = { quoteVersion: QUOTE_VERSION, planCode: plan.code, planVersionId: plan.id, planVersion: plan.version, planName: plan.displayName, durationMonths: plan.durationMonths, currency: plan.currency,
-      ...amounts, couponApplied: !!coupon, couponCode: coupon?.code || null, generatedAt: now.toISOString(), expiresAt: new Date(expiry).toISOString(),
-      membershipStart: membershipStartInfo(currentSettings.config.launchAt, now), advisory: true as const, reserved: false as const };
-    // Bound economics, offer/version, qualification and applicable start/policy versions without exposing IDs in analytics.
-    const { generatedAt: _generatedAt, expiresAt: _expiresAt, ...economics } = quote;
-    return { ...quote, quoteHash: hash({ quote: economics, couponId: coupon?.id, couponVersion: coupon?.version, settingsId: currentSettings.id, settingsHash: currentSettings.configurationHash, policyId: policy.id, policyHash: policy.contentHash, eligibilityAttemptId: attempt!.id, acceptedPolicyId: attempt!.policyId, eligibilityValidUntil: attempt!.eligibleUntil }) };
+    return (await readMembershipQuote(tx, userId, input, clock)).quote;
   }, { isolationLevel: 'repeatable read', accessMode: 'read only' });
 }
+// Reuse the same economics/hash inside accepted-order transactions after financial locks.
+export async function readMembershipQuote(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], userId: string, input: QuoteInput, clock = () => new Date()) {
+  const user = await tx.query.users.findFirst({ where: eq(users.id, userId), columns: { id: true } });
+  if (!user) throw new MembershipError('authentication');
+  const attempt = await tx.query.workspaceEligibilityAttempts.findFirst({ where: eq(attempts.userId, userId), orderBy: [desc(attempts.decidedAt), desc(attempts.id)] });
+  const [plan, currentSettings, policy, coupon] = await Promise.all([
+    tx.query.workspaceMembershipPlans.findFirst({ where: and(eq(plans.code, input.planCode), eq(plans.isCurrent, true)) }),
+    tx.query.workspaceEligibilitySettings.findFirst({ where: eq(settings.isCurrent, true) }),
+    tx.query.workspacePolicyVersions.findFirst({ where: eq(policies.isCurrent, true) }),
+    input.couponCode ? tx.query.workspaceCoupons.findFirst({ where: and(eq(coupons.scope, 'workspace_membership'), eq(coupons.code, input.couponCode)) }) : Promise.resolve(undefined),
+  ]);
+  const couponPlans = coupon ? await tx.query.workspaceCouponPlans.findMany({ where: eq(applicability.couponId, coupon.id) }) : [];
+  const now = clock();
+  const journey = resolveJourney(true, attempt || null, now);
+  if (journey.state !== 'eligibility_active') throw new MembershipError('eligibility_required', journey.destination);
+  if (!plan || plan.id !== input.planVersionId) throw new MembershipError('stale_plan');
+  if (!validPlan(plan) || !currentSettings || !policy || !validateSettings(currentSettings.config) || currentSettings.evaluatorVersion !== EVALUATOR_VERSION || policy.version !== ELIGIBILITY_POLICY_VERSION) throw new MembershipError('unavailable');
+  if (!plan.available) throw new MembershipError('plan_unavailable');
+  if (input.couponCode) {
+    const failure = couponFailure(coupon ? { ...coupon, planCodes: couponPlans.map(row => row.planCode) } : null, plan, now);
+    if (failure) throw new MembershipError(failure);
+  }
+  const amounts = calculatePrice(plan.basePricePaise, plan.taxRateBps, coupon);
+  const expiry = Math.min(now.getTime() + 10 * 60_000, attempt!.eligibleUntil!.getTime(), coupon?.expiresAt?.getTime() ?? Infinity);
+  const quote = { quoteVersion: QUOTE_VERSION, planCode: plan.code, planVersionId: plan.id, planVersion: plan.version, planName: plan.displayName, durationMonths: plan.durationMonths, currency: plan.currency,
+    ...amounts, couponApplied: !!coupon, couponCode: coupon?.code || null, generatedAt: now.toISOString(), expiresAt: new Date(expiry).toISOString(),
+    membershipStart: membershipStartInfo(currentSettings.config.launchAt, now), advisory: true as const, reserved: false as const };
+  // Bound economics, offer/version, qualification and applicable start/policy versions without exposing IDs in analytics.
+  const { generatedAt: _generatedAt, expiresAt: _expiresAt, ...economics } = quote;
+  const result = { ...quote, quoteHash: hash({ quote: economics, couponId: coupon?.id, couponVersion: coupon?.version, settingsId: currentSettings.id, settingsHash: currentSettings.configurationHash, policyId: policy.id, policyHash: policy.contentHash, eligibilityAttemptId: attempt!.id, acceptedPolicyId: attempt!.policyId, eligibilityValidUntil: attempt!.eligibleUntil }) };
+  return { quote: result, context: { attempt: attempt!, plan, currentSettings, policy, coupon } };
+}
+export type MembershipQuoteContext = Awaited<ReturnType<typeof readMembershipQuote>>;
 export type MembershipQuote = Awaited<ReturnType<typeof getWorkspaceMembershipQuote>>;
 export async function listWorkspaceCoupons(query = '', status = 'all', page = 1) {
   const rows = await db.query.workspaceCoupons.findMany({ where: and(eq(coupons.scope, 'workspace_membership'), query ? ilike(coupons.code, `${query.replaceAll('_', '\\_')}%`) : undefined, status === 'all' ? undefined : eq(coupons.status, status as CouponStatus)), orderBy: [desc(coupons.createdAt), desc(coupons.id)], limit: 21, offset: (page - 1) * 20 });
