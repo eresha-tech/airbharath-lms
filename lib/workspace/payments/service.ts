@@ -172,7 +172,7 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
     return order;
   }
   async function processEvent(id: string) {
-    const event = await store.claimEvent(id, clock());
+    const event = await store.claimEvent(id, clock(), provider.context);
     if (!event) return;
     try {
       if (!PAYMENT_EVENTS.includes(event.eventType)) { await store.finishUnmatchedEvent(event.id, clock(), 'ignored'); return; }
@@ -197,9 +197,9 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
   }
   async function runReconciliationBatch(limit = 10) {
     if (!Number.isInteger(limit) || limit < 1 || limit > 25) throw new PaymentError('validation');
-    const pending = await store.pendingEvents(clock(), limit);
+    const pending = await store.pendingEvents(clock(), limit, provider.context);
     for (const event of pending) await processEvent(event.id);
-    const orders = await store.recoveryOrders(limit);
+    const orders = await store.recoveryOrders(limit, provider.context);
     for (const order of orders) { if (!scoped(order)) continue; try { await reconcileOrder(order.userId, order.id); } catch { /* Remains durable/visible for the next authorized invocation. */ } }
     return { eventsVisited: pending.length, ordersVisited: orders.length, capturedPendingActivation: orders.filter(order => order.financialState === 'captured' && order.activationState === 'pending_activation').length };
   }

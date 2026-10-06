@@ -35,11 +35,11 @@ export interface FinanceStore {
   readOrder(id: string, userId?: string): Promise<Order | undefined>;
   matchOrder(context: ProviderContext, providerOrderId: string | null, receipt?: string | null): Promise<Order | undefined>;
   receiveEvent(context: ProviderContext, event: { eventId: string; type: string; hash: string; evidence: WebhookEvidence }, now: Date): Promise<{ event: InboxEvent; anomaly: boolean }>;
-  claimEvent(id: string, now: Date): Promise<InboxEvent | undefined>;
+  claimEvent(id: string, now: Date, context: ProviderContext): Promise<InboxEvent | undefined>;
   retryEvent(id: string, now: Date): Promise<void>;
   finishUnmatchedEvent(id: string, now: Date, state: 'ignored' | 'needs_review', reason?: string): Promise<void>;
-  pendingEvents(now: Date, limit: number): Promise<InboxEvent[]>;
-  recoveryOrders(limit: number): Promise<Order[]>;
+  pendingEvents(now: Date, limit: number, context: ProviderContext): Promise<InboxEvent[]>;
+  recoveryOrders(limit: number, context: ProviderContext): Promise<Order[]>;
 }
 const dbCode = (error: unknown) => (error as { code?: string; cause?: { code?: string } })?.code || (error as { cause?: { code?: string } })?.cause?.code;
 export const postgresFinanceStore: FinanceStore = {
@@ -101,9 +101,9 @@ export const postgresFinanceStore: FinanceStore = {
       return { event, anomaly: !!event.anomalyHash };
     });
   },
-  async claimEvent(id, now) {
+  async claimEvent(id, now, context) {
     return db.transaction(async tx => {
-      const [event] = await tx.select().from(events).where(eq(events.id, id)).for('update');
+      const [event] = await tx.select().from(events).where(and(eq(events.id, id), eq(events.providerAccountId, context.accountId), eq(events.providerMode, context.mode))).for('update');
       if (event && event.attemptCount >= 100 && !['processed', 'ignored', 'needs_review'].includes(event.processingState)) { await tx.update(events).set({ processingState: 'needs_review', processedAt: now, leaseUntil: null, lastErrorCode: 'retry_exhausted' }).where(eq(events.id, id)); return undefined; }
       if (!event || ['processed', 'ignored', 'needs_review'].includes(event.processingState) || (event.leaseUntil && event.leaseUntil > now) || (event.nextAttemptAt && event.nextAttemptAt > now)) return undefined;
       return (await tx.update(events).set({ processingState: 'processing', leaseUntil: new Date(now.getTime() + 60_000), nextAttemptAt: null, attemptCount: event.attemptCount + 1 }).where(eq(events.id, id)).returning())[0];
@@ -111,8 +111,8 @@ export const postgresFinanceStore: FinanceStore = {
   },
   async retryEvent(id, now) { await db.update(events).set({ processingState: 'retry', processedAt: null, leaseUntil: null, nextAttemptAt: new Date(now.getTime() + 60_000), lastErrorCode: 'reconciliation_retry' }).where(and(eq(events.id, id), eq(events.processingState, 'processing'), sql`${events.anomalyHash} IS NULL`)); },
   async finishUnmatchedEvent(id, now, state, reason) { await db.update(events).set({ processingState: state, processedAt: now, leaseUntil: null, lastErrorCode: reason || null }).where(and(eq(events.id, id), eq(events.processingState, 'processing'), sql`${events.anomalyHash} IS NULL`)); },
-  pendingEvents: (now, limit) => db.query.workspacePaymentEvents.findMany({ where: and(inArray(events.processingState, ['pending', 'retry', 'processing']), or(sql`${events.nextAttemptAt} IS NULL`, lte(events.nextAttemptAt, now)), or(sql`${events.leaseUntil} IS NULL`, lte(events.leaseUntil, now))), orderBy: [events.receivedAt], limit }),
-  recoveryOrders: limit => db.query.workspaceMembershipOrders.findMany({ where: inArray(orders.providerSetupState, ['creating', 'recovery_required', 'ready']), orderBy: [sql`${orders.providerRecoveryCheckedAt} ASC NULLS FIRST`, orders.createdAt], limit }),
+  pendingEvents: (now, limit, context) => db.query.workspacePaymentEvents.findMany({ where: and(eq(events.providerAccountId, context.accountId), eq(events.providerMode, context.mode), inArray(events.processingState, ['pending', 'retry', 'processing']), or(sql`${events.nextAttemptAt} IS NULL`, lte(events.nextAttemptAt, now)), or(sql`${events.leaseUntil} IS NULL`, lte(events.leaseUntil, now))), orderBy: [events.receivedAt], limit }),
+  recoveryOrders: (limit, context) => db.query.workspaceMembershipOrders.findMany({ where: and(eq(orders.providerAccountId, context.accountId), eq(orders.providerMode, context.mode), inArray(orders.providerSetupState, ['creating', 'recovery_required', 'ready'])), orderBy: [sql`${orders.providerRecoveryCheckedAt} ASC NULLS FIRST`, orders.createdAt], limit }),
 };
 export async function listFinancialOrders(page = 1) {
   const rows = await db.select({ order: orders, userName: users.fullName }).from(orders).innerJoin(users, eq(users.id, orders.userId)).orderBy(desc(orders.createdAt)).limit(25).offset((page - 1) * 25);

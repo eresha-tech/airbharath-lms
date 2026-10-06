@@ -11,3 +11,22 @@ it('a course provider order is ignored and cannot mutate Workspace or LMS state'
 it('one provider payment cannot fund another owner/order',async()=>{const h=financialHarness(),a=await h.ready(false),b=await h.ready(false),p=h.captured(a);await h.service.reconcileOrder(a.userId,a.id);const e=await inbox(h,b.providerOrderId!,p.id);await h.service.processEvent(e.event.id);expect(b.financialState).toBe('unpaid');expect(b.reviewReason).toBe('provider_identity_mismatch');expect(h.state.payments.filter(x=>x.winner)).toHaveLength(1);});
 it('a consumed coupon cannot create another overlapping purchase',async()=>{const h=financialHarness(),o=await h.ready();h.captured(o);await h.service.reconcileOrder(o.userId,o.id);const i=await h.input(o.userId);await expect(h.service.acceptOrder(o.userId,i.request)).rejects.toMatchObject({code:'conflict'});expect(h.state.redemptions).toHaveLength(1);});
 it('another coupon is independent on a safely released unpaid purchase',async()=>{const h=financialHarness(),i=await h.input(),o=await h.service.acceptOrder(i.userId,i.request);await h.service.closeUnsubmittedOrder(i.userId,o.id);h.offer.value={...h.offer.value,id:randomUUID(),code:'SYNTHETICOTHER15A'};const next=await h.input(i.userId);await h.service.acceptOrder(i.userId,next.request);expect(h.state.redemptions.map(r=>r.status)).toEqual(['released','reserved']);expect(h.state.redemptions[0].couponId).not.toBe(h.state.redemptions[1].couponId);});
+it('foreign-account inbox work remains pending and cannot enter the configured worker', async () => {
+  const h = financialHarness();
+  const received = await h.store.receiveEvent({ ...testContext, accountId: 'acc_FOREIGN15A' }, { eventId: randomUUID(), type: 'subscription.charged', hash: 'a'.repeat(64), evidence: { providerOrderId: null, providerPaymentId: null, receipt: null, eventCreatedAt: null } }, financeNow);
+  await h.service.processEvent(received.event.id);
+  const batch = await h.service.runReconciliationBatch(1);
+  expect(received.event.processingState).toBe('pending');
+  expect(received.event.attemptCount).toBe(0);
+  expect(batch.eventsVisited).toBe(0);
+  expect(h.provider.fetchOrder).not.toHaveBeenCalled();
+});
+it('foreign-account historical orders cannot occupy the configured account recovery batch', async () => {
+  const h = financialHarness(), foreign = await h.ready(false);
+  foreign.providerAccountId = 'acc_FOREIGN15A';
+  const own = await h.ready(false);
+  const result = await h.service.runReconciliationBatch(1);
+  expect(result.ordersVisited).toBe(1);
+  expect(h.provider.fetchOrderPayments).toHaveBeenCalledTimes(1);
+  expect(h.provider.fetchOrderPayments).toHaveBeenCalledWith(own.providerOrderId);
+});
