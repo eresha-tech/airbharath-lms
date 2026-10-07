@@ -101,12 +101,11 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
     const order = await ownedOrder(userId, id);
     if (order.providerOrderId || order.providerSetupState === 'closed') return order;
     if (!order.providerCreateStartedAt) return order; // An unstarted order must explicitly enter ensureProviderOrder; recovery never creates.
-    const candidates = await provider.findOrders(order.providerReceipt);
-    if (candidates.length === 1 && exactProviderOrder(order, candidates[0])) return attachProviderOrder(order, candidates[0]);
+    // Receipt enumeration did not prove reliable in Test Mode. Escaped intents require operational review; never create again or guess an attachment.
     return store.transaction({ userId, couponId: order.couponId, orderId: id }, async tx => {
       const current = await tx.getOrder(id); if (!current) throw new PaymentError('not_found');
       if (current.providerOrderId) return current;
-      return tx.patchOrder(id, { providerSetupState: 'recovery_required', providerRecoveryCheckedAt: clock(), providerRecoveryReason: candidates.length ? 'receipt_match_ambiguous' : 'receipt_not_found' });
+      return tx.patchOrder(id, { providerSetupState: 'recovery_required', providerRecoveryCheckedAt: clock(), providerRecoveryReason: 'operational_review_required' });
     });
   }
   async function closeUnsubmittedOrder(userId: string, id: string) {

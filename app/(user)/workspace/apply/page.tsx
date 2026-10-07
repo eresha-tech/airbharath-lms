@@ -7,7 +7,7 @@ export default async function EligibilityPage() {
   const user = await getWorkspaceUser();
   if (!user) redirect('/login?callbackUrl=%2Fworkspace%2Fapply');
   const journey = await getWorkspaceJourneyState(user.id);
-  if (['eligibility_active', 'ineligible_cooldown'].includes(journey.state)) redirect(journey.destination);
+  if (['eligibility_active', 'ineligible_cooldown', 'activation_pending', 'financial_review', 'early_access', 'active', 'expired', 'creator_unavailable'].includes(journey.state)) redirect(journey.destination);
   const { settings, policy } = await getEligibilityFormConfig();
   return <EligibilityShell title="Become a Creator" intro="Start with a short aviation eligibility check using your AirBharath account. Eligibility does not activate Workspace or approve a course.">
     {journey.state === 'eligibility_expired' && <p role="status" className="mb-6 rounded-xl bg-muted p-4 text-sm">Your previous eligibility has expired. Complete a fresh check against the current rules.</p>}

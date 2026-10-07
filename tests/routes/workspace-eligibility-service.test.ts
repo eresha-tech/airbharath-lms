@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import type { SQL } from 'drizzle-orm';
-const mocks = vi.hoisted(() => ({ db: { transaction: vi.fn(), query: { workspaceEligibilityAttempts: { findFirst: vi.fn() }, users: { findFirst: vi.fn() } } }, session: vi.fn() }));
+const mocks = vi.hoisted(() => ({ db: { transaction: vi.fn(), query: { workspaceEligibilityAttempts: { findFirst: vi.fn() }, users: { findFirst: vi.fn() } } }, access: vi.fn(), session: vi.fn() }));
 vi.mock('@/lib/db', () => ({ db: mocks.db }));
+vi.mock('@/lib/workspace/activation/repository', () => ({ readWorkspaceAccess: mocks.access }));
 vi.mock('@/lib/auth', () => ({ getSession: mocks.session }));
 import { workspaceEligibilityAttempts as attempts, workspaceEligibilitySettings as settings, workspacePolicyVersions as policies, users } from '@/lib/db/schema';
 import { getWorkspaceUser, getWorkspaceJourneyState, recoverSubmission, submissionHash, submitEligibility, publishSettings, EligibilityError } from '@/lib/workspace/eligibility/service';
@@ -14,6 +15,7 @@ function params(query: { where: SQL }) { return dialect.sqlToQuery(query.where).
 // An in-memory transaction/lock harness tests service ordering and races, not PostgreSQL isolation.
 let saved: Record<string, unknown>[]; let versions: typeof setting[]; let audits: Record<string, unknown>[]; let actorRole: string; let locks: string[];
 beforeEach(() => {
+  mocks.access.mockResolvedValue({ row: null, latestOrder: null });
   saved = []; versions = [structuredClone(setting)]; audits = []; actorRole = 'admin'; locks = [];
   let tail: Promise<unknown> = Promise.resolve();
   mocks.db.transaction.mockImplementation(callback => {
@@ -100,5 +102,32 @@ describe('settings version publication', () => {
   it('denies a demoted admin inside the publication transaction', async () => {
     actorRole = 'student'; await expect(publishSettings(userId, { expectedSettingsId: setting.id, requestKey: key, config: setting.config })).rejects.toMatchObject({ code: 'authentication' });
     expect(versions).toHaveLength(1); expect(audits).toHaveLength(0); expect(locks).toEqual(['users:share']);
+  });
+});
+describe('central membership journey uses persisted fulfillment, never JWT role or eligibility claims', () => {
+  it.each(['activation_pending', 'financial_review', 'early_access', 'active', 'expired', 'creator_unavailable'])('resolves %s without granting from capture or a stale admin JWT', async state => {
+    vi.stubEnv('DATABASE_ENV', 'test');
+    mocks.session.mockResolvedValue({ id: userId, role: 'admin', hasCreatorAccess: true });
+    mocks.db.query.users.findFirst.mockResolvedValue({ id: userId, role: 'student' });
+    mocks.db.query.workspaceEligibilityAttempts.findFirst.mockResolvedValue(null);
+    const startsAt = new Date(now.getTime() + (state === 'early_access' ? 1000 : -1000));
+    const endsAt = new Date(now.getTime() + (state === 'expired' ? -1 : 10000));
+    const row = ['activation_pending', 'financial_review'].includes(state) ? null : {
+      profile: { status: state === 'creator_unavailable' ? 'suspended' : 'enabled' },
+      order: { activationState: 'fulfilled', providerMode: 'test', commercialPolicyVersion: 'workspace-test-noncommercial-v1' },
+      membership: { startsAt, endsAt, accessGrantedAt: new Date(now.getTime() - 2000), fulfilledAt: new Date(now.getTime() - 2000) },
+    };
+    mocks.access.mockResolvedValue({ row, latestOrder: { financialState: 'captured', activationState: state === 'financial_review' ? 'held_for_review' : state === 'activation_pending' ? 'pending_activation' : 'fulfilled' } });
+    const result = await getWorkspaceJourneyState(userId, () => now);
+    expect(result).toMatchObject({ state, destination: '/workspace/member', hasCreatorAccess: ['early_access', 'active'].includes(state), hasPaidEntitlement: ['early_access', 'active'].includes(state) });
+    expect(result).not.toHaveProperty('membership'); expect(result).not.toHaveProperty('order');
+    expect(mocks.access).toHaveBeenCalledWith(userId);
+    vi.unstubAllEnvs();
+  });
+  it('does not resolve membership from an absent persisted account and propagates database failures closed', async () => {
+    mocks.db.query.users.findFirst.mockResolvedValue(null);
+    expect((await getWorkspaceJourneyState(userId)).hasCreatorAccess).toBe(false); expect(mocks.access).not.toHaveBeenCalled();
+    mocks.db.query.users.findFirst.mockResolvedValue({ id: userId }); mocks.access.mockRejectedValue(new Error('synthetic unavailable'));
+    await expect(getWorkspaceJourneyState(userId)).rejects.toThrow('synthetic unavailable');
   });
 });

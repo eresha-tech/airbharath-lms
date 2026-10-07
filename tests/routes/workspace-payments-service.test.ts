@@ -47,14 +47,14 @@ describe('accepted orders and conservative coupon holds (transactional adapter, 
     const h = financialHarness(), i = await h.input(), o = await h.service.acceptOrder(i.userId, i.request); vi.mocked(h.provider.createOrder).mockRejectedValue(new ProviderFailure('ambiguous'));
     await h.service.ensureProviderOrder(i.userId, o.id); expect(o.providerSetupState).toBe('recovery_required'); await h.service.ensureProviderOrder(i.userId, o.id); expect(h.provider.createOrder).toHaveBeenCalledTimes(1);
     h.now.value = new Date('2026-12-01'); await expect(h.service.closeUnsubmittedOrder(i.userId, o.id)).rejects.toMatchObject({ code: 'conflict' }); expect(h.state.redemptions[0].status).toBe('reserved');
-    await h.service.recoverProviderOrder(i.userId, o.id); expect(h.state.orders[0].providerRecoveryReason).toBe('receipt_not_found'); expect(h.state.redemptions[0].status).toBe('reserved');
+    await h.service.recoverProviderOrder(i.userId, o.id); expect(h.state.orders[0].providerRecoveryReason).toBe('operational_review_required'); expect(h.state.redemptions[0].status).toBe('reserved');
   });
-  it('recovers an escaped create response by exact receipt without another POST', async () => {
+  it('retains an escaped create for operational review even with one apparent receipt match', async () => {
     const h = financialHarness(), i = await h.input(), o = await h.service.acceptOrder(i.userId, i.request);
     vi.mocked(h.provider.createOrder).mockImplementationOnce(async input => { const result = { ...h.provider.context, id: 'order_ESCAPE15ATEST', receipt: input.receipt, amountPaise: input.amountPaise, currency: input.currency, status: 'created' as const, createdAt: financeNow }; h.externalOrders.push(result, result); throw new ProviderFailure('ambiguous'); });
     // Use a separate deterministic escaped provider entity; the duplicate lookup deliberately stays ambiguous.
     await h.service.ensureProviderOrder(i.userId, o.id); await h.service.recoverProviderOrder(i.userId, o.id); expect(o.providerSetupState).toBe('recovery_required'); expect(h.provider.createOrder).toHaveBeenCalledTimes(1);
-    h.externalOrders.splice(1); await h.service.recoverProviderOrder(i.userId, o.id); expect(o.providerSetupState).toBe('ready'); expect(h.provider.createOrder).toHaveBeenCalledTimes(1);
+    h.externalOrders.splice(1); await h.service.recoverProviderOrder(i.userId, o.id); expect(o.providerSetupState).toBe('recovery_required'); expect(h.provider.createOrder).toHaveBeenCalledTimes(1); expect(h.provider.findOrders).not.toHaveBeenCalled();
   });
   it('definitive input rejection is the only provider-started release path', async () => {
     const h = financialHarness(), i = await h.input(), o = await h.service.acceptOrder(i.userId, i.request); vi.mocked(h.provider.createOrder).mockRejectedValueOnce(new ProviderFailure('definitive_rejection', 'a'.repeat(64))); await h.service.ensureProviderOrder(i.userId, o.id); expect(o.providerSetupState).toBe('closed'); expect(h.state.redemptions[0].status).toBe('released');
@@ -67,6 +67,16 @@ describe('shared exact capture finalization', () => {
   it('captures once, redeems once and stores exactly 72 hours without granting access', async () => {
     const h = financialHarness(), o = await h.ready(); h.now.value = new Date(financeNow.getTime()+60000); const p = h.captured(o), sig = signature(o.providerOrderId!, p.id); const a = await h.service.confirmPayment(o.userId, o.id, p.id, sig, callbackSecret); await h.service.confirmPayment(o.userId, o.id, p.id, sig, callbackSecret);
     expect(a).toMatchObject({ financialState: 'captured', activationState: 'pending_activation', winningPaymentId: p.id }); expect(a!.paidAt).toEqual(p.capturedAt); expect(a!.refundEligibleUntil!.getTime()-a!.paidAt!.getTime()).toBe(72*3600000); expect(h.state.payments).toHaveLength(1); expect(h.state.redemptions[0].status).toBe('redeemed'); expect(Object.keys(h.state)).toEqual(['orders','redemptions','payments','events']);
+  });
+  it('failed attempt leaves the order and reservation open for a later exact capture on the same order', async () => {
+    const h = financialHarness(), order = await h.ready();
+    h.captured(order, { state: 'failed', capturedAt: null, captureTimeSource: null });
+    await h.service.reconcileOrder(order.userId, order.id);
+    expect(order).toMatchObject({ financialState: 'unpaid', providerSetupState: 'ready', activationState: 'pending_activation' });
+    expect(h.state.redemptions[0].status).toBe('reserved');
+    const winner = h.captured(order); await h.service.reconcileOrder(order.userId, order.id);
+    expect(order).toMatchObject({ financialState: 'captured', winningPaymentId: winner.id, activationState: 'pending_activation' });
+    expect(h.state.payments.filter(p => p.winner)).toHaveLength(1); expect(h.state.redemptions[0].status).toBe('redeemed');
   });
   it.each(['authorized', 'failed'])('%s is evidence without financial capture', async state => { const h = financialHarness(), o = await h.ready(), p = h.captured(o, { state: state as 'authorized' | 'failed', capturedAt: null, captureTimeSource: null }); await h.service.reconcileOrder(o.userId, o.id); expect(o.financialState).toBe('unpaid'); expect(h.state.redemptions[0].status).toBe('reserved'); expect(h.state.payments[0].providerPaymentId).toBe(p.id); });
   it.each(['amount', 'currency', 'order', 'account'])('wrong %s never funds the financial order', async wrong => {

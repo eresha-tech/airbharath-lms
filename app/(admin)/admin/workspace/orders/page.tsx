@@ -6,7 +6,7 @@ import { formatWorkspaceDate } from '@/lib/workspace/eligibility/model';
 export const dynamic = 'force-dynamic';
 export default async function WorkspaceOrdersPage() {
   if (!await getAuthorizedAdminSession()) redirect('/login');
-  return <main className="ph-no-capture space-y-7"><header><p className="text-xs uppercase tracking-widest text-primary">Workspace finances</p><h1 className="mt-3 font-outfit text-3xl font-semibold">Financial orders</h1><p className="mt-3 max-w-2xl text-sm text-muted-foreground">Captured money and activation are separate. These orders grant no creator access. Public payment remains unavailable.</p></header><InboxSummary /><OrderList /></main>;
+  return <main className="ph-no-capture space-y-7"><header><p className="text-xs uppercase tracking-widest text-primary">Workspace finances</p><h1 className="mt-3 font-outfit text-3xl font-semibold">Financial orders</h1><p className="mt-3 max-w-2xl text-sm text-muted-foreground">Captured money and activation are separate. A capture alone grants no creator access; fulfillment is recorded separately. Public payment remains unavailable.</p></header><InboxSummary /><OrderList /></main>;
 }
 async function OrderList() {
   try { const rows = await listFinancialOrders();

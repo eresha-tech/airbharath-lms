@@ -9,7 +9,7 @@ it('extends the verified 0011 head with only four isolated financial tables', ()
   for (const [name, table] of Object.entries(before.tables)) expect(after.tables[name]).toEqual(table);
   expect(after.enums).toEqual(before.enums);
   const journal = JSON.parse(read('drizzle/meta/_journal.json'));
-  expect(journal.entries.slice(-2).map((entry: { tag: string }) => entry.tag)).toEqual(['0011_workspace_coupon_audit_freshness', '0012_useful_warhawk']);
+  expect(journal.entries.slice(11, 13).map((entry: { tag: string }) => entry.tag)).toEqual(['0011_workspace_coupon_audit_freshness', '0012_useful_warhawk']);
   expect(sql.match(/CREATE TABLE/g)).toHaveLength(4);
   expect(sql).not.toMatch(/DROP TABLE|TRUNCATE|DISABLE TRIGGER|CREATE OR REPLACE FUNCTION|CREATE TABLE.*(?:creator|course_drafts)|UPDATE (?:users|orders|coupons)|INSERT INTO (?:users|orders|coupons)/i);
 });

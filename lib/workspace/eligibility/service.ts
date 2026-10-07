@@ -1,3 +1,5 @@
+import { readWorkspaceAccess } from '../activation/repository';
+import { resolveMembershipAccess } from '../activation/model';
 import { createHash } from 'node:crypto';
 import { and, desc, eq, gt, lte } from 'drizzle-orm';
 import { getSession } from '@/lib/auth';
@@ -17,7 +19,13 @@ export async function getWorkspaceUser() {
 export async function getWorkspaceJourneyState(userId: string, clock = () => new Date()) {
   const user = UUID.test(userId) ? await db.query.users.findFirst({ where: eq(users.id, userId), columns: { id: true } }) : null;
   const latest = user ? await db.query.workspaceEligibilityAttempts.findFirst({ where: eq(attempts.userId, userId), orderBy: [desc(attempts.decidedAt), desc(attempts.id)] }) || null : null;
-  return { ...resolveJourney(!!user, latest, clock()), attempt: latest ? eligibilityReceipt(latest) : null };
+  const now = clock();
+  const access = user ? await readWorkspaceAccess(userId) : null;
+  const capability = resolveMembershipAccess(access?.row ? { profileStatus: access.row.profile.status, activationState: access.row.order.activationState, providerMode: access.row.order.providerMode, commercialPolicyVersion: access.row.order.commercialPolicyVersion, membership: access.row.membership } : null, now, process.env.NODE_ENV === 'production' ? 'production' : process.env.DATABASE_ENV);
+  const financialReview = access?.latestOrder?.activationState === 'held_for_review';
+  const memberState = access?.row && (access.row.profile.status !== 'enabled' || (!capability.hasCreatorAccess && capability.state !== 'expired')) ? 'creator_unavailable' : capability.state;
+  const state = financialReview ? 'financial_review' : memberState || (access?.latestOrder?.financialState === 'captured' ? 'activation_pending' : null);
+  return { ...resolveJourney(!!user, latest, now), hasCreatorAccess: capability.hasCreatorAccess, hasPaidEntitlement: capability.hasPaidEntitlement, ...(financialReview ? { hasCreatorAccess: false, hasPaidEntitlement: false } : {}), ...(state ? { state, destination: '/workspace/member' } : {}), attempt: latest ? eligibilityReceipt(latest) : null };
 }
 export async function getEligibilityFormConfig() {
   const [currentSettings, policy] = await Promise.all([
