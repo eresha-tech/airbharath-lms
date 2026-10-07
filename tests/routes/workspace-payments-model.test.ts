@@ -22,3 +22,12 @@ it('financial events/fields never enter behavioral telemetry', () => { const eve
 it('adapter sends exact integers, disables partial payments and contains no private notes', async () => { let sent: unknown;const adapter=createRazorpayTestAdapter(config,async(_url,options)=>{sent=JSON.parse(String(options?.body));return Response.json({id:'order_TEST15A',amount:589882,currency:'INR',receipt:receiptFor(actorId),created_at:1791281000,status:'created'})});await adapter.createOrder({amountPaise:589882,currency:'INR',receipt:receiptFor(actorId)});expect(sent).toEqual({amount:589882,currency:'INR',receipt:receiptFor(actorId),partial_payment:false,notes:{}}); });
 it.each(['timeout','loss','server_error','bad_json'])('adapter classifies %s as ambiguous', async kind => { const adapter=createRazorpayTestAdapter(config,async()=>{if(kind==='timeout'||kind==='loss')throw new Error('synthetic');return kind==='bad_json'?new Response('{'):Response.json({error:{code:'SERVER_ERROR'}},{status:500})});await expect(adapter.createOrder({amountPaise:589882,currency:'INR',receipt:receiptFor(actorId)})).rejects.toMatchObject({outcome:'ambiguous'}); });
 it('only a validated rejection carries a bounded rejection evidence hash', async () => { const adapter=createRazorpayTestAdapter(config,async()=>Response.json({error:{code:'BAD_REQUEST_ERROR',reason:'input_validation_failed',description:'synthetic'}},{status:400}));await expect(adapter.createOrder({amountPaise:589882,currency:'INR',receipt:receiptFor(actorId)})).rejects.toMatchObject({outcome:'definitive_rejection',evidenceHash:expect.stringMatching(/^[a-f0-9]{64}$/)}); });
+
+it('observed sandbox minimum-amount rejection with reason NA remains ambiguous', async () => {
+  const adapter=createRazorpayTestAdapter(config,async()=>Response.json({error:{code:'BAD_REQUEST_ERROR',reason:'NA',source:'order',step:'NA',description:'Order amount less than minimum amount allowed'}},{status:400}));
+  await expect(adapter.createOrder({amountPaise:1,currency:'INR',receipt:receiptFor(actorId)})).rejects.toMatchObject({outcome:'ambiguous',evidenceHash:undefined});
+});
+it('empty provider receipt search returns no candidates without proving order absence', async () => {
+  const adapter=createRazorpayTestAdapter(config,async()=>Response.json({entity:'collection',count:0,items:[]}));
+  await expect(adapter.findOrders(receiptFor(actorId))).resolves.toEqual([]);
+});
