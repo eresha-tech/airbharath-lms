@@ -1,5 +1,7 @@
 'use client';
 import Script from 'next/script';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import type { MembershipQuote } from '@/lib/workspace/membership/service';
 
@@ -9,6 +11,7 @@ type RazorpayInstance = { open(): void; on(event: 'payment.failed', handler: () 
 type RazorpayConstructor = new (options: { key: string; order_id: string; amount: number; currency: string; name: string; description: string; handler(result: Result): void; modal: { ondismiss(): void } }) => RazorpayInstance;
 
 export function TestCheckout({ quote, disabled }: { quote: MembershipQuote | null; disabled: boolean }) {
+  const router = useRouter();
   const [ready, setReady] = useState(false), [busy, setBusy] = useState(false), [message, setMessage] = useState('');
   const intent = useRef<{ input: Record<string, unknown>; orderId?: string; checkout?: Checkout } | null>(null);
   const confirming = useRef(false), inFlight = useRef(false);
@@ -45,6 +48,8 @@ export function TestCheckout({ quote, disabled }: { quote: MembershipQuote | nul
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Confirmation needs review. Do not make another payment.');
             setMessage(data.order.financialState === 'captured' ? 'Test payment captured. Membership activation remains on hold pending verified webhook evidence.' : 'Test payment received. Financial verification is pending.');
+            router.push('/workspace/member');
+            router.refresh();
             // A payment callback must never reopen checkout, even when confirmation needs recovery.
           } catch (error) { setMessage(error instanceof Error ? error.message : 'Confirmation needs review. Do not make another payment.'); }
           finally { inFlight.current = false; setBusy(false); }
@@ -59,6 +64,7 @@ export function TestCheckout({ quote, disabled }: { quote: MembershipQuote | nul
     <button type="button" onClick={() => void pay()} disabled={busy || !ready || confirming.current || (!intent.current && (disabled || !quote))} className="flex w-full items-center justify-center rounded-xl bg-primary px-5 py-4 text-sm font-semibold text-primary-foreground disabled:opacity-50">{busy ? 'Processing test payment…' : intent.current ? 'Resume same test order' : 'Pay in Test Mode'}</button>
     <p className="mt-4 text-xs leading-6 text-muted-foreground">Test Mode only. Use synthetic test payment details. This does not activate membership or creator access.</p>
     {locked && <p className="mt-2 text-xs text-muted-foreground">The accepted order keeps its original plan and price even if you change the preview.</p>}
+    <Link href="/workspace/member" className="mt-4 inline-block text-sm underline">View payment and membership status</Link>
     {message && <p role="status" className="mt-4 text-sm">{message}</p>}
   </div>;
 }

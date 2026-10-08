@@ -40,3 +40,9 @@ Genuine Razorpay webhook delivery, capture-time provenance, paidAt/refund timing
 | components/workspace/TestCheckout.tsx | Checkout loading, same-request retry, callback confirmation and bounded failure messages |
 | tests/routes/workspace-payments-routes.test.ts | Checkout metadata/security regression |
 | WORKSPACE_TEST_CHECKOUT.md | Scope, runtime configuration, evidence and limitations |
+
+## Post-payment navigation correction
+
+A successful server-side confirmation now navigates to `/workspace/member` and refreshes the persisted membership state. The Test Mode checkout also provides a permanent View payment and membership status link, so an existing payment can be inspected without another checkout. Confirmation failures do not automatically navigate or grant access. Held/unfulfilled payments still show their real review/pending status; no creator-access bypass or synthetic paidAt was introduced.
+
+Validation: full pnpm validate passed again (5 pure + 574 Vitest tests, TypeScript, lint); actual authenticated local HTML rendered the new membership-status link; unsigned local webhook remained 403/signature. No new payment/order was created by the smoke check. Callback navigation is connected in the success handler; a fresh real payment callback was not executed by the agent. The isolated cached-font production build was rerun successfully. Changed files for this correction: components/workspace/TestCheckout.tsx and this report.
