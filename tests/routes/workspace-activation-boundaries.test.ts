@@ -24,7 +24,7 @@ it('preserves public disabled checkout, private activation worker, role separati
   expect(read('components/workspace/ActivationPreview.tsx')).toContain('Payment activation coming next');
   const runtime = read('lib/workspace/activation/runtime.ts'); expect(runtime).toContain("import 'server-only'"); expect(runtime).toContain("process.env.NODE_ENV === 'production'");
   const service = read('lib/workspace/activation/service.ts'), repository = read('lib/workspace/activation/repository.ts');
-  expect(service + repository).not.toMatch(/fetch\(|Razorpay|posthog|update\(users\)|enrollments|courseAuthors|paid_entitlement/i);
+  expect(service + repository).not.toMatch(/fetch\(|new Razorpay|createRazorpay|posthog|update\(users\)|enrollments|courseAuthors|paid_entitlement/i);
   const member = read('app/(user)/workspace/member/page.tsx'), admin = read('app/(admin)/admin/workspace/creators/page.tsx');
   expect(member).toContain('getWorkspaceUser'); expect(admin).toContain('getAuthorizedAdminSession');
   for (const page of [member, admin]) { expect(page).toContain('ph-no-capture'); expect(page).not.toMatch(/posthog|capture\(|use server|<form/); }

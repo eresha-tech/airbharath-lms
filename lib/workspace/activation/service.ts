@@ -1,3 +1,4 @@
+import type { ProviderContext } from '../payments/model';
 import type { Order, Payment, Redemption } from '../payments/repository';
 import type { workspaceCreatorProfiles, workspaceMemberships } from '@/lib/db/schema';
 import { activationReviewReason, membershipTerm } from './model';
@@ -17,9 +18,9 @@ export interface ActivationTransaction {
 }
 export interface ActivationStore {
   transaction<T>(userId: string, orderId: string, work: (tx: ActivationTransaction) => Promise<T>): Promise<T>;
-  pending(limit: number): Promise<{ userId: string; id: string }[]>;
+  pending(limit: number, context: ProviderContext): Promise<{ userId: string; id: string }[]>;
 }
-export function createWorkspaceActivationService(store: ActivationStore, environment: string | undefined, clock = () => new Date()) {
+export function createWorkspaceActivationService(store: ActivationStore, environment: string | undefined, clock = () => new Date(), context?: ProviderContext) {
   function requireDevelopment() {
     // V1 has only non-commercial, test-authoritative capture evidence. Never grant from this evidence in production.
     if (!['development', 'test'].includes(environment || '')) throw new Error('activation_environment_disabled');
@@ -29,6 +30,7 @@ export function createWorkspaceActivationService(store: ActivationStore, environ
     return store.transaction(userId, orderId, async tx => {
       const order = await tx.order();
       if (!order || order.userId !== userId) throw new Error('activation_not_found');
+      if (context && (order.providerAccountId !== context.accountId || order.providerMode !== context.mode)) throw new Error('activation_provider_context_mismatch');
       const existing = await tx.membership();
       if (existing) {
         if (!order.fulfilledAt || existing.fulfilledAt.getTime() !== order.fulfilledAt.getTime() || existing.userId !== userId) throw new Error('activation_history_inconsistent');
@@ -54,8 +56,9 @@ export function createWorkspaceActivationService(store: ActivationStore, environ
   async function runBatch(limit = 10) {
     requireDevelopment();
     if (!Number.isInteger(limit) || limit < 1 || limit > 25) throw new Error('activation_invalid_limit');
+    if (!context || context.mode !== 'test' || !/^[A-Za-z0-9_]{1,100}$/.test(context.accountId)) throw new Error('activation_provider_context_required');
     const result = { attempted: 0, fulfilled: 0, held: 0, failed: 0 };
-    for (const order of await store.pending(limit)) {
+    for (const order of await store.pending(limit, context)) {
       result.attempted++;
       try { const item = await fulfill(order.userId, order.id); if (item.state === 'fulfilled') result.fulfilled++; else if (item.state === 'held_for_review') result.held++; }
       catch { result.failed++; } // Financial commit survives; pending activation can be retried independently.

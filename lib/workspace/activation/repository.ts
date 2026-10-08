@@ -30,7 +30,7 @@ export const postgresActivationStore: ActivationStore = {
       }
     }
   },
-  pending: limit => db.select({ id: orders.id, userId: orders.userId }).from(orders).where(and(eq(orders.financialState, 'captured'), eq(orders.activationState, 'pending_activation'), eq(orders.providerMode, 'test'), isNotNull(orders.paidAt), isNotNull(orders.refundEligibleUntil))).orderBy(orders.createdAt, orders.id).limit(limit),
+  pending: (limit, context) => db.select({ id: orders.id, userId: orders.userId }).from(orders).where(and(eq(orders.financialState, 'captured'), eq(orders.activationState, 'pending_activation'), eq(orders.providerMode, context.mode), eq(orders.providerAccountId, context.accountId), eq(orders.provider, 'razorpay'), eq(orders.commercialPolicyVersion, 'workspace-test-noncommercial-v1'), isNotNull(orders.paidAt), isNotNull(orders.refundEligibleUntil))).orderBy(orders.createdAt, orders.id).limit(limit),
 };
 // Private server projection; every consumer supplies a persisted, authenticated owner.
 export async function readWorkspaceAccess(userId: string) {

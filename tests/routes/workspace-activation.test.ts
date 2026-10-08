@@ -2,7 +2,7 @@ import { createHmac, randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { addCalendarMonthsIST, membershipState, membershipTerm, resolveMembershipAccess, WORKSPACE_LAUNCH_AT } from '@/lib/workspace/activation/model';
 import { createWorkspaceActivationService, type ActivationStore, type CreatorProfile, type Membership } from '@/lib/workspace/activation/service';
-import { callbackSecret, financialHarness } from './workspace-payments-fixtures';
+import { callbackSecret, financialHarness, testContext } from './workspace-payments-fixtures';
 const hmac = (value: string, secret: string) => createHmac('sha256', secret).update(value).digest('hex');
 async function fixture(coupon = true, paidAt?: Date) {
   const finance = financialHarness();
@@ -29,9 +29,9 @@ async function fixture(coupon = true, paidAt?: Date) {
         hold: async reason => { Object.assign(owned!, { activationState: 'held_for_review', reviewReason: reason }); },
       }); } catch (error) { Object.assign(rows, snapshot.rows); Object.assign(finance.state, snapshot.financial); throw error; } finally { release(); }
     },
-    pending: async limit => finance.state.orders.filter(o => o.financialState === 'captured' && o.activationState === 'pending_activation' && o.paidAt && o.refundEligibleUntil).slice(0, limit).map(o => ({ id: o.id, userId: o.userId })),
+    pending: async (limit, context) => finance.state.orders.filter(o => o.providerAccountId === context.accountId && o.providerMode === context.mode && o.financialState === 'captured' && o.activationState === 'pending_activation' && o.paidAt && o.refundEligibleUntil).slice(0, limit).map(o => ({ id: o.id, userId: o.userId })),
   };
-  const service = createWorkspaceActivationService(store, 'test', () => finance.now.value);
+  const service = createWorkspaceActivationService(store, 'test', () => finance.now.value, testContext);
   const fulfill = () => service.fulfill(order.userId, order.id);
   return { finance, order, payment, rows, service, store, fulfill, fail: (value: string | null) => { fail = value; } };
 }
@@ -113,7 +113,8 @@ describe('safe fulfillment, separate financial commit, and recovery', () => {
       case 'duration': h.order.durationMonths = 90; break;
       case 'future_capture': h.order.paidAt = new Date('2027-01-01'); break;
     }
-    expect((await h.fulfill()).state).not.toBe('fulfilled'); expect(h.rows.profiles).toHaveLength(0); expect(h.rows.memberships).toHaveLength(0);
+    if (scenario === 'mode') await expect(h.fulfill()).rejects.toThrow('activation_provider_context_mismatch');
+    else expect((await h.fulfill()).state).not.toBe('fulfilled'); expect(h.rows.profiles).toHaveLength(0); expect(h.rows.memberships).toHaveLength(0);
   });
   it('rejects a second nonexpired/overlapping initial membership under the owner lock', async () => {
     const h = await fixture(); await h.fulfill();
@@ -127,6 +128,13 @@ describe('safe fulfillment, separate financial commit, and recovery', () => {
     await h.finance.service.reconcileOrder(h.order.userId, h.order.id); expect(h.order.activationState).toBe('fulfilled');
     h.payment.refundedPaise = 1; await h.finance.service.reconcileOrder(h.order.userId, h.order.id);
     expect(h.order.activationState).toBe('held_for_review'); expect(h.rows.memberships[0]).toEqual(term);
+  });
+  it('requires explicit provider scope and never activates another account', async () => {
+    const h = await fixture(); const foreign = { ...testContext, accountId: 'acc_OTHER_SYNTHETIC' };
+    expect(await createWorkspaceActivationService(h.store, 'test', () => h.finance.now.value, foreign).runBatch()).toEqual({ attempted: 0, fulfilled: 0, held: 0, failed: 0 });
+    await expect(createWorkspaceActivationService(h.store, 'test').runBatch()).rejects.toThrow('activation_provider_context_required');
+    await expect(createWorkspaceActivationService(h.store, 'test', () => h.finance.now.value, foreign).fulfill(h.order.userId, h.order.id)).rejects.toThrow('activation_provider_context_mismatch');
+    expect(h.rows.profiles).toHaveLength(0); expect(h.rows.memberships).toHaveLength(0);
   });
   it('bounds recovery and isolates failures without a browser or provider call', async () => {
     const h = await fixture(); h.fail('membership'); expect(await h.service.runBatch(1)).toEqual({ attempted: 1, fulfilled: 0, held: 0, failed: 1 });
