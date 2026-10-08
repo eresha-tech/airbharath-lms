@@ -1,12 +1,13 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { TestCheckout } from './TestCheckout';
 import { Check, ArrowRight, LockKeyhole } from 'lucide-react';
 import { calculatePrice, formatPaise, normalizeCouponCode, type Plan } from '@/lib/workspace/membership/model';
 import type { MembershipQuote } from '@/lib/workspace/membership/service';
 import { trackCouponApplied, trackPlanSelected } from '@/lib/workspace/membership/analytics';
 
-export function ActivationPreview({ plans, initialQuote }: { plans: Plan[]; initialQuote: MembershipQuote | null }) {
+export function ActivationPreview({ plans, initialQuote, testPaymentsEnabled = false }: { plans: Plan[]; initialQuote: MembershipQuote | null; testPaymentsEnabled?: boolean }) {
   const [selected, setSelected] = useState(initialQuote?.planCode || plans[0].code);
   const [quote, setQuote] = useState(initialQuote), [draft, setDraft] = useState(''), [appliedCode, setAppliedCode] = useState<string | undefined>();
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [destination, setDestination] = useState<string | undefined>();
@@ -63,7 +64,7 @@ export function ActivationPreview({ plans, initialQuote }: { plans: Plan[]; init
           {expired && <p className="mt-6 text-sm">This preview has expired. Refresh to check current eligibility, plans and coupon rules.</p>}
         </div>
         {!busy && (expired || error) && <button onClick={() => void preview(plan, appliedCode)} className="mt-5 text-sm underline underline-offset-4">Refresh preview</button>}
-        <div className="mt-8 border-t border-border pt-6"><button disabled className="flex w-full items-center justify-center gap-3 rounded-xl bg-muted px-5 py-4 text-sm font-semibold text-muted-foreground"><LockKeyhole className="size-4" aria-hidden />Payment activation coming next<ArrowRight className="size-4" aria-hidden /></button><p className="mt-4 text-xs leading-6 text-muted-foreground">Secure payment activation will be enabled in the next Workspace step. No charge, membership or creator access is created by this preview.</p></div>
+        <div className="mt-8 border-t border-border pt-6">{testPaymentsEnabled ? <TestCheckout quote={quote} disabled={busy || expired || !plan.available} /> : <><button disabled className="flex w-full items-center justify-center gap-3 rounded-xl bg-muted px-5 py-4 text-sm font-semibold text-muted-foreground"><LockKeyhole className="size-4" aria-hidden />Payment activation coming next<ArrowRight className="size-4" aria-hidden /></button><p className="mt-4 text-xs leading-6 text-muted-foreground">Secure payment activation will be enabled in the next Workspace step. No charge, membership or creator access is created by this preview.</p></>}</div>
       </section>
     </div>
   </div>;

@@ -30,3 +30,15 @@ it('durable storage failure is retryable, never acknowledged as success',async()
 it('duplicate processed receipt succeeds; same ID/different hash signals anomaly',async()=>{const raw=JSON.stringify({account_id:config.accountId,event:'payment.captured',payload:{}});mocks.receive.mockResolvedValue({event:{processingState:'processed'},anomaly:false});expect((await webhook(hook(raw))).status).toBe(200);mocks.receive.mockResolvedValue({event:{processingState:'needs_review'},anomaly:true});expect((await webhook(hook(raw))).status).toBe(409);});
 it('admin financial reports recheck persisted authorization; no mark-paid command exists',async()=>{mocks.admin.mockResolvedValue(null);expect((await adminList(new Request(origin+'/api/admin/workspace/orders'))).status).toBe(403);expect((await adminCounts(new Request(origin+'/counts'),{params:Promise.resolve({id:requestKey})})).status).toBe(403);expect(mocks.list).not.toHaveBeenCalled();expect(mocks.counts).not.toHaveBeenCalled();});
 it('admin reporting distinguishes capacity, consumption, releases and held captures',async()=>{const response=await adminCounts(new Request(origin+'/counts'),{params:Promise.resolve({id:requestKey})});expect(await response.json()).toEqual({activeReserved:1,redeemedPaidUses:2,releasedReservations:3,capturedHeldOrders:1});expect((await adminList(new Request(origin+'/orders?page=0'))).status).toBe(400);});
+
+it('test checkout exposes only public key and accepted server order economics', async () => {
+  mocks.runtime.mockReturnValue({config:{...config,keyId:'rzp_test_SYNTHETIC'},service:{acceptOrder:mocks.accept,ensureProviderOrder:mocks.ensure}});
+  mocks.ensure.mockResolvedValue({...order,providerOrderId:'order_SYNTHETIC'});
+  const body=await (await create(json('/orders',input))).json();
+  expect(body.checkout).toEqual({keyId:'rzp_test_SYNTHETIC',providerOrderId:'order_SYNTHETIC',amountPaise:589882,currency:'INR'});
+  expect(JSON.stringify(body)).not.toContain(config.keySecret);expect(JSON.stringify(body)).not.toContain(config.webhookSecret);
+  for(const state of [{providerSetupState:'recovery_required'},{financialState:'captured'}]) {
+    mocks.ensure.mockResolvedValue({...order,providerOrderId:'order_SYNTHETIC',...state});
+    expect((await (await create(json('/orders',input))).json()).checkout).toBeNull();
+  }
+});
