@@ -184,6 +184,8 @@ export default function Header() {
                   </Link>
                 </Button>
 
+                <Link href="/workspace/dashboard" className="hidden rounded-xl border border-border px-3 py-2 text-xs font-semibold hover:text-primary sm:inline-flex">Workspace</Link>
+
                 <Button
                   asChild
                   size="sm"
@@ -271,8 +273,9 @@ export default function Header() {
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="w-full text-foreground h-10 rounded-xl">
-                  <Link href="/dashboard/courses">My Enrolled Courses</Link>
+                  <Link href="/dashboard/courses">My Learning</Link>
                 </Button>
+                <Button asChild variant="outline" className="w-full text-foreground h-10 rounded-xl"><Link href="/workspace/dashboard">Workspace</Link></Button>
               </>
             ) : (
               <div className="grid grid-cols-2 gap-2">

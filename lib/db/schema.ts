@@ -1,3 +1,4 @@
+import { CATEGORIES } from '@/lib/workspace/eligibility/model';
 import { pgTable, pgEnum, uuid, text, numeric, boolean, integer, timestamp, uniqueIndex, index, jsonb, check, primaryKey, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import type { SetupState, FinancialState, ActivationState, ReservationState, PaymentState, EventState, WebhookEvidence } from '@/lib/workspace/payments/model';
@@ -650,4 +651,56 @@ export const workspacePaymentEvents = pgTable('workspace_payment_events', {
 }, t => [
   uniqueIndex('workspace_events_provider_event_idx').on(t.providerAccountId, t.providerMode, t.eventId), index('workspace_events_pending_idx').on(t.processingState, t.nextAttemptAt, t.receivedAt),
   check('workspace_events_definition_check', sql`${t.providerMode} = 'test' AND length(${t.eventId}) BETWEEN 1 AND 100 AND ${t.eventType} ~ '^[a-z][a-z._]{1,79}$' AND ${t.payloadHash} ~ '^[a-f0-9]{64}$' AND (${t.anomalyHash} IS NULL OR ${t.anomalyHash} ~ '^[a-f0-9]{64}$') AND ${t.processingState} IN ('pending','processing','retry','processed','needs_review','ignored') AND ${t.attemptCount} BETWEEN 0 AND 100 AND ((${t.processingState} IN ('processed','ignored','needs_review') AND ${t.processedAt} IS NOT NULL) OR (${t.processingState} IN ('pending','processing','retry') AND ${t.processedAt} IS NULL))`),
+]);
+
+// Private Workspace content. Never participates in LMS storefront/ownership tables.
+export const workspaceCreatorProfileDetails = pgTable('workspace_creator_profile_details', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  creatorProfileId: uuid('creator_profile_id').notNull(),
+  displayName: text('display_name').notNull(),
+  professionalHeadline: text('professional_headline').default('').notNull(),
+  shortBio: text('short_bio').default('').notNull(),
+  primaryAviationCategory: text('primary_aviation_category').notNull(),
+  professionalProfileUrl: text('professional_profile_url'),
+  version: integer('version').default(1).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, t => [
+  uniqueIndex('workspace_profile_details_owner_idx').on(t.userId),
+  uniqueIndex('workspace_profile_details_profile_idx').on(t.creatorProfileId),
+  foreignKey({ columns: [t.creatorProfileId, t.userId], foreignColumns: [workspaceCreatorProfiles.id, workspaceCreatorProfiles.userId], name: 'workspace_profile_details_owner_fk' }).onDelete('restrict'),
+  check('workspace_profile_details_category_check', sql`${t.primaryAviationCategory} IN (${sql.raw(CATEGORIES.map(([code]) => `'${code}'`).join(', '))})`),
+  check('workspace_profile_details_version_check', sql`${t.version} > 0`),
+  check('workspace_profile_details_time_check', sql`${t.updatedAt} >= ${t.createdAt}`),
+  check('workspace_profile_details_content_check', sql`length(${t.displayName}) BETWEEN 2 AND 100 AND length(${t.professionalHeadline}) <= 160 AND length(${t.shortBio}) <= 1000 AND (${t.professionalProfileUrl} IS NULL OR (length(${t.professionalProfileUrl}) <= 2048 AND ${t.professionalProfileUrl} LIKE 'https://%'))`),
+]);
+export const workspaceCourseDrafts = pgTable('workspace_course_drafts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  creatorProfileId: uuid('creator_profile_id').notNull(),
+  requestKey: uuid('request_key').notNull(),
+  creationHash: text('creation_hash').notNull(),
+  title: text('title').notNull(),
+  category: text('category').notNull(),
+  description: text('description').notNull(),
+  targetLearner: text('target_learner').notNull(),
+  learningOutcomes: jsonb('learning_outcomes').$type<string[]>().notNull(),
+  outline: jsonb('outline').$type<import('@/lib/workspace/creator/model').OutlineItem[]>().notNull(),
+  tentativePricePaise: integer('tentative_price_paise'),
+  currency: text('currency').default('INR').notNull(),
+  status: text('status').$type<'draft'>().default('draft').notNull(),
+  version: integer('version').default(1).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, t => [
+  uniqueIndex('workspace_drafts_request_owner_idx').on(t.userId, t.requestKey),
+  index('workspace_drafts_owner_updated_idx').on(t.userId, t.updatedAt, t.id),
+  foreignKey({ columns: [t.creatorProfileId, t.userId], foreignColumns: [workspaceCreatorProfiles.id, workspaceCreatorProfiles.userId], name: 'workspace_drafts_owner_fk' }).onDelete('restrict'),
+  check('workspace_drafts_category_check', sql`${t.category} IN (${sql.raw(CATEGORIES.map(([code]) => `'${code}'`).join(', '))})`),
+  check('workspace_drafts_status_check', sql`${t.status} = 'draft' AND ${t.currency} = 'INR'`),
+  check('workspace_drafts_version_time_check', sql`${t.version} > 0 AND ${t.updatedAt} >= ${t.createdAt}`),
+  check('workspace_drafts_price_check', sql`${t.tentativePricePaise} IS NULL OR ${t.tentativePricePaise} BETWEEN 1 AND 100000000`),
+  check('workspace_drafts_text_check', sql`length(${t.title}) BETWEEN 3 AND 200 AND length(${t.description}) BETWEEN 50 AND 5000 AND length(${t.targetLearner}) BETWEEN 1 AND 1000 AND ${t.creationHash} ~ '^[a-f0-9]{64}$'`),
+  check('workspace_drafts_json_check', sql`CASE WHEN jsonb_typeof(${t.learningOutcomes}) = 'array' AND jsonb_typeof(${t.outline}) = 'array' THEN jsonb_array_length(${t.learningOutcomes}) BETWEEN 1 AND 10 AND jsonb_array_length(${t.outline}) <= 20 ELSE false END`),
 ]);

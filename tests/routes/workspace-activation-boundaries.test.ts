@@ -9,7 +9,7 @@ it('extends the verified 0012 head additively without changing legacy tables or 
   expect(after.prevId).toBe(before.id); expect(Object.keys(after.tables).filter(name => !before.tables[name]).sort()).toEqual(['public.workspace_creator_profiles', 'public.workspace_memberships']);
   for (const [name, table] of Object.entries(before.tables)) if (name !== 'public.workspace_membership_orders') expect(after.tables[name]).toEqual(table);
   expect(after.enums).toEqual(before.enums);
-  expect(JSON.parse(read('drizzle/meta/_journal.json')).entries.at(-1).tag).toBe('0013_peaceful_spiral');
+  expect(JSON.parse(read('drizzle/meta/_journal.json')).entries[13].tag).toBe('0013_peaceful_spiral');
   expect(migration).not.toMatch(/DROP TABLE|TRUNCATE|DISABLE TRIGGER|btree_gist|ALTER TABLE "?(?:users|orders|coupons|enrollments)"?\s/i);
   expect(migration.indexOf('CREATE UNIQUE INDEX "workspace_creator_profiles_owner_idx"')).toBeLessThan(migration.indexOf('FOREIGN KEY ("creator_profile_id","user_id")'));
   expect(migration.indexOf('CREATE UNIQUE INDEX "workspace_orders_owner_idx"')).toBeLessThan(migration.indexOf('FOREIGN KEY ("membership_order_id","user_id")'));

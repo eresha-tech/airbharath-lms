@@ -1,0 +1,12 @@
+import { beforeEach, expect, it, vi } from 'vitest';
+const mocks = vi.hoisted(() => ({ user: vi.fn(), overview: vi.fn() }));
+vi.mock('@/lib/workspace/eligibility/service', () => ({ getWorkspaceUser: mocks.user }));
+vi.mock('@/lib/workspace/creator/repository', () => ({ workspaceContent: () => ({ overview: mocks.overview }) }));
+vi.mock('next/navigation', () => ({ redirect: (path: string) => { throw new Error(`REDIRECT:${path}`); } }));
+import { requireCreatorWorkspace } from '@/lib/workspace/creator/pages';
+import { CreatorError } from '@/lib/workspace/creator/model';
+import { owner } from './workspace-creator-fixtures';
+beforeEach(() => { mocks.user.mockResolvedValue({ id: owner, role: 'student' }); mocks.overview.mockResolvedValue({ capabilities: { canViewCreatorWorkspace: true, canEditWorkspace: true } }); });
+it('anonymous creator routes use a fixed callback and never read content', async () => { mocks.user.mockResolvedValue(null); await expect(requireCreatorWorkspace()).rejects.toThrow('REDIRECT:/login?callbackUrl=%2Fworkspace%2Fdashboard'); expect(mocks.overview).not.toHaveBeenCalled(); });
+it('requires persisted capability for an account regardless of JWT role', async () => { await expect(requireCreatorWorkspace()).resolves.toBeDefined(); expect(mocks.overview).toHaveBeenCalledWith(owner); mocks.user.mockResolvedValue({ id: owner, role: 'admin', hasCreatorAccess: true }); mocks.overview.mockRejectedValue(new CreatorError('restricted')); await expect(requireCreatorWorkspace()).rejects.toThrow('REDIRECT:/workspace/member'); });
+it('database failure cannot expose internal details or render an editable creator screen', async () => { mocks.overview.mockRejectedValue(new Error('private database password')); await expect(requireCreatorWorkspace()).rejects.toThrow('Workspace could not be loaded. Please try again later.'); });

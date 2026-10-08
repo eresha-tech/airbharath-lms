@@ -33,12 +33,12 @@ export const postgresActivationStore: ActivationStore = {
   pending: (limit, context) => db.select({ id: orders.id, userId: orders.userId }).from(orders).where(and(eq(orders.financialState, 'captured'), eq(orders.activationState, 'pending_activation'), eq(orders.providerMode, context.mode), eq(orders.providerAccountId, context.accountId), eq(orders.provider, 'razorpay'), eq(orders.commercialPolicyVersion, 'workspace-test-noncommercial-v1'), isNotNull(orders.paidAt), isNotNull(orders.refundEligibleUntil))).orderBy(orders.createdAt, orders.id).limit(limit),
 };
 // Private server projection; every consumer supplies a persisted, authenticated owner.
-export async function readWorkspaceAccess(userId: string) {
-  const [row] = await db.select({ membership: memberships, profile: profiles, order: orders }).from(memberships)
+export async function readWorkspaceAccess(userId: string, reader: Pick<typeof db, 'select'> = db) {
+  const [row] = await reader.select({ membership: memberships, profile: profiles, order: orders }).from(memberships)
     .innerJoin(profiles, and(eq(profiles.id, memberships.creatorProfileId), eq(profiles.userId, memberships.userId)))
     .innerJoin(orders, and(eq(orders.id, memberships.membershipOrderId), eq(orders.userId, memberships.userId)))
     .where(eq(memberships.userId, userId)).orderBy(desc(memberships.endsAt), desc(memberships.id)).limit(1);
-  const [latestOrder] = await db.select({ activationState: orders.activationState, financialState: orders.financialState }).from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt), desc(orders.id)).limit(1);
+  const [latestOrder] = await reader.select({ activationState: orders.activationState, financialState: orders.financialState }).from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt), desc(orders.id)).limit(1);
   return { row: row || null, latestOrder: latestOrder || null };
 }
 export async function listWorkspaceCreators() {

@@ -119,7 +119,7 @@ describe('central membership journey uses persisted fulfillment, never JWT role 
     };
     mocks.access.mockResolvedValue({ row, latestOrder: { financialState: 'captured', activationState: state === 'financial_review' ? 'held_for_review' : state === 'activation_pending' ? 'pending_activation' : 'fulfilled' } });
     const result = await getWorkspaceJourneyState(userId, () => now);
-    expect(result).toMatchObject({ state, destination: '/workspace/member', hasCreatorAccess: ['early_access', 'active'].includes(state), hasPaidEntitlement: ['early_access', 'active'].includes(state) });
+    expect(result).toMatchObject({ state, destination: ['early_access', 'active', 'expired'].includes(state) ? '/workspace/dashboard' : '/workspace/member', hasCreatorAccess: ['early_access', 'active'].includes(state), hasPaidEntitlement: ['early_access', 'active'].includes(state) });
     expect(result).not.toHaveProperty('membership'); expect(result).not.toHaveProperty('order');
     expect(mocks.access).toHaveBeenCalledWith(userId);
     vi.unstubAllEnvs();

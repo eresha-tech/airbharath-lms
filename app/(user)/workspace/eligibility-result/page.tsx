@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export default async function EligibilityResult() {
   const user = await getWorkspaceUser(); if (!user) redirect('/login?callbackUrl=%2Fworkspace%2Fapply');
   const journey = await getWorkspaceJourneyState(user.id);
-  if (journey.destination === '/workspace/member') redirect(journey.destination);
+  if (['/workspace/member', '/workspace/dashboard'].includes(journey.destination)) redirect(journey.destination);
   if (!['eligibility_active', 'ineligible_cooldown'].includes(journey.state) || !journey.attempt) redirect('/workspace/apply');
   const attempt = journey.attempt; const eligible = journey.state === 'eligibility_active';
   return <EligibilityShell title={eligible ? 'You meet the eligibility requirements.' : 'Eligibility requirements not met yet.'} intro={eligible ? 'Your aviation background meets the current automated onboarding rules. Choose your membership plan and preview pricing. Payment activation is coming next.' : 'This decision uses your submitted answers and the rules in effect when you submitted.'}>
