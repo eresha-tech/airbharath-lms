@@ -4,6 +4,7 @@ import { EVALUATOR_VERSION, ELIGIBILITY_POLICY_VERSION } from './eligibility/mod
 export function workspaceAnalyticsPath(pathname: string) {
   if (pathname === '/workspace') return '/workspace';
   if (pathname.startsWith('/workspace/courses/') && pathname !== '/workspace/courses/new') return '/workspace/courses/[id]';
+  if (pathname.startsWith('/admin/workspace/course-reviews/')) return '/admin/workspace/course-reviews/[id]';
   if (pathname.startsWith('/admin/workspace/course-drafts/')) return '/admin/workspace/course-drafts/[id]';
   if (pathname.startsWith('/workspace/')) {
     const known = ['/workspace/apply', '/workspace/eligibility-result', '/workspace/manual-application', '/workspace/activate', '/workspace/dashboard', '/workspace/profile', '/workspace/courses', '/workspace/courses/new'];
@@ -13,7 +14,7 @@ export function workspaceAnalyticsPath(pathname: string) {
   if (pathname.startsWith('/admin/workspace/orders/')) return '/admin/workspace/orders/[id]';
   if (pathname.startsWith('/admin/workspace/coupons/')) return '/admin/workspace/coupons/[id]';
   if (pathname.startsWith('/admin/workspace/eligibility/')) return '/admin/workspace/eligibility/[id]';
-  if (pathname.startsWith('/admin/workspace/')) return ['/admin/workspace/course-drafts', '/admin/workspace/eligibility', '/admin/workspace/settings', '/admin/workspace/coupons', '/admin/workspace/orders'].includes(pathname) ? pathname : '/admin/workspace/[path]';
+  if (pathname.startsWith('/admin/workspace/')) return ['/admin/workspace/course-reviews', '/admin/workspace/course-drafts', '/admin/workspace/eligibility', '/admin/workspace/settings', '/admin/workspace/coupons', '/admin/workspace/orders'].includes(pathname) ? pathname : '/admin/workspace/[path]';
   if (pathname.startsWith('/admin/workspace-applications/')) return '/admin/workspace-applications/[id]';
   if (pathname === '/admin/workspace-applications') return pathname;
   return null;

@@ -1,6 +1,7 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 const mocks = vi.hoisted(() => ({ state: vi.fn(), content: vi.fn(), admin: vi.fn(), inspect: vi.fn() }));
+vi.mock('@/lib/workspace/review/repository', () => ({ workspaceReviews: () => ({ history: async () => ({ submissions: [], hasNext: false }) }) }));
 vi.mock('@/lib/workspace/creator/pages', () => ({ requireCreatorWorkspace: mocks.state }));
 vi.mock('@/lib/workspace/creator/repository', () => ({ workspaceContent: () => ({ read: mocks.content }), inspectDrafts: mocks.inspect }));
 vi.mock('@/lib/workspace/creator/http', () => ({ pageNumber: (value?: string) => Number(value || 1) }));
