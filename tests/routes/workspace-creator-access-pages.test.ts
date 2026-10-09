@@ -10,3 +10,8 @@ beforeEach(() => { mocks.user.mockResolvedValue({ id: owner, role: 'student' });
 it('anonymous creator routes use a fixed callback and never read content', async () => { mocks.user.mockResolvedValue(null); await expect(requireCreatorWorkspace()).rejects.toThrow('REDIRECT:/login?callbackUrl=%2Fworkspace%2Fdashboard'); expect(mocks.overview).not.toHaveBeenCalled(); });
 it('requires persisted capability for an account regardless of JWT role', async () => { await expect(requireCreatorWorkspace()).resolves.toBeDefined(); expect(mocks.overview).toHaveBeenCalledWith(owner); mocks.user.mockResolvedValue({ id: owner, role: 'admin', hasCreatorAccess: true }); mocks.overview.mockRejectedValue(new CreatorError('restricted')); await expect(requireCreatorWorkspace()).rejects.toThrow('REDIRECT:/workspace/member'); });
 it('database failure cannot expose internal details or render an editable creator screen', async () => { mocks.overview.mockRejectedValue(new Error('private database password')); await expect(requireCreatorWorkspace()).rejects.toThrow('Workspace could not be loaded. Please try again later.'); });
+it('persisted authentication lookup failure is bounded before any creator content is read', async () => {
+  mocks.user.mockRejectedValue(new Error('connect ECONNREFUSED private-host:5433 password=private'));
+  await expect(requireCreatorWorkspace()).rejects.toThrow('Workspace could not be loaded. Please try again later.');
+  expect(mocks.overview).not.toHaveBeenCalled();
+});
