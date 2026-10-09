@@ -13,7 +13,6 @@ export async function POST(request: Request) {
     const input = parseAcceptance(raw); if (!input) throw new PaymentError('validation');
     const accepted = await runtime.service.acceptOrder(user.id, input);
     const order = await runtime.service.ensureProviderOrder(user.id, accepted.id);
-    const checkout = order.providerSetupState === 'ready' && order.financialState === 'unpaid' && order.providerOrderId ? { keyId: runtime.config.keyId, providerOrderId: order.providerOrderId, amountPaise: order.totalPaise, currency: order.currency } : null;
-    return privateJson({ order: financialReceipt(order), checkout }, 201);
+    return privateJson({ order: financialReceipt(order) }, 201);
   } catch (error) { return paymentFailure(error); }
 }

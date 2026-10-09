@@ -37,3 +37,13 @@ Requested confirmation of exact dashboard webhook URL and newest resend status/t
 Temporary receiver stopped; normal local app restored with payment flags unchanged. Therefore normal webhook requests again fail closed with 503/disabled until a coordinated temporary test receiver is running. User-owned Cloudflare tunnel was not modified or stopped. No Razorpay API call, real transaction, reconciliation, membership fulfillment, held-fixture activation, deployment, migration, Phase 1.7 or product-source change occurred.
 
 Local evidence: `/tmp/workspace-webhook-probe-results.json`, `/tmp/workspace-webhook-genuine-receipts.json`, `/tmp/workspace-webhook-preflight.log`. Temporary files are execution evidence, not durable storage. This report is the only repository change.
+
+## Temporary testing setup removed — 9 October 2026
+
+At the user's request, removed the temporary synthetic-member sign-in helper and Test Mode checkout UI/API wiring, including post-payment navigation added solely for that test flow. The local app was restarted normally without process-only database/payment overrides. Source files were restored exactly to commit 64b551c (before checkout testing). The existing production/authentication/payment-signature and fulfillment guards remain intact.
+
+Removed repository files: components/workspace/TestCheckout.tsx, WORKSPACE_TEST_CHECKOUT.md, WORKSPACE_LOCAL_TEST_MEMBER.md. Restored files: app/(user)/workspace/activate/page.tsx, app/api/workspace/membership/orders/route.ts, components/workspace/ActivationPreview.tsx, tests/routes/workspace-payments-routes.test.ts. This report records removal. Temporary sign-in/checkout helper scripts were removed from /tmp; the loopback sign-in process was stopped. Normal payment endpoint smoke returned 503/disabled, and port 4005 was closed.
+
+No database access or mutation was needed for removal. Immutable synthetic eligibility/payment/fulfillment/member fixtures and the original user's held payment are retained, not deleted, reassigned or activated. Any already-issued test browser session remains short-lived; signing out restores the normal login flow. No environment file was edited.
+
+Full pnpm validate passed: 5 pure tests + 573 Vitest tests across 46 files, TypeScript and lint. git diff --check passed. Production build was not rerun for this exact restoration to the previously built baseline. No deployment, migration, dependency change or history rewrite occurred.
