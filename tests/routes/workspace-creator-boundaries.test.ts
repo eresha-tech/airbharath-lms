@@ -22,7 +22,7 @@ it('additive 0014 preserves every existing schema object and all 0000–0013 mig
   const before = JSON.parse(read('drizzle/meta/0013_snapshot.json')), after = JSON.parse(read('drizzle/meta/0014_snapshot.json'));
   expect(after.prevId).toBe(before.id); expect(Object.keys(after.tables).filter(key => !before.tables[key]).sort()).toEqual(['public.workspace_course_drafts', 'public.workspace_creator_profile_details']);
   for (const [name, table] of Object.entries(before.tables)) expect(after.tables[name]).toEqual(table); expect(after.enums).toEqual(before.enums);
-  const journal = JSON.parse(read('drizzle/meta/_journal.json')); expect(journal.entries.at(-1).tag).toBe('0014_outgoing_freak');
+  const journal = JSON.parse(read('drizzle/meta/_journal.json')); expect(journal.entries[14].tag).toBe('0014_outgoing_freak');
   for (const entry of journal.entries.slice(0, 14)) {
     const file = `drizzle/${entry.tag}.sql`; expect(createHash('sha256').update(read(file)).digest('hex')).toBe(originalMigrations[entry.tag]);
   }

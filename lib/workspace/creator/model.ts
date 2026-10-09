@@ -5,7 +5,7 @@ export type OutlineItem = { title: string; description: string; ordering: number
 export type DraftContent = { title: string; category: Category; description: string; targetLearner: string; learningOutcomes: string[]; outline: OutlineItem[]; tentativePricePaise: number | null };
 export type ProfileContent = { displayName: string; professionalHeadline: string; shortBio: string; primaryAviationCategory: Category; professionalProfileUrl: string | null };
 export class CreatorError extends Error {
-  constructor(public code: 'authentication' | 'restricted' | 'not_found' | 'validation' | 'conflict' | 'too_large', public fields?: Record<string, string>) { super(code); }
+  constructor(public code: 'authentication' | 'restricted' | 'not_found' | 'validation' | 'conflict' | 'review_locked' | 'too_large', public fields?: Record<string, string>) { super(code); }
 }
 export function creatorCapabilities(evidence: AccessEvidence | null, now: Date, environment: string | undefined, financialReview = false) {
   const access = resolveMembershipAccess(evidence, now, environment);

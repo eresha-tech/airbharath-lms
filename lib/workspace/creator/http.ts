@@ -37,8 +37,8 @@ export async function creatorHttp(request: Request, action: 'list' | 'read' | 'c
     return privateJson({ draft: draftReceipt(draft) });
   } catch (error) {
     if (error instanceof CreatorError) {
-      const status = { authentication: 401, restricted: 403, not_found: 404, validation: 400, conflict: 409, too_large: 413 }[error.code];
-      return privateJson({ code: error.code, error: error.code === 'conflict' ? 'A newer version exists or this request was already used. Your changes have not overwritten it. Reload to review the saved version.' : error.code === 'restricted' ? 'Workspace editing or viewing is unavailable for your current membership. Your content is retained.' : error.code === 'not_found' ? 'Draft not found.' : error.code === 'validation' ? 'Check the fields and try again.' : error.code === 'too_large' ? 'This request is too large.' : 'Please sign in again.', fields: error.fields }, status);
+      const status = { authentication: 401, restricted: 403, not_found: 404, validation: 400, conflict: 409, review_locked: 409, too_large: 413 }[error.code];
+      return privateJson({ code: error.code, error: error.code === 'review_locked' ? 'This course draft is read-only while its review is open or approved.' : error.code === 'conflict' ? 'A newer version exists or this request was already used. Your changes have not overwritten it. Reload to review the saved version.' : error.code === 'restricted' ? 'Workspace editing or viewing is unavailable for your current membership. Your content is retained.' : error.code === 'not_found' ? 'Draft not found.' : error.code === 'validation' ? 'Check the fields and try again.' : error.code === 'too_large' ? 'This request is too large.' : 'Please sign in again.', fields: error.fields }, status);
     }
     return privateJson({ error: 'Workspace is temporarily unavailable. Your answers are still here. Please try again.' }, 503);
   }

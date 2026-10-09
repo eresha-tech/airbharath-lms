@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import type { SubmissionTransaction } from '../review/service';
+import { permitsDraftEdit } from '../review/model';
 import type { workspaceCourseDrafts, workspaceCreatorProfileDetails } from '@/lib/db/schema';
 import { UUID } from '../eligibility/model';
 import type { AccessEvidence } from '../activation/model';
@@ -7,6 +9,7 @@ export type Draft = typeof workspaceCourseDrafts.$inferSelect;
 export type ProfileDetails = typeof workspaceCreatorProfileDetails.$inferSelect;
 export type CreatorContext = { user: { id: string; fullName: string | null }; profileId: string | null; evidence: AccessEvidence | null; financialReview: boolean; planName: string | null };
 export interface CreatorTransaction {
+  reviews: SubmissionTransaction;
   context(): Promise<CreatorContext>;
   draft(id: string): Promise<Draft | null>;
   request(key: string): Promise<Draft | null>;
@@ -27,7 +30,10 @@ export function creatorService(store: CreatorStore, environment: string | undefi
     });
   }
   return {
-    overview: (userId: string, page = 1) => run(userId, false, async (tx, context, now) => ({ ...context, capabilities: creatorCapabilities(context.evidence, now, environment, context.financialReview), ...await tx.list(page), details: await tx.details() })),
+    overview: (userId: string, page = 1) => run(userId, false, async (tx, context, now) => {
+      const list = await tx.list(page);
+      return { ...context, capabilities: creatorCapabilities(context.evidence, now, environment, context.financialReview), ...list, reviewStatuses: await tx.reviews.statuses(list.drafts.map(draft => draft.id)), details: await tx.details() };
+    }),
     read: (userId: string, id: string) => run(userId, false, async tx => { const draft = await tx.draft(id); if (!draft) throw new CreatorError('not_found'); return draft; }),
     create: (userId: string, requestKey: string, input: unknown) => {
       if (!UUID.test(requestKey)) throw new CreatorError('validation');
@@ -40,8 +46,11 @@ export function creatorService(store: CreatorStore, environment: string | undefi
     },
     update: (userId: string, id: string, expected: number, input: unknown) => {
       const content = validateDraft(input); const expectedVersion = version(expected);
-      return run(userId, true, async (tx, _context, now) => {
+      return run(userId, true, async (tx, context) => {
         if (!await tx.draft(id)) throw new CreatorError('not_found');
+        if (!permitsDraftEdit((await tx.reviews.latest(id))?.reviewStatus)) throw new CreatorError('review_locked');
+        const now = clock();
+        if (!creatorCapabilities(context.evidence, now, environment, context.financialReview).canEditWorkspace) throw new CreatorError('restricted');
         const updated = await tx.update(id, expectedVersion, content, now);
         if (!updated) throw new CreatorError('conflict'); return updated;
       });
