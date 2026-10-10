@@ -3,6 +3,8 @@ import { COUPON_ERRORS, isPlanCode } from './membership/model';
 import { EVALUATOR_VERSION, ELIGIBILITY_POLICY_VERSION } from './eligibility/model';
 export function workspaceAnalyticsPath(pathname: string) {
   if (pathname === '/workspace') return '/workspace';
+  if (/^\/workspace\/courses\/[^/]+\/build\/?$/.test(pathname)) return '/workspace/courses/[id]/build';
+  if (pathname.startsWith('/admin/workspace/course-builds/')) return '/admin/workspace/course-builds/[id]';
   if (pathname.startsWith('/workspace/courses/') && pathname !== '/workspace/courses/new') return '/workspace/courses/[id]';
   if (pathname.startsWith('/admin/workspace/course-reviews/')) return '/admin/workspace/course-reviews/[id]';
   if (pathname.startsWith('/admin/workspace/course-drafts/')) return '/admin/workspace/course-drafts/[id]';
@@ -14,7 +16,7 @@ export function workspaceAnalyticsPath(pathname: string) {
   if (pathname.startsWith('/admin/workspace/orders/')) return '/admin/workspace/orders/[id]';
   if (pathname.startsWith('/admin/workspace/coupons/')) return '/admin/workspace/coupons/[id]';
   if (pathname.startsWith('/admin/workspace/eligibility/')) return '/admin/workspace/eligibility/[id]';
-  if (pathname.startsWith('/admin/workspace/')) return ['/admin/workspace/course-reviews', '/admin/workspace/course-drafts', '/admin/workspace/eligibility', '/admin/workspace/settings', '/admin/workspace/coupons', '/admin/workspace/orders'].includes(pathname) ? pathname : '/admin/workspace/[path]';
+  if (pathname.startsWith('/admin/workspace/')) return ['/admin/workspace/course-builds', '/admin/workspace/course-reviews', '/admin/workspace/course-drafts', '/admin/workspace/eligibility', '/admin/workspace/settings', '/admin/workspace/coupons', '/admin/workspace/orders'].includes(pathname) ? pathname : '/admin/workspace/[path]';
   if (pathname.startsWith('/admin/workspace-applications/')) return '/admin/workspace-applications/[id]';
   if (pathname === '/admin/workspace-applications') return pathname;
   return null;

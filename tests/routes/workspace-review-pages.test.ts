@@ -1,3 +1,4 @@
+vi.mock('@/lib/workspace/builder/repository', () => ({ readBuildSummaries: async () => ({ available: true, rows: {} }) }));
 import { beforeEach, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 const mocks=vi.hoisted(()=>({admin:vi.fn(),queue:vi.fn(),detail:vi.fn(),state:vi.fn(),draft:vi.fn(),history:vi.fn()}));
