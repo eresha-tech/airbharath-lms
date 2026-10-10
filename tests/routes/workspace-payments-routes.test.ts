@@ -13,7 +13,7 @@ import { GET as adminList } from '@/app/api/admin/workspace/orders/route';
 import { GET as adminCounts } from '@/app/api/admin/workspace/coupons/[id]/financial/route';
 import { PaymentError } from '@/lib/workspace/payments/model';
 import { plans,actorId,requestKey } from './workspace-membership-fixtures';
-const origin='http://localhost:3000',config={accountId:'acc_TEST15A',mode:'test',keySecret:'synthetic-callback-secret',webhookSecret:'synthetic-webhook-secret'},order={id:requestKey,userId:actorId,planCode:'quarterly',planVersionId:plans[0].id,totalPaise:589882,currency:'INR',providerSetupState:'ready',financialState:'unpaid',activationState:'pending_activation',paidAt:null,refundEligibleUntil:null};
+const origin='http://localhost:3000',config={keyId:'rzp_test_SYNTHETIC15A',accountId:'acc_TEST15A',mode:'test',keySecret:'synthetic-callback-secret',webhookSecret:'synthetic-webhook-secret'},order={id:requestKey,userId:actorId,planCode:'quarterly',planVersionId:plans[0].id,totalPaise:589882,currency:'INR',providerOrderId:'order_SYNTHETIC15A',providerAccountId:'acc_TEST15A',providerMode:'test',providerSetupState:'ready',financialState:'unpaid',activationState:'pending_activation',paidAt:null,refundEligibleUntil:null};
 const json=(path:string,body:unknown,source=origin)=>new Request(origin+path,{method:'POST',headers:{'content-type':'application/json',origin:source},body:JSON.stringify(body)});
 function hook(raw:string,signature:string|undefined=createHmac('sha256',config.webhookSecret).update(raw).digest('hex'),eventId='evt_TEST15A') { return new Request(origin+'/api/workspace/payments/razorpay/webhook',{method:'POST',headers:{...(signature?{'x-razorpay-signature':signature}:{}),'x-razorpay-event-id':eventId,origin:'https://unrelated-origin.example.invalid'},body:raw}); }
 const input={planCode:'quarterly',planVersionId:plans[0].id,quoteHash:'a'.repeat(64),requestKey};
@@ -30,3 +30,17 @@ it('durable storage failure is retryable, never acknowledged as success',async()
 it('duplicate processed receipt succeeds; same ID/different hash signals anomaly',async()=>{const raw=JSON.stringify({account_id:config.accountId,event:'payment.captured',payload:{}});mocks.receive.mockResolvedValue({event:{processingState:'processed'},anomaly:false});expect((await webhook(hook(raw))).status).toBe(200);mocks.receive.mockResolvedValue({event:{processingState:'needs_review'},anomaly:true});expect((await webhook(hook(raw))).status).toBe(409);});
 it('admin financial reports recheck persisted authorization; no mark-paid command exists',async()=>{mocks.admin.mockResolvedValue(null);expect((await adminList(new Request(origin+'/api/admin/workspace/orders'))).status).toBe(403);expect((await adminCounts(new Request(origin+'/counts'),{params:Promise.resolve({id:requestKey})})).status).toBe(403);expect(mocks.list).not.toHaveBeenCalled();expect(mocks.counts).not.toHaveBeenCalled();});
 it('admin reporting distinguishes capacity, consumption, releases and held captures',async()=>{const response=await adminCounts(new Request(origin+'/counts'),{params:Promise.resolve({id:requestKey})});expect(await response.json()).toEqual({activeReserved:1,redeemedPaidUses:2,releasedReservations:3,capturedHeldOrders:1});expect((await adminList(new Request(origin+'/orders?page=0'))).status).toBe(400);});
+
+it('Checkout creation exposes only scoped public key/order identifiers, never signing secrets',async()=>{
+ const response=await create(json('/orders',input)),body=await response.json();
+ expect(body.checkout).toEqual({keyId:config.keyId,providerOrderId:order.providerOrderId});
+ expect(JSON.stringify(body)).not.toContain(config.keySecret);expect(JSON.stringify(body)).not.toContain(config.webhookSecret);
+});
+
+it('owned order recovery exposes Test Checkout only while the strict runtime gates and provider scope match',async()=>{
+ for(const [key,value]of Object.entries({NODE_ENV:'test',DATABASE_ENV:'development',WORKSPACE_PAYMENT_ENABLED:'true',WORKSPACE_RAZORPAY_TEST_AUTHORIZED:'true',WORKSPACE_RAZORPAY_MODE:'test',WORKSPACE_RAZORPAY_KEY_ID:config.keyId,WORKSPACE_RAZORPAY_KEY_SECRET:config.keySecret,WORKSPACE_RAZORPAY_WEBHOOK_SECRET:config.webhookSecret,WORKSPACE_RAZORPAY_ACCOUNT_ID:config.accountId}))vi.stubEnv(key,value);
+ const params={params:Promise.resolve({id:requestKey})};
+ expect(await (await read(new Request(origin+'/orders'),params)).json()).toMatchObject({checkout:{keyId:config.keyId,providerOrderId:order.providerOrderId}});
+ vi.stubEnv('NODE_ENV','production');expect(await (await read(new Request(origin+'/orders'),params)).json()).not.toHaveProperty('checkout');
+ vi.stubEnv('NODE_ENV','test');vi.stubEnv('WORKSPACE_PAYMENT_ENABLED','false');expect(await (await read(new Request(origin+'/orders'),params)).json()).not.toHaveProperty('checkout');
+});

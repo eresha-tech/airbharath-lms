@@ -25,7 +25,7 @@ it('enforces identity, ownership, capacity, safe release and deferred financial 
   expect(sql).toContain('"release_reason" IS NOT NULL'); expect(sql).toContain('"capture_time_source" IS NOT NULL');
 });
 it('preserves public disabled CTA and keeps financial administration read-only', () => {
-  expect(read('components/workspace/ActivationPreview.tsx')).toContain('Payment activation coming next');
+  expect(read('components/workspace/ActivationPreview.tsx')).toContain('Payments not yet enabled');
   const page = read('app/(admin)/admin/workspace/orders/page.tsx');
   expect(page).toContain('getAuthorizedAdminSession'); expect(page).toContain('ph-no-capture');
   expect(page).not.toContain('Mark Paid'); expect(page).not.toContain('Active membership');

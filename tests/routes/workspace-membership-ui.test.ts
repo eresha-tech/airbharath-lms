@@ -1,6 +1,8 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { expect, it, vi } from 'vitest';
+vi.mock('next/navigation',()=>({useRouter:()=>({replace:vi.fn(),refresh:vi.fn()})}));
+vi.mock('next/script',()=>({default:()=>null}));
 vi.mock('next/link', () => ({ default: ({ children, ...props }: React.PropsWithChildren<{ href: string }>) => React.createElement('a', props, children) }));
 vi.mock('@/lib/workspace/membership/analytics', () => ({ trackPlanSelected: vi.fn(), trackCouponApplied: vi.fn() }));
 import { ActivationPreview } from '@/components/workspace/ActivationPreview';
@@ -12,7 +14,9 @@ it('renders all approved plans, exclusive GST and advisory unreserved quote with
   const html = renderToStaticMarkup(React.createElement(ActivationPreview, { plans, initialQuote }));
   expect(html.match(/type="radio"/g)).toHaveLength(3); expect(html).toContain('₹5,898.82'); expect(html).toContain('₹10,618.82'); expect(html).toContain('₹20,058.82');
   expect(html).toContain('GST @ 18%'); expect(html).toContain('Taxable amount'); expect(html).toContain('does not reserve'); expect(html).toContain('successful payment date');
-  expect(html).toMatch(/<button disabled=""[^>]*>.*Payment activation coming next/); expect(html).toContain('ph-no-capture'); expect(html).not.toMatch(/razorpay|checkout\.js|name="totalPaise"/i);
+  const enabled = renderToStaticMarkup(React.createElement(ActivationPreview,{plans,initialQuote,checkoutKeyId:'rzp_test_SYNTHETIC',userId:'synthetic-owner'}));
+  expect(enabled).toContain('Razorpay Test Mode');expect(enabled).toContain('Pay ₹5,898.82');expect(enabled).not.toContain('Payments not yet enabled');
+  expect(html).toMatch(/<button disabled=""[^>]*>.*Payments not yet enabled/); expect(html).toContain('Workspace payments are awaiting launch verification.'); expect(html).toContain('ph-no-capture'); expect(html).not.toMatch(/razorpay|checkout\.js|name="totalPaise"/i);
 });
 it('marks unavailable plans disabled and renders an empty admin definition state without fake counters', () => {
   const html = renderToStaticMarkup(React.createElement(ActivationPreview, { plans: plans.map(plan => ({ ...plan, available: false })), initialQuote: null }));
