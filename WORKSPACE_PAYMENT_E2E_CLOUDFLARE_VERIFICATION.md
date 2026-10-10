@@ -1,8 +1,8 @@
 # Workspace payment E2E — Cloudflare verification
 
-Status on 10 October 2026: **WORKSPACE TEST E2E BLOCKED — authenticated browser dashboard confirmation pending.**
+Status on 10 October 2026: **WORKSPACE TEST E2E PASS**.
 
-A genuine Razorpay Test Checkout payment of ₹5,898.82 passed through the authenticated callback, genuine signed Cloudflare webhook, authoritative provider capture-event time, exact 72-hour refund deadline, normal membership fulfillment, enabled Creator Profile and server-side Early Access entitlement. Actual browser dashboard/profile/draft verification is still awaiting the user's response; server capability checks alone are not reported as a full E2E PASS. Public payments remain disabled. No Phase 1.8 implementation.
+A genuine Razorpay Test Checkout payment of ₹5,898.82 passed through the authenticated callback, genuine signed Cloudflare webhook, authoritative provider capture-event time, exact 72-hour refund deadline, normal membership fulfillment, enabled Creator Profile and server-side Early Access entitlement. After the local environment correction, the user confirmed the authenticated dashboard displays Early Access Active. The required payment-to-dashboard PASS criteria are met. Profile/draft persistence and additional scenarios below were not completed in this journey and are not claimed as tested. Public payments remain disabled. No Phase 1.8 implementation.
 
 ## A. Environment
 
@@ -100,11 +100,11 @@ The paid term starts at official launch, not the Test payment date.
 
 ## Q. Creator dashboard access
 
-Normal Creator service overview passed against the fresh paid account with creator capability enabled. User was asked to refresh/open `/workspace/dashboard` and confirm Early Access Active and the 9 November 2026 start date. **Actual authenticated browser dashboard result is pending.** The user reported the member-page “Creator access unavailable” state with correct membership dates after the ordinary app was independently restarted without DATABASE_ENV. A read-only real-membership check reproduced denial with missing classification, granted Early Access with development, and denied production. Saved only the non-secret development classification to ignored `.env.local`, then restarted the repository app with payment flags absent. No access-control or membership mutation was needed. User refresh confirmation remains pending. No browser containing the user's session is available to the agent; no synthetic session/cookie was generated to substitute for the manual journey.
+Normal Creator service overview passed against the fresh paid account with creator capability enabled. User was asked to refresh/open `/workspace/dashboard` and confirm Early Access Active and the 9 November 2026 start date. **Actual authenticated browser dashboard PASS, confirmed by the user after refresh.** The user reported the member-page “Creator access unavailable” state with correct membership dates after the ordinary app was independently restarted without DATABASE_ENV. A read-only real-membership check reproduced denial with missing classification, granted Early Access with development, and denied production. Saved only the non-secret development classification to ignored `.env.local`, then restarted the repository app with payment flags absent. No access-control or membership mutation was needed. The user subsequently replied “yes its showing” to the requested Early Access Active dashboard check, completing this stage. No browser containing the user's session is available to the agent; no synthetic session/cookie was generated to substitute for the manual journey.
 
 ## R. Creator draft flow
 
-Fresh paid-account profile save and private draft create/edit/reload were requested from the user; results pending. At server verification time, draft count was zero. Do not reuse prior Phase 1.7V results as this journey's proof.
+Fresh paid-account profile save and private draft create/edit/reload were requested but not confirmed or independently exercised in this payment journey. At server verification time, draft count was zero. Do not reuse prior Phase 1.7V results as this journey's proof.
 
 ## S. Course-review E2E if exercised
 
@@ -165,15 +165,18 @@ Ignored local-only `.env.local` is additionally configured with the authorized d
 - Actual production refusal checks with Test flags supplied: order/confirm/webhook all 503 disabled.
 - Real local DB identity, reviewed migration chain/no-op, genuine callback/webhook, provider fetch, refund arithmetic, normal fulfillment/idempotency, negative triggers, original-history integrity and LMS-isolation checks passed.
 - `git diff --check` passed; secret/full-phone/tunnel-literal exclusion checked on task-added changes.
-- Follow-up environment diagnosis: real membership denies missing/production classification and grants development; restarted local app classification verified, payment flags absent and webhook still 503 disabled. Existing activation/environment-focused regressions rerun successfully.
-- Browser dashboard and profile/draft persistence remain pending. Optional second real payment, provider resend, failed-payment and course-review journeys not exercised.
+- Follow-up environment diagnosis: real membership denies missing/production classification and grants development; restarted local app classification verified, payment flags absent and webhook still 503 disabled. Existing activation/environment-focused regressions: 43 passed.
+- Authenticated dashboard displays Early Access Active, confirmed by the user after the environment correction. Profile/draft persistence, a second real payment, provider resend, failed-payment and course-review journeys were not exercised.
+- Final read-only original-history audit after dashboard confirmation again passed across all 38 baseline tables.
 
 ## AA. Remaining launch blockers
 
-Immediate E2E completion blocker: actual authenticated browser dashboard confirmation. Profile/draft/review and additional provider orderings/resend/failure scenarios are marked separately above.
+No blocker remains for the defined payment-to-dashboard Test E2E PASS criteria. Profile/draft persistence, review and additional provider orderings/resend/failure scenarios remain unverified, as detailed above; no claim is made for those scenarios.
 
 Public-launch gates remain separate: final Creator Terms, Refund Policy, production credentials/configuration, production migration authorization, worker/scheduler readiness, operational handling/documentation and final release smoke. Local targeted operator execution does not provision a production scheduler. A Test E2E PASS would not enable public charging.
 
 ## AB. Recommendation
 
-**WORKSPACE TEST E2E BLOCKED — dashboard UI verification pending.** Payment → genuine authenticated capture webhook → authoritative paidAt → exact refund deadline → normal membership/Profile → server Early Access entitlement passed. Resume only the same user's dashboard/profile/private-draft confirmation; do not reset the phone or repeat/erase this completed financial history. Public payments stay disabled; no Phase 1.8.
+**WORKSPACE TEST E2E PASS.** The genuine Razorpay Test payment passed through verified capture, authoritative provider capture-event paidAt, exact 72-hour refund deadline, normal membership fulfillment, one enabled Creator Profile, Early Access entitlement and actual authenticated Workspace dashboard access confirmed by the user.
+
+Temporary payment-enabled process stopped; both authorization flags absent; ordinary application payments disabled. Development financial history retained; phone remains attached to the fresh account and must not be reset again for cleanup. Public production charging remains off. Final Creator Terms/Refund Policy, production configuration/migrations, scheduler/operations readiness and release smoke are separate launch gates. No Phase 1.8 implementation. Stop this payment verification task here.
