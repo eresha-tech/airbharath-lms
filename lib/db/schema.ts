@@ -1,5 +1,5 @@
 import { CATEGORIES } from '@/lib/workspace/eligibility/model';
-import { pgTable, pgEnum, uuid, text, numeric, boolean, integer, timestamp, uniqueIndex, index, jsonb, check, primaryKey, foreignKey } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, uuid, text, numeric, boolean, integer, timestamp, uniqueIndex, unique, index, jsonb, check, primaryKey, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import type { SetupState, FinancialState, ActivationState, ReservationState, PaymentState, EventState, WebhookEvidence } from '@/lib/workspace/payments/model';
 import type { PlanCode, CouponStatus, CouponDefinition } from '@/lib/workspace/membership/model';
@@ -734,6 +734,7 @@ export const workspaceCourseSubmissions = pgTable('workspace_course_submissions'
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, t => [
   foreignKey({ columns: [t.draftId, t.userId, t.creatorProfileId], foreignColumns: [workspaceCourseDrafts.id, workspaceCourseDrafts.userId, workspaceCourseDrafts.creatorProfileId], name: 'workspace_submissions_draft_owner_fk' }).onDelete('restrict'),
+  uniqueIndex('workspace_submissions_build_owner_idx').on(t.id, t.userId, t.creatorProfileId, t.draftId),
   uniqueIndex('workspace_submissions_number_idx').on(t.draftId, t.submissionNumber),
   uniqueIndex('workspace_submissions_request_idx').on(t.userId, t.requestKey),
   uniqueIndex('workspace_submissions_open_idx').on(t.draftId).where(sql`${t.reviewStatus} IN ('submitted', 'under_review')`),
@@ -764,4 +765,38 @@ export const workspaceCourseReviewEvents = pgTable('workspace_course_review_even
   check('workspace_review_events_hash_check', sql`${t.commandHash} ~ '^[a-f0-9]{64}$'`),
   check('workspace_review_events_transition_check', sql`(${t.action} = 'review_started' AND ${t.fromStatus} = 'submitted' AND ${t.toStatus} = 'under_review' AND ${t.transitionVersion} = 2 AND ${t.feedback} IS NULL AND ${t.note} IS NULL) OR (${t.action} = 'changes_requested' AND ${t.fromStatus} = 'under_review' AND ${t.toStatus} = 'changes_requested' AND ${t.transitionVersion} = 3 AND ${t.feedback} IS NOT NULL AND length(btrim(${t.feedback})) BETWEEN 10 AND 2000 AND ${t.note} IS NULL) OR (${t.action} = 'approved' AND ${t.fromStatus} = 'under_review' AND ${t.toStatus} = 'approved' AND ${t.transitionVersion} = 3 AND ${t.feedback} IS NULL AND (${t.note} IS NULL OR length(${t.note}) <= 1000))`),
   check('workspace_review_events_plain_check', sql`replace(replace(coalesce(${t.feedback}, ''), chr(10), ''), chr(9), '') !~ '[<>[:cntrl:]]' AND replace(replace(coalesce(${t.note}, ''), chr(10), ''), chr(9), '') !~ '[<>[:cntrl:]]'`),
+]);
+
+// Private approved-submission builder. No LMS/storefront/payment relationships.
+export const workspaceCourseProjects = pgTable('workspace_course_projects', {
+  id: uuid('id').defaultRandom().primaryKey(), userId: uuid('user_id').notNull(), creatorProfileId: uuid('creator_profile_id').notNull(),
+  draftId: uuid('draft_id').notNull(), approvedSubmissionId: uuid('approved_submission_id').notNull(),
+  status: text('status').$type<'building'>().default('building').notNull(), version: integer('version').default(1).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(), updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, t => [
+  uniqueIndex('workspace_projects_source_idx').on(t.approvedSubmissionId), uniqueIndex('workspace_projects_owner_idx').on(t.id, t.userId),
+  index('workspace_projects_draft_idx').on(t.userId, t.draftId),
+  foreignKey({ columns: [t.approvedSubmissionId, t.userId, t.creatorProfileId, t.draftId], foreignColumns: [workspaceCourseSubmissions.id, workspaceCourseSubmissions.userId, workspaceCourseSubmissions.creatorProfileId, workspaceCourseSubmissions.draftId], name: 'workspace_projects_approved_owner_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [t.creatorProfileId, t.userId], foreignColumns: [workspaceCreatorProfiles.id, workspaceCreatorProfiles.userId], name: 'workspace_projects_profile_owner_fk' }).onDelete('restrict'),
+  check('workspace_projects_state_check', sql`${t.status} = 'building' AND ${t.version} > 0 AND ${t.updatedAt} >= ${t.createdAt}`),
+]);
+export const workspaceCourseModules = pgTable('workspace_course_modules', {
+  id: uuid('id').defaultRandom().primaryKey(), projectId: uuid('project_id').notNull(), userId: uuid('user_id').notNull(),
+  title: text('title').notNull(), description: text('description').default('').notNull(), position: integer('position').notNull(), version: integer('version').default(1).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(), updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, t => [
+  uniqueIndex('workspace_modules_owner_idx').on(t.id, t.projectId, t.userId), unique('workspace_modules_position_unique').on(t.projectId, t.position),
+  foreignKey({ columns: [t.projectId, t.userId], foreignColumns: [workspaceCourseProjects.id, workspaceCourseProjects.userId], name: 'workspace_modules_project_owner_fk' }).onDelete('restrict'),
+  check('workspace_modules_content_check', sql`length(btrim(${t.title})) BETWEEN 2 AND 200 AND length(${t.description}) <= 1000`),
+  check('workspace_modules_version_time_check', sql`${t.position} >= 0 AND ${t.version} > 0 AND ${t.updatedAt} >= ${t.createdAt}`),
+]);
+export const workspaceCourseLessons = pgTable('workspace_course_lessons', {
+  id: uuid('id').defaultRandom().primaryKey(), projectId: uuid('project_id').notNull(), moduleId: uuid('module_id').notNull(), userId: uuid('user_id').notNull(),
+  title: text('title').notNull(), summary: text('summary').default('').notNull(), content: text('content').default('').notNull(), position: integer('position').notNull(), version: integer('version').default(1).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(), updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, t => [
+  unique('workspace_lessons_position_unique').on(t.moduleId, t.position),
+  foreignKey({ columns: [t.moduleId, t.projectId, t.userId], foreignColumns: [workspaceCourseModules.id, workspaceCourseModules.projectId, workspaceCourseModules.userId], name: 'workspace_lessons_module_owner_fk' }).onDelete('restrict'),
+  check('workspace_lessons_content_check', sql`length(btrim(${t.title})) BETWEEN 2 AND 200 AND length(${t.summary}) <= 1000 AND length(${t.content}) <= 20000`),
+  check('workspace_lessons_version_time_check', sql`${t.position} >= 0 AND ${t.version} > 0 AND ${t.updatedAt} >= ${t.createdAt}`),
 ]);

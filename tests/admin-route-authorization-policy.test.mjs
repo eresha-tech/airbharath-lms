@@ -13,7 +13,7 @@ function routeFiles(directory) {
 
 test('privileged admin route handlers use persisted-role authorization', () => {
   const files = routeFiles(adminRoot);
-  assert.equal(files.length, 33);
+  assert.equal(files.length, 34);
 
   for (const file of files) {
     const source = readFileSync(file, 'utf8');
