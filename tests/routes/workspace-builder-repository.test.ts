@@ -1,4 +1,5 @@
 import { beforeEach, expect, it, vi } from 'vitest';
+import { drizzle } from 'drizzle-orm/postgres-js';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import type { SQL } from 'drizzle-orm';
 const mocks=vi.hoisted(()=>({transaction:vi.fn(),access:vi.fn(),select:vi.fn()}));
@@ -36,3 +37,17 @@ it('reorder updates changed rows only under owner and independent expected versi
 it('persisted demotion denies list/detail/lesson inspection before private content queries',async()=>{role='student';for(const run of [()=>inspectBuilds(other,1),()=>inspectBuild(other,key),()=>inspectLesson(other,key,other,draftId)]){queries=[];await expect(run()).rejects.toMatchObject({code:'forbidden'});expect(queries.map(q=>q.table)).toEqual([users]);}});
 it('persisted admin inspection is read only and includes source, creator, timestamps and scoped lesson lookup',async()=>{const tree=await inspectBuild(other,key);expect(tree.canEdit).toBe(false);expect(tree.inspection?.creatorName).toBe('Synthetic');expect(tree.source.title).toBe(source.title);expect(tree.project.createdAt).toEqual(now);await inspectLesson(other,key,other,draftId).catch(()=>undefined);const q=queries.find(q=>q.table===lessons&&q.columns&&Object.hasOwn(q.columns as object,'lesson'))!;expect(dialect.sqlToQuery(q.where!).params).toEqual([key,other,draftId]);expect(queries.every(q=>q.kind==='select')).toBe(true);queries=[];await inspectBuilds(other,2);expect(queries.find(q=>q.table===projects)).toMatchObject({limit:21,offset:20});});
 it('unapplied migration degrades library summary safely and owner-scoped summaries never read body',async()=>{await readBuildSummaries(owner,[draftId]);expect(dialect.sqlToQuery(queries[0].where!).params).toEqual([owner,draftId]);mocks.select.mockImplementation(()=>{throw new Error('unapplied builder schema');});expect(await readBuildSummaries(owner,[draftId])).toEqual({available:false,rows:{}});});
+
+it('preserves correlated approval and count qualifiers in flattened single-table SQL',async()=>{
+ await postgresBuildStore.transaction(owner,tx=>tx.source(other,draftId));
+ const columns=queries.find(q=>q.table===submissions)!.columns as {approvalExists:SQL};
+ const approval=drizzle.mock().select({approvalExists:columns.approvalExists}).from(submissions).toSQL().sql;
+ expect(approval).toContain('"workspace_course_review_events"."submission_id"="workspace_course_submissions"."id"');
+ expect(approval).toContain('"workspace_course_review_events"."transition_version"="workspace_course_submissions"."version"');
+ expect(approval).toContain('"workspace_course_review_events"."created_at"="workspace_course_submissions"."review_completed_at"');
+ queries=[];await readBuildSummaries(owner,[draftId]);
+ const counts=queries[0].columns as {moduleCount:SQL;lessonCount:SQL};
+ const countSql=drizzle.mock().select(counts).from(projects).toSQL().sql;
+ expect(countSql).toContain('"workspace_course_modules"."project_id"="workspace_course_projects"."id"');
+ expect(countSql).toContain('"workspace_course_lessons"."project_id"="workspace_course_projects"."id"');
+});

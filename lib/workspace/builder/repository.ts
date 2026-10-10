@@ -6,7 +6,9 @@ import { environment } from '../creator/model';
 import { BuildError } from './model';
 import { builderService, projectReceipt, sourceReceipt, moduleReceipt, lessonSummary, lessonReceipt, type BuildStore, type Project, type ApprovedSource, type BuildTree } from './service';
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
-const approvalExists = sql<boolean>`exists(select 1 from ${reviews} where ${reviews.submissionId}=${submissions.id} and ${reviews.action}='approved' and ${reviews.toStatus}='approved' and ${reviews.transitionVersion}=${submissions.version} and ${reviews.createdAt}=${submissions.reviewCompletedAt})`;
+// Explicit table/identifier pairs preserve correlation when Drizzle flattens a
+// single-table select; interpolated columns otherwise lose their qualifiers.
+const approvalExists = sql<boolean>`exists(select 1 from ${reviews} where ${reviews}.${sql.identifier('submission_id')}=${submissions}.${sql.identifier('id')} and ${reviews}.${sql.identifier('action')}='approved' and ${reviews}.${sql.identifier('to_status')}='approved' and ${reviews}.${sql.identifier('transition_version')}=${submissions}.${sql.identifier('version')} and ${reviews}.${sql.identifier('created_at')}=${submissions}.${sql.identifier('review_completed_at')})`;
 async function source(tx: Tx, id: string, userId?: string, draftId?: string): Promise<ApprovedSource | null> {
   const [row] = await tx.select({ submission: submissions, approvalExists }).from(submissions).where(and(eq(submissions.id, id), userId ? eq(submissions.userId, userId) : undefined, draftId ? eq(submissions.draftId, draftId) : undefined)).for('share');
   return row ? { ...row.submission, approvalExists: row.approvalExists } : null;
@@ -68,7 +70,7 @@ async function admin<T>(actorId: string, work: (tx: Tx) => Promise<T>) {
 }
 export async function inspectBuilds(actorId: string, page: number) {
   return admin(actorId, async tx => { const rows = await tx.select({ project: projects, source: submissions, creatorName: users.fullName,
-    moduleCount: sql<number>`(select count(*)::int from ${modules} where ${modules.projectId}=${projects.id})`, lessonCount: sql<number>`(select count(*)::int from ${lessons} where ${lessons.projectId}=${projects.id})`,
+    moduleCount: sql<number>`(select count(*)::int from ${modules} where ${modules}.${sql.identifier('project_id')}=${projects}.${sql.identifier('id')})`, lessonCount: sql<number>`(select count(*)::int from ${lessons} where ${lessons}.${sql.identifier('project_id')}=${projects}.${sql.identifier('id')})`,
   }).from(projects).innerJoin(submissions, eq(submissions.id, projects.approvedSubmissionId)).innerJoin(users, eq(users.id, projects.userId)).orderBy(desc(projects.createdAt), desc(projects.id)).limit(21).offset((page - 1) * 20); return { rows: rows.slice(0, 20), hasNext: rows.length > 20 }; });
 }
 export async function inspectBuild(actorId: string, projectId: string): Promise<BuildTree> {
@@ -85,8 +87,8 @@ export async function readBuildSummaries(userId: string, draftIds: string[]): Pr
   if (!draftIds.length) return { available: true, rows: {} };
   try {
     const rows = await db.select({ draftId: projects.draftId, projectId: projects.id,
-      moduleCount: sql<number>`(select count(*)::int from ${modules} where ${modules.projectId}=${projects.id})`,
-      lessonCount: sql<number>`(select count(*)::int from ${lessons} where ${lessons.projectId}=${projects.id})`,
+      moduleCount: sql<number>`(select count(*)::int from ${modules} where ${modules}.${sql.identifier('project_id')}=${projects}.${sql.identifier('id')})`,
+      lessonCount: sql<number>`(select count(*)::int from ${lessons} where ${lessons}.${sql.identifier('project_id')}=${projects}.${sql.identifier('id')})`,
     }).from(projects).where(and(eq(projects.userId, userId), inArray(projects.draftId, draftIds))).orderBy(asc(projects.createdAt), asc(projects.id));
     return { available: true, rows: Object.fromEntries(rows.map(row => [row.draftId, { projectId: row.projectId, moduleCount: row.moduleCount, lessonCount: row.lessonCount }])) };
   } catch { return { available: false, rows: {} }; }
