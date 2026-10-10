@@ -22,7 +22,7 @@ A post-detachment baseline covered 38 public tables. Final original-ID row finge
 
 Workspace namespace only: key ID/secret/webhook secret/account ID configured, `WORKSPACE_RAZORPAY_MODE=test`, key ID prefix `rzp_test_`. Workspace webhook secret differs from the LMS secret. No LMS configuration/code changes or Live API calls.
 
-Enabled payment only in a temporary isolated local development process, with both runtime authorization flags. No `.env` mutation or persisted authorization. Preserved the existing JWT configuration in process memory for the user's normal session. No OTP-provider calls initiated by verification code and no OTP/session credential requested or extracted.
+Enabled payment only in a temporary isolated local development process, with both runtime authorization flags. No payment or migration authorization persisted. After a subsequent ordinary local restart omitted classification, an ignored `.env.local` containing only `DATABASE_ENV=development` was added; no credential values were copied or changed. Preserved the existing JWT configuration in process memory for the user's normal session. No OTP-provider calls initiated by verification code and no OTP/session credential requested or extracted.
 
 ## D. Cloudflare webhook configuration
 
@@ -100,7 +100,7 @@ The paid term starts at official launch, not the Test payment date.
 
 ## Q. Creator dashboard access
 
-Normal Creator service overview passed against the fresh paid account with creator capability enabled. User was asked to refresh/open `/workspace/dashboard` and confirm Early Access Active and the 9 November 2026 start date. **Actual authenticated browser dashboard result is pending.** No browser containing the user's session is available to the agent; no synthetic session/cookie was generated to substitute for the manual journey.
+Normal Creator service overview passed against the fresh paid account with creator capability enabled. User was asked to refresh/open `/workspace/dashboard` and confirm Early Access Active and the 9 November 2026 start date. **Actual authenticated browser dashboard result is pending.** The user reported the member-page “Creator access unavailable” state with correct membership dates after the ordinary app was independently restarted without DATABASE_ENV. A read-only real-membership check reproduced denial with missing classification, granted Early Access with development, and denied production. Saved only the non-secret development classification to ignored `.env.local`, then restarted the repository app with payment flags absent. No access-control or membership mutation was needed. User refresh confirmation remains pending. No browser containing the user's session is available to the agent; no synthetic session/cookie was generated to substitute for the manual journey.
 
 ## R. Creator draft flow
 
@@ -141,7 +141,7 @@ Default UI: **Payments not yet enabled** / **Workspace payments are awaiting lau
 - `5ea07c4`: verified capture-event time ingestion, narrowly scoped timing-hold release, activation source support, additive migration/metadata and regression coverage. Applied old migrations unchanged.
 - This updated report is committed separately.
 
-No .env/dependency/pnpm-lock.yaml change, deployment or Phase 1.8. Automatic approval review initially rejected a combined migration-preparation command because it interpreted a read of migration 0013 as rewriting it. The operations were separated; source integrity was proven before guarded migration approval. No applied-source edit or authorization bypass.
+No credential/dependency/pnpm-lock.yaml change, deployment or Phase 1.8. The sole local configuration follow-up is ignored `.env.local` with development classification only; neither payment authorization nor migration acknowledgement is persisted. Automatic approval review initially rejected a combined migration-preparation command because it interpreted a read of migration 0013 as rewriting it. The operations were separated; source integrity was proven before guarded migration approval. No applied-source edit or authorization bypass.
 
 Correction files (8):
 
@@ -154,7 +154,7 @@ Correction files (8):
 - `drizzle/meta/_journal.json`
 - `tests/routes/workspace-capture-event.test.ts`
 
-This report is the ninth file in the correction/report continuation. Earlier Checkout files are listed in commit cd97dc3.
+Ignored local-only `.env.local` is additionally configured with the authorized development classification; it is not staged or committed. This report is the ninth tracked file in the correction/report continuation. Earlier Checkout files are listed in commit cd97dc3.
 
 ## Z. Validation
 
@@ -165,6 +165,7 @@ This report is the ninth file in the correction/report continuation. Earlier Che
 - Actual production refusal checks with Test flags supplied: order/confirm/webhook all 503 disabled.
 - Real local DB identity, reviewed migration chain/no-op, genuine callback/webhook, provider fetch, refund arithmetic, normal fulfillment/idempotency, negative triggers, original-history integrity and LMS-isolation checks passed.
 - `git diff --check` passed; secret/full-phone/tunnel-literal exclusion checked on task-added changes.
+- Follow-up environment diagnosis: real membership denies missing/production classification and grants development; restarted local app classification verified, payment flags absent and webhook still 503 disabled. Existing activation/environment-focused regressions rerun successfully.
 - Browser dashboard and profile/draft persistence remain pending. Optional second real payment, provider resend, failed-payment and course-review journeys not exercised.
 
 ## AA. Remaining launch blockers
