@@ -113,6 +113,13 @@
       "when": 1791527685957,
       "tag": "0015_warm_sprite",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791632016797,
+      "tag": "0016_tired_prowler",
+      "breakpoints": true
     }
   ]
 }

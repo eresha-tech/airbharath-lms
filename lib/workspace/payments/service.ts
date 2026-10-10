@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { UUID } from '../eligibility/model';
 import { MembershipError } from '../membership/service';
 import { QUOTE_VERSION } from '../membership/model';
-import { PaymentError, TEST_COMMERCIAL_POLICY, HOLD_POLICY, parseAcceptance, digest, receiptFor, refundDeadline, verifyHmac, PROVIDER_PAYMENT_ID, PROVIDER_ORDER_ID, PAYMENT_EVENTS, HASH, type ProviderOrder, type ProviderPayment, type AcceptInput } from './model';
+import { CAPTURE_EVENT_TIME_SOURCE, PaymentError, TEST_COMMERCIAL_POLICY, HOLD_POLICY, parseAcceptance, digest, receiptFor, refundDeadline, verifyHmac, PROVIDER_PAYMENT_ID, PROVIDER_ORDER_ID, PAYMENT_EVENTS, HASH, type ProviderOrder, type ProviderPayment, type AcceptInput } from './model';
 import { ProviderFailure, type WorkspaceProvider } from './provider';
 import type { FinanceStore, FinanceTransaction, Order, InboxEvent } from './repository';
 
@@ -124,12 +124,24 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
       if (!scoped(current) || evidence.accountId !== current.providerAccountId || evidence.mode !== current.providerMode || evidence.orderId !== current.providerOrderId || !PROVIDER_PAYMENT_ID.test(evidence.id)) {
         await tx.patchOrder(current.id, { activationState: 'held_for_review', reviewReason: 'provider_identity_mismatch' }); await finish('needs_review', 'provider_identity_mismatch'); return tx.getOrder(current.id);
       }
+      // Only the authenticated durable payment.captured event may supply capture time.
+      // Fetch/callback/payment-created timestamps never establish paidAt. Keep this
+      // provider evidence rule independent of the public charging enablement gate.
+      const eventTime = event?.evidence.eventCreatedAt ? new Date(event.evidence.eventCreatedAt) : null;
+      const verifiedCaptureEvent = event && event.eventType === 'payment.captured' && !event.anomalyHash && HASH.test(event.payloadHash)
+        && event.providerAccountId === current.providerAccountId && event.providerMode === current.providerMode
+        && event.evidence.providerOrderId === current.providerOrderId && event.evidence.providerPaymentId === evidence.id
+        && evidence.state === 'captured' && evidence.amountPaise === current.totalPaise && evidence.currency === 'INR' && current.currency === 'INR'
+        && eventTime && Number.isFinite(eventTime.getTime()) && eventTime <= event.receivedAt && eventTime <= now
+        && eventTime >= current.createdAt && eventTime >= evidence.providerCreatedAt;
+      if (verifiedCaptureEvent) evidence = { ...evidence, capturedAt: eventTime, captureTimeSource: CAPTURE_EVENT_TIME_SOURCE };
+      const evidenceHash = digest({ payment: evidence, captureEvent: verifiedCaptureEvent ? { id: event.id, eventId: event.eventId, payloadHash: event.payloadHash, rule: CAPTURE_EVENT_TIME_SOURCE } : null });
       let payment = await tx.getPayment(provider.context, evidence.id);
       if (payment && payment.membershipOrderId !== current.id) { await tx.patchOrder(current.id, { activationState: 'held_for_review', reviewReason: 'payment_reuse' }); await finish('needs_review', 'payment_reuse'); return tx.getOrder(current.id); }
       // Provider identity/economics never mutate. Unexpected changes are review incidents, not overwrite.
       if (payment && (payment.amountPaise !== evidence.amountPaise || payment.currency !== evidence.currency || payment.providerCreatedAt.getTime() !== evidence.providerCreatedAt.getTime())) { await tx.patchOrder(current.id, { activationState: 'held_for_review', reviewReason: 'payment_evidence_conflict' }); await finish('needs_review', 'payment_evidence_conflict'); return tx.getOrder(current.id); }
-      if (!payment) payment = await tx.insertPayment({ membershipOrderId: current.id, userId: current.userId, providerAccountId: current.providerAccountId, providerMode: current.providerMode, providerOrderId: evidence.orderId, providerPaymentId: evidence.id, amountPaise: evidence.amountPaise, currency: evidence.currency, state: evidence.state, observedAt: now, lastObservedAt: now, providerCreatedAt: evidence.providerCreatedAt, capturedAt: evidence.capturedAt, captureTimeSource: evidence.captureTimeSource, refundedPaise: evidence.refundedPaise, evidenceHash: digest(evidence) });
-      else if (payment.state !== 'captured' || evidence.state === 'captured') payment = await tx.patchPayment(payment.id, { state: evidence.state, lastObservedAt: now, capturedAt: payment.capturedAt || evidence.capturedAt, captureTimeSource: payment.captureTimeSource || evidence.captureTimeSource, refundedPaise: Math.max(payment.refundedPaise, evidence.refundedPaise), evidenceHash: digest(evidence) });
+      if (!payment) payment = await tx.insertPayment({ membershipOrderId: current.id, userId: current.userId, providerAccountId: current.providerAccountId, providerMode: current.providerMode, providerOrderId: evidence.orderId, providerPaymentId: evidence.id, amountPaise: evidence.amountPaise, currency: evidence.currency, state: evidence.state, observedAt: now, lastObservedAt: now, providerCreatedAt: evidence.providerCreatedAt, capturedAt: evidence.capturedAt, captureTimeSource: evidence.captureTimeSource, refundedPaise: evidence.refundedPaise, evidenceHash });
+      else if (payment.state !== 'captured' || evidence.state === 'captured') payment = await tx.patchPayment(payment.id, { state: evidence.state, lastObservedAt: now, capturedAt: payment.capturedAt || evidence.capturedAt, captureTimeSource: payment.captureTimeSource || evidence.captureTimeSource, refundedPaise: Math.max(payment.refundedPaise, evidence.refundedPaise), evidenceHash });
       // Out-of-order authorized/failed evidence cannot downgrade a known capture.
       if (payment.state !== 'captured') { await finish('processed'); return current; }
       if (payment.amountPaise !== current.totalPaise || payment.currency !== current.currency) { await tx.patchOrder(current.id, { activationState: 'held_for_review', reviewReason: 'payment_amount_currency_mismatch' }); await finish('needs_review', 'payment_amount_currency_mismatch'); return tx.getOrder(current.id); }
@@ -137,7 +149,7 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
       if (current.financialState === 'captured' && current.paidAt && payment.refundedPaise === 0) { await finish('processed'); return current; }
       const paidAt = payment.capturedAt;
       const invalidTiming = !paidAt || paidAt > now || paidAt < current.createdAt || paidAt < payment.providerCreatedAt;
-      const businessReason = invalidTiming ? 'capture_time_unverified' : paidAt! >= current.eligibilityValidUntil ? 'eligibility_expired_at_capture' : payment.refundedPaise > 0 ? 'refund_observed' : current.reviewReason;
+      const businessReason = invalidTiming ? 'capture_time_unverified' : paidAt! >= current.eligibilityValidUntil ? 'eligibility_expired_at_capture' : payment.refundedPaise > 0 ? 'refund_observed' : current.reviewReason === 'capture_time_unverified' ? null : current.reviewReason;
       const reservation = await tx.getRedemption(current.id);
       const reservationConflict = current.couponId && (!reservation || reservation.status === 'released');
       if (!payment.winner) await tx.patchPayment(payment.id, { winner: true });

@@ -33,7 +33,9 @@ export function verifyHmac(message: string | Uint8Array, signature: unknown, sec
 export function refundDeadline(paidAt: Date) { return new Date(paidAt.getTime() + REFUND_HOURS * 3_600_000); }
 export type ProviderContext = { accountId: string; mode: 'test' };
 export type ProviderOrder = ProviderContext & { id: string; receipt: string; amountPaise: number; currency: string; createdAt: Date; status: 'created' | 'attempted' | 'paid' };
-export type ProviderPayment = ProviderContext & { id: string; orderId: string; amountPaise: number; currency: string; state: PaymentState; providerCreatedAt: Date; capturedAt: Date | null; captureTimeSource: 'test_authoritative' | null; refundedPaise: number };
+export const CAPTURE_EVENT_TIME_SOURCE = 'razorpay_payment_captured_event_v1';
+export type CaptureTimeSource = 'test_authoritative' | typeof CAPTURE_EVENT_TIME_SOURCE;
+export type ProviderPayment = ProviderContext & { id: string; orderId: string; amountPaise: number; currency: string; state: PaymentState; providerCreatedAt: Date; capturedAt: Date | null; captureTimeSource: CaptureTimeSource | null; refundedPaise: number };
 export type WebhookEvidence = { providerOrderId: string | null; providerPaymentId: string | null; receipt: string | null; eventCreatedAt: string | null };
 // Keep only routing identifiers. Provider facts are fetched through the scoped adapter before finalization.
 export function minimizeWebhook(raw: unknown, expectedAccount: string): { type: string; evidence: WebhookEvidence } | null {
