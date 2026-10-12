@@ -574,6 +574,27 @@ export const workspaceCouponPlans = pgTable('workspace_coupon_plans', {
   couponId: uuid('coupon_id').notNull().references(() => workspaceCoupons.id, { onDelete: 'restrict' }), planCode: text('plan_code').$type<PlanCode>().notNull(),
 }, t => [primaryKey({ columns: [t.couponId, t.planCode] }), check('workspace_coupon_plans_code_check', sql`${t.planCode} IN ('quarterly','half_yearly','yearly')`)]);
 
+// Source-controlled contractual catalogue. Content is append-only; only current selection can change.
+export const workspaceCreatorTermsVersions = pgTable('workspace_creator_terms_versions', {
+  termsVersion: text('terms_version').primaryKey(), contentHash: text('content_hash').notNull(),
+  canonicalContent: text('canonical_content').notNull(), effectiveAt: timestamp('effective_at', { withTimezone: true }).notNull(),
+  isCurrent: boolean('is_current').default(false).notNull(), createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, t => [
+  unique('workspace_terms_version_hash_unique').on(t.termsVersion, t.contentHash),
+  uniqueIndex('workspace_terms_current_idx').on(t.isCurrent).where(sql`${t.isCurrent}`),
+  check('workspace_terms_content_check', sql`${t.termsVersion} ~ '^workspace_creator_terms_[a-zA-Z0-9_]+$' AND ${t.contentHash} = encode(sha256(convert_to(${t.canonicalContent}, 'UTF8')), 'hex')`),
+]);
+export const workspaceCreatorTermsAcceptances = pgTable('workspace_creator_terms_acceptances', {
+  id: uuid('id').defaultRandom().primaryKey(), userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  termsVersion: text('terms_version').notNull(), termsContentHash: text('terms_content_hash').notNull(),
+  acceptedAt: timestamp('accepted_at', { withTimezone: true }).notNull(), createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+}, t => [
+  unique('workspace_terms_user_version_unique').on(t.userId, t.termsVersion),
+  unique('workspace_terms_acceptance_snapshot_unique').on(t.id, t.userId, t.termsVersion, t.termsContentHash, t.acceptedAt),
+  foreignKey({ columns: [t.termsVersion, t.termsContentHash], foreignColumns: [workspaceCreatorTermsVersions.termsVersion, workspaceCreatorTermsVersions.contentHash], name: 'workspace_terms_acceptance_document_fk' }).onDelete('restrict'),
+  check('workspace_terms_acceptance_time_check', sql`${t.acceptedAt} = ${t.createdAt}`),
+]);
+
 // Financial capture alone never grants Workspace capabilities; fulfillment has a separate ledger.
 export const workspaceMembershipOrders = pgTable('workspace_membership_orders', {
   id: uuid('id').defaultRandom().primaryKey(), userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
@@ -581,6 +602,7 @@ export const workspaceMembershipOrders = pgTable('workspace_membership_orders', 
   planVersionId: uuid('plan_version_id').notNull().references(() => workspaceMembershipPlans.id, { onDelete: 'restrict' }),
   settingsId: uuid('settings_id').notNull().references(() => workspaceEligibilitySettings.id, { onDelete: 'restrict' }),
   policyId: uuid('policy_id').notNull().references(() => workspacePolicyVersions.id, { onDelete: 'restrict' }),
+  creatorTermsAcceptanceId: uuid('creator_terms_acceptance_id'), creatorTermsVersion: text('creator_terms_version'), creatorTermsContentHash: text('creator_terms_content_hash'), creatorTermsAcceptedAt: timestamp('creator_terms_accepted_at', { withTimezone: true }),
   eligibilityValidUntil: timestamp('eligibility_valid_until', { withTimezone: true }).notNull(),
   purchaseKind: text('purchase_kind').default('initial').notNull(), planCode: text('plan_code').$type<PlanCode>().notNull(), planSnapshot: jsonb('plan_snapshot').$type<{ version: number; displayName: string }>().notNull(),
   basePricePaise: integer('base_price_paise').notNull(), discountPaise: integer('discount_paise').notNull(), taxableAmountPaise: integer('taxable_amount_paise').notNull(), gstRateBps: integer('gst_rate_bps').notNull(), gstAmountPaise: integer('gst_amount_paise').notNull(), totalPaise: integer('total_paise').notNull(), currency: text('currency').default('INR').notNull(), durationMonths: integer('duration_months').notNull(),
@@ -596,6 +618,8 @@ export const workspaceMembershipOrders = pgTable('workspace_membership_orders', 
   fulfilledAt: timestamp('fulfilled_at', { withTimezone: true }), paidAt: timestamp('paid_at', { withTimezone: true }), refundEligibleUntil: timestamp('refund_eligible_until', { withTimezone: true }), reviewReason: text('review_reason'), closedAt: timestamp('closed_at', { withTimezone: true }), closeReason: text('close_reason'), version: integer('version').default(1).notNull(),
 }, t => [
   uniqueIndex('workspace_orders_user_request_idx').on(t.userId, t.requestKey),
+  foreignKey({ columns: [t.creatorTermsAcceptanceId, t.userId, t.creatorTermsVersion, t.creatorTermsContentHash, t.creatorTermsAcceptedAt], foreignColumns: [workspaceCreatorTermsAcceptances.id, workspaceCreatorTermsAcceptances.userId, workspaceCreatorTermsAcceptances.termsVersion, workspaceCreatorTermsAcceptances.termsContentHash, workspaceCreatorTermsAcceptances.acceptedAt], name: 'workspace_orders_terms_snapshot_fk' }).onDelete('restrict'),
+  check('workspace_orders_terms_snapshot_check', sql`(${t.creatorTermsAcceptanceId} IS NULL AND ${t.creatorTermsVersion} IS NULL AND ${t.creatorTermsContentHash} IS NULL AND ${t.creatorTermsAcceptedAt} IS NULL) OR (${t.creatorTermsAcceptanceId} IS NOT NULL AND ${t.creatorTermsVersion} IS NOT NULL AND ${t.creatorTermsContentHash} IS NOT NULL AND ${t.creatorTermsAcceptedAt} IS NOT NULL AND ${t.creatorTermsAcceptedAt} <= ${t.createdAt})`),
   uniqueIndex('workspace_orders_unresolved_user_idx').on(t.userId).where(sql`${t.providerSetupState} <> 'closed' OR ${t.financialState} = 'captured'`),
   uniqueIndex('workspace_orders_receipt_idx').on(t.providerAccountId, t.providerMode, t.providerReceipt),
   uniqueIndex('workspace_orders_provider_order_idx').on(t.providerAccountId, t.providerMode, t.providerOrderId),

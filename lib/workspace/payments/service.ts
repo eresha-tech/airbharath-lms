@@ -5,8 +5,9 @@ import { QUOTE_VERSION } from '../membership/model';
 import { CAPTURE_EVENT_TIME_SOURCE, PaymentError, TEST_COMMERCIAL_POLICY, HOLD_POLICY, parseAcceptance, digest, receiptFor, refundDeadline, verifyHmac, PROVIDER_PAYMENT_ID, PROVIDER_ORDER_ID, PAYMENT_EVENTS, HASH, type ProviderOrder, type ProviderPayment, type AcceptInput } from './model';
 import { ProviderFailure, type WorkspaceProvider } from './provider';
 import type { FinanceStore, FinanceTransaction, Order, InboxEvent } from './repository';
+import { acceptanceMatches, currentCreatorTerms } from '../terms/model';
 
-export function createWorkspacePaymentService(store: FinanceStore, provider: WorkspaceProvider, clock = () => new Date()) {
+export function createWorkspacePaymentService(store: FinanceStore, provider: WorkspaceProvider, clock = () => new Date(), currentTerms = currentCreatorTerms) {
   const scoped = (order: Order) => order.providerAccountId === provider.context.accountId && order.providerMode === provider.context.mode;
   async function ownedOrder(userId: string, id: string) {
     if (!UUID.test(userId) || !UUID.test(id)) throw new PaymentError('validation');
@@ -32,6 +33,8 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
       }
       const { quote, context } = selection, now = new Date(quote.generatedAt);
       if (quote.quoteHash !== expectedHash) throw new PaymentError('quote_changed');
+      const terms = currentTerms(), acceptance = await tx.readCreatorTermsAcceptance(userId, terms);
+      if (!acceptanceMatches(acceptance, userId, terms, now)) throw new PaymentError('terms_required');
       const coupon = context.coupon;
       if (coupon) {
         if (await tx.couponUse(coupon.id, userId)) throw new PaymentError('coupon_used');
@@ -39,6 +42,7 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
       }
       const id = randomUUID();
       const order = await tx.insertOrder({ id, userId, eligibilityAttemptId: context.attempt.id, eligibilityValidUntil: context.attempt.eligibleUntil!, planVersionId: quote.planVersionId, settingsId: context.currentSettings.id, policyId: context.policy.id,
+        creatorTermsAcceptanceId: acceptance.id, creatorTermsVersion: acceptance.termsVersion, creatorTermsContentHash: acceptance.termsContentHash, creatorTermsAcceptedAt: acceptance.acceptedAt,
         planCode: quote.planCode, planSnapshot: { version: quote.planVersion, displayName: quote.planName }, purchaseKind: 'initial', basePricePaise: quote.basePricePaise, discountPaise: quote.discountPaise, taxableAmountPaise: quote.taxableAmountPaise, gstRateBps: quote.gstRateBps, gstAmountPaise: quote.gstAmountPaise, totalPaise: quote.totalPaise, currency: quote.currency, durationMonths: quote.durationMonths,
         quoteHash: quote.quoteHash, quoteVersion: quote.quoteVersion, pricingRuleVersion: QUOTE_VERSION, membershipStartRuleVersion: quote.membershipStart.version, launchAt: new Date(quote.membershipStart.launchAt), membershipStartRule: quote.membershipStart.rule,
         contextHash: digest({ settings: context.currentSettings.configurationHash, policy: context.policy.contentHash, attempt: context.attempt.id }),

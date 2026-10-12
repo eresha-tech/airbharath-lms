@@ -15,7 +15,7 @@ export type ActivationState = 'pending_activation' | 'held_for_review' | 'fulfil
 export type ReservationState = 'reserved' | 'redeemed' | 'released';
 export type PaymentState = 'created' | 'authorized' | 'failed' | 'captured';
 export type EventState = 'pending' | 'processing' | 'retry' | 'processed' | 'needs_review' | 'ignored';
-export type PaymentCode = 'disabled' | 'validation' | 'authentication' | 'forbidden' | 'not_found' | 'conflict' | 'quote_changed' | 'capacity' | 'coupon_used' | 'recovery_required' | 'unavailable' | 'signature' | 'provider_mismatch';
+export type PaymentCode = 'disabled' | 'validation' | 'authentication' | 'forbidden' | 'not_found' | 'conflict' | 'quote_changed' | 'capacity' | 'coupon_used' | 'recovery_required' | 'unavailable' | 'signature' | 'provider_mismatch' | 'terms_required';
 export class PaymentError extends Error { constructor(public code: PaymentCode) { super(code); } }
 export const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 export const receiptFor = (id: string) => `wso${id.replaceAll('-', '')}`;

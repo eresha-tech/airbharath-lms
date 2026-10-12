@@ -32,6 +32,7 @@ export async function middleware(request: NextRequest) {
   const isPublic =
     pathname === '/' ||
     pathname === '/workspace' ||
+    pathname === '/workspace/creator-terms' ||
     pathname === '/workspace/manual-application' ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/auth') ||

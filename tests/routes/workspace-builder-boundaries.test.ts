@@ -40,7 +40,7 @@ it('builder telemetry canonicalizes IDs and discards content/prices/owner identi
 });
 it('new migration preserves old history, FK dependencies and deferred normalized ordering',()=>{
  const migration=readFileSync('drizzle/0017_marvelous_captain_midlands.sql','utf8');expect(migration.indexOf('CREATE UNIQUE INDEX "workspace_submissions_build_owner_idx"')).toBeLessThan(migration.indexOf('ADD CONSTRAINT "workspace_projects_approved_owner_fk"'));expect(migration.indexOf('CREATE UNIQUE INDEX "workspace_modules_owner_idx"')).toBeLessThan(migration.indexOf('ADD CONSTRAINT "workspace_lessons_module_owner_fk"'));expect(migration).toContain('DEFERRABLE INITIALLY DEFERRED');expect(migration).toContain('builder positions must be contiguous');expect(migration).toContain('authoritative owned approval required');expect(migration).toContain('lesson parent is immutable');expect(migration).not.toMatch(/DROP |TRUNCATE |DISABLE TRIGGER|UPDATE workspace_course_submissions|DELETE FROM/);
- const journal=JSON.parse(readFileSync('drizzle/meta/_journal.json','utf8'));expect(journal.entries.at(-2).tag).toBe('0016_tired_prowler');expect(journal.entries.at(-1).tag).toBe('0017_marvelous_captain_midlands');
+ const journal=JSON.parse(readFileSync('drizzle/meta/_journal.json','utf8'));expect(journal.entries[16].tag).toBe('0016_tired_prowler');expect(journal.entries[17].tag).toBe('0017_marvelous_captain_midlands');
 });
 
 it('browser-safe validation cannot import server payment/access dependencies',()=>{

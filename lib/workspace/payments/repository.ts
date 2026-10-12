@@ -4,6 +4,9 @@ import { users, workspaceCoupons as coupons, workspaceMembershipPlans as plans, 
 import { readMembershipQuote, type MembershipQuoteContext } from '../membership/service';
 import type { QuoteInput } from '../membership/model';
 import { PaymentError, type EventState, type ProviderContext, type WebhookEvidence } from './model';
+import { workspaceCreatorTermsVersions as termsVersions, workspaceCreatorTermsAcceptances as termsAcceptances } from '@/lib/db/schema';
+import type { CreatorTermsIdentity } from '../terms/document';
+import type { CreatorTermsAcceptance } from '../terms/model';
 
 export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;
@@ -14,6 +17,7 @@ export type OrderPatch = Partial<Pick<Order, 'providerSetupState' | 'providerCre
 export type RedemptionPatch = Partial<Pick<Redemption, 'status' | 'redeemedAt' | 'releasedAt' | 'releaseReason' | 'releaseEvidenceHash' | 'releaseSource'>>;
 export type PaymentPatch = Partial<Pick<Payment, 'state' | 'winner' | 'lastObservedAt' | 'capturedAt' | 'captureTimeSource' | 'refundedPaise' | 'evidenceHash'>>;
 export interface FinanceTransaction {
+  readCreatorTermsAcceptance(userId: string, terms: CreatorTermsIdentity): Promise<CreatorTermsAcceptance | undefined>;
   findRequest(userId: string, key: string): Promise<Order | undefined>;
   findUnresolved(userId: string): Promise<Order | undefined>;
   readQuote(userId: string, input: QuoteInput, clock: () => Date): Promise<MembershipQuoteContext>;
@@ -52,6 +56,12 @@ export const postgresFinanceStore: FinanceStore = {
         if (locks.couponId || locks.couponCode) await tx.select({ id: coupons.id }).from(coupons).where(locks.couponId ? eq(coupons.id, locks.couponId) : and(eq(coupons.scope, 'workspace_membership'), eq(coupons.code, locks.couponCode!))).for('update');
         if (locks.orderId) await tx.select({ id: orders.id }).from(orders).where(and(eq(orders.id, locks.orderId), eq(orders.userId, locks.userId))).for('update');
         const methods: FinanceTransaction = {
+          async readCreatorTermsAcceptance(userId, terms) {
+            // Lock current source-controlled document against concurrent publication until order commit.
+            const [version] = await tx.select().from(termsVersions).where(eq(termsVersions.isCurrent, true)).for('share');
+            if (!version || version.termsVersion !== terms.version || version.contentHash !== terms.contentHash || version.effectiveAt.toISOString() !== terms.effectiveAt) throw new PaymentError('terms_required');
+            return tx.query.workspaceCreatorTermsAcceptances.findFirst({ where: and(eq(termsAcceptances.userId, userId), eq(termsAcceptances.termsVersion, terms.version), eq(termsAcceptances.termsContentHash, terms.contentHash)) });
+          },
           findRequest: (userId, key) => tx.query.workspaceMembershipOrders.findFirst({ where: and(eq(orders.userId, userId), eq(orders.requestKey, key)) }),
           findUnresolved: userId => tx.query.workspaceMembershipOrders.findFirst({ where: and(eq(orders.userId, userId), or(sql`${orders.providerSetupState} <> 'closed'`, eq(orders.financialState, 'captured'))) }),
           async readQuote(userId, input, clock) {
