@@ -3,7 +3,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ transaction: vi.fn() }));
 vi.mock('server-only', () => ({}));
 vi.mock('@/lib/db', () => ({ db: { transaction: mocks.transaction } }));
-import { postgresCreatorTermsStore } from '@/lib/workspace/terms/repository';
+import { postgresCreatorTermsStore, readCurrentCreatorTermsAcceptance } from '@/lib/workspace/terms/repository';
 import { currentCreatorTerms } from '@/lib/workspace/terms/model';
 import { workspaceCreatorTermsAcceptances, users, workspaceCreatorTermsVersions } from '@/lib/db/schema';
 import type { CreatorTermsAcceptance } from '@/lib/workspace/terms/model';
@@ -35,4 +35,15 @@ it('persists server evidence, locks owner then current document, and converges o
 it('missing persisted user or unavailable current catalogue cannot record acceptance', async () => {
   hasUser = false; await expect(postgresCreatorTermsStore.accept(userId, currentCreatorTerms(), now)).rejects.toMatchObject({ code: 'authentication' });
   hasUser = true; current = false; await expect(postgresCreatorTermsStore.accept(userId, currentCreatorTerms(), now)).rejects.toMatchObject({ code: 'unavailable' }); expect(rows).toHaveLength(0);
+});
+it('reload projection reads authoritative current evidence without writing or exposing owner/acceptance IDs', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-12T12:01:00.000Z'));
+  try {
+    expect(await readCurrentCreatorTermsAcceptance(userId)).toBeNull();
+    await postgresCreatorTermsStore.accept(userId, currentCreatorTerms(), now);
+    const receipt = await readCurrentCreatorTermsAcceptance(userId);
+    expect(receipt).toEqual({ termsVersion: currentCreatorTerms().version, termsContentHash: currentCreatorTerms().contentHash, acceptedAt: now.toISOString() });
+    expect(rows).toHaveLength(1); expect(receipt).not.toHaveProperty('userId'); expect(receipt).not.toHaveProperty('id');
+    current = false; await expect(readCurrentCreatorTermsAcceptance(userId)).rejects.toMatchObject({ code: 'unavailable' });
+  } finally { vi.useRealTimers(); }
 });

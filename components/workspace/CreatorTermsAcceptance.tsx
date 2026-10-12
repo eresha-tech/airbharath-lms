@@ -3,8 +3,12 @@ import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { CURRENT_CREATOR_TERMS, creatorTermsHref } from '@/lib/workspace/terms/document';
 
-export function CreatorTermsAcceptance({ onAccepted }: { onAccepted: (accepted: boolean) => void }) {
-  const [checked, setChecked] = useState(false), [busy, setBusy] = useState(false), [saved, setSaved] = useState(false), [message, setMessage] = useState('');
+export type CreatorTermsReceipt = { termsVersion: string; termsContentHash: string; acceptedAt: string };
+export function isCurrentTermsReceipt(receipt?: CreatorTermsReceipt | null) {
+  return !!receipt && receipt.termsVersion === CURRENT_CREATOR_TERMS.version && receipt.termsContentHash === CURRENT_CREATOR_TERMS.contentHash && Number.isFinite(Date.parse(receipt.acceptedAt)) && Date.parse(receipt.acceptedAt) >= Date.parse(CURRENT_CREATOR_TERMS.effectiveAt);
+}
+export function CreatorTermsAcceptance({ onAccepted, initialAcceptance }: { onAccepted: (accepted: boolean) => void; initialAcceptance?: CreatorTermsReceipt | null }) {
+  const [checked, setChecked] = useState(false), [busy, setBusy] = useState(false), [saved, setSaved] = useState(isCurrentTermsReceipt(initialAcceptance)), [message, setMessage] = useState(isCurrentTermsReceipt(initialAcceptance) ? 'Your Creator Terms agreement has been recorded.' : '');
   const pending = useRef(false);
   async function accept() {
     if (!checked || pending.current) return;
