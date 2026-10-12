@@ -1,6 +1,6 @@
 export const REFUND_POLICY_DOCUMENT = {
   "version": "workspace_refund_policy_2026_01",
-  "effectiveAt": "2026-10-12T12:00:00.000Z",
+  "effectiveAt": "2026-10-12T09:28:09.000Z",
   "title": "AirBharath Workspace Refund Policy",
   "sections": [
     {
@@ -58,7 +58,7 @@ export const REFUND_POLICY_DOCUMENT = {
   ]
 } as const;
 export const REFUND_POLICY_CANONICAL_CONTENT = JSON.stringify(REFUND_POLICY_DOCUMENT);
-export const CURRENT_REFUND_POLICY = { version: REFUND_POLICY_DOCUMENT.version, contentHash: "fe79d0c69ecc7bf38c8c7ca714818c9a3b083454ed3f6e1de32bd2dd0e14b7dc", effectiveAt: REFUND_POLICY_DOCUMENT.effectiveAt } as const;
+export const CURRENT_REFUND_POLICY = { version: REFUND_POLICY_DOCUMENT.version, contentHash: "1f78a51d0488154e271d9f36ed1953e1c8db71e2679f71404020c54bb78a4637", effectiveAt: REFUND_POLICY_DOCUMENT.effectiveAt } as const;
 export type RefundPolicyIdentity = { version: string; contentHash: string; effectiveAt: string };
 export const refundPolicyHref = () => `/workspace/refund-policy?version=${CURRENT_REFUND_POLICY.version}`;
 export const REFUND_POLICY_CATALOGUE = {

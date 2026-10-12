@@ -7,7 +7,7 @@ import { postgresRefundPolicyStore, readCurrentRefundPolicyAcceptance } from '@/
 import { currentRefundPolicy } from '@/lib/workspace/refund-policy/model';
 import { workspaceRefundPolicyAcceptances, users, workspaceRefundPolicyVersions } from '@/lib/db/schema';
 import type { RefundPolicyAcceptance } from '@/lib/workspace/refund-policy/model';
-const userId = randomUUID(), now = new Date('2026-10-12T12:00:00.000Z');
+const userId = randomUUID(), now = new Date('2026-10-12T09:28:09.000Z');
 let rows: RefundPolicyAcceptance[], hasUser: boolean, current: boolean;
 let locks: string[];
 beforeEach(() => {
@@ -37,7 +37,7 @@ it('missing persisted user or unavailable current catalogue cannot record accept
   hasUser = true; current = false; await expect(postgresRefundPolicyStore.accept(userId, currentRefundPolicy(), now)).rejects.toMatchObject({ code: 'unavailable' }); expect(rows).toHaveLength(0);
 });
 it('reload projection reads authoritative current evidence without writing or exposing owner/acceptance IDs', async () => {
-  vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-12T12:01:00.000Z'));
+  vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-12T09:29:09.000Z'));
   try {
     expect(await readCurrentRefundPolicyAcceptance(userId)).toBeNull();
     await postgresRefundPolicyStore.accept(userId, currentRefundPolicy(), now);
