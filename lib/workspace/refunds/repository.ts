@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { users, workspaceMembershipOrders as orders, workspacePaymentAttempts as payments, workspaceRefundRequests as requests, workspaceRefundAttempts as attempts, workspaceRefundCompletions as completions, workspaceRefundNotices as notices, workspaceRefundObservations as observations, workspaceMemberships as memberships } from '@/lib/db/schema';
 import { RefundError } from './model';
 import type { RefundStore, RefundTransaction } from './store';
-export const postgresRefundStore: RefundStore = {
+export function createPostgresRefundStore(db: typeof import('@/lib/db').db) : RefundStore { return {
  externalPending: (context, limit) => db.select({ membershipOrderId: orders.id }).from(orders).where(and(
   eq(orders.providerAccountId, context.accountId), eq(orders.providerMode, context.mode), eq(orders.financialState, 'captured'),
   sql`EXISTS (SELECT 1 FROM ${observations} WHERE ${observations.membershipOrderId} = ${orders.id})`,
@@ -52,7 +52,8 @@ export const postgresRefundStore: RefundStore = {
   return {order,request:request||null,attempt:attempt||null,completion:completion||null};
  },
  pending:(context,limit,includePrepared=true)=>db.select().from(attempts).where(and(eq(attempts.providerAccountId,context.accountId),eq(attempts.providerMode,context.mode),inArray(attempts.state,includePrepared?['prepared','processing','uncertain']:['processing','uncertain']))).orderBy(sql`${attempts.lastCheckedAt} ASC NULLS FIRST`,attempts.createdAt).limit(Math.min(25,Math.max(1,limit))),
-};
+}; }
+export const postgresRefundStore = createPostgresRefundStore(db);
 export async function listCreatorRefundOrders(userId:string){
  return db.select({order:orders,request:requests,attempt:attempts,completion:completions}).from(orders).leftJoin(requests,eq(requests.membershipOrderId,orders.id)).leftJoin(attempts,eq(attempts.membershipOrderId,orders.id)).leftJoin(completions,eq(completions.membershipOrderId,orders.id)).where(eq(orders.userId,userId)).orderBy(desc(orders.createdAt)).limit(25);
 }

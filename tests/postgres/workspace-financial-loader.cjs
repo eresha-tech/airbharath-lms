@@ -10,7 +10,7 @@ function createLoader(overrides = {}) {
     if (cache.has(file)) return cache.get(file).exports;
     const mod = new Module(file); mod.filename = file; mod.paths = Module._nodeModulePaths(path.dirname(file)); cache.set(file, mod);
     mod.require = name => Object.hasOwn(overrides, name) ? overrides[name] : name.startsWith('@/') ? load(name) : name.startsWith('.') ? load(path.resolve(path.dirname(file), name)) : req(name);
-    mod._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, file);
+    mod._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true, target: ts.ScriptTarget.ES2022 } }).outputText, file);
     return mod.exports;
   }
   return load;

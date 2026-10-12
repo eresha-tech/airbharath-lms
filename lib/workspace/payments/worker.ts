@@ -2,6 +2,7 @@ import 'server-only';
 import { requireFinancialConfiguration } from './configuration';
 import { createRazorpayAdapter } from './provider';
 import { classifyWorkspaceRuntime } from './classification';
+import { createFinancialWorkerDatabase } from './worker-database';
 import type { ProviderContext } from './model';
 
 export interface FinancialWorkerTasks {
@@ -26,12 +27,16 @@ export async function runWorkspaceFinancialWorker() {
   const config = requireFinancialConfiguration('reconciliation');
   const signal = AbortSignal.timeout(40_000);
   const provider = createRazorpayAdapter(process.env, fetch, signal);
-  const [{ postgresFinanceStore }, { createWorkspacePaymentService }, { createRefundService }, { postgresRefundStore }, { createRefundEventProcessor }, { createWorkspaceActivationService }, { postgresActivationStore }] = await Promise.all([
+  const [{ createPostgresFinanceStore }, { createWorkspacePaymentService }, { createRefundService }, { createPostgresRefundStore }, { createRefundEventProcessor }, { createWorkspaceActivationService }, { createPostgresActivationStore }] = await Promise.all([
     import('./repository'), import('./service'), import('../refunds/service'), import('../refunds/repository'), import('../refunds/events'), import('../activation/service'), import('../activation/repository'),
   ]);
-  const refunds = createRefundService(postgresRefundStore, provider);
-  const payments = createWorkspacePaymentService(postgresFinanceStore, provider, undefined, undefined, createRefundEventProcessor(provider, postgresFinanceStore, postgresRefundStore, refunds));
-  const context: ProviderContext = { accountId: config.accountId, mode: config.mode };
-  const activation = createWorkspaceActivationService(postgresActivationStore, classifyWorkspaceRuntime(), () => new Date(), context);
-  return drainFinancialWork({ payments: limit => payments.runReconciliationBatch(limit), refunds: limit => refunds.recoverPrepared(limit), activation: limit => activation.runBatch(limit) }, signal);
+  const database = createFinancialWorkerDatabase();
+  try {
+    const postgresFinanceStore = createPostgresFinanceStore(database.db), postgresRefundStore = createPostgresRefundStore(database.db), postgresActivationStore = createPostgresActivationStore(database.db);
+    const refunds = createRefundService(postgresRefundStore, provider);
+    const payments = createWorkspacePaymentService(postgresFinanceStore, provider, undefined, undefined, createRefundEventProcessor(provider, postgresFinanceStore, postgresRefundStore, refunds));
+    const context: ProviderContext = { accountId: config.accountId, mode: config.mode };
+    const activation = createWorkspaceActivationService(postgresActivationStore, classifyWorkspaceRuntime(), () => new Date(), context);
+    return await drainFinancialWork({ payments: limit => payments.runReconciliationBatch(limit), refunds: limit => refunds.recoverPrepared(limit), activation: limit => activation.runBatch(limit) }, signal);
+  } finally { await database.close(); }
 }

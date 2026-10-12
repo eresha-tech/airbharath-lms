@@ -50,7 +50,7 @@ export interface FinanceStore {
   recoveryOrders(limit: number, context: ProviderContext): Promise<Order[]>;
 }
 const dbCode = (error: unknown) => (error as { code?: string; cause?: { code?: string } })?.code || (error as { cause?: { code?: string } })?.cause?.code;
-export const postgresFinanceStore: FinanceStore = {
+export function createPostgresFinanceStore(db: typeof import('@/lib/db').db) : FinanceStore { return {
   async transaction(locks, work) {
     for (let retry = 0; ; retry++) {
       try { return await db.transaction(async tx => {
@@ -132,7 +132,8 @@ export const postgresFinanceStore: FinanceStore = {
   async finishUnmatchedEvent(id, now, state, reason) { await db.update(events).set({ processingState: state, processedAt: now, leaseUntil: null, lastErrorCode: reason || null }).where(and(eq(events.id, id), eq(events.processingState, 'processing'), sql`${events.anomalyHash} IS NULL`)); },
   pendingEvents: (now, limit, context) => db.query.workspacePaymentEvents.findMany({ where: and(eq(events.providerAccountId, context.accountId), eq(events.providerMode, context.mode), inArray(events.processingState, ['pending', 'retry', 'processing']), or(sql`${events.nextAttemptAt} IS NULL`, lte(events.nextAttemptAt, now)), or(sql`${events.leaseUntil} IS NULL`, lte(events.leaseUntil, now))), orderBy: [events.receivedAt], limit }),
   recoveryOrders: (limit, context) => db.query.workspaceMembershipOrders.findMany({ where: and(eq(orders.providerAccountId, context.accountId), eq(orders.providerMode, context.mode), inArray(orders.providerSetupState, ['creating', 'recovery_required', 'ready'])), orderBy: [sql`${orders.providerRecoveryCheckedAt} ASC NULLS FIRST`, orders.createdAt], limit }),
-};
+}; }
+export const postgresFinanceStore = createPostgresFinanceStore(db);
 export async function listFinancialOrders(page = 1) {
   const rows = await db.select({ order: orders, refund: refunds, userName: users.fullName }).from(orders).innerJoin(users, eq(users.id, orders.userId)).leftJoin(refunds,eq(refunds.membershipOrderId,orders.id)).orderBy(desc(orders.createdAt)).limit(25).offset((page - 1) * 25);
   const evidence = rows.length ? await db.query.workspacePaymentAttempts.findMany({ where: inArray(payments.membershipOrderId, rows.map(r => r.order.id)) }) : [];

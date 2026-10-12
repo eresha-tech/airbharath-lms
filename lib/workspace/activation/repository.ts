@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { users, workspaceCreatorProfiles as profiles, workspaceMemberships as memberships, workspaceMembershipOrders as orders, workspacePaymentAttempts as payments, workspaceCouponRedemptions as redemptions, workspaceRefundCompletions as refunds } from '@/lib/db/schema';
 import { commercialPolicy } from '../payments/model';
 import type { ActivationStore } from './service';
-export const postgresActivationStore: ActivationStore = {
+export function createPostgresActivationStore(db: typeof import('@/lib/db').db): ActivationStore { return {
   async transaction(userId, orderId, work) {
     for (let retry = 0; ; retry++) {
       try { return await db.transaction(async tx => {
@@ -33,7 +33,8 @@ export const postgresActivationStore: ActivationStore = {
     }
   },
   pending: (limit, context) => db.select({ id: orders.id, userId: orders.userId }).from(orders).where(and(eq(orders.financialState, 'captured'), eq(orders.activationState, 'pending_activation'), eq(orders.providerMode, context.mode), eq(orders.providerAccountId, context.accountId), eq(orders.provider, 'razorpay'), eq(orders.commercialPolicyVersion, commercialPolicy(context.mode)), isNotNull(orders.paidAt), isNotNull(orders.refundEligibleUntil))).orderBy(orders.createdAt, orders.id).limit(limit),
-};
+}; }
+export const postgresActivationStore = createPostgresActivationStore(db);
 // Private server projection; every consumer supplies a persisted, authenticated owner.
 export async function readWorkspaceAccess(userId: string, reader: Pick<typeof db, 'select'> = db) {
   const [row] = await reader.select({ membership: memberships, profile: profiles, order: orders, refund: refunds }).from(memberships)
