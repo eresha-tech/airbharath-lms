@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, vi } from 'vitest';
 
+// Next supplies this boundary marker; Node-only Vitest has no framework resolver.
+vi.mock('server-only', () => ({}));
+
 const blockedFetch = vi.fn(async () => {
   throw new Error('Network access is blocked in tests');
 });
@@ -16,6 +19,14 @@ const sensitiveEnvironmentVariables = [
   'OTP_PROVIDER_URL',
   'RAZORPAY_KEY_SECRET',
   'WORKSPACE_PAYMENT_ENABLED',
+  'WORKSPACE_REFUND_ENABLED',
+  'WORKSPACE_RAZORPAY_LIVE_AUTHORIZED',
+  'WORKSPACE_RAZORPAY_WEBHOOK_ENABLED',
+  'WORKSPACE_RAZORPAY_RECONCILIATION_ENABLED',
+  'CRON_SECRET',
+  'VERCEL',
+  'VERCEL_ENV',
+  'VERCEL_TARGET_ENV',
   'WORKSPACE_RAZORPAY_TEST_AUTHORIZED',
   'WORKSPACE_RAZORPAY_MODE',
   'WORKSPACE_RAZORPAY_KEY_ID',

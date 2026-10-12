@@ -8,6 +8,7 @@ import { RefundError, parseRefundRequest, parseRefundDecision, requestPayloadHas
 import type { RefundRequest, RefundAttempt, RefundTransaction, RefundStore } from './store';
 export interface RefundProvider {
   context: ProviderContext;
+  refundMutationAllowed?(): boolean;
   fetchPayment(id: string): Promise<ProviderPayment>;
   fetchRefunds(paymentId: string): Promise<ProviderRefund[]>;
   createRefund(input: { paymentId: string; amountPaise: number; requestId: string; attemptId: string }): Promise<ProviderRefund>;
@@ -49,6 +50,7 @@ export function createRefundService(store: RefundStore, provider?: RefundProvide
       if (command.action === 'retry') {
         if (row.decision !== 'approved' || !tx.attempt || tx.attempt.state !== 'failed') throw new RefundError('reconciliation_required');
         // Definitive failures alone can be retried; execution re-fetches provider state first.
+        if (provider?.refundMutationAllowed?.() === false) throw new RefundError('unavailable');
         if (tx.attempt.errorCode !== 'definitive_rejection') throw new RefundError('reconciliation_required');
         return { request: row, attempt: await tx.patchAttempt({ state: 'prepared', startedAt: null, errorCode: null }), execute: true };
       }
@@ -61,7 +63,7 @@ export function createRefundService(store: RefundStore, provider?: RefundProvide
       const changed = await tx.patchRequest({ decision: target, decidedBy: actor, decidedAt: await tx.now(), rejectionReason: target === 'rejected' ? command.reason : null });
       if (target === 'rejected') { await tx.notice('rejected'); return { request: changed, attempt: null, execute: false }; }
       const order = tx.order;
-      if (!scoped(order) || !order.winningPaymentId) throw new RefundError('unavailable');
+      if (!scoped(order) || !order.winningPaymentId || provider?.refundMutationAllowed?.() === false) throw new RefundError('unavailable');
       const attempt = await tx.createAttempt({ id: randomUUID(), requestId: row.id, membershipOrderId: orderId, userId: order.userId, providerAccountId: order.providerAccountId, providerMode: order.providerMode, providerPaymentId: order.winningPaymentId, amountPaise: order.totalPaise, currency: order.currency });
       return { request: changed, attempt, execute: true };
     });
@@ -84,7 +86,7 @@ export function createRefundService(store: RefundStore, provider?: RefundProvide
         await tx.complete({ userId: tx.order.userId, membershipOrderId: orderId, providerAccountId: provider.context.accountId, providerMode: provider.context.mode, providerPaymentId: payment.id, providerRefundId: refund.id, amountPaise: tx.order.totalPaise, currency: tx.order.currency, evidenceHash, confirmedAt: await tx.now(), evidence: { rule: 'razorpay_full_refund_fetch_v1', payment, refund } });
         if (tx.attempt && (!tx.attempt.providerRefundId || tx.attempt.providerRefundId === refund.id)) await tx.patchAttempt({ state: 'completed', providerRefundId: refund.id, evidenceHash, lastCheckedAt: await tx.now(), errorCode: null });
         await tx.notice('completed');
-      } else if (tx.attempt) {
+      } else if (tx.attempt && tx.attempt.state !== 'prepared') {
         const match = refunds.find(r => r.id === tx.attempt!.providerRefundId && refundMatches(tx.order, r, provider.context));
         // Partial/external/surprising evidence never triggers a remainder mutation or access revocation.
         const mismatch = payment.refundedPaise > 0 || refunds.some(r => !refundMatches(tx.order, r, provider.context)) || refunds.filter(r => r.status !== 'failed').length > 1;
@@ -95,6 +97,7 @@ export function createRefundService(store: RefundStore, provider?: RefundProvide
   }
   async function execute(orderId: string, attemptId: string) {
     if (!provider) throw new RefundError('unavailable');
+    if (provider.refundMutationAllowed?.() === false) return;
     // Claim before HTTP. A process crash or timeout leaves uncertain, never a blindly retryable intent.
     const claim = await store.transaction(orderId, null, async tx => {
       if (tx.completion || tx.attempt?.id !== attemptId || tx.attempt.state !== 'prepared' || tx.request?.decision !== 'approved' || !scoped(tx.order)) return null;
@@ -126,8 +129,17 @@ export function createRefundService(store: RefundStore, provider?: RefundProvide
   }
   async function recoverPrepared(limit = 10) {
     if (!provider) throw new RefundError('unavailable');
-    for (const row of await store.pending(provider.context, limit)) {
-      try { if (row.state === 'prepared') await execute(row.membershipOrderId, row.id); else await reconcile(row.membershipOrderId); } catch { /* Durable intent remains visible for next operator run. */ }
+    if (!Number.isInteger(limit) || limit < 1 || limit > 25) throw new RefundError('validation');
+    for (const row of await store.pending(provider.context, limit, provider.refundMutationAllowed?.() !== false)) {
+      try {
+        if (row.state !== 'prepared') await store.transaction(row.membershipOrderId, null, async tx => {
+          if (tx.attempt && !['prepared', 'completed'].includes(tx.attempt.state) && !tx.completion) await tx.patchAttempt({ lastCheckedAt: await tx.now() });
+        });
+        if (row.state === 'prepared' && provider.refundMutationAllowed?.() !== false) await execute(row.membershipOrderId, row.id); else await reconcile(row.membershipOrderId); } catch { /* Durable intent remains visible for next operator run. */ }
+    }
+    for (const row of await store.externalPending?.(provider.context, limit) || []) {
+      try { await store.markExternalChecked?.(row.membershipOrderId); await reconcile(row.membershipOrderId); }
+      catch { /* Persisted observations remain available for a later bounded GET-only scan. */ }
     }
   }
   return { request, decide, reconcile, execute, recoverPrepared };

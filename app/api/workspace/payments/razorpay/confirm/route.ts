@@ -7,7 +7,7 @@ import { financialReceipt, paymentFailure } from '@/lib/workspace/payments/http'
 import { workspacePaymentRuntime } from '@/lib/workspace/payments/runtime';
 export async function POST(request: Request) {
   try {
-    const runtime = workspacePaymentRuntime();
+    const runtime = workspacePaymentRuntime('reconciliation');
     if (!eligibilitySameOrigin(request)) throw new PaymentError('forbidden');
     const user = await getWorkspaceUser(); if (!user) throw new PaymentError('authentication');
     let raw: unknown; try { raw = await readJson(request, 1024); } catch { throw new PaymentError('validation'); }

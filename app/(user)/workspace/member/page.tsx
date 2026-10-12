@@ -1,3 +1,4 @@
+import { classifyWorkspaceRuntime } from '@/lib/workspace/payments/classification';
 import { creatorCapabilities } from '@/lib/workspace/creator/model';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -11,9 +12,9 @@ export default async function WorkspaceMemberPage() {
   if (!user) redirect('/login?callbackUrl=%2Fworkspace%2Fmember');
   try {
     const { row, latestOrder } = await readWorkspaceAccess(user.id);
-    const access = resolveMembershipAccess(row ? { refundedAt: row.refund?.confirmedAt, profileStatus: row.profile.status, activationState: row.order.activationState, providerMode: row.order.providerMode, commercialPolicyVersion: row.order.commercialPolicyVersion, membership: row.membership } : null, new Date(), process.env.NODE_ENV === 'production' ? 'production' : process.env.DATABASE_ENV);
+    const access = resolveMembershipAccess(row ? { refundedAt: row.refund?.confirmedAt, profileStatus: row.profile.status, activationState: row.order.activationState, providerMode: row.order.providerMode, commercialPolicyVersion: row.order.commercialPolicyVersion, membership: row.membership } : null, new Date(), classifyWorkspaceRuntime());
     const review = latestOrder?.activationState === 'held_for_review';
-    const creator = creatorCapabilities(row ? { refundedAt: row.refund?.confirmedAt, profileStatus: row.profile.status, activationState: row.order.activationState, providerMode: row.order.providerMode, commercialPolicyVersion: row.order.commercialPolicyVersion, membership: row.membership } : null, new Date(), process.env.NODE_ENV === 'production' ? 'production' : process.env.DATABASE_ENV, review);
+    const creator = creatorCapabilities(row ? { refundedAt: row.refund?.confirmedAt, profileStatus: row.profile.status, activationState: row.order.activationState, providerMode: row.order.providerMode, commercialPolicyVersion: row.order.commercialPolicyVersion, membership: row.membership } : null, new Date(), classifyWorkspaceRuntime(), review);
     const unavailable = row && access.state !== 'refunded' && (row.profile.status !== 'enabled' || (!access.hasCreatorAccess && access.state !== 'expired'));
     const title = access.state === 'refunded' ? 'Membership refunded' : review ? 'Payment under review' : unavailable ? 'Creator access unavailable' : access.state === 'early_access' ? 'Early Access Active' : access.state === 'active' ? 'Membership active' : access.state === 'expired' ? 'Membership expired' : latestOrder?.financialState === 'captured' ? 'Activation pending' : 'Workspace membership';
     return <main className="ph-no-capture mx-auto max-w-3xl space-y-6 px-6 py-12"><p className="text-xs uppercase tracking-widest text-primary">AirBharath Workspace</p><h1 className="font-outfit text-3xl font-semibold">{title}</h1>

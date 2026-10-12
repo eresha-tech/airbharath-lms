@@ -1,3 +1,4 @@
+import { beforeEach, vi } from 'vitest';
 import { createHmac } from 'node:crypto';
 import { expect, it } from 'vitest';
 import { parseAcceptance, verifyHmac, receiptFor, refundDeadline, minimizeWebhook } from '@/lib/workspace/payments/model';
@@ -6,6 +7,10 @@ import { sanitizeWorkspaceAnalytics } from '@/lib/workspace/analytics-privacy';
 import { plans, actorId, requestKey } from './workspace-membership-fixtures';
 const input = { planCode: 'quarterly', planVersionId: plans[0].id, quoteHash: 'a'.repeat(64), requestKey };
 const config = { accountId: 'acc_TEST15A', mode: 'test' as const, keyId: 'rzp_test_KEY15ATEST', keySecret: 'synthetic-provider-key-secret', webhookSecret: 'synthetic-webhook-secret' };
+beforeEach(() => {
+  for (const [key, value] of Object.entries({ NODE_ENV: 'test', DATABASE_ENV: 'development', WORKSPACE_RAZORPAY_MODE: 'test', WORKSPACE_RAZORPAY_TEST_AUTHORIZED: 'true', WORKSPACE_PAYMENT_ENABLED: 'true', WORKSPACE_REFUND_ENABLED: 'true', WORKSPACE_RAZORPAY_WEBHOOK_ENABLED: 'true', WORKSPACE_RAZORPAY_RECONCILIATION_ENABLED: 'true', WORKSPACE_RAZORPAY_ACCOUNT_ID: config.accountId, WORKSPACE_RAZORPAY_KEY_ID: config.keyId, WORKSPACE_RAZORPAY_KEY_SECRET: config.keySecret, WORKSPACE_RAZORPAY_WEBHOOK_SECRET: config.webhookSecret })) vi.stubEnv(key, value);
+});
+
 const enabled = { NODE_ENV: 'test', DATABASE_ENV: 'test', WORKSPACE_PAYMENT_ENABLED: 'true', WORKSPACE_RAZORPAY_TEST_AUTHORIZED: 'true', WORKSPACE_RAZORPAY_MODE: 'test', WORKSPACE_RAZORPAY_ACCOUNT_ID: config.accountId, WORKSPACE_RAZORPAY_KEY_ID: config.keyId, WORKSPACE_RAZORPAY_KEY_SECRET: config.keySecret, WORKSPACE_RAZORPAY_WEBHOOK_SECRET: config.webhookSecret };
 it('accepts normalized identifiers and rejects client-owned financial/context fields', () => {
   expect(parseAcceptance({ ...input, couponCode: ' test15a ' })?.couponCode).toBe('TEST15A');

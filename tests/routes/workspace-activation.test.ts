@@ -158,3 +158,14 @@ describe('persisted capability derivation', () => {
     expect(resolveMembershipAccess(null, h.finance.now.value, 'test').hasCreatorAccess).toBe(false);
   });
 });
+it('scoped Live production recovery concurrently fulfills authoritative evidence once and preserves terms', async () => {
+  const h = await fixture(false), context = { accountId: h.order.providerAccountId, mode: 'live' as const };
+  h.order.providerMode = 'live'; h.order.commercialPolicyVersion = 'workspace-live-commercial-v1';
+  h.finance.state.payments[0].providerMode = 'live'; h.finance.state.payments[0].captureTimeSource = 'razorpay_payment_captured_event_v1';
+  const service = createWorkspaceActivationService(h.store, 'production', () => h.finance.now.value, context);
+  await Promise.all([service.runBatch(1), service.runBatch(1)]);
+  expect(h.rows.memberships).toHaveLength(1); expect(h.rows.profiles).toHaveLength(1); expect(h.order.activationState).toBe('fulfilled');
+  expect(h.rows.memberships[0].startsAt.toISOString()).toBe(WORKSPACE_LAUNCH_AT);
+  expect(h.rows.memberships[0].endsAt.toISOString()).toBe('2027-02-08T18:30:00.000Z');
+  await expect(createWorkspaceActivationService(h.store, 'production').fulfill(h.order.userId, h.order.id)).rejects.toThrow('activation_environment_disabled');
+});

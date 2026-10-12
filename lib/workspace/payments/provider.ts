@@ -1,3 +1,4 @@
+import { financialConfiguration, requireFinancialConfiguration, type ProviderConfiguration, type FinancialCapability } from './configuration';
 import type { RefundProvider } from '../refunds/service';
 import { parseProviderRefund } from '../refunds/provider';
 import { createHash } from 'node:crypto';
@@ -15,14 +16,10 @@ export interface WorkspaceProvider {
   fetchOrder(id: string): Promise<ProviderOrder>;
   fetchOrderPayments(id: string): Promise<ProviderPayment[]>;
 }
-export type TestProviderConfiguration = ProviderContext & { keyId: string; keySecret: string; webhookSecret: string };
+export type TestProviderConfiguration = ProviderConfiguration & { mode: 'test' };
 export function testPaymentConfiguration(env: Record<string, string | undefined> = process.env): TestProviderConfiguration | null {
-  // Dedicated keys, explicit separate sandbox authorization, and non-production classification.
-  // Existing LMS Razorpay settings never enable Workspace payment.
-  if (env.WORKSPACE_PAYMENT_ENABLED !== 'true' || env.WORKSPACE_RAZORPAY_TEST_AUTHORIZED !== 'true' || !['development', 'test'].includes(env.DATABASE_ENV || '') || env.NODE_ENV === 'production' || env.WORKSPACE_RAZORPAY_MODE !== 'test') return null;
-  const keyId = env.WORKSPACE_RAZORPAY_KEY_ID || '', keySecret = env.WORKSPACE_RAZORPAY_KEY_SECRET || '', webhookSecret = env.WORKSPACE_RAZORPAY_WEBHOOK_SECRET || '', accountId = env.WORKSPACE_RAZORPAY_ACCOUNT_ID || '';
-  if (!/^rzp_test_[A-Za-z0-9]{6,80}$/.test(keyId) || keySecret.length < 16 || webhookSecret.length < 16 || !/^acc_[A-Za-z0-9]{6,80}$/.test(accountId)) return null;
-  return { accountId, mode: 'test', keyId, keySecret, webhookSecret };
+  const config = financialConfiguration('checkout', env);
+  return config?.mode === 'test' ? config as TestProviderConfiguration : null;
 }
 export function requireTestPaymentConfiguration() { const config = testPaymentConfiguration(); if (!config) throw new PaymentError('disabled'); return config; }
 const unixDate = (value: unknown) => typeof value === 'number' && Number.isSafeInteger(value) && value > 0 && value < 10_000_000_000 ? new Date(value * 1000) : null;
@@ -36,11 +33,12 @@ export function parseProviderPayment(raw: unknown, context: ProviderContext): Pr
   // created_at, callback time or a non-contract captured_at field into paidAt.
   return { accountId: context.accountId, mode: context.mode, id: raw.id, orderId: raw.order_id, amountPaise: Number(raw.amount), currency: raw.currency, state: raw.status === 'refunded' ? 'captured' : raw.status as ProviderPayment['state'], providerCreatedAt: unixDate(raw.created_at)!, capturedAt: null, captureTimeSource: null, refundedPaise: Number(raw.amount_refunded), refundStatus: (raw.refund_status || null) as ProviderPayment['refundStatus'] };
 }
-export function createRazorpayTestAdapter(config: TestProviderConfiguration, http: typeof fetch = fetch): WorkspaceProvider & RefundProvider {
-  if (config.mode !== 'test' || !config.keyId.startsWith('rzp_test_')) throw new PaymentError('disabled');
+function createAdapter(config: ProviderConfiguration, http: typeof fetch, allowed: (operation: 'read' | 'checkout' | 'refund') => void, signal?: AbortSignal): WorkspaceProvider & RefundProvider {
+  if (!config.keyId.startsWith(config.mode === 'live' ? 'rzp_live_' : 'rzp_test_')) throw new PaymentError('disabled');
   async function request(path: string, body?: unknown, idempotencyKey?: string) {
+    allowed(body ? path.endsWith('/refund') ? 'refund' : 'checkout' : 'read');
     try {
-      const response = await http(`https://api.razorpay.com/v1/${path}`, { method: body ? 'POST' : 'GET', headers: { ...(idempotencyKey ? { 'X-Refund-Idempotency': idempotencyKey } : {}), Authorization: `Basic ${Buffer.from(`${config.keyId}:${config.keySecret}`).toString('base64')}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(10_000), redirect: 'error' });
+      const response = await http(`https://api.razorpay.com/v1/${path}`, { method: body ? 'POST' : 'GET', headers: { ...(idempotencyKey ? { 'X-Refund-Idempotency': idempotencyKey } : {}), Authorization: `Basic ${Buffer.from(`${config.keyId}:${config.keySecret}`).toString('base64')}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10_000)]) : AbortSignal.timeout(10_000), redirect: 'error' });
       // Bound even authenticated provider responses; never log provider bodies/credentials.
       const reader = response.body?.getReader(); if (!reader) throw new ProviderFailure('ambiguous');
       const chunks: Uint8Array[] = []; let size = 0;
@@ -55,6 +53,7 @@ export function createRazorpayTestAdapter(config: TestProviderConfiguration, htt
     } catch (error) { if (error instanceof ProviderFailure) throw error; throw new ProviderFailure('ambiguous'); }
   }
   return { context: { accountId: config.accountId, mode: config.mode },
+    refundMutationAllowed: () => { try { allowed('refund'); return true; } catch { return false; } },
     async createRefund(input) {
       if (!PROVIDER_PAYMENT_ID.test(input.paymentId) || !Number.isSafeInteger(input.amountPaise) || input.amountPaise < 1 || !/^[a-f0-9-]{36}$/.test(input.attemptId) || !/^[a-f0-9-]{36}$/.test(input.requestId)) throw new PaymentError('validation');
       return parseProviderRefund(await request(`payments/${input.paymentId}/refund`, { amount: input.amountPaise, speed: 'normal', notes: { workspace_refund_request: input.requestId, workspace_refund_attempt: input.attemptId } }, input.attemptId), config);
@@ -83,4 +82,24 @@ export function createRazorpayTestAdapter(config: TestProviderConfiguration, htt
       const payments = raw.items.map(item => parseProviderPayment(item, config)); if (payments.some(p => p.orderId !== id)) throw new ProviderFailure('ambiguous'); return payments;
     },
   };
+}
+
+// Runtime factory validates every operation before HTTP, including GETs after a kill-switch change.
+export function createRazorpayAdapter(env: Record<string, string | undefined> = process.env, http: typeof fetch = fetch, signal?: AbortSignal) {
+  const get = (capability: FinancialCapability) => financialConfiguration(capability, env);
+  const config = get('checkout') || get('refund') || get('reconciliation') || get('webhook');
+  if (!config) throw new PaymentError('disabled');
+  return createAdapter(config, http, operation => {
+    const current = operation === 'read' ? get('reconciliation') || get('refund') || get('checkout') : get(operation);
+    if (!current || current.accountId !== config.accountId || current.mode !== config.mode || current.keyId !== config.keyId || current.keySecret !== config.keySecret) throw new PaymentError('disabled');
+  }, signal);
+}
+// Compatibility for opt-in Test verification. All methods retain explicit runtime authorization.
+export function createRazorpayTestAdapter(config: ProviderConfiguration, http: typeof fetch = fetch) {
+  if (config.mode !== 'test' || !config.keyId.startsWith('rzp_test_')) throw new PaymentError('disabled');
+  return createAdapter(config, http, operation => {
+    const cap = operation === 'read' ? 'reconciliation' : operation;
+    const authorized = requireFinancialConfiguration(cap);
+    if (authorized.mode !== 'test' || authorized.accountId !== config.accountId || authorized.keyId !== config.keyId || authorized.keySecret !== config.keySecret) throw new PaymentError('disabled');
+  });
 }

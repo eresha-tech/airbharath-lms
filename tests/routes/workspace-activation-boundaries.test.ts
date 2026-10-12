@@ -22,7 +22,7 @@ it('adds immutable term/identity history, payment/context checks, overlap serial
 });
 it('preserves public disabled checkout, private activation worker, role separation, privacy and legacy isolation', () => {
   expect(read('components/workspace/ActivationPreview.tsx')).toContain('Payments not yet enabled');
-  const runtime = read('lib/workspace/activation/runtime.ts'); expect(runtime).toContain("import 'server-only'"); expect(runtime).toContain("process.env.NODE_ENV === 'production'");
+  const runtime = read('lib/workspace/activation/runtime.ts'); expect(runtime).toContain("import 'server-only'"); expect(runtime).toContain("requireFinancialConfiguration('reconciliation')"); expect(runtime).toContain("classifyWorkspaceRuntime()");
   const service = read('lib/workspace/activation/service.ts'), repository = read('lib/workspace/activation/repository.ts');
   expect(service + repository).not.toMatch(/fetch\(|new Razorpay|createRazorpay|posthog|update\(users\)|enrollments|courseAuthors|paid_entitlement/i);
   const member = read('app/(user)/workspace/member/page.tsx'), admin = read('app/(admin)/admin/workspace/creators/page.tsx');

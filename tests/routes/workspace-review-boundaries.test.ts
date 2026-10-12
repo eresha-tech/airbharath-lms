@@ -37,7 +37,7 @@ it.each(['/admin/workspace/course-reviews','/admin/workspace/course-reviews/'+ke
 it('private review pages are noindex and have capture protection; public payments remain fail-closed',()=>{
  for(const path of ['app/(admin)/admin/workspace/course-reviews/page.tsx','app/(admin)/admin/workspace/course-reviews/[id]/page.tsx']){const source=readFileSync(path,'utf8');expect(source).toContain('index: false, follow: false');expect(source).toContain('ph-no-capture');}
  expect(readFileSync('app/(user)/workspace/(creator)/layout.tsx','utf8')).toContain('index: false');
- const config=readFileSync('lib/workspace/payments/provider.ts','utf8');expect(config).toContain('WORKSPACE_PAYMENT_ENABLED');
+ const config=readFileSync('lib/workspace/payments/configuration-core.mjs','utf8');expect(config).toContain('WORKSPACE_PAYMENT_ENABLED');
 });
 
 it('0015 snapshot changes only private review tables and the justified draft composite index; 0014 stays byte-identical', () => {

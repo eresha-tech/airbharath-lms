@@ -5,6 +5,13 @@ import { users, workspaceMembershipOrders as orders, workspacePaymentAttempts as
 import { RefundError } from './model';
 import type { RefundStore, RefundTransaction } from './store';
 export const postgresRefundStore: RefundStore = {
+ externalPending: (context, limit) => db.select({ membershipOrderId: orders.id }).from(orders).where(and(
+  eq(orders.providerAccountId, context.accountId), eq(orders.providerMode, context.mode), eq(orders.financialState, 'captured'),
+  sql`EXISTS (SELECT 1 FROM ${observations} WHERE ${observations.membershipOrderId} = ${orders.id})`,
+  sql`NOT EXISTS (SELECT 1 FROM ${attempts} WHERE ${attempts.membershipOrderId} = ${orders.id})`,
+  sql`NOT EXISTS (SELECT 1 FROM ${completions} WHERE ${completions.membershipOrderId} = ${orders.id})`
+ )).orderBy(sql`${orders.providerRecoveryCheckedAt} ASC NULLS FIRST`, orders.createdAt).limit(limit),
+ async markExternalChecked(orderId) { await this.transaction(orderId, null, async tx => { await tx.markScan?.(); }); },
  async transaction(orderId, actorId, work) {
   // Lookup only routes the locks; ownership is re-read after locks, not trusted from this projection.
   const candidate = await db.query.workspaceMembershipOrders.findFirst({where:eq(orders.id,orderId),columns:{userId:true}});
@@ -19,6 +26,7 @@ export const postgresRefundStore: RefundStore = {
     const [completion] = await tx.select().from(completions).where(eq(completions.membershipOrderId,orderId));
     const [payment] = await tx.select().from(payments).where(and(eq(payments.membershipOrderId,orderId),eq(payments.winner,true))).for('share');
     const state: RefundTransaction = {
+     async markScan(){ await tx.update(orders).set({providerRecoveryCheckedAt:await state.now(),version:sql`${orders.version} + 1`}).where(eq(orders.id,orderId)); },
      order,request:request||null,attempt:attempt||null,completion:completion||null,payment:payment||null,actor:actors.find(a=>a.id===actorId)||null,
      async now(){ const result = await tx.execute(sql`SELECT clock_timestamp() AS time`); return new Date(result[0].time as string | Date); },
      requestByKey:(userId,key)=>tx.query.workspaceRefundRequests.findFirst({where:and(eq(requests.userId,userId),eq(requests.requestKey,key))}),
@@ -43,7 +51,7 @@ export const postgresRefundStore: RefundStore = {
   const [request,attempt,completion]=await Promise.all([db.query.workspaceRefundRequests.findFirst({where:eq(requests.membershipOrderId,orderId)}),db.query.workspaceRefundAttempts.findFirst({where:eq(attempts.membershipOrderId,orderId)}),db.query.workspaceRefundCompletions.findFirst({where:eq(completions.membershipOrderId,orderId)})]);
   return {order,request:request||null,attempt:attempt||null,completion:completion||null};
  },
- pending:(context,limit)=>db.select().from(attempts).where(and(eq(attempts.providerAccountId,context.accountId),eq(attempts.providerMode,context.mode),inArray(attempts.state,['prepared','processing','uncertain']))).orderBy(attempts.createdAt).limit(Math.min(25,Math.max(1,limit))),
+ pending:(context,limit,includePrepared=true)=>db.select().from(attempts).where(and(eq(attempts.providerAccountId,context.accountId),eq(attempts.providerMode,context.mode),inArray(attempts.state,includePrepared?['prepared','processing','uncertain']:['processing','uncertain']))).orderBy(sql`${attempts.lastCheckedAt} ASC NULLS FIRST`,attempts.createdAt).limit(Math.min(25,Math.max(1,limit))),
 };
 export async function listCreatorRefundOrders(userId:string){
  return db.select({order:orders,request:requests,attempt:attempts,completion:completions}).from(orders).leftJoin(requests,eq(requests.membershipOrderId,orders.id)).leftJoin(attempts,eq(attempts.membershipOrderId,orders.id)).leftJoin(completions,eq(completions.membershipOrderId,orders.id)).where(eq(orders.userId,userId)).orderBy(desc(orders.createdAt)).limit(25);

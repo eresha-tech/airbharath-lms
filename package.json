@@ -20,7 +20,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/migrate.mjs",
     "db:seed": "node scripts/seed.mjs",
-    "db:start": "/usr/lib/postgresql/16/bin/pg_ctl -D ./.postgres_data -o \"-p 5433 -k /tmp\" -l .postgres_log start"
+    "db:start": "/usr/lib/postgresql/16/bin/pg_ctl -D ./.postgres_data -o \"-p 5433 -k /tmp\" -l .postgres_log start",
+    "workspace:payments:readiness": "node scripts/workspace-payments-readiness.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-mediaconvert": "^3.1127.0",

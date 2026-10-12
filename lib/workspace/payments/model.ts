@@ -4,6 +4,8 @@ import { parseQuoteInput, type QuoteInput } from '../membership/model';
 
 export const FINANCIAL_VERSION = 'workspace-financial-v1';
 export const TEST_COMMERCIAL_POLICY = 'workspace-test-noncommercial-v1';
+export const LIVE_COMMERCIAL_POLICY = 'workspace-live-commercial-v1';
+export const commercialPolicy = (mode: string) => mode === 'live' ? LIVE_COMMERCIAL_POLICY : TEST_COMMERCIAL_POLICY;
 export const HOLD_POLICY = 'conservative-v1';
 export const REFUND_HOURS = 72;
 export const PROVIDER_ORDER_ID = /^order_[A-Za-z0-9]{6,80}$/;
@@ -31,15 +33,15 @@ export function verifyHmac(message: string | Uint8Array, signature: unknown, sec
   return timingSafeEqual(createHmac('sha256', secret).update(message).digest(), Buffer.from(signature, 'hex'));
 }
 export function refundDeadline(paidAt: Date) { return new Date(paidAt.getTime() + REFUND_HOURS * 3_600_000); }
-export type ProviderContext = { accountId: string; mode: 'test' };
+export type ProviderContext = { accountId: string; mode: 'test' | 'live' };
 export type ProviderOrder = ProviderContext & { id: string; receipt: string; amountPaise: number; currency: string; createdAt: Date; status: 'created' | 'attempted' | 'paid' };
 export const CAPTURE_EVENT_TIME_SOURCE = 'razorpay_payment_captured_event_v1';
 export type CaptureTimeSource = 'test_authoritative' | typeof CAPTURE_EVENT_TIME_SOURCE;
 export type ProviderPayment = ProviderContext & { id: string; orderId: string; amountPaise: number; currency: string; state: PaymentState; providerCreatedAt: Date; capturedAt: Date | null; captureTimeSource: CaptureTimeSource | null; refundedPaise: number; refundStatus?: 'partial' | 'full' | null };
 export type WebhookEvidence = { providerOrderId: string | null; providerPaymentId: string | null; receipt: string | null; eventCreatedAt: string | null; providerRefundId?: string | null };
 // Keep only routing identifiers. Provider facts are fetched through the scoped adapter before finalization.
-export function minimizeWebhook(raw: unknown, expectedAccount: string): { type: string; evidence: WebhookEvidence } | null {
-  if (!object(raw) || ('mode' in raw && raw.mode !== 'test') || raw.account_id !== expectedAccount || typeof raw.event !== 'string' || !/^[a-z][a-z._]{1,79}$/.test(raw.event)) return null;
+export function minimizeWebhook(raw: unknown, expectedAccount: string, expectedMode: ProviderContext['mode'] = 'test'): { type: string; evidence: WebhookEvidence } | null {
+  if (!object(raw) || ('mode' in raw && raw.mode !== expectedMode) || raw.account_id !== expectedAccount || typeof raw.event !== 'string' || !/^[a-z][a-z._]{1,79}$/.test(raw.event)) return null;
   const payload = object(raw.payload) ? raw.payload : {};
   const payment = object(payload.payment) && object(payload.payment.entity) ? payload.payment.entity : {};
   const order = object(payload.order) && object(payload.order.entity) ? payload.order.entity : {};

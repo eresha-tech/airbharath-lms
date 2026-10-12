@@ -1,3 +1,4 @@
+import { beforeEach } from 'vitest';
 import { randomUUID,createHmac } from 'node:crypto';
 import { describe,it,expect,vi } from 'vitest';
 import { createRazorpayTestAdapter,parseProviderPayment } from '@/lib/workspace/payments/provider';
@@ -8,6 +9,10 @@ import { minimizeWebhook,verifyHmac } from '@/lib/workspace/payments/model';
 import { refundHarness } from './workspace-refunds-fixtures';
 import { testContext } from './workspace-payments-fixtures';
 const config={...testContext,keyId:'rzp_test_SYNTHETICREFUND',keySecret:'synthetic-test-only-key-secret',webhookSecret:'synthetic-test-only-webhook-secret'};
+beforeEach(() => {
+  for (const [key, value] of Object.entries({ NODE_ENV: 'test', DATABASE_ENV: 'development', WORKSPACE_RAZORPAY_MODE: 'test', WORKSPACE_RAZORPAY_TEST_AUTHORIZED: 'true', WORKSPACE_PAYMENT_ENABLED: 'true', WORKSPACE_REFUND_ENABLED: 'true', WORKSPACE_RAZORPAY_WEBHOOK_ENABLED: 'true', WORKSPACE_RAZORPAY_RECONCILIATION_ENABLED: 'true', WORKSPACE_RAZORPAY_ACCOUNT_ID: config.accountId, WORKSPACE_RAZORPAY_KEY_ID: config.keyId, WORKSPACE_RAZORPAY_KEY_SECRET: config.keySecret, WORKSPACE_RAZORPAY_WEBHOOK_SECRET: config.webhookSecret })) vi.stubEnv(key, value);
+});
+
 const entity={entity:'refund',id:'rfnd_SYNTHETIC001',payment_id:'pay_SYNTHETIC001',amount:589882,currency:'INR',created_at:1791806400,status:'pending'};
 const payment={entity:'payment',id:'pay_SYNTHETIC001',order_id:'order_SYNTHETIC001',amount:589882,currency:'INR',created_at:1791806400,status:'captured',captured:true,amount_refunded:0,refund_status:null};
 describe('documented Workspace-scoped Razorpay refund adapter',()=>{

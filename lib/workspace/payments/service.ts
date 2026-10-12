@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { UUID } from '../eligibility/model';
 import { MembershipError } from '../membership/service';
 import { QUOTE_VERSION } from '../membership/model';
-import { CAPTURE_EVENT_TIME_SOURCE, PaymentError, TEST_COMMERCIAL_POLICY, HOLD_POLICY, parseAcceptance, digest, receiptFor, refundDeadline, verifyHmac, PROVIDER_PAYMENT_ID, PROVIDER_ORDER_ID, PAYMENT_EVENTS, HASH, type ProviderOrder, type ProviderPayment, type AcceptInput } from './model';
+import { CAPTURE_EVENT_TIME_SOURCE, PaymentError, commercialPolicy, HOLD_POLICY, parseAcceptance, digest, receiptFor, refundDeadline, verifyHmac, PROVIDER_PAYMENT_ID, PROVIDER_ORDER_ID, PAYMENT_EVENTS, HASH, type ProviderOrder, type ProviderPayment, type AcceptInput } from './model';
 import { ProviderFailure, type WorkspaceProvider } from './provider';
 import type { FinanceStore, FinanceTransaction, Order, InboxEvent } from './repository';
 import { acceptanceMatches, currentCreatorTerms } from '../terms/model';
@@ -52,7 +52,7 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
         quoteHash: quote.quoteHash, quoteVersion: quote.quoteVersion, pricingRuleVersion: QUOTE_VERSION, membershipStartRuleVersion: quote.membershipStart.version, launchAt: new Date(quote.membershipStart.launchAt), membershipStartRule: quote.membershipStart.rule,
         contextHash: digest({ settings: context.currentSettings.configurationHash, policy: context.policy.contentHash, attempt: context.attempt.id }),
         couponId: coupon?.id || null, couponCode: coupon?.code || null, couponSnapshot: coupon ? { campaignName: coupon.campaignName, sourceType: coupon.sourceType, sourceName: coupon.sourceName, discountType: coupon.discountType, discountValue: coupon.discountValue, version: coupon.version, usageLimit: coupon.usageLimit } : null,
-        requestKey, requestPayloadHash: payloadHash, commercialPolicyVersion: TEST_COMMERCIAL_POLICY, createdAt: now, providerAccountId: provider.context.accountId, providerMode: provider.context.mode, providerReceipt: receiptFor(id) });
+        requestKey, requestPayloadHash: payloadHash, commercialPolicyVersion: commercialPolicy(provider.context.mode), createdAt: now, providerAccountId: provider.context.accountId, providerMode: provider.context.mode, providerReceipt: receiptFor(id) });
       if (coupon) await tx.insertRedemption({ couponId: coupon.id, userId, membershipOrderId: id, reservedAt: now, checkoutDeadline: new Date(now.getTime() + 600_000), holdPolicyVersion: HOLD_POLICY });
       return order;
     });
@@ -144,6 +144,7 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
         && eventTime && Number.isFinite(eventTime.getTime()) && eventTime <= event.receivedAt && eventTime <= now
         && eventTime >= current.createdAt && eventTime >= evidence.providerCreatedAt;
       if (verifiedCaptureEvent) evidence = { ...evidence, capturedAt: eventTime, captureTimeSource: CAPTURE_EVENT_TIME_SOURCE };
+      if (current.providerMode === 'live' && evidence.captureTimeSource === 'test_authoritative') evidence = { ...evidence, capturedAt: null, captureTimeSource: null };
       const evidenceHash = digest({ payment: evidence, captureEvent: verifiedCaptureEvent ? { id: event.id, eventId: event.eventId, payloadHash: event.payloadHash, rule: CAPTURE_EVENT_TIME_SOURCE } : null });
       let payment = await tx.getPayment(provider.context, evidence.id);
       if (payment && payment.membershipOrderId !== current.id) { await tx.patchOrder(current.id, { activationState: 'held_for_review', reviewReason: 'payment_reuse' }); await finish('needs_review', 'payment_reuse'); return tx.getOrder(current.id); }

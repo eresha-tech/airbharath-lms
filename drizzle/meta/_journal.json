@@ -148,6 +148,13 @@
       "when": 1791794762975,
       "tag": "0020_gigantic_mordo",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791816179271,
+      "tag": "0021_workspace_live_financial_modes",
+      "breakpoints": true
     }
   ]
 }

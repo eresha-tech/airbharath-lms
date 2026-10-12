@@ -1,3 +1,4 @@
+import { classifyWorkspaceRuntime } from '../payments/classification';
 import { CreatorError, plain, version } from './text';
 export { CreatorError, plain, version, categoryLabel, priceLabel } from './text';
 import { resolveMembershipAccess, type AccessEvidence } from '../activation/model';
@@ -11,7 +12,7 @@ export function creatorCapabilities(evidence: AccessEvidence | null, now: Date, 
   const historical = !!evidence && ['expired','refunded'].includes(access.state || '') && resolveMembershipAccess({ ...evidence, refundedAt: null }, new Date(evidence.membership.endsAt.getTime() - 1), environment).hasCreatorAccess && evidence.membership.fulfilledAt <= now;
   return { ...access, canViewCreatorWorkspace: !financialReview && (access.hasCreatorAccess || historical), canEditWorkspace: !financialReview && access.hasCreatorAccess && access.hasPaidEntitlement };
 }
-export function environment() { return process.env.NODE_ENV === 'production' ? 'production' : process.env.DATABASE_ENV; }
+export function environment() { return classifyWorkspaceRuntime(); }
 function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new CreatorError('validation');
   return value as Record<string, unknown>;
