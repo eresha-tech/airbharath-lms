@@ -29,7 +29,7 @@ export const postgresBuildStore: BuildStore = {
     const owner = (project: Project) => and(eq(modules.projectId, project.id), eq(modules.userId, userId));
     const lessonOwner = (project: Project, moduleId?: string) => and(eq(lessons.projectId, project.id), eq(lessons.userId, userId), moduleId ? eq(lessons.moduleId, moduleId) : undefined);
     return work({
-      context: async () => ({ user, profileId: profile?.id || null, evidence: access.row ? { profileStatus: access.row.profile.status, activationState: access.row.order.activationState, providerMode: access.row.order.providerMode, commercialPolicyVersion: access.row.order.commercialPolicyVersion, membership: access.row.membership } : null, financialReview: access.latestOrder?.activationState === 'held_for_review', planName: access.row?.order.planSnapshot.displayName || null }),
+      context: async () => ({ user, profileId: profile?.id || null, evidence: access.row ? { refundedAt: access.row.refund?.confirmedAt, profileStatus: access.row.profile.status, activationState: access.row.order.activationState, providerMode: access.row.order.providerMode, commercialPolicyVersion: access.row.order.commercialPolicyVersion, membership: access.row.membership } : null, financialReview: access.latestOrder?.activationState === 'held_for_review', planName: access.row?.order.planSnapshot.displayName || null }),
       source: async (id, draftId) => {
         // Match the established creator/review order: draft before submission.
         await tx.select({ id: drafts.id }).from(drafts).where(and(eq(drafts.id, draftId), eq(drafts.userId, userId))).for('update');

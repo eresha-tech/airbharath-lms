@@ -8,7 +8,7 @@ export type DraftContent = { title: string; category: Category; description: str
 export type ProfileContent = { displayName: string; professionalHeadline: string; shortBio: string; primaryAviationCategory: Category; professionalProfileUrl: string | null };
 export function creatorCapabilities(evidence: AccessEvidence | null, now: Date, environment: string | undefined, financialReview = false) {
   const access = resolveMembershipAccess(evidence, now, environment);
-  const historical = !!evidence && access.state === 'expired' && resolveMembershipAccess(evidence, new Date(evidence.membership.endsAt.getTime() - 1), environment).hasCreatorAccess && evidence.membership.fulfilledAt <= now;
+  const historical = !!evidence && ['expired','refunded'].includes(access.state || '') && resolveMembershipAccess({ ...evidence, refundedAt: null }, new Date(evidence.membership.endsAt.getTime() - 1), environment).hasCreatorAccess && evidence.membership.fulfilledAt <= now;
   return { ...access, canViewCreatorWorkspace: !financialReview && (access.hasCreatorAccess || historical), canEditWorkspace: !financialReview && access.hasCreatorAccess && access.hasPaidEntitlement };
 }
 export function environment() { return process.env.NODE_ENV === 'production' ? 'production' : process.env.DATABASE_ENV; }

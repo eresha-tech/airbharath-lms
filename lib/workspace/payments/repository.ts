@@ -1,6 +1,9 @@
+import type { RefundPolicyIdentity } from '../refund-policy/document';
+import type { RefundPolicyAcceptance } from '../refund-policy/model';
+import { workspaceRefundPolicyVersions as refundVersions, workspaceRefundPolicyAcceptances as refundAcceptances } from '@/lib/db/schema';
 import { and, count, desc, eq, inArray, lte, or, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { users, workspaceCoupons as coupons, workspaceMembershipPlans as plans, workspaceEligibilitySettings as settings, workspacePolicyVersions as policies, workspaceMembershipOrders as orders, workspaceCouponRedemptions as redemptions, workspacePaymentAttempts as payments, workspacePaymentEvents as events } from '@/lib/db/schema';
+import { users, workspaceCoupons as coupons, workspaceMembershipPlans as plans, workspaceEligibilitySettings as settings, workspacePolicyVersions as policies, workspaceMembershipOrders as orders, workspaceCouponRedemptions as redemptions, workspacePaymentAttempts as payments, workspacePaymentEvents as events, workspaceRefundCompletions as refunds } from '@/lib/db/schema';
 import { readMembershipQuote, type MembershipQuoteContext } from '../membership/service';
 import type { QuoteInput } from '../membership/model';
 import { PaymentError, type EventState, type ProviderContext, type WebhookEvidence } from './model';
@@ -17,6 +20,7 @@ export type OrderPatch = Partial<Pick<Order, 'providerSetupState' | 'providerCre
 export type RedemptionPatch = Partial<Pick<Redemption, 'status' | 'redeemedAt' | 'releasedAt' | 'releaseReason' | 'releaseEvidenceHash' | 'releaseSource'>>;
 export type PaymentPatch = Partial<Pick<Payment, 'state' | 'winner' | 'lastObservedAt' | 'capturedAt' | 'captureTimeSource' | 'refundedPaise' | 'evidenceHash'>>;
 export interface FinanceTransaction {
+  readRefundPolicyAcceptance(userId: string, policy: RefundPolicyIdentity): Promise<RefundPolicyAcceptance | undefined>;
   readCreatorTermsAcceptance(userId: string, terms: CreatorTermsIdentity): Promise<CreatorTermsAcceptance | undefined>;
   findRequest(userId: string, key: string): Promise<Order | undefined>;
   findUnresolved(userId: string): Promise<Order | undefined>;
@@ -56,6 +60,11 @@ export const postgresFinanceStore: FinanceStore = {
         if (locks.couponId || locks.couponCode) await tx.select({ id: coupons.id }).from(coupons).where(locks.couponId ? eq(coupons.id, locks.couponId) : and(eq(coupons.scope, 'workspace_membership'), eq(coupons.code, locks.couponCode!))).for('update');
         if (locks.orderId) await tx.select({ id: orders.id }).from(orders).where(and(eq(orders.id, locks.orderId), eq(orders.userId, locks.userId))).for('update');
         const methods: FinanceTransaction = {
+          async readRefundPolicyAcceptance(userId, policy) {
+            const [version] = await tx.select().from(refundVersions).where(eq(refundVersions.isCurrent, true)).for('share');
+            if (!version || version.policyVersion !== policy.version || version.contentHash !== policy.contentHash || version.effectiveAt.toISOString() !== policy.effectiveAt) throw new PaymentError('refund_policy_required');
+            return tx.query.workspaceRefundPolicyAcceptances.findFirst({ where: and(eq(refundAcceptances.userId,userId),eq(refundAcceptances.policyVersion,policy.version),eq(refundAcceptances.policyContentHash,policy.contentHash)) });
+          },
           async readCreatorTermsAcceptance(userId, terms) {
             // Lock current source-controlled document against concurrent publication until order commit.
             const [version] = await tx.select().from(termsVersions).where(eq(termsVersions.isCurrent, true)).for('share');
@@ -125,7 +134,7 @@ export const postgresFinanceStore: FinanceStore = {
   recoveryOrders: (limit, context) => db.query.workspaceMembershipOrders.findMany({ where: and(eq(orders.providerAccountId, context.accountId), eq(orders.providerMode, context.mode), inArray(orders.providerSetupState, ['creating', 'recovery_required', 'ready'])), orderBy: [sql`${orders.providerRecoveryCheckedAt} ASC NULLS FIRST`, orders.createdAt], limit }),
 };
 export async function listFinancialOrders(page = 1) {
-  const rows = await db.select({ order: orders, userName: users.fullName }).from(orders).innerJoin(users, eq(users.id, orders.userId)).orderBy(desc(orders.createdAt)).limit(25).offset((page - 1) * 25);
+  const rows = await db.select({ order: orders, refund: refunds, userName: users.fullName }).from(orders).innerJoin(users, eq(users.id, orders.userId)).leftJoin(refunds,eq(refunds.membershipOrderId,orders.id)).orderBy(desc(orders.createdAt)).limit(25).offset((page - 1) * 25);
   const evidence = rows.length ? await db.query.workspacePaymentAttempts.findMany({ where: inArray(payments.membershipOrderId, rows.map(r => r.order.id)) }) : [];
   return rows.map(row => ({ ...row, paymentEvidence: evidence.filter(p => p.membershipOrderId === row.order.id) }));
 }
@@ -136,3 +145,8 @@ export async function financialCouponCounts(couponId: string) {
 }
 
 export async function paymentInboxSummary() { return db.select({ state: events.processingState, count: count() }).from(events).groupBy(events.processingState); }
+
+export async function readWorkspaceFinancialRefund(orderId: string, userId: string) {
+  const [row] = await db.select({ confirmedAt: refunds.confirmedAt, amountPaise: refunds.amountPaise }).from(refunds).where(and(eq(refunds.membershipOrderId,orderId),eq(refunds.userId,userId))).limit(1);
+  return row || null;
+}

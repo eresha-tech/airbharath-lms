@@ -123,11 +123,12 @@ describe('safe fulfillment, separate financial commit, and recovery', () => {
     h.finance.state.redemptions.push({ ...h.finance.state.redemptions[0], id: randomUUID(), membershipOrderId: second.id });
     expect((await h.service.fulfill(second.userId, second.id)).state).toBe('held_for_review'); expect(second.reviewReason).toBe('membership_overlap'); expect(h.rows.memberships).toHaveLength(1);
   });
-  it('keeps fulfilled history on duplicate reconciliation and suspends access on a refund observation', async () => {
+  it('keeps fulfilled history and access on a refund observation until full-refund confirmation', async () => {
     const h = await fixture(); await h.fulfill(); const term = structuredClone(h.rows.memberships[0]);
     await h.finance.service.reconcileOrder(h.order.userId, h.order.id); expect(h.order.activationState).toBe('fulfilled');
     h.payment.refundedPaise = 1; await h.finance.service.reconcileOrder(h.order.userId, h.order.id);
-    expect(h.order.activationState).toBe('held_for_review'); expect(h.rows.memberships[0]).toEqual(term);
+    // Blocker B: a partial observation is not authoritative full-refund completion.
+    expect(h.order.activationState).toBe('fulfilled'); expect(h.rows.memberships[0]).toEqual(term);
   });
   it('requires explicit provider scope and never activates another account', async () => {
     const h = await fixture(); const foreign = { ...testContext, accountId: 'acc_OTHER_SYNTHETIC' };

@@ -5,6 +5,7 @@ import { activationReviewReason, membershipTerm } from './model';
 export type CreatorProfile = typeof workspaceCreatorProfiles.$inferSelect;
 export type Membership = typeof workspaceMemberships.$inferSelect;
 export interface ActivationTransaction {
+  refunded?(): Promise<boolean>;
   order(): Promise<Order | null>;
   profile(): Promise<CreatorProfile | null>;
   membership(): Promise<Membership | null>;
@@ -31,6 +32,7 @@ export function createWorkspaceActivationService(store: ActivationStore, environ
       const order = await tx.order();
       if (!order || order.userId !== userId) throw new Error('activation_not_found');
       if (context && (order.providerAccountId !== context.accountId || order.providerMode !== context.mode)) throw new Error('activation_provider_context_mismatch');
+      if (await tx.refunded?.()) return { state: 'refunded' as const };
       const existing = await tx.membership();
       if (existing) {
         if (!order.fulfilledAt || existing.fulfilledAt.getTime() !== order.fulfilledAt.getTime() || existing.userId !== userId) throw new Error('activation_history_inconsistent');

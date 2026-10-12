@@ -1,3 +1,4 @@
+import { currentRefundPolicy, type RefundPolicyAcceptance } from '@/lib/workspace/refund-policy/model';
 import { currentCreatorTerms, type CreatorTermsAcceptance } from '@/lib/workspace/terms/model';
 import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
@@ -11,8 +12,9 @@ import { setting, policy } from './workspace-eligibility-fixtures';
 export const financeNow = new Date('2026-10-12T12:00:00.000Z');
 export const testContext: ProviderContext = { accountId: 'acc_TESTACCOUNT15A', mode: 'test' };
 export const callbackSecret = 'synthetic-workspace-callback-secret-only';
-export function financialHarness({ acceptTerms = true } = {}) {
+export function financialHarness({ acceptTerms = true, acceptRefundPolicy = true } = {}) {
   const terms = { ...currentCreatorTerms() }, termsAcceptances = new Map<string, CreatorTermsAcceptance>();
+  const refundPolicy = currentRefundPolicy(), policyAcceptances = new Map<string, RefundPolicyAcceptance>();
   const state = { orders: [] as Order[], redemptions: [] as Redemption[], payments: [] as Payment[], events: [] as InboxEvent[] };
   let locked = false, tail = Promise.resolve(), failAt = '', failureCount = 0;
   const now = { value: financeNow }, offer = { value: { ...definition, id: randomUUID(), status: 'active', version: 1, usageLimit: 1 as number | null, createdBy: randomUUID(), createdAt: financeNow, updatedAt: financeNow, startsAt: null as Date | null, expiresAt: null as Date | null } };
@@ -27,6 +29,7 @@ export function financialHarness({ acceptTerms = true } = {}) {
   }
   function fault(operation: string) { if (failAt === operation && failureCount++ === 0) throw new Error('synthetic rollback'); }
   const tx: FinanceTransaction = {
+    readRefundPolicyAcceptance: async userId => policyAcceptances.get(userId),
     readCreatorTermsAcceptance: async userId => termsAcceptances.get(userId),
     findRequest: async (u, k) => state.orders.find(o => o.userId === u && o.requestKey === k),
     findUnresolved: async u => state.orders.find(o => o.userId === u && (o.providerSetupState !== 'closed' || o.financialState === 'captured')),
@@ -34,7 +37,7 @@ export function financialHarness({ acceptTerms = true } = {}) {
     couponUse: async (c, u) => state.redemptions.find(r => r.couponId === c && r.userId === u && r.status !== 'released'),
     occupancy: async c => state.redemptions.filter(r => r.couponId === c && r.status !== 'released').length,
     async insertOrder(v: NewOrder) {
-      fault('insertOrder'); const row: Order = { ...v, id: v.id || randomUUID(), currency: v.currency || 'INR', purchaseKind: v.purchaseKind || 'initial', createdAt: v.createdAt || now.value, creatorTermsAcceptanceId: v.creatorTermsAcceptanceId || null, creatorTermsVersion: v.creatorTermsVersion || null, creatorTermsContentHash: v.creatorTermsContentHash || null, creatorTermsAcceptedAt: v.creatorTermsAcceptedAt || null, provider: 'razorpay', providerMode: 'test', providerSetupState: 'creating', providerCreateStartedAt: null, providerRequestCount: 0, providerOrderId: null, providerOrderCreatedAt: null, providerRecoveryCheckedAt: null, providerRecoveryReason: null, providerCreateFailureHash: null, financialState: 'unpaid', activationState: 'pending_activation', winningPaymentId: null, fulfilledAt: null, paidAt: null, refundEligibleUntil: null, reviewReason: null, closedAt: null, closeReason: null, version: 1, couponId: v.couponId || null, couponCode: v.couponCode || null, couponSnapshot: v.couponSnapshot || null }; state.orders.push(row); return row;
+      fault('insertOrder'); const row: Order = { ...v, id: v.id || randomUUID(), currency: v.currency || 'INR', purchaseKind: v.purchaseKind || 'initial', createdAt: v.createdAt || now.value, creatorTermsAcceptanceId: v.creatorTermsAcceptanceId || null, creatorTermsVersion: v.creatorTermsVersion || null, creatorTermsContentHash: v.creatorTermsContentHash || null, creatorTermsAcceptedAt: v.creatorTermsAcceptedAt || null, refundPolicyAcceptanceId: v.refundPolicyAcceptanceId || null, refundPolicyVersion: v.refundPolicyVersion || null, refundPolicyContentHash: v.refundPolicyContentHash || null, refundPolicyAcceptedAt: v.refundPolicyAcceptedAt || null, provider: 'razorpay', providerMode: 'test', providerSetupState: 'creating', providerCreateStartedAt: null, providerRequestCount: 0, providerOrderId: null, providerOrderCreatedAt: null, providerRecoveryCheckedAt: null, providerRecoveryReason: null, providerCreateFailureHash: null, financialState: 'unpaid', activationState: 'pending_activation', winningPaymentId: null, fulfilledAt: null, paidAt: null, refundEligibleUntil: null, reviewReason: null, closedAt: null, closeReason: null, version: 1, couponId: v.couponId || null, couponCode: v.couponCode || null, couponSnapshot: v.couponSnapshot || null }; state.orders.push(row); return row;
     },
     getOrder: async id => state.orders.find(o => o.id === id),
     async patchOrder(id, p) { fault('patchOrder'); const o = state.orders.find(o => o.id === id)!; Object.assign(o, p, { version: o.version + 1 }); return o; },
@@ -71,8 +74,8 @@ export function financialHarness({ acceptTerms = true } = {}) {
     fetchOrderPayments: vi.fn(async id => observations.filter(p => p.orderId === id)),
   };
   const service = createWorkspacePaymentService(store, provider, () => now.value, () => terms);
-  async function input(userId: string = randomUUID(), coupon = true) { if (acceptTerms) termsAcceptances.set(userId, { id: randomUUID(), userId, termsVersion: terms.version, termsContentHash: terms.contentHash, acceptedAt: now.value, createdAt: now.value }); const identifiers = { planCode: 'quarterly' as const, planVersionId: plans[0].id, ...(coupon ? { couponCode: offer.value.code } : {}) }; const selection = await quote(userId, identifiers); return { userId, request: { ...identifiers, quoteHash: selection.quote.quoteHash, requestKey: randomUUID() } }; }
+  async function input(userId: string = randomUUID(), coupon = true) { if (acceptTerms) termsAcceptances.set(userId, { id: randomUUID(), userId, termsVersion: terms.version, termsContentHash: terms.contentHash, acceptedAt: now.value, createdAt: now.value }); if (acceptRefundPolicy) policyAcceptances.set(userId, { id: randomUUID(), userId, policyVersion: refundPolicy.version, policyContentHash: refundPolicy.contentHash, acceptedAt: now.value, createdAt: now.value }); const identifiers = { planCode: 'quarterly' as const, planVersionId: plans[0].id, ...(coupon ? { couponCode: offer.value.code } : {}) }; const selection = await quote(userId, identifiers); return { userId, request: { ...identifiers, quoteHash: selection.quote.quoteHash, requestKey: randomUUID() } }; }
   async function ready(coupon = true) { const i = await input(randomUUID(), coupon); const order = await service.acceptOrder(i.userId, i.request); await service.ensureProviderOrder(i.userId, order.id); return order; }
   function captured(order: Order, patch: Partial<ProviderPayment> = {}) { const p: ProviderPayment = { ...testContext, id: 'pay_'+randomUUID().replaceAll('-', ''), orderId: order.providerOrderId!, amountPaise: order.totalPaise, currency: 'INR', state: 'captured', providerCreatedAt: financeNow, capturedAt: now.value, captureTimeSource: 'test_authoritative', refundedPaise: 0, ...patch }; observations.push(p); return p; }
-  return { terms, termsAcceptances, state, store, provider, service, offer, catalog, settings, currentPolicy, eligibleUntil, input, ready, captured, observations, externalOrders, now, locked: () => locked, fail: (at: string) => { failAt = at; failureCount = 0; }, hash: digest };
+  return { refundPolicy, policyAcceptances, terms, termsAcceptances, state, store, provider, service, offer, catalog, settings, currentPolicy, eligibleUntil, input, ready, captured, observations, externalOrders, now, locked: () => locked, fail: (at: string) => { failAt = at; failureCount = 0; }, hash: digest };
 }

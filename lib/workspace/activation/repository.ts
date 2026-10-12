@@ -1,6 +1,6 @@
 import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { users, workspaceCreatorProfiles as profiles, workspaceMemberships as memberships, workspaceMembershipOrders as orders, workspacePaymentAttempts as payments, workspaceCouponRedemptions as redemptions } from '@/lib/db/schema';
+import { users, workspaceCreatorProfiles as profiles, workspaceMemberships as memberships, workspaceMembershipOrders as orders, workspacePaymentAttempts as payments, workspaceCouponRedemptions as redemptions, workspaceRefundCompletions as refunds } from '@/lib/db/schema';
 import type { ActivationStore } from './service';
 export const postgresActivationStore: ActivationStore = {
   async transaction(userId, orderId, work) {
@@ -13,6 +13,7 @@ export const postgresActivationStore: ActivationStore = {
         if (!order) throw new Error('activation_not_found');
         const [profile] = await tx.select().from(profiles).where(eq(profiles.userId, userId)).for('update');
         return work({
+          refunded: async () => !!(await tx.select({id:refunds.id}).from(refunds).where(eq(refunds.membershipOrderId,orderId)))[0],
           order: async () => order, profile: async () => profile || null,
           membership: async () => (await tx.select().from(memberships).where(eq(memberships.membershipOrderId, orderId)))[0] || null,
           payment: async () => order.winningPaymentId ? (await tx.select().from(payments).where(and(eq(payments.membershipOrderId, orderId), eq(payments.providerPaymentId, order.winningPaymentId), eq(payments.winner, true))))[0] || null : null,
@@ -34,9 +35,10 @@ export const postgresActivationStore: ActivationStore = {
 };
 // Private server projection; every consumer supplies a persisted, authenticated owner.
 export async function readWorkspaceAccess(userId: string, reader: Pick<typeof db, 'select'> = db) {
-  const [row] = await reader.select({ membership: memberships, profile: profiles, order: orders }).from(memberships)
+  const [row] = await reader.select({ membership: memberships, profile: profiles, order: orders, refund: refunds }).from(memberships)
     .innerJoin(profiles, and(eq(profiles.id, memberships.creatorProfileId), eq(profiles.userId, memberships.userId)))
     .innerJoin(orders, and(eq(orders.id, memberships.membershipOrderId), eq(orders.userId, memberships.userId)))
+    .leftJoin(refunds,eq(refunds.membershipOrderId,orders.id))
     .where(eq(memberships.userId, userId)).orderBy(desc(memberships.endsAt), desc(memberships.id)).limit(1);
   const [latestOrder] = await reader.select({ activationState: orders.activationState, financialState: orders.financialState }).from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt), desc(orders.id)).limit(1);
   return { row: row || null, latestOrder: latestOrder || null };

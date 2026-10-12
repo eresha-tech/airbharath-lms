@@ -595,6 +595,26 @@ export const workspaceCreatorTermsAcceptances = pgTable('workspace_creator_terms
   check('workspace_terms_acceptance_time_check', sql`${t.acceptedAt} = ${t.createdAt}`),
 ]);
 
+export const workspaceRefundPolicyVersions = pgTable('workspace_refund_policy_versions', {
+  policyVersion: text('policy_version').primaryKey(), contentHash: text('content_hash').notNull(),
+  canonicalContent: text('canonical_content').notNull(), effectiveAt: timestamp('effective_at', { withTimezone: true }).notNull(),
+  isCurrent: boolean('is_current').default(false).notNull(), createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, t => [
+  unique('workspace_policy_version_hash_unique').on(t.policyVersion, t.contentHash),
+  uniqueIndex('workspace_refund_policy_current_idx').on(t.isCurrent).where(sql`${t.isCurrent}`),
+  check('workspace_refund_policy_content_check', sql`${t.policyVersion} ~ '^workspace_refund_policy_[a-zA-Z0-9_]+$' AND ${t.contentHash} = encode(sha256(convert_to(${t.canonicalContent}, 'UTF8')), 'hex')`),
+]);
+export const workspaceRefundPolicyAcceptances = pgTable('workspace_refund_policy_acceptances', {
+  id: uuid('id').defaultRandom().primaryKey(), userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  policyVersion: text('policy_version').notNull(), policyContentHash: text('policy_content_hash').notNull(),
+  acceptedAt: timestamp('accepted_at', { withTimezone: true }).notNull(), createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+}, t => [
+  unique('workspace_refund_policy_user_version_unique').on(t.userId, t.policyVersion),
+  unique('workspace_refund_policy_acceptance_snapshot_unique').on(t.id, t.userId, t.policyVersion, t.policyContentHash, t.acceptedAt),
+  foreignKey({ columns: [t.policyVersion, t.policyContentHash], foreignColumns: [workspaceRefundPolicyVersions.policyVersion, workspaceRefundPolicyVersions.contentHash], name: 'workspace_refund_policy_acceptance_document_fk' }).onDelete('restrict'),
+  check('workspace_refund_policy_acceptance_time_check', sql`${t.acceptedAt} = ${t.createdAt}`),
+]);
+
 // Financial capture alone never grants Workspace capabilities; fulfillment has a separate ledger.
 export const workspaceMembershipOrders = pgTable('workspace_membership_orders', {
   id: uuid('id').defaultRandom().primaryKey(), userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
@@ -603,6 +623,7 @@ export const workspaceMembershipOrders = pgTable('workspace_membership_orders', 
   settingsId: uuid('settings_id').notNull().references(() => workspaceEligibilitySettings.id, { onDelete: 'restrict' }),
   policyId: uuid('policy_id').notNull().references(() => workspacePolicyVersions.id, { onDelete: 'restrict' }),
   creatorTermsAcceptanceId: uuid('creator_terms_acceptance_id'), creatorTermsVersion: text('creator_terms_version'), creatorTermsContentHash: text('creator_terms_content_hash'), creatorTermsAcceptedAt: timestamp('creator_terms_accepted_at', { withTimezone: true }),
+  refundPolicyAcceptanceId: uuid('refund_policy_acceptance_id'), refundPolicyVersion: text('refund_policy_version'), refundPolicyContentHash: text('refund_policy_content_hash'), refundPolicyAcceptedAt: timestamp('refund_policy_accepted_at', { withTimezone: true }),
   eligibilityValidUntil: timestamp('eligibility_valid_until', { withTimezone: true }).notNull(),
   purchaseKind: text('purchase_kind').default('initial').notNull(), planCode: text('plan_code').$type<PlanCode>().notNull(), planSnapshot: jsonb('plan_snapshot').$type<{ version: number; displayName: string }>().notNull(),
   basePricePaise: integer('base_price_paise').notNull(), discountPaise: integer('discount_paise').notNull(), taxableAmountPaise: integer('taxable_amount_paise').notNull(), gstRateBps: integer('gst_rate_bps').notNull(), gstAmountPaise: integer('gst_amount_paise').notNull(), totalPaise: integer('total_paise').notNull(), currency: text('currency').default('INR').notNull(), durationMonths: integer('duration_months').notNull(),
@@ -620,6 +641,8 @@ export const workspaceMembershipOrders = pgTable('workspace_membership_orders', 
   uniqueIndex('workspace_orders_user_request_idx').on(t.userId, t.requestKey),
   foreignKey({ columns: [t.creatorTermsAcceptanceId, t.userId, t.creatorTermsVersion, t.creatorTermsContentHash, t.creatorTermsAcceptedAt], foreignColumns: [workspaceCreatorTermsAcceptances.id, workspaceCreatorTermsAcceptances.userId, workspaceCreatorTermsAcceptances.termsVersion, workspaceCreatorTermsAcceptances.termsContentHash, workspaceCreatorTermsAcceptances.acceptedAt], name: 'workspace_orders_terms_snapshot_fk' }).onDelete('restrict'),
   check('workspace_orders_terms_snapshot_check', sql`(${t.creatorTermsAcceptanceId} IS NULL AND ${t.creatorTermsVersion} IS NULL AND ${t.creatorTermsContentHash} IS NULL AND ${t.creatorTermsAcceptedAt} IS NULL) OR (${t.creatorTermsAcceptanceId} IS NOT NULL AND ${t.creatorTermsVersion} IS NOT NULL AND ${t.creatorTermsContentHash} IS NOT NULL AND ${t.creatorTermsAcceptedAt} IS NOT NULL AND ${t.creatorTermsAcceptedAt} <= ${t.createdAt})`),
+  foreignKey({ columns: [t.refundPolicyAcceptanceId, t.userId, t.refundPolicyVersion, t.refundPolicyContentHash, t.refundPolicyAcceptedAt], foreignColumns: [workspaceRefundPolicyAcceptances.id, workspaceRefundPolicyAcceptances.userId, workspaceRefundPolicyAcceptances.policyVersion, workspaceRefundPolicyAcceptances.policyContentHash, workspaceRefundPolicyAcceptances.acceptedAt], name: 'workspace_orders_refund_policy_snapshot_fk' }).onDelete('restrict'),
+  check('workspace_orders_refund_policy_snapshot_check', sql`(${t.refundPolicyAcceptanceId} IS NULL AND ${t.refundPolicyVersion} IS NULL AND ${t.refundPolicyContentHash} IS NULL AND ${t.refundPolicyAcceptedAt} IS NULL) OR (${t.refundPolicyAcceptanceId} IS NOT NULL AND ${t.refundPolicyVersion} IS NOT NULL AND ${t.refundPolicyContentHash} IS NOT NULL AND ${t.refundPolicyAcceptedAt} IS NOT NULL AND ${t.refundPolicyAcceptedAt} <= ${t.createdAt})`),
   uniqueIndex('workspace_orders_unresolved_user_idx').on(t.userId).where(sql`${t.providerSetupState} <> 'closed' OR ${t.financialState} = 'captured'`),
   uniqueIndex('workspace_orders_receipt_idx').on(t.providerAccountId, t.providerMode, t.providerReceipt),
   uniqueIndex('workspace_orders_provider_order_idx').on(t.providerAccountId, t.providerMode, t.providerOrderId),
@@ -824,3 +847,32 @@ export const workspaceCourseLessons = pgTable('workspace_course_lessons', {
   check('workspace_lessons_content_check', sql`length(btrim(${t.title})) BETWEEN 2 AND 200 AND length(${t.summary}) <= 1000 AND length(${t.content}) <= 20000`),
   check('workspace_lessons_version_time_check', sql`${t.position} >= 0 AND ${t.version} > 0 AND ${t.updatedAt} >= ${t.createdAt}`),
 ]);
+
+// Decisions, execution and financial completion are separate; no historical membership mutation.
+export const workspaceRefundRequests = pgTable('workspace_refund_requests', {
+  id: uuid('id').defaultRandom().primaryKey(), userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'restrict' }), membershipOrderId: uuid('membership_order_id').notNull(),
+  requestKey: uuid('request_key').notNull(), payloadHash: text('payload_hash').notNull(), reason: text('reason').$type<import('@/lib/workspace/refunds/model').RefundReason>().notNull(), note: text('note'),
+  requestedAt: timestamp('requested_at', { withTimezone: true }).notNull(), eligibilityDeadline: timestamp('eligibility_deadline', { withTimezone: true }).notNull(), amountPaise: integer('amount_paise').notNull(), currency: text('currency').notNull(),
+  decision: text('decision').$type<import('@/lib/workspace/refunds/model').RefundDecision>().default('requested').notNull(), decidedBy: uuid('decided_by').references(() => users.id, { onDelete: 'restrict' }), decidedAt: timestamp('decided_at', { withTimezone: true }), rejectionReason: text('rejection_reason'), createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+}, t => [unique('workspace_refund_request_order_unique').on(t.membershipOrderId), unique('workspace_refund_request_key_unique').on(t.userId, t.requestKey), unique('workspace_refund_request_owner_unique').on(t.id, t.membershipOrderId, t.userId),
+  foreignKey({ columns: [t.membershipOrderId,t.userId], foreignColumns: [workspaceMembershipOrders.id,workspaceMembershipOrders.userId] }).onDelete('restrict'),
+  check('workspace_refund_request_check', sql`${t.requestedAt} = ${t.createdAt} AND ${t.requestedAt} <= ${t.eligibilityDeadline} AND ${t.amountPaise} > 0 AND ${t.currency} = 'INR' AND ${t.payloadHash} ~ '^[a-f0-9]{64}$' AND ${t.reason} IN ('mistake','unsuitable','technical','changed_mind','other') AND (${t.note} IS NULL OR length(${t.note}) <= 2000) AND ((${t.decision} = 'requested' AND ${t.decidedBy} IS NULL AND ${t.decidedAt} IS NULL AND ${t.rejectionReason} IS NULL) OR (${t.decision} IN ('approved','rejected') AND ${t.decidedBy} IS NOT NULL AND ${t.decidedAt} >= ${t.requestedAt} AND ((${t.decision} = 'approved' AND ${t.rejectionReason} IS NULL) OR (${t.decision} = 'rejected' AND length(trim(${t.rejectionReason})) BETWEEN 1 AND 2000 AND ${t.rejectionReason} IS NOT NULL))))`),
+  index('workspace_refund_queue_idx').on(t.decision,t.requestedAt),
+]);
+export const workspaceRefundAttempts = pgTable('workspace_refund_attempts', {
+  id: uuid('id').defaultRandom().primaryKey(), requestId: uuid('request_id').notNull(), membershipOrderId: uuid('membership_order_id').notNull(), userId: uuid('user_id').notNull(),
+  providerAccountId: text('provider_account_id').notNull(), providerMode: text('provider_mode').notNull(), providerPaymentId: text('provider_payment_id').notNull(), amountPaise: integer('amount_paise').notNull(), currency: text('currency').notNull(),
+  state: text('state').$type<import('@/lib/workspace/refunds/model').RefundExecution>().default('prepared').notNull(), providerRefundId: text('provider_refund_id'), startedAt: timestamp('started_at', { withTimezone: true }), lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }), evidenceHash: text('evidence_hash'), errorCode: text('error_code'), createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+},t=>[unique('workspace_refund_attempt_request_unique').on(t.requestId), unique('workspace_refund_attempt_order_unique').on(t.membershipOrderId), unique('workspace_refund_attempt_snapshot_unique').on(t.id,t.membershipOrderId,t.userId), uniqueIndex('workspace_refund_provider_id_idx').on(t.providerAccountId,t.providerMode,t.providerRefundId),
+ foreignKey({columns:[t.requestId,t.membershipOrderId,t.userId],foreignColumns:[workspaceRefundRequests.id,workspaceRefundRequests.membershipOrderId,workspaceRefundRequests.userId]}).onDelete('restrict'),
+ check('workspace_refund_attempt_check',sql`${t.amountPaise} > 0 AND ${t.currency} = 'INR' AND ${t.providerMode} = 'test' AND ${t.providerPaymentId} ~ '^pay_[A-Za-z0-9]{6,80}$' AND ${t.state} IN ('prepared','processing','completed','failed','uncertain') AND (${t.providerRefundId} IS NULL OR ${t.providerRefundId} ~ '^rfnd_[A-Za-z0-9]{6,80}$') AND (${t.evidenceHash} IS NULL OR ${t.evidenceHash} ~ '^[a-f0-9]{64}$') AND (${t.state} <> 'completed' OR (${t.providerRefundId} IS NOT NULL AND ${t.evidenceHash} IS NOT NULL))`),
+]);
+export const workspaceRefundCompletions = pgTable('workspace_refund_completions', {
+ id: uuid('id').defaultRandom().primaryKey(), membershipOrderId: uuid('membership_order_id').notNull(), userId: uuid('user_id').notNull(), providerAccountId: text('provider_account_id').notNull(), providerMode: text('provider_mode').notNull(), providerPaymentId: text('provider_payment_id').notNull(), providerRefundId: text('provider_refund_id').notNull(), amountPaise: integer('amount_paise').notNull(), currency: text('currency').notNull(), evidenceHash: text('evidence_hash').notNull(), confirmedAt: timestamp('confirmed_at', { withTimezone: true }).notNull(), evidence: jsonb('evidence').$type<{ rule: 'razorpay_full_refund_fetch_v1'; payment: import('@/lib/workspace/payments/model').ProviderPayment; refund: import('@/lib/workspace/refunds/model').ProviderRefund }>().notNull(),
+},t=>[unique('workspace_refund_completion_order_unique').on(t.membershipOrderId),unique('workspace_refund_completion_provider_unique').on(t.providerAccountId,t.providerMode,t.providerRefundId),foreignKey({columns:[t.membershipOrderId,t.userId],foreignColumns:[workspaceMembershipOrders.id,workspaceMembershipOrders.userId]}).onDelete('restrict'),check('workspace_refund_completion_check',sql`${t.amountPaise} > 0 AND ${t.currency} = 'INR' AND ${t.providerMode} = 'test' AND ${t.providerRefundId} ~ '^rfnd_[A-Za-z0-9]{6,80}$' AND ${t.providerPaymentId} ~ '^pay_[A-Za-z0-9]{6,80}$' AND ${t.evidenceHash} ~ '^[a-f0-9]{64}$'`)]);
+export const workspaceRefundNotices = pgTable('workspace_refund_notices', {
+ id: uuid('id').defaultRandom().primaryKey(), membershipOrderId: uuid('membership_order_id').notNull().references(()=>workspaceMembershipOrders.id,{onDelete:'restrict'}), kind:text('kind').$type<'received'|'rejected'|'initiated'|'completed'>().notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('workspace_refund_notice_unique').on(t.membershipOrderId,t.kind),check('workspace_refund_notice_kind_check',sql`${t.kind} IN ('received','rejected','initiated','completed')`)]);
+export const workspaceRefundObservations = pgTable('workspace_refund_observations', {
+ id:uuid('id').defaultRandom().primaryKey(),membershipOrderId:uuid('membership_order_id').notNull().references(()=>workspaceMembershipOrders.id,{onDelete:'restrict'}),evidenceHash:text('evidence_hash').notNull(),outcome:text('outcome').$type<'none'|'processing'|'partial_review'|'full'|'mismatch_review'>().notNull(),observedAt:timestamp('observed_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('workspace_refund_observation_unique').on(t.membershipOrderId,t.evidenceHash),check('workspace_refund_observation_check',sql`${t.evidenceHash} ~ '^[a-f0-9]{64}$' AND ${t.outcome} IN ('none','processing','partial_review','full','mismatch_review')`)]);

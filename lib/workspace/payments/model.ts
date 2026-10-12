@@ -15,7 +15,7 @@ export type ActivationState = 'pending_activation' | 'held_for_review' | 'fulfil
 export type ReservationState = 'reserved' | 'redeemed' | 'released';
 export type PaymentState = 'created' | 'authorized' | 'failed' | 'captured';
 export type EventState = 'pending' | 'processing' | 'retry' | 'processed' | 'needs_review' | 'ignored';
-export type PaymentCode = 'disabled' | 'validation' | 'authentication' | 'forbidden' | 'not_found' | 'conflict' | 'quote_changed' | 'capacity' | 'coupon_used' | 'recovery_required' | 'unavailable' | 'signature' | 'provider_mismatch' | 'terms_required';
+export type PaymentCode = 'disabled' | 'validation' | 'authentication' | 'forbidden' | 'not_found' | 'conflict' | 'quote_changed' | 'capacity' | 'coupon_used' | 'recovery_required' | 'unavailable' | 'signature' | 'provider_mismatch' | 'terms_required' | 'refund_policy_required';
 export class PaymentError extends Error { constructor(public code: PaymentCode) { super(code); } }
 export const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 export const receiptFor = (id: string) => `wso${id.replaceAll('-', '')}`;
@@ -35,18 +35,20 @@ export type ProviderContext = { accountId: string; mode: 'test' };
 export type ProviderOrder = ProviderContext & { id: string; receipt: string; amountPaise: number; currency: string; createdAt: Date; status: 'created' | 'attempted' | 'paid' };
 export const CAPTURE_EVENT_TIME_SOURCE = 'razorpay_payment_captured_event_v1';
 export type CaptureTimeSource = 'test_authoritative' | typeof CAPTURE_EVENT_TIME_SOURCE;
-export type ProviderPayment = ProviderContext & { id: string; orderId: string; amountPaise: number; currency: string; state: PaymentState; providerCreatedAt: Date; capturedAt: Date | null; captureTimeSource: CaptureTimeSource | null; refundedPaise: number };
-export type WebhookEvidence = { providerOrderId: string | null; providerPaymentId: string | null; receipt: string | null; eventCreatedAt: string | null };
+export type ProviderPayment = ProviderContext & { id: string; orderId: string; amountPaise: number; currency: string; state: PaymentState; providerCreatedAt: Date; capturedAt: Date | null; captureTimeSource: CaptureTimeSource | null; refundedPaise: number; refundStatus?: 'partial' | 'full' | null };
+export type WebhookEvidence = { providerOrderId: string | null; providerPaymentId: string | null; receipt: string | null; eventCreatedAt: string | null; providerRefundId?: string | null };
 // Keep only routing identifiers. Provider facts are fetched through the scoped adapter before finalization.
 export function minimizeWebhook(raw: unknown, expectedAccount: string): { type: string; evidence: WebhookEvidence } | null {
-  if (!object(raw) || raw.account_id !== expectedAccount || typeof raw.event !== 'string' || !/^[a-z][a-z._]{1,79}$/.test(raw.event)) return null;
+  if (!object(raw) || ('mode' in raw && raw.mode !== 'test') || raw.account_id !== expectedAccount || typeof raw.event !== 'string' || !/^[a-z][a-z._]{1,79}$/.test(raw.event)) return null;
   const payload = object(raw.payload) ? raw.payload : {};
   const payment = object(payload.payment) && object(payload.payment.entity) ? payload.payment.entity : {};
   const order = object(payload.order) && object(payload.order.entity) ? payload.order.entity : {};
+  const refund = object(payload.refund) && object(payload.refund.entity) ? payload.refund.entity : {};
   const orderId = payment.order_id || order.id;
   return { type: raw.event, evidence: {
     providerOrderId: typeof orderId === 'string' && PROVIDER_ORDER_ID.test(orderId) ? orderId : null,
-    providerPaymentId: typeof payment.id === 'string' && PROVIDER_PAYMENT_ID.test(payment.id) ? payment.id : null,
+    providerRefundId: typeof refund.id === 'string' && /^rfnd_[A-Za-z0-9]{6,80}$/.test(refund.id) ? refund.id : null,
+    providerPaymentId: typeof (payment.id || refund.payment_id) === 'string' && PROVIDER_PAYMENT_ID.test(String(payment.id || refund.payment_id)) ? String(payment.id || refund.payment_id) : null,
     receipt: typeof order.receipt === 'string' && /^wso[a-f0-9]{32}$/.test(order.receipt) ? order.receipt : null,
     eventCreatedAt: typeof raw.created_at === 'number' && Number.isSafeInteger(raw.created_at) && raw.created_at > 0 && raw.created_at < 10_000_000_000 ? new Date(raw.created_at * 1000).toISOString() : null,
   } };

@@ -33,6 +33,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/' ||
     pathname === '/workspace' ||
     pathname === '/workspace/creator-terms' ||
+    pathname === '/workspace/refund-policy' ||
     pathname === '/workspace/manual-application' ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/auth') ||

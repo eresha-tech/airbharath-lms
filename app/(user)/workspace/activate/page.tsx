@@ -1,3 +1,4 @@
+import { readCurrentRefundPolicyAcceptance } from '@/lib/workspace/refund-policy/repository';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getWorkspaceJourneyState, getWorkspaceUser } from '@/lib/workspace/eligibility/service';
@@ -19,8 +20,9 @@ export default async function ActivatePage() {
     const plans = await getCurrentPlans();
     const first = plans.find(plan => plan.available);
     const quote = first ? await getWorkspaceMembershipQuote(user.id, { planCode: first.code, planVersionId: first.id }) : null;
+    const initialPolicyAcceptance = await readCurrentRefundPolicyAcceptance(user.id);
     const initialTermsAcceptance = await readCurrentCreatorTermsAcceptance(user.id);
-    content = <ActivationPreview plans={plans.map(({ id, code, version, displayName, durationMonths, basePricePaise, taxRateBps, currency, isCurrent, available }) => ({ id, code, version, displayName, durationMonths, basePricePaise, taxRateBps, currency, isCurrent, available }))} initialQuote={quote} initialTermsAcceptance={initialTermsAcceptance} checkoutKeyId={testPaymentConfiguration()?.keyId} userId={user.id} />;
+    content = <ActivationPreview plans={plans.map(({ id, code, version, displayName, durationMonths, basePricePaise, taxRateBps, currency, isCurrent, available }) => ({ id, code, version, displayName, durationMonths, basePricePaise, taxRateBps, currency, isCurrent, available }))} initialQuote={quote} initialTermsAcceptance={initialTermsAcceptance} initialPolicyAcceptance={initialPolicyAcceptance} checkoutKeyId={testPaymentConfiguration()?.keyId} userId={user.id} />;
   } catch (error) {
     if (error instanceof MembershipError && error.code === 'eligibility_required') expiredDestination = error.destination;
     content = <div role="status" className="rounded-2xl border border-border bg-card p-8"><h2 className="font-outfit text-2xl">Plan preview is temporarily unavailable.</h2><p className="mt-3 text-sm text-muted-foreground">Please reload to try again. No payment or activation has occurred.</p><Link href="/workspace/activate" className="mt-5 inline-block underline underline-offset-4">Reload plan preview</Link></div>;

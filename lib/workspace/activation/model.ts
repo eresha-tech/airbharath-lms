@@ -2,7 +2,7 @@ import { CAPTURE_EVENT_TIME_SOURCE } from '../payments/model';
 import { START_RULE_VERSION, membershipStartInfo } from '../membership/model';
 import type { Order, Payment, Redemption } from '../payments/repository';
 export const WORKSPACE_LAUNCH_AT = '2026-11-08T18:30:00.000Z';
-export type MembershipState = 'early_access' | 'active' | 'expired';
+export type MembershipState = 'early_access' | 'active' | 'expired' | 'refunded';
 const IST_OFFSET = 330 * 60_000;
 // Kolkata has no DST. Work in its civil calendar, preserving wall time and milliseconds.
 export function addCalendarMonthsIST(start: Date, months: number): Date {
@@ -28,11 +28,11 @@ export function activationReviewReason(order: Order, payment: Payment | null, re
   return null;
 }
 export type AccessEvidence = {
-  profileStatus: 'enabled' | 'suspended' | 'terminated'; providerMode: string; commercialPolicyVersion: string; activationState: Order['activationState'];
+  refundedAt?: Date | null; profileStatus: 'enabled' | 'suspended' | 'terminated'; providerMode: string; commercialPolicyVersion: string; activationState: Order['activationState'];
   membership: { startsAt: Date; endsAt: Date; fulfilledAt: Date; accessGrantedAt: Date };
 };
 export function resolveMembershipAccess(evidence: AccessEvidence | null, now: Date, environment: string | undefined) {
-  const state = evidence ? membershipState(evidence.membership.startsAt, evidence.membership.endsAt, now) : null;
-  const granted = ['development', 'test'].includes(environment || '') && !!evidence && evidence.providerMode === 'test' && evidence.commercialPolicyVersion === 'workspace-test-noncommercial-v1' && evidence.profileStatus === 'enabled' && evidence.activationState === 'fulfilled' && evidence.membership.fulfilledAt <= now && evidence.membership.accessGrantedAt.getTime() === evidence.membership.fulfilledAt.getTime() && state !== 'expired';
+  const state = evidence?.refundedAt ? 'refunded' as const : evidence ? membershipState(evidence.membership.startsAt, evidence.membership.endsAt, now) : null;
+  const granted = ['development', 'test'].includes(environment || '') && !!evidence && evidence.providerMode === 'test' && evidence.commercialPolicyVersion === 'workspace-test-noncommercial-v1' && evidence.profileStatus === 'enabled' && evidence.activationState === 'fulfilled' && evidence.membership.fulfilledAt <= now && evidence.membership.accessGrantedAt.getTime() === evidence.membership.fulfilledAt.getTime() && state !== 'expired' && state !== 'refunded';
   return { state, hasCreatorAccess: granted, hasPaidEntitlement: granted };
 }

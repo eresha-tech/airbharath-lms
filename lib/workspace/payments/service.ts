@@ -1,3 +1,5 @@
+import { currentRefundPolicy, acceptanceMatches as policyMatches } from '../refund-policy/model';
+import { REFUND_EVENTS } from '../refunds/model';
 import { randomUUID } from 'node:crypto';
 import { UUID } from '../eligibility/model';
 import { MembershipError } from '../membership/service';
@@ -7,7 +9,7 @@ import { ProviderFailure, type WorkspaceProvider } from './provider';
 import type { FinanceStore, FinanceTransaction, Order, InboxEvent } from './repository';
 import { acceptanceMatches, currentCreatorTerms } from '../terms/model';
 
-export function createWorkspacePaymentService(store: FinanceStore, provider: WorkspaceProvider, clock = () => new Date(), currentTerms = currentCreatorTerms) {
+export function createWorkspacePaymentService(store: FinanceStore, provider: WorkspaceProvider, clock = () => new Date(), currentTerms = currentCreatorTerms, refundEvents?: (event: InboxEvent) => Promise<void>) {
   const scoped = (order: Order) => order.providerAccountId === provider.context.accountId && order.providerMode === provider.context.mode;
   async function ownedOrder(userId: string, id: string) {
     if (!UUID.test(userId) || !UUID.test(id)) throw new PaymentError('validation');
@@ -35,6 +37,8 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
       if (quote.quoteHash !== expectedHash) throw new PaymentError('quote_changed');
       const terms = currentTerms(), acceptance = await tx.readCreatorTermsAcceptance(userId, terms);
       if (!acceptanceMatches(acceptance, userId, terms, now)) throw new PaymentError('terms_required');
+      const policy = currentRefundPolicy(), policyAcceptance = await tx.readRefundPolicyAcceptance(userId, policy);
+      if (!policyMatches(policyAcceptance, userId, policy, now)) throw new PaymentError('refund_policy_required');
       const coupon = context.coupon;
       if (coupon) {
         if (await tx.couponUse(coupon.id, userId)) throw new PaymentError('coupon_used');
@@ -43,6 +47,7 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
       const id = randomUUID();
       const order = await tx.insertOrder({ id, userId, eligibilityAttemptId: context.attempt.id, eligibilityValidUntil: context.attempt.eligibleUntil!, planVersionId: quote.planVersionId, settingsId: context.currentSettings.id, policyId: context.policy.id,
         creatorTermsAcceptanceId: acceptance.id, creatorTermsVersion: acceptance.termsVersion, creatorTermsContentHash: acceptance.termsContentHash, creatorTermsAcceptedAt: acceptance.acceptedAt,
+        refundPolicyAcceptanceId: policyAcceptance.id, refundPolicyVersion: policyAcceptance.policyVersion, refundPolicyContentHash: policyAcceptance.policyContentHash, refundPolicyAcceptedAt: policyAcceptance.acceptedAt,
         planCode: quote.planCode, planSnapshot: { version: quote.planVersion, displayName: quote.planName }, purchaseKind: 'initial', basePricePaise: quote.basePricePaise, discountPaise: quote.discountPaise, taxableAmountPaise: quote.taxableAmountPaise, gstRateBps: quote.gstRateBps, gstAmountPaise: quote.gstAmountPaise, totalPaise: quote.totalPaise, currency: quote.currency, durationMonths: quote.durationMonths,
         quoteHash: quote.quoteHash, quoteVersion: quote.quoteVersion, pricingRuleVersion: QUOTE_VERSION, membershipStartRuleVersion: quote.membershipStart.version, launchAt: new Date(quote.membershipStart.launchAt), membershipStartRule: quote.membershipStart.rule,
         contextHash: digest({ settings: context.currentSettings.configurationHash, policy: context.policy.contentHash, attempt: context.attempt.id }),
@@ -150,7 +155,7 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
       if (payment.state !== 'captured') { await finish('processed'); return current; }
       if (payment.amountPaise !== current.totalPaise || payment.currency !== current.currency) { await tx.patchOrder(current.id, { activationState: 'held_for_review', reviewReason: 'payment_amount_currency_mismatch' }); await finish('needs_review', 'payment_amount_currency_mismatch'); return tx.getOrder(current.id); }
       if (current.winningPaymentId && current.winningPaymentId !== payment.providerPaymentId) { await tx.patchOrder(current.id, { activationState: 'held_for_review', reviewReason: 'multiple_captures' }); await finish('needs_review', 'multiple_captures'); return tx.getOrder(current.id); }
-      if (current.financialState === 'captured' && current.paidAt && payment.refundedPaise === 0) { await finish('processed'); return current; }
+      if (current.financialState === 'captured' && current.paidAt && (payment.refundedPaise === 0 || !!current.fulfilledAt)) { await finish('processed'); return current; }
       const paidAt = payment.capturedAt;
       const invalidTiming = !paidAt || paidAt > now || paidAt < current.createdAt || paidAt < payment.providerCreatedAt;
       const businessReason = invalidTiming ? 'capture_time_unverified' : paidAt! >= current.eligibilityValidUntil ? 'eligibility_expired_at_capture' : payment.refundedPaise > 0 ? 'refund_observed' : current.reviewReason === 'capture_time_unverified' ? null : current.reviewReason;
@@ -190,6 +195,7 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
     const event = await store.claimEvent(id, clock(), provider.context);
     if (!event) return;
     try {
+      if (REFUND_EVENTS.includes(event.eventType)) { if (!refundEvents) throw new PaymentError('unavailable'); await refundEvents(event); return; }
       if (!PAYMENT_EVENTS.includes(event.eventType)) { await store.finishUnmatchedEvent(event.id, clock(), 'ignored'); return; }
       let order = await store.matchOrder(provider.context, event.evidence.providerOrderId, event.evidence.receipt);
       if (!order && event.evidence.providerOrderId) {

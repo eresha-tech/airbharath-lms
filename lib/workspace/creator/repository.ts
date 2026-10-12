@@ -16,7 +16,7 @@ export const postgresCreatorStore: CreatorStore = {
     const owner = eq(drafts.userId, userId);
     return work({
       reviews: submissionTransaction(tx, userId),
-      context: async () => ({ user, profileId: profile?.id || null, evidence: access.row ? { profileStatus: access.row.profile.status, activationState: access.row.order.activationState, providerMode: access.row.order.providerMode, commercialPolicyVersion: access.row.order.commercialPolicyVersion, membership: access.row.membership } : null, financialReview: access.latestOrder?.activationState === 'held_for_review', planName: access.row?.order.planSnapshot.displayName || null }),
+      context: async () => ({ user, profileId: profile?.id || null, evidence: access.row ? { refundedAt: access.row.refund?.confirmedAt, profileStatus: access.row.profile.status, activationState: access.row.order.activationState, providerMode: access.row.order.providerMode, commercialPolicyVersion: access.row.order.commercialPolicyVersion, membership: access.row.membership } : null, financialReview: access.latestOrder?.activationState === 'held_for_review', planName: access.row?.order.planSnapshot.displayName || null }),
       draft: async id => (await tx.select().from(drafts).where(and(owner, eq(drafts.id, id))).limit(1).for('update'))[0] || null,
       request: async key => (await tx.select().from(drafts).where(and(owner, eq(drafts.requestKey, key))).limit(1))[0] || null,
       list: async page => {

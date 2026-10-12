@@ -106,6 +106,7 @@ export const adminNavGroups: AdminNavGroup[] = [
       { title: "Course Builds", href: "/admin/workspace/course-builds", icon: BookOpen },
       { title: "Private Course Drafts", href: "/admin/workspace/course-drafts", icon: BookOpen },
       { title: "Workspace Creators", href: "/admin/workspace/creators", icon: Users },
+      { title: "Workspace Refunds", href: "/admin/workspace-refunds", icon: CreditCard },
       { title: "Workspace Financial Orders", href: "/admin/workspace/orders", icon: CreditCard },
       { title: "Workspace Coupons", href: "/admin/workspace/coupons", icon: Tag },
       { title: "Workspace Settings", href: "/admin/workspace/settings", icon: Tag },

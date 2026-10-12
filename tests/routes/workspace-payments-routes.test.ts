@@ -1,10 +1,10 @@
 import { createHmac, randomUUID } from 'node:crypto';
 import { beforeEach, expect, it, vi } from 'vitest';
-const mocks=vi.hoisted(()=>({runtime:vi.fn(),user:vi.fn(),accept:vi.fn(),ensure:vi.fn(),confirm:vi.fn(),receive:vi.fn(),admin:vi.fn(),list:vi.fn(),counts:vi.fn(),readOrder:vi.fn()}));
+const mocks=vi.hoisted(()=>({runtime:vi.fn(),user:vi.fn(),accept:vi.fn(),ensure:vi.fn(),confirm:vi.fn(),receive:vi.fn(),admin:vi.fn(),list:vi.fn(),counts:vi.fn(),readOrder:vi.fn(),readRefund:vi.fn()}));
 vi.mock('@/lib/workspace/payments/runtime',()=>({workspacePaymentRuntime:mocks.runtime}));
 vi.mock('@/lib/workspace/eligibility/service',()=>({getWorkspaceUser:mocks.user}));
 vi.mock('@/lib/admin-authorization',()=>({getAuthorizedAdminSession:mocks.admin}));
-vi.mock('@/lib/workspace/payments/repository',()=>({postgresFinanceStore:{readOrder:mocks.readOrder},listFinancialOrders:mocks.list,financialCouponCounts:mocks.counts}));
+vi.mock('@/lib/workspace/payments/repository',()=>({postgresFinanceStore:{readOrder:mocks.readOrder},readWorkspaceFinancialRefund:mocks.readRefund,listFinancialOrders:mocks.list,financialCouponCounts:mocks.counts}));
 import { POST as create } from '@/app/api/workspace/membership/orders/route';
 import { GET as read } from '@/app/api/workspace/membership/orders/[id]/route';
 import { POST as confirm } from '@/app/api/workspace/payments/razorpay/confirm/route';
@@ -17,7 +17,7 @@ const origin='http://localhost:3000',config={keyId:'rzp_test_SYNTHETIC15A',accou
 const json=(path:string,body:unknown,source=origin)=>new Request(origin+path,{method:'POST',headers:{'content-type':'application/json',origin:source},body:JSON.stringify(body)});
 function hook(raw:string,signature:string|undefined=createHmac('sha256',config.webhookSecret).update(raw).digest('hex'),eventId='evt_TEST15A') { return new Request(origin+'/api/workspace/payments/razorpay/webhook',{method:'POST',headers:{...(signature?{'x-razorpay-signature':signature}:{}),'x-razorpay-event-id':eventId,origin:'https://unrelated-origin.example.invalid'},body:raw}); }
 const input={planCode:'quarterly',planVersionId:plans[0].id,quoteHash:'a'.repeat(64),requestKey};
-beforeEach(()=>{vi.stubEnv('NEXT_PUBLIC_BASE_URL',origin);mocks.runtime.mockReturnValue({config,service:{acceptOrder:mocks.accept,ensureProviderOrder:mocks.ensure,confirmPayment:mocks.confirm},store:{receiveEvent:mocks.receive}});mocks.user.mockResolvedValue({id:actorId});mocks.admin.mockResolvedValue({id:actorId});mocks.accept.mockResolvedValue(order);mocks.ensure.mockResolvedValue(order);mocks.confirm.mockResolvedValue(order);mocks.readOrder.mockResolvedValue(order);mocks.list.mockResolvedValue([]);mocks.counts.mockResolvedValue({activeReserved:1,redeemedPaidUses:2,releasedReservations:3,capturedHeldOrders:1});mocks.receive.mockResolvedValue({event:{processingState:'pending'},anomaly:false});});
+beforeEach(()=>{vi.stubEnv('NEXT_PUBLIC_BASE_URL',origin);mocks.runtime.mockReturnValue({config,service:{acceptOrder:mocks.accept,ensureProviderOrder:mocks.ensure,confirmPayment:mocks.confirm},store:{receiveEvent:mocks.receive}});mocks.user.mockResolvedValue({id:actorId});mocks.admin.mockResolvedValue({id:actorId});mocks.accept.mockResolvedValue(order);mocks.ensure.mockResolvedValue(order);mocks.confirm.mockResolvedValue(order);mocks.readOrder.mockResolvedValue(order);mocks.readRefund.mockResolvedValue(null);mocks.list.mockResolvedValue([]);mocks.counts.mockResolvedValue({activeReserved:1,redeemedPaidUses:2,releasedReservations:3,capturedHeldOrders:1});mocks.receive.mockResolvedValue({event:{processingState:'pending'},anomaly:false});});
 it('default disabled gate blocks create/confirm before auth, financial writes or provider calls',async()=>{mocks.runtime.mockImplementation(()=>{throw new PaymentError('disabled')});expect((await create(json('/orders',input))).status).toBe(503);expect((await confirm(json('/confirm',{}))).status).toBe(503);expect(mocks.user).not.toHaveBeenCalled();expect(mocks.accept).not.toHaveBeenCalled();expect(mocks.ensure).not.toHaveBeenCalled();});
 it('enabled controlled test path requires persisted auth and same origin',async()=>{mocks.user.mockResolvedValue(null);expect((await create(json('/orders',input))).status).toBe(401);expect(mocks.accept).not.toHaveBeenCalled();mocks.user.mockResolvedValue({id:actorId});expect((await create(json('/orders',input,'https://cross-site.example.invalid'))).status).toBe(403);});
 it('rejects forged economics and creates only from validated identifiers',async()=>{expect((await create(json('/orders',{...input,totalPaise:1}))).status).toBe(400);const response=await create(json('/orders',input));expect(response.status).toBe(201);expect(mocks.accept).toHaveBeenCalledWith(actorId,input);expect(mocks.ensure).toHaveBeenCalledWith(actorId,requestKey);expect(await response.json()).toMatchObject({order:{hasCreatorAccess:false,hasPaidEntitlement:false}});expect(response.headers.get('cache-control')).toBe('no-store');});
@@ -43,4 +43,10 @@ it('owned order recovery exposes Test Checkout only while the strict runtime gat
  expect(await (await read(new Request(origin+'/orders'),params)).json()).toMatchObject({checkout:{keyId:config.keyId,providerOrderId:order.providerOrderId}});
  vi.stubEnv('NODE_ENV','production');expect(await (await read(new Request(origin+'/orders'),params)).json()).not.toHaveProperty('checkout');
  vi.stubEnv('NODE_ENV','test');vi.stubEnv('WORKSPACE_PAYMENT_ENABLED','false');expect(await (await read(new Request(origin+'/orders'),params)).json()).not.toHaveProperty('checkout');
+});
+
+it('owned full-refund projection preserves captured history but exposes fully refunded truth and no Checkout',async()=>{
+ mocks.readRefund.mockResolvedValue({confirmedAt:new Date('2026-10-12T12:00:00Z'),amountPaise:589882});
+ const response=await read(new Request(origin+'/orders'),{params:Promise.resolve({id:requestKey})});const body=await response.json();
+ expect(body.order).toMatchObject({financialRefundState:'fully_refunded',refundedPaise:589882,refundConfirmedAt:'2026-10-12T12:00:00.000Z'});expect(body).not.toHaveProperty('checkout');
 });

@@ -1,3 +1,5 @@
+import type { RefundProvider } from '../refunds/service';
+import { parseProviderRefund } from '../refunds/provider';
 import { createHash } from 'node:crypto';
 import { object } from '../eligibility/model';
 import { PaymentError, PROVIDER_ORDER_ID, PROVIDER_PAYMENT_ID, type ProviderContext, type ProviderOrder, type ProviderPayment } from './model';
@@ -29,16 +31,16 @@ export function parseProviderOrder(raw: unknown, context: ProviderContext): Prov
   return { accountId: context.accountId, mode: context.mode, id: raw.id, receipt: raw.receipt, amountPaise: Number(raw.amount), currency: raw.currency, createdAt: unixDate(raw.created_at)!, status: raw.status as ProviderOrder['status'] };
 }
 export function parseProviderPayment(raw: unknown, context: ProviderContext): ProviderPayment {
-  if (!object(raw) || typeof raw.id !== 'string' || !PROVIDER_PAYMENT_ID.test(raw.id) || typeof raw.order_id !== 'string' || !PROVIDER_ORDER_ID.test(raw.order_id) || !Number.isSafeInteger(raw.amount) || Number(raw.amount) < 1 || typeof raw.currency !== 'string' || !/^[A-Z]{3}$/.test(raw.currency) || !['created', 'authorized', 'failed', 'captured'].includes(String(raw.status)) || !unixDate(raw.created_at) || !Number.isSafeInteger(raw.amount_refunded) || Number(raw.amount_refunded) < 0 || Number(raw.amount_refunded) > Number(raw.amount) || (raw.status === 'captured' && raw.captured !== true)) throw new ProviderFailure('ambiguous');
+  if (!object(raw) || typeof raw.id !== 'string' || !PROVIDER_PAYMENT_ID.test(raw.id) || typeof raw.order_id !== 'string' || !PROVIDER_ORDER_ID.test(raw.order_id) || !Number.isSafeInteger(raw.amount) || Number(raw.amount) < 1 || typeof raw.currency !== 'string' || !/^[A-Z]{3}$/.test(raw.currency) || !['created', 'authorized', 'failed', 'captured', 'refunded'].includes(String(raw.status)) || !unixDate(raw.created_at) || !Number.isSafeInteger(raw.amount_refunded) || Number(raw.amount_refunded) < 0 || Number(raw.amount_refunded) > Number(raw.amount) || (raw.status === 'captured' && raw.captured !== true) || (raw.status === 'refunded' && (raw.amount_refunded !== raw.amount || raw.refund_status !== 'full')) || ![null, 'partial', 'full'].includes(raw.refund_status === undefined ? null : raw.refund_status as string | null)) throw new ProviderFailure('ambiguous');
   // The documented entity does not provide an exact capture timestamp. Never promote
   // created_at, callback time or a non-contract captured_at field into paidAt.
-  return { accountId: context.accountId, mode: context.mode, id: raw.id, orderId: raw.order_id, amountPaise: Number(raw.amount), currency: raw.currency, state: raw.status as ProviderPayment['state'], providerCreatedAt: unixDate(raw.created_at)!, capturedAt: null, captureTimeSource: null, refundedPaise: Number(raw.amount_refunded) };
+  return { accountId: context.accountId, mode: context.mode, id: raw.id, orderId: raw.order_id, amountPaise: Number(raw.amount), currency: raw.currency, state: raw.status === 'refunded' ? 'captured' : raw.status as ProviderPayment['state'], providerCreatedAt: unixDate(raw.created_at)!, capturedAt: null, captureTimeSource: null, refundedPaise: Number(raw.amount_refunded), refundStatus: (raw.refund_status || null) as ProviderPayment['refundStatus'] };
 }
-export function createRazorpayTestAdapter(config: TestProviderConfiguration, http: typeof fetch = fetch): WorkspaceProvider {
+export function createRazorpayTestAdapter(config: TestProviderConfiguration, http: typeof fetch = fetch): WorkspaceProvider & RefundProvider {
   if (config.mode !== 'test' || !config.keyId.startsWith('rzp_test_')) throw new PaymentError('disabled');
-  async function request(path: string, body?: unknown) {
+  async function request(path: string, body?: unknown, idempotencyKey?: string) {
     try {
-      const response = await http(`https://api.razorpay.com/v1/${path}`, { method: body ? 'POST' : 'GET', headers: { Authorization: `Basic ${Buffer.from(`${config.keyId}:${config.keySecret}`).toString('base64')}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(10_000), redirect: 'error' });
+      const response = await http(`https://api.razorpay.com/v1/${path}`, { method: body ? 'POST' : 'GET', headers: { ...(idempotencyKey ? { 'X-Refund-Idempotency': idempotencyKey } : {}), Authorization: `Basic ${Buffer.from(`${config.keyId}:${config.keySecret}`).toString('base64')}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(10_000), redirect: 'error' });
       // Bound even authenticated provider responses; never log provider bodies/credentials.
       const reader = response.body?.getReader(); if (!reader) throw new ProviderFailure('ambiguous');
       const chunks: Uint8Array[] = []; let size = 0;
@@ -53,6 +55,18 @@ export function createRazorpayTestAdapter(config: TestProviderConfiguration, htt
     } catch (error) { if (error instanceof ProviderFailure) throw error; throw new ProviderFailure('ambiguous'); }
   }
   return { context: { accountId: config.accountId, mode: config.mode },
+    async createRefund(input) {
+      if (!PROVIDER_PAYMENT_ID.test(input.paymentId) || !Number.isSafeInteger(input.amountPaise) || input.amountPaise < 1 || !/^[a-f0-9-]{36}$/.test(input.attemptId) || !/^[a-f0-9-]{36}$/.test(input.requestId)) throw new PaymentError('validation');
+      return parseProviderRefund(await request(`payments/${input.paymentId}/refund`, { amount: input.amountPaise, speed: 'normal', notes: { workspace_refund_request: input.requestId, workspace_refund_attempt: input.attemptId } }, input.attemptId), config);
+    },
+    async fetchRefunds(paymentId) {
+      if (!PROVIDER_PAYMENT_ID.test(paymentId)) throw new PaymentError('validation');
+      const raw = await request(`payments/${paymentId}/refunds?count=100&skip=0`);
+      // Fail closed on a saturated page; do not infer absence from truncated provider history.
+      if (!object(raw) || !Array.isArray(raw.items) || raw.items.length >= 100) throw new ProviderFailure('ambiguous');
+      const refunds = raw.items.map(item => parseProviderRefund(item,config));
+      if(refunds.some(r=>r.paymentId!==paymentId))throw new ProviderFailure('ambiguous');return refunds;
+    },
     async createOrder(input) { return parseProviderOrder(await request('orders', { amount: input.amountPaise, currency: input.currency, receipt: input.receipt, partial_payment: false, notes: {} }), config); },
     async findOrders(receipt) {
       const raw = await request(`orders?${new URLSearchParams({ receipt, count: '100', skip: '0' })}`);
