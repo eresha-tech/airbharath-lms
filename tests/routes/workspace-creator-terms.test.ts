@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('next/link', () => ({ default: ({ children, ...props }: React.PropsWithChildren<{ href: string }>) => React.createElement('a', props, children) }));
 vi.mock('next/navigation', () => ({ notFound: () => { throw new Error('NOT_FOUND'); } }));
 import { CURRENT_CREATOR_TERMS, CREATOR_TERMS_CANONICAL_CONTENT, CREATOR_TERMS_DOCUMENT, creatorTermsHref } from '@/lib/workspace/terms/document';
+import { CREATOR_TERMS_DOCUMENT as V1_DOCUMENT, CREATOR_TERMS_CANONICAL_CONTENT as V1_CANONICAL, CURRENT_CREATOR_TERMS as V1_IDENTITY } from '@/lib/workspace/terms/v1';
 import { currentCreatorTerms, parseCreatorTermsAcknowledgement, type CreatorTermsAcceptance } from '@/lib/workspace/terms/model';
 import { createCreatorTermsService, type CreatorTermsStore } from '@/lib/workspace/terms/service';
 import { CreatorTermsAcceptance as Agreement } from '@/components/workspace/CreatorTermsAcceptance';
@@ -13,9 +14,9 @@ import TermsPage from '@/app/(user)/workspace/creator-terms/page';
 import { financialHarness, financeNow } from './workspace-payments-fixtures';
 
 const etag = () => `"${CURRENT_CREATOR_TERMS.contentHash}"`;
-function termsHarness() {
+function termsHarness(initial = currentCreatorTerms()) {
   const rows: CreatorTermsAcceptance[] = []; let tail = Promise.resolve();
-  const terms = { ...currentCreatorTerms() };
+  const terms = { ...initial };
   const store: CreatorTermsStore = { async accept(userId, current, now) {
     const before = tail; let release!: () => void; tail = new Promise(resolve => { release = resolve; }); await before;
     try {
@@ -27,22 +28,42 @@ function termsHarness() {
   return { rows, terms, service: createCreatorTermsService(store, () => financeNow, () => terms) };
 }
 describe('versioned Creator Terms content and controls', () => {
-  it('pins exact V1 metadata and hash across canonical text and generated migration', () => {
-    expect(CREATOR_TERMS_DOCUMENT.version).toBe('workspace_creator_terms_2026_01');
-    expect(CURRENT_CREATOR_TERMS.contentHash).toBe('7263f236cc1b27df8f95ef69a2dcc706981ec2060d58758f788bfe40f6808bac');
+  it('preserves V1 and 0018 byte-for-byte while pinning exact V2/current metadata and migration content', () => {
+    expect(V1_DOCUMENT.version).toBe('workspace_creator_terms_2026_01');
+    expect(V1_IDENTITY.contentHash).toBe('7263f236cc1b27df8f95ef69a2dcc706981ec2060d58758f788bfe40f6808bac');
+    expect(V1_IDENTITY.effectiveAt).toBe('2026-10-12T00:00:00.000Z');
+    expect(createHash('sha256').update(V1_CANONICAL).digest('hex')).toBe(V1_IDENTITY.contentHash);
+    expect(createHash('sha256').update(readFileSync('lib/workspace/terms/v1.ts')).digest('hex')).toBe('d9aa70389bcdcba3969e8c4cf1eedcb4faad98f249ead70872d5bb65d2685c16');
+    const oldSql = readFileSync('drizzle/0018_ambiguous_khan.sql', 'utf8');
+    expect(createHash('sha256').update(oldSql).digest('hex')).toBe('f96d3fba6b4234717d40f7325e4d1dea0e4c530175278dd7bfe27979c491ec53');
+    expect(oldSql).toContain(`$workspace_terms$${V1_CANONICAL}$workspace_terms$`);
+    expect(CREATOR_TERMS_DOCUMENT.version).toBe('workspace_creator_terms_2026_02');
+    expect(CURRENT_CREATOR_TERMS.contentHash).toBe('8e0c57baad0ebffb9223635c35f4ec9d490dbe9a3c3d1ee9100c70baa042fca8');
     expect(createHash('sha256').update(CREATOR_TERMS_CANONICAL_CONTENT).digest('hex')).toBe(CURRENT_CREATOR_TERMS.contentHash);
-    expect(currentCreatorTerms().effectiveAt).toBe(CREATOR_TERMS_DOCUMENT.effectiveAt);
-    const sql = readFileSync('drizzle/0018_ambiguous_khan.sql', 'utf8');
+    expect(currentCreatorTerms().effectiveAt).toBe('2026-10-12T06:51:32.000Z');
+    const sql = readFileSync('drizzle/0019_workspace_creator_terms_v2.sql', 'utf8');
     expect(sql).toContain(`$workspace_terms$${CREATOR_TERMS_CANONICAL_CONTENT}$workspace_terms$`);
-    expect(sql).toContain(CURRENT_CREATOR_TERMS.contentHash);
+    expect(sql).toContain(CURRENT_CREATOR_TERMS.contentHash); expect(sql).toContain(CURRENT_CREATOR_TERMS.effectiveAt);
     expect(createHash('sha256').update(CREATOR_TERMS_CANONICAL_CONTENT.replace('manual renewal', 'automatic renewal')).digest('hex')).not.toBe(CURRENT_CREATOR_TERMS.contentHash);
+    const journal = JSON.parse(readFileSync('drizzle/meta/_journal.json', 'utf8'));
+    expect(journal.entries[18].tag).toBe('0018_ambiguous_khan'); expect(journal.entries[19].tag).toBe('0019_workspace_creator_terms_v2');
+    expect(sql).not.toMatch(/DELETE|DROP|TRUNCATE|DISABLE TRIGGER|UPDATE workspace_(?:creator_terms_acceptances|membership_orders)/i);
+    const updates = sql.match(/UPDATE[^;]+;/g)!;
+    expect(updates).toHaveLength(2); for (const update of updates) expect(update).toMatch(/^UPDATE workspace_creator_terms_versions SET is_current = (?:false|true) WHERE terms_version = 'workspace_creator_terms_2026_0[12]';$/);
   });
-  it('renders the exact public version and refuses unknown version links', async () => {
-    const html = renderToStaticMarkup(await TermsPage({ searchParams: Promise.resolve({ version: CURRENT_CREATOR_TERMS.version }) }));
-    expect(html).toContain(CURRENT_CREATOR_TERMS.version); expect(html).toContain(CURRENT_CREATOR_TERMS.contentHash);
-    expect(html).toContain('Draft awaiting owner/legal approval'); expect(html).toContain('Eresha Technology Innovators Pvt. Ltd.');
-    expect(html).toContain('AirBharath Course Review Approved'); expect(html).toContain('IMPLEMENTATION PLACEHOLDER');
-    await expect(TermsPage({ searchParams: Promise.resolve({ version: 'unregistered-version' }) })).rejects.toThrow('NOT_FOUND');
+  it('renders finalized V2 by default and exact link, without draft placeholders or invented business mechanics', async () => {
+    const render = async (version?: string) => renderToStaticMarkup(await TermsPage({ searchParams: Promise.resolve({ version }) }));
+    const html = await render(); expect(html).toBe(await render(CURRENT_CREATOR_TERMS.version));
+    for (const text of [CURRENT_CREATOR_TERMS.version, CURRENT_CREATOR_TERMS.contentHash, 'Effective:', '12 October 2026', 'Eresha Technology Innovators Pvt. Ltd.', 'operating the AirBharath brand', 'West Patel Nagar, New Delhi 110008, India', 'academy@airbharath.in', 'courts of competent jurisdiction in New Delhi, India', 'Creators retain ownership of original content', 'AirBharath Course Review Approved']) expect(html).toContain(text);
+    for (const text of ['IMPLEMENTATION PLACEHOLDER', 'Proposed effective date', 'Historical draft', 'awaiting owner/legal approval', 'CIN', 'GSTIN', 'compulsory arbitration', 'exclusive jurisdiction']) expect(html).not.toContain(text);
+    for (const text of ['privately display', 'technically deliver', 'airline internal manuals', 'defence information', 'Changes Requested and Resubmission', 'future functionality', 'manual renewal', 'not recurring billing or autopay', '9 November 2026, 00:00 Asia/Kolkata', 'separate Refund Policy', 'not automatic refund forfeiture']) expect(html).toContain(text);
+    expect(html).toContain('text-sm leading-7'); expect(html).toContain('px-5'); expect(html).toContain('break-all');
+  });
+  it('retains V1 historical exact rendering and rejects unknown/prototype versions', async () => {
+    const html = renderToStaticMarkup(await TermsPage({ searchParams: Promise.resolve({ version: V1_IDENTITY.version }) }));
+    expect(html).toContain('Historical draft'); expect(html).toContain('IMPLEMENTATION PLACEHOLDER');
+    expect(html).toContain(V1_IDENTITY.contentHash); expect(html).not.toContain(CURRENT_CREATOR_TERMS.contentHash);
+    for (const version of ['unregistered-version', '__proto__', 'constructor', '']) await expect(TermsPage({ searchParams: Promise.resolve({ version }) })).rejects.toThrow('NOT_FOUND');
   });
   it('requires an unchecked explicit agreement and links its exact version without a refund checkbox', () => {
     const html = renderToStaticMarkup(React.createElement(Agreement, { onAccepted: vi.fn() }));
@@ -69,13 +90,14 @@ describe('durable acceptance service contract', () => {
     expect(new Set(results.map(row => row.id)).size).toBe(1); expect(h.rows).toHaveLength(1);
     expect(results[0]).toMatchObject({ userId: user, termsVersion: CURRENT_CREATOR_TERMS.version, termsContentHash: CURRENT_CREATOR_TERMS.contentHash, acceptedAt: financeNow });
   });
-  it('old tabs cannot accept new text silently, and V2 acceptance retains V1 evidence', async () => {
-    const h = termsHarness(), user = randomUUID();
-    const v1 = await h.service.accept(user, { acknowledged: true }, etag());
-    h.terms.version = 'workspace_creator_terms_2026_02'; h.terms.contentHash = 'b'.repeat(64);
-    await expect(h.service.accept(user, { acknowledged: true }, etag())).rejects.toMatchObject({ code: 'terms_changed' });
-    await h.service.accept(user, { acknowledged: true }, `"${h.terms.contentHash}"`);
-    expect(h.rows).toHaveLength(2); expect(h.rows[0]).toEqual(v1);
+  it('old V1 tabs cannot accept V2 silently, and V2 acceptance retains historical V1 evidence', async () => {
+    const h = termsHarness(V1_IDENTITY), user = randomUUID();
+    const oldEtag = `"${V1_IDENTITY.contentHash}"`;
+    const v1 = await h.service.accept(user, { acknowledged: true }, oldEtag);
+    Object.assign(h.terms, CURRENT_CREATOR_TERMS);
+    await expect(h.service.accept(user, { acknowledged: true }, oldEtag)).rejects.toMatchObject({ code: 'terms_changed' });
+    const v2 = await h.service.accept(user, { acknowledged: true }, etag());
+    expect(h.rows).toHaveLength(2); expect(h.rows[0]).toEqual(v1); expect(v2.termsVersion).toBe('workspace_creator_terms_2026_02');
   });
   it('does not report success for storage failure, forged owner or future acceptance', async () => {
     const bad = createCreatorTermsService({ accept: async () => { throw new Error('synthetic storage failure'); } }, () => financeNow);
@@ -88,6 +110,17 @@ describe('durable acceptance service contract', () => {
   });
 });
 describe('prospective commercial order gate', () => {
+  it.each([false, true])('historical V1 cannot satisfy a new V2 order; V2 evidence can (coupon=%s)', async coupon => {
+    const h = financialHarness(), i = await h.input(undefined, coupon), v2 = h.termsAcceptances.get(i.userId)!;
+    const historical = { ...v2, id: randomUUID(), termsVersion: V1_IDENTITY.version, termsContentHash: V1_IDENTITY.contentHash };
+    h.termsAcceptances.set(i.userId, historical);
+    await expect(h.service.acceptOrder(i.userId, i.request)).rejects.toMatchObject({ code: 'terms_required' });
+    expect(h.state.orders).toHaveLength(0); expect(h.state.redemptions).toHaveLength(0);
+    h.termsAcceptances.set(i.userId, v2);
+    const order = await h.service.acceptOrder(i.userId, i.request);
+    expect(order).toMatchObject({ creatorTermsVersion: CURRENT_CREATOR_TERMS.version, creatorTermsContentHash: CURRENT_CREATOR_TERMS.contentHash });
+    expect(historical.termsVersion).toBe('workspace_creator_terms_2026_01');
+  });
   it.each([false, true])('missing or stale acceptance cannot create an order or reserve a coupon (coupon=%s)', async coupon => {
     const h = financialHarness({ acceptTerms: false }), i = await h.input(undefined, coupon);
     await expect(h.service.acceptOrder(i.userId, i.request)).rejects.toMatchObject({ code: 'terms_required' });
@@ -101,10 +134,10 @@ describe('prospective commercial order gate', () => {
     expect(order).toMatchObject({ creatorTermsAcceptanceId: row.id, creatorTermsVersion: row.termsVersion, creatorTermsContentHash: row.termsContentHash, creatorTermsAcceptedAt: row.acceptedAt });
     await h.service.ensureProviderOrder(i.userId, order.id); expect(h.provider.createOrder).toHaveBeenCalledTimes(1);
   });
-  it('V1 cannot satisfy simulated V2 new order; already-created/historical orders recover unchanged', async () => {
+  it('current V2 orders recover unchanged across future versions, including historical null snapshots', async () => {
     const h = financialHarness(), i = await h.input(undefined, false), order = await h.service.acceptOrder(i.userId, i.request);
     const snapshot = structuredClone(order);
-    h.terms.version = 'workspace_creator_terms_2026_02'; h.terms.contentHash = 'd'.repeat(64);
+    h.terms.version = 'workspace_creator_terms_2026_03'; h.terms.contentHash = 'd'.repeat(64);
     expect(await h.service.acceptOrder(i.userId, i.request)).toEqual(snapshot);
     const other = await h.input(undefined, false); h.termsAcceptances.set(other.userId, { ...h.termsAcceptances.get(i.userId)!, userId: other.userId });
     await expect(h.service.acceptOrder(other.userId, other.request)).rejects.toMatchObject({ code: 'terms_required' });
@@ -129,7 +162,7 @@ describe('prospective commercial order gate', () => {
     const h = financialHarness(), i = await h.input(undefined, false), transaction = h.store.transaction.bind(h.store);
     h.store.transaction = (locks, work) => transaction(locks, tx => work({ ...tx, readCreatorTermsAcceptance: async userId => {
       const old = await tx.readCreatorTermsAcceptance(userId, h.terms);
-      h.terms.version = 'workspace_creator_terms_2026_02'; h.terms.contentHash = 'e'.repeat(64);
+      h.terms.version = 'workspace_creator_terms_2026_03'; h.terms.contentHash = 'e'.repeat(64);
       return old;
     } }));
     await expect(h.service.acceptOrder(i.userId, i.request)).rejects.toMatchObject({ code: 'terms_required' });
