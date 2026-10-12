@@ -4,6 +4,14 @@
  * Endpoint: https://email-api.mailercloud.com/email
  */
 
+export const MAILERCLOUD_EMAIL_ENDPOINT = "https://email-api.mailercloud.com/email";
+// Shared wire format only; durable callers own authorization, response evidence and retry policy.
+export function mailercloudEmailPayload(input: { from: string; fromName: string; to: string; name: string; subject: string; html: string; text?: string; messageId?: string }) {
+  return { version: "1.0", email: { from: input.from, fromName: input.fromName, subject: input.subject, html: input.html,
+    ...(input.text ? { text: input.text } : {}), recipients: { to: [{ email: input.to, name: input.name }] } },
+    ...(input.messageId ? { metadata: { campaignType: "TRANSACTIONAL", messageId: input.messageId, custom: { store_content: false } } } : {}) };
+}
+
 export async function sendMailercloudEmail({
   to,
   name,
@@ -25,20 +33,13 @@ export async function sendMailercloudEmail({
   }
 
   try {
-    const payload = {
-      version: "1.0",
-      email: {
-        from: process.env.MAILERCLOUD_SENDER_EMAIL || "academy@airbharath.in",
-        fromName: process.env.MAILERCLOUD_SENDER_NAME || "Airbharath LMS",
-        subject: subject,
-        html: html,
-        recipients: {
-          to: [{ email: to, name: name || "Airbharath Student" }],
-        },
-      },
-    };
+    const payload = mailercloudEmailPayload({
+      from: process.env.MAILERCLOUD_SENDER_EMAIL || "academy@airbharath.in",
+      fromName: process.env.MAILERCLOUD_SENDER_NAME || "Airbharath LMS",
+      subject, html, to, name: name || "Airbharath Student",
+    });
 
-    const response = await fetch("https://email-api.mailercloud.com/email", {
+    const response = await fetch(MAILERCLOUD_EMAIL_ENDPOINT, {
       method: "POST",
       headers: {
         Authorization: apiKey,

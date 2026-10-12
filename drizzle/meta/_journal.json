@@ -155,6 +155,13 @@
       "when": 1791816179271,
       "tag": "0021_workspace_live_financial_modes",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791830175876,
+      "tag": "0022_lethal_barracuda",
+      "breakpoints": true
     }
   ]
 }
