@@ -48,7 +48,7 @@ it('describes release targets without announcing open payments or current upload
     expect(source).toContain('targeted for 9 November 2026');
     expect(source).toContain('publication and course sales');
   }
-  const member = readFileSync('app/(user)/workspace/member/page.tsx', 'utf8');
+  const member = readFileSync('app/(workspace)/workspace/(membership)/member/page.tsx', 'utf8');
   expect(member).toContain("['Original payment amount', formatPaise(row.order.totalPaise)]");
   expect(member).not.toContain('getCurrentPlans');
 });

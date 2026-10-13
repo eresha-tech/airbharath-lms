@@ -4,7 +4,7 @@ vi.mock('next/navigation', () => ({ redirect: (path: string) => { throw new Erro
 vi.mock('@/lib/workspace/eligibility/service', () => ({ getWorkspaceUser: mocks.user }));
 vi.mock('@/lib/admin-authorization', () => ({ getAuthorizedAdminSession: mocks.admin }));
 vi.mock('@/lib/workspace/activation/repository', () => ({ readWorkspaceAccess: mocks.access, listWorkspaceCreators: mocks.creators }));
-import MemberPage from '@/app/(user)/workspace/member/page';
+import MemberPage from '@/app/(workspace)/workspace/(membership)/member/page';
 import CreatorPage from '@/app/(admin)/admin/workspace/creators/page';
 beforeEach(() => { mocks.user.mockResolvedValue({ id: 'owned-persisted-account', role: 'student' }); mocks.admin.mockResolvedValue(null); mocks.access.mockResolvedValue({ row: null, latestOrder: null }); mocks.creators.mockResolvedValue([]); });
 it('anonymous member cannot inspect any membership', async () => { mocks.user.mockResolvedValue(null); await expect(MemberPage()).rejects.toThrow('REDIRECT:/login'); expect(mocks.access).not.toHaveBeenCalled(); });

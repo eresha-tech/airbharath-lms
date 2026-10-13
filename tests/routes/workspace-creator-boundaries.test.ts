@@ -37,6 +37,6 @@ it('only private content tables are mutable; public course and payment surfaces 
   const repository = read('lib/workspace/creator/repository.ts'), service = read('lib/workspace/creator/service.ts');
   expect(repository + service).not.toMatch(/fetch\(|Razorpay|posthog|capture\(|insert\(courses\)|update\(users\)|enrollments|courseAuthors|workspacePaidEntitlements/i);
   expect(read('components/workspace/ActivationPreview.tsx')).toContain('Payments not yet enabled');
-  expect(read('app/(user)/workspace/(creator)/layout.tsx')).toContain('ph-no-capture');
+  expect(read('app/(workspace)/workspace/(creator)/layout.tsx')).toContain('CreatorShell'); expect(read('components/workspace/creator/Shell.tsx')).toContain('ph-no-capture');
   for (const file of ['page.tsx', '[id]/page.tsx']) { const page = read(`app/(admin)/admin/workspace/course-drafts/${file}`); expect(page).toContain('getAuthorizedAdminSession'); expect(page).toContain('ph-no-capture'); expect(page).not.toMatch(/<form|Approve|Reject|Publish/); }
 });

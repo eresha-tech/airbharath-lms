@@ -1,0 +1,2 @@
+'use client';
+export default function WorkspaceError({reset}:{reset:()=>void}){return <section className="ph-no-capture mx-auto max-w-3xl space-y-5 p-6"><h1 className="font-outfit text-2xl font-semibold">Workspace unavailable</h1><p role="alert" className="text-sm leading-6 text-muted-foreground">We could not load your Workspace. Your saved work is retained. Please try again.</p><button onClick={reset} className="min-h-11 rounded-lg bg-primary px-5 py-3 text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring">Try again</button></section>;}

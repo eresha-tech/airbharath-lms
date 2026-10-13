@@ -13,7 +13,7 @@ function useCommand() {
     if (retry.current?.context !== context) retry.current = { context, key: crypto.randomUUID() };
     inflight.current = true; setBusy(true); setMessage('Saving review action…');
     try {
-      const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...command, requestKey: retry.current.key }) });
+      const response = await fetch(url, { signal: AbortSignal.timeout(15000), method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...command, requestKey: retry.current.key }) });
       const result = await response.json();
       if (!response.ok) { setMessage(typeof result.error === 'string' ? result.error : 'We could not confirm this action. Please retry.'); setConflict(response.status === 409); return; }
       setMessage('Saved. Refreshing the current review…'); router.refresh();

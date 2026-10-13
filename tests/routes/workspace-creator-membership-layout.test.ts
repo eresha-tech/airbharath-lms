@@ -1,0 +1,16 @@
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { beforeEach,expect,it,vi } from 'vitest';
+const mocks=vi.hoisted(()=>({user:vi.fn(),overview:vi.fn()}));
+vi.mock('@/lib/workspace/eligibility/service',()=>({getWorkspaceUser:mocks.user}));
+vi.mock('@/lib/workspace/creator/repository',()=>({workspaceContent:()=>({overview:mocks.overview})}));
+vi.mock('@/components/Header',()=>({default:()=>React.createElement('header',null,'Public navigation')}));
+vi.mock('@/components/Footer',()=>({Footer:()=>React.createElement('footer',null,'Public footer')}));
+vi.mock('next/navigation',()=>({usePathname:()=>'/workspace/member',redirect:(path:string)=>{throw Error('REDIRECT:'+path)}}));
+import Layout,{metadata} from '@/app/(workspace)/workspace/(membership)/layout';
+import { CreatorError } from '@/lib/workspace/creator/model';
+beforeEach(()=>{mocks.user.mockResolvedValue({id:'synthetic-owner',fullName:'Synthetic Creator',role:'student'});mocks.overview.mockResolvedValue({details:null,capabilities:{canEditWorkspace:true,state:null}})});
+it('creator membership uses server capability and no financial-source assumption, with one main',async()=>{const html=renderToStaticMarkup(await Layout({children:'Synthetic membership'}));expect(html).toContain('Workspace sidebar');expect(html).toContain('Creator access active');expect(html).toContain('aria-current="page"');expect(html.match(/<main\b/g)).toHaveLength(1);expect(html).not.toContain('Public navigation');expect(html).not.toContain('<footer');expect(metadata.robots).toEqual({index:false,follow:false})});
+it('unpaid member retains public/member shell without creator navigation',async()=>{mocks.overview.mockRejectedValue(new CreatorError('restricted'));const html=renderToStaticMarkup(await Layout({children:'Synthetic member'}));expect(html).toContain('Public navigation');expect(html).toContain('Public footer');expect(html).not.toContain('Workspace sidebar');expect(html.match(/<main\b/g)).toHaveLength(1)});
+it('database failure fails closed and never falls back to editable creator UI',async()=>{mocks.overview.mockRejectedValue(Error('SQL private password'));await expect(Layout({children:'Private content'})).rejects.toThrow('Workspace access could not be loaded. Please try again.')});
+it('anonymous membership redirects without querying creator evidence',async()=>{mocks.overview.mockClear();mocks.user.mockResolvedValue(null);await expect(Layout({children:'Private content'})).rejects.toThrow('REDIRECT:/login');expect(mocks.overview).not.toHaveBeenCalled()});

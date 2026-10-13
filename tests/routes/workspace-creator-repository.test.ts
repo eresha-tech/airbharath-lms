@@ -43,3 +43,9 @@ it('admin inspection ignores stale token role and denies persisted demotion befo
   role = 'student'; await expect(inspectDrafts(owner, draftId)).rejects.toMatchObject({ code: 'restricted' }); expect(queries.some(query => query.table === drafts)).toBe(false);
   queries = []; role = 'admin'; await expect(inspectDrafts(owner, draftId)).resolves.toEqual([]); expect(queries[0].lock).toBe('share'); expect(dialect.sqlToQuery(queries[1].where!).params).toEqual([draftId]); expect(queries.some(query => query.kind !== 'select')).toBe(false);
 });
+it('aggregate summary includes all owner proposals and latest review state, with owner-scoped private builds',async()=>{
+ const execute=vi.fn().mockResolvedValue([{total:25,drafts:20,underReview:2,changesRequested:1,approved:2,building:1}]);Object.assign(tx as object,{execute});
+ const result=await postgresCreatorStore.transaction(owner,async client=>client.summary!());expect(result.total).toBe(25);
+ const query=dialect.sqlToQuery(execute.mock.calls[0][0]);expect(query.params).toEqual([owner,owner,owner]);expect(query.sql).toContain('distinct on (draft_id)');expect(query.sql).toContain('submission_number desc');expect(query.sql).toContain('where d.user_id=');expect(query.sql).not.toContain('limit 20');
+ execute.mockResolvedValue([{total:26,drafts:20,underReview:2,changesRequested:1,approved:2,building:1}]);await expect(postgresCreatorStore.transaction(owner,client=>client.summary!())).rejects.toThrow('Course summary unavailable');
+});

@@ -10,8 +10,8 @@ vi.mock('@/lib/workspace/creator/http',()=>({pageNumber:(value?:string)=>Number(
 vi.mock('next/navigation',()=>({redirect:(path:string)=>{throw new Error('REDIRECT:'+path);},notFound:()=>{throw new Error('NOT_FOUND');},useRouter:()=>({refresh:vi.fn(),push:vi.fn()})}));
 import Queue from '@/app/(admin)/admin/workspace/course-reviews/page';
 import Detail from '@/app/(admin)/admin/workspace/course-reviews/[id]/page';
-import Owned from '@/app/(user)/workspace/(creator)/courses/[id]/page';
-import Courses from '@/app/(user)/workspace/(creator)/courses/page';
+import Owned from '@/app/(workspace)/workspace/(creator)/courses/[id]/page';
+import Courses from '@/app/(workspace)/workspace/(creator)/courses/page';
 import { ReviewError, type ReviewStatus } from '@/lib/workspace/review/model';
 import { creatorCapabilities } from '@/lib/workspace/creator/model';
 import { content, evidence, owner, other, draftId, key, now, profileId, profile } from './workspace-creator-fixtures';

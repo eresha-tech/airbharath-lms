@@ -1,7 +1,7 @@
 import { submissionTransaction } from '../review/transaction';
-import { and, count, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { users, workspaceCreatorProfiles as profiles, workspaceMembershipOrders as orders, workspaceCourseDrafts as drafts, workspaceCreatorProfileDetails as details } from '@/lib/db/schema';
+import { users, workspaceCreatorProfiles as profiles, workspaceMembershipOrders as orders, workspaceCourseDrafts as drafts, workspaceCreatorProfileDetails as details, workspaceCourseSubmissions as submissions, workspaceCourseProjects as projects } from '@/lib/db/schema';
 import { readWorkspaceAccess } from '../activation/repository';
 import { CreatorError, environment } from './model';
 import { creatorService, type CreatorStore } from './service';
@@ -23,6 +23,23 @@ export const postgresCreatorStore: CreatorStore = {
         const [total] = await tx.select({ value: count() }).from(drafts).where(owner);
         const rows = await tx.select().from(drafts).where(owner).orderBy(desc(drafts.updatedAt), desc(drafts.id)).limit(21).offset((page - 1) * 20);
         return { drafts: rows.slice(0, 20), total: total.value, hasNext: rows.length > 20 };
+      },
+      summary: async () => {
+        const rows = await tx.execute(sql`with latest as (
+          select distinct on (draft_id) draft_id,review_status from ${submissions}
+          where user_id=${userId} order by draft_id,submission_number desc
+        ) select count(*)::int as total,
+          count(*) filter(where latest.review_status is null)::int as drafts,
+          count(*) filter(where latest.review_status in ('submitted','under_review'))::int as "underReview",
+          count(*) filter(where latest.review_status='changes_requested')::int as "changesRequested",
+          count(*) filter(where latest.review_status='approved')::int as approved,
+          count(*) filter(where latest.review_status='approved' and exists(
+            select 1 from ${projects} where user_id=${userId} and draft_id=d.id
+          ))::int as building
+          from ${drafts} d left join latest on latest.draft_id=d.id where d.user_id=${userId}`);
+        const row = rows[0] as { total: number; drafts: number; underReview: number; changesRequested: number; approved: number; building: number };
+        if (!row || row.total !== row.drafts+row.underReview+row.changesRequested+row.approved || row.building>row.approved) throw new Error('Course summary unavailable');
+        return row;
       },
       details: async () => (await tx.select().from(details).where(eq(details.userId, userId)).limit(1))[0] || null,
       create: async (content, creatorProfileId, requestKey, creationHash, now) => (await tx.insert(drafts).values({ ...content, userId, creatorProfileId, requestKey, creationHash, createdAt: now, updatedAt: now }).returning())[0],

@@ -1,3 +1,4 @@
+import type { CourseSummary } from './dashboard';
 import { createHash } from 'node:crypto';
 import type { SubmissionTransaction } from '../review/service';
 import { permitsDraftEdit } from '../review/model';
@@ -10,6 +11,7 @@ export type ProfileDetails = typeof workspaceCreatorProfileDetails.$inferSelect;
 export type CreatorContext = { user: { id: string; fullName: string | null }; profileId: string | null; evidence: AccessEvidence | null; financialReview: boolean; planName: string | null };
 export interface CreatorTransaction {
   reviews: SubmissionTransaction;
+  summary?(): Promise<CourseSummary>;
   context(): Promise<CreatorContext>;
   draft(id: string): Promise<Draft | null>;
   request(key: string): Promise<Draft | null>;
@@ -34,6 +36,7 @@ export function creatorService(store: CreatorStore, environment: string | undefi
       const list = await tx.list(page);
       return { ...context, capabilities: creatorCapabilities(context.evidence, now, environment, context.financialReview), ...list, reviewStatuses: await tx.reviews.statuses(list.drafts.map(draft => draft.id)), details: await tx.details() };
     }),
+    dashboardSummary: (userId: string) => run(userId, false, async tx => { if (!tx.summary) throw new Error('Course summary unavailable'); return tx.summary(); }),
     read: (userId: string, id: string) => run(userId, false, async tx => { const draft = await tx.draft(id); if (!draft) throw new CreatorError('not_found'); return draft; }),
     create: (userId: string, requestKey: string, input: unknown) => {
       if (!UUID.test(requestKey)) throw new CreatorError('validation');

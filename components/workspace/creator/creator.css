@@ -1,0 +1,6 @@
+/* Keep the brand palette while giving small Creator links/status text readable contrast. */
+.creator-workspace { --creator-accent-ink: 243.6 65% 43%; --ring: 243.6 65% 43%; }
+.dark .creator-workspace { --creator-accent-ink: 243.6 100% 76.9%; --ring: 243.6 100% 76.9%; }
+.creator-workspace .text-primary,
+.creator-workspace .hover\:text-primary:hover { color: hsl(var(--creator-accent-ink)); }
+.creator-workspace :is(h1,h2,h3,dd,p) { overflow-wrap: anywhere; }
