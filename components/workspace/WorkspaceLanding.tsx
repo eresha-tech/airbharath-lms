@@ -7,15 +7,15 @@ import Link from 'next/link';
 import { trackWorkspace } from '@/lib/workspace/analytics';
 
 const journey = [
-  ['Create', 'Build aviation courses with modules, lessons, videos, notes and learning resources.'],
+  ['Create', 'Prepare private aviation course structures. Media uploads and resources are planned for the full launch.'],
   ['Price', 'You decide what your course is worth, subject to platform policies.'],
   ['Review', 'AirBharath reviews courses for legitimacy, platform suitability and quality standards.'],
-  ['Publish', 'Approved courses can be published through Workspace.'],
+  ['Publish', 'Publication of approved courses is planned for the full Workspace launch.'],
   ['Share', 'Introduce courses to your audience, students and professional network.'],
   ['Teach & Grow', 'Manage learners and grow your course portfolio.'],
 ];
 const capabilities = [
-  [BookOpen, 'Build structured courses', 'Create modules, lessons, videos, notes and learning resources.'],
+  [BookOpen, 'Build structured courses', 'Prepare private modules and lessons. Media uploads and resources are planned for the full launch.'],
   [Layers3, 'Create multiple courses', 'Build a portfolio around your aviation expertise.'],
   [CircleDollarSign, 'Set your own price', 'Decide your course pricing, subject to applicable platform policies.'],
   [ShieldCheck, 'Sell without building the infrastructure', 'Workspace will support the learner purchase and enrollment experience.'],
@@ -32,8 +32,8 @@ const selection = [
   ['Sign in', 'Use your normal AirBharath account.'],
   ['Check eligibility', 'Complete the short, self-declared aviation eligibility check.'],
   ['Get your result', 'See your eligibility validity or next reapplication date.'],
-  ['Activate Workspace', 'Later, review commercial terms and activate membership.'],
-  ['Build', 'Course creation begins in a future Workspace phase.'],
+  ['Activate Workspace', 'Review membership prices and terms. Payments await launch verification.'],
+  ['Build', 'After verified activation, prepare a private creator profile and course structure.'],
 ];
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
@@ -124,15 +124,15 @@ export function WorkspaceLanding() {
       </section>
 
       <section className="mx-auto grid max-w-7xl gap-8 px-5 py-20 sm:px-8 sm:py-24 lg:grid-cols-2 lg:gap-20">
-        <div><Eyebrow>The planned commercial model</Eyebrow><h2 className="workspace-heading text-3xl font-semibold sm:text-4xl">Simple creator membership.</h2><p className="mt-5 max-w-xl text-sm leading-7 text-muted-foreground">Workspace is planned to operate using a quarterly creator membership plus a platform fee on course sales. Complete pricing and commercial terms will be shared with approved creators before Workspace activation.</p></div>
-        <div className="flex flex-col justify-center rounded-2xl border border-primary/30 bg-primary/10 p-8"><CheckCircle2 className="mb-4 size-6 text-[#6358c8] dark:text-primary" aria-hidden="true" /><h3 className="text-2xl font-semibold">No payment is required to apply.</h3><p className="mt-3 text-sm leading-7 text-muted-foreground">Pricing and fees are not finalized. You will be able to review the terms before deciding to activate Workspace.</p></div>
+        <div><Eyebrow>The planned commercial model</Eyebrow><h2 className="workspace-heading text-3xl font-semibold sm:text-4xl">Simple creator membership.</h2><p className="mt-5 max-w-xl text-sm leading-7 text-muted-foreground">Compare prepaid 3-, 6- and 12-month creator memberships. Membership prices include 18% GST; eligible creators can review prices and terms before activation. Paid Early Access is targeted for 14 October 2026, subject to launch verification, for private profiles and course preparation. The full Workspace is targeted for 9 November 2026, with media uploads, finished-course review, publication and course sales planned for that release.</p></div>
+        <div className="flex flex-col justify-center rounded-2xl border border-primary/30 bg-primary/10 p-8"><CheckCircle2 className="mb-4 size-6 text-[#6358c8] dark:text-primary" aria-hidden="true" /><h3 className="text-2xl font-semibold">No payment is required to apply.</h3><p className="mt-3 text-sm leading-7 text-muted-foreground">Workspace payments are awaiting launch verification. Review the membership plans, Creator Terms and Refund Policy before deciding to activate Workspace.</p></div>
       </section>
 
       <section className="border-y border-border bg-muted/30 px-5 py-20 sm:px-8 sm:py-24"><div className="mx-auto max-w-7xl"><Eyebrow>A considered selection process</Eyebrow><h2 className="workspace-heading text-3xl font-semibold sm:text-4xl">How creator eligibility works</h2><ol className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">{selection.map(([title, copy], i) => <li key={title}><span className="mb-5 flex size-9 items-center justify-center rounded-full border border-border bg-card font-mono text-xs">0{i + 1}</span><h3 className="text-base font-semibold">{title}</h3><p className="mt-3 text-sm leading-6 text-muted-foreground">{copy}</p></li>)}</ol><div className="mt-9 flex items-start gap-3 rounded-xl border border-border bg-card p-5"><ShieldCheck className="mt-0.5 size-5 shrink-0 text-[#6358c8] dark:text-primary" aria-hidden="true" /><p className="text-sm leading-6">Eligibility does not activate Workspace or approve a course. Courses will be reviewed separately before publication.</p></div></div></section>
 
       <section id="apply" className="workspace-section mx-auto grid max-w-7xl gap-10 px-5 py-20 sm:px-8 sm:py-24 lg:grid-cols-[.75fr_1.25fr] lg:gap-16">
         <div><Eyebrow>Your next chapter</Eyebrow><h2 className="workspace-heading text-3xl font-semibold leading-tight sm:text-4xl">Become a<br />Creator.</h2><p className="mt-5 max-w-md text-sm leading-7 text-muted-foreground">Tell us about the experience you&apos;ve built and the course you&apos;d like to teach. An idea is enough to start the conversation.</p><ul className="mt-8 space-y-4 text-sm">{['No payment required', 'Use your normal AirBharath account', 'A short automated eligibility check'].map(t => <li key={t} className="flex items-start gap-3"><Check className="mt-0.5 size-4 shrink-0 text-[#6358c8] dark:text-primary" aria-hidden="true" />{t}</li>)}</ul><div className="mt-9 max-w-sm border-t border-border pt-6"><p className="text-xs leading-6 text-muted-foreground">Questions before you apply?<br /><a className="font-semibold text-foreground underline underline-offset-4" href="mailto:academy@airbharath.in">academy@airbharath.in</a></p></div></div>
-        <div className="self-center rounded-2xl border border-border bg-card p-8"><h3 className="text-2xl font-semibold">Start with your aviation background.</h3><p className="mt-4 text-sm leading-7 text-muted-foreground">Sign in, complete a short eligibility check, and see your result. Workspace activation comes in a later phase.</p><div className="mt-7"><ApplyLink /></div><p className="mt-6 text-sm text-muted-foreground">Prefer a detailed team review? <Link href="/workspace/manual-application" className="underline underline-offset-4">Submit a manual application</Link>.</p></div>
+        <div className="self-center rounded-2xl border border-border bg-card p-8"><h3 className="text-2xl font-semibold">Start with your aviation background.</h3><p className="mt-4 text-sm leading-7 text-muted-foreground">Sign in, complete a short eligibility check, and see your result. Membership payments are awaiting launch verification.</p><div className="mt-7"><ApplyLink /></div><p className="mt-6 text-sm text-muted-foreground">Prefer a detailed team review? <Link href="/workspace/manual-application" className="underline underline-offset-4">Submit a manual application</Link>.</p></div>
       </section>
     </div>
   );
