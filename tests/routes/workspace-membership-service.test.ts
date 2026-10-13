@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import type { SQL } from 'drizzle-orm';
-const mocks = vi.hoisted(() => ({ transaction: vi.fn(), user: vi.fn(), attempt: vi.fn(), plan: vi.fn(), settings: vi.fn(), policy: vi.fn(), coupon: vi.fn(), applicability: vi.fn() }));
+const mocks = vi.hoisted(() => ({ transaction: vi.fn(), user: vi.fn(), attempt: vi.fn(), plan: vi.fn(), settings: vi.fn(), policy: vi.fn(), coupon: vi.fn(), applicability: vi.fn(), use: vi.fn(), occupied: vi.fn(), influencer: vi.fn() }));
 vi.mock('@/lib/db', () => ({ db: { transaction: mocks.transaction, query: { workspaceMembershipPlans: { findMany: vi.fn() } } } }));
 import { getWorkspaceMembershipQuote, createWorkspaceCoupon, changeWorkspaceCouponStatus } from '@/lib/workspace/membership/service';
-import { users, workspaceMembershipPlans, workspaceCoupons, workspaceCouponPlans, workspaceAuditEvents } from '@/lib/db/schema';
+import { users, workspaceMembershipPlans, workspaceCoupons, workspaceCouponPlans, workspaceAuditEvents, workspaceInfluencers } from '@/lib/db/schema';
 import { definition, plans, now, actorId, requestKey } from './workspace-membership-fixtures';
 import { setting, policy } from './workspace-eligibility-fixtures';
 const dialect = new PgDialect();
@@ -12,16 +12,18 @@ const input = { planCode: 'quarterly' as const, planVersionId: plans[0].id };
 let role: string, currentPlans: typeof plans, couponRows: Record<string, unknown>[], links: Record<string, unknown>[], audits: Record<string, unknown>[], failAudit: boolean, locks: string[];
 beforeEach(() => {
   vi.clearAllMocks(); role = 'admin'; currentPlans = structuredClone(plans); couponRows = []; links = []; audits = []; failAudit = false; locks = [];
+  mocks.use.mockResolvedValue(undefined); mocks.occupied.mockResolvedValue({ n: 0 }); mocks.influencer.mockResolvedValue({ status: 'active' });
   mocks.user.mockResolvedValue({ id: actorId }); mocks.attempt.mockResolvedValue({ id: requestKey, userId: actorId, result: 'eligible', eligibleUntil: new Date('2026-11-01T12:00:00.000Z'), reapplyAt: null, decidedAt: now, reasons: [], policyId: policy.id });
   mocks.plan.mockResolvedValue(plans[0]); mocks.settings.mockResolvedValue(setting); mocks.policy.mockResolvedValue(policy); mocks.coupon.mockResolvedValue(undefined); mocks.applicability.mockResolvedValue([]);
   const tx = { query: {
+    workspaceCouponRedemptions: { findFirst: mocks.use }, workspaceInfluencers: { findFirst: mocks.influencer },
     users: { findFirst: mocks.user }, workspaceEligibilityAttempts: { findFirst: mocks.attempt }, workspaceMembershipPlans: { findFirst: mocks.plan },
     workspaceEligibilitySettings: { findFirst: mocks.settings }, workspacePolicyVersions: { findFirst: mocks.policy }, workspaceCoupons: { findFirst: mocks.coupon }, workspaceCouponPlans: { findMany: mocks.applicability },
     workspaceAuditEvents: { findFirst: async ({ where }: { where: SQL }) => { const values = dialect.sqlToQuery(where).params; return audits.find(row => row.actorId === values[0] && row.requestKey === values[1]); } },
   },
-  select: () => ({ from: (table: unknown) => ({ where: ({ queryChunks: _ }: SQL) => ({ for: async (mode: string) => {
+  select: () => ({ from: (table: unknown) => ({ where: ({ queryChunks: _ }: SQL) => ({ then: (resolve: (value: unknown) => void) => mocks.occupied().then((n: unknown) => resolve([n])), for: async (mode: string) => {
     locks.push(`${table === users ? 'user' : table === workspaceMembershipPlans ? 'plan' : 'coupon'}:${mode}`);
-    return table === users ? [{ role }] : table === workspaceMembershipPlans ? currentPlans : couponRows;
+    return table === users ? [{ role }] : table === workspaceMembershipPlans ? currentPlans : table === workspaceInfluencers ? [{ id: requestKey, status: 'active' }] : couponRows;
   } }) }) }),
   insert: (table: unknown) => ({ values: (values: Record<string, unknown> | Record<string, unknown>[]) => {
     if (table === workspaceAuditEvents && failAudit) throw new Error('audit unavailable');
@@ -122,4 +124,21 @@ describe('admin definitions and audited status commands', () => {
     role = 'student'; await expect(changeWorkspaceCouponStatus(actorId, requestKey, 'active', 2, plans[0].id)).rejects.toMatchObject({ code: 'forbidden' });
     role = 'admin'; couponRows[0].status = 'archived'; await expect(changeWorkspaceCouponStatus(actorId, requestKey, 'active', 2, plans[0].id)).rejects.toMatchObject({ code: 'conflict' });
   });
+});
+
+it('coupon preview refuses reserved/redeemed use and capacity without writing, released use is independent', async () => {
+  mocks.coupon.mockResolvedValue({ ...definition, id: requestKey, status: 'active', version: 1 }); mocks.applicability.mockResolvedValue([{ planCode: 'quarterly' }]);
+  mocks.use.mockResolvedValue({ status: 'redeemed' });
+  await expect(getWorkspaceMembershipQuote(actorId, { ...input, couponCode: definition.code }, () => now)).rejects.toMatchObject({ code: 'coupon_used' });
+  mocks.use.mockResolvedValue(undefined); mocks.occupied.mockResolvedValue({ n: 100 });
+  await expect(getWorkspaceMembershipQuote(actorId, { ...input, couponCode: definition.code }, () => now)).rejects.toMatchObject({ code: 'capacity' });
+  mocks.occupied.mockResolvedValue({ n: 99 });
+  expect((await getWorkspaceMembershipQuote(actorId, { ...input, couponCode: definition.code }, () => now)).couponApplied).toBe(true);
+  expect(couponRows).toHaveLength(0);
+});
+it('inactive influencer refuses new preview; stable identity is required for new influencer coupons', async () => {
+  mocks.coupon.mockResolvedValue({ ...definition, influencerId: requestKey, id: requestKey, status: 'active', version: 1 }); mocks.applicability.mockResolvedValue([{ planCode: 'quarterly' }]); mocks.influencer.mockResolvedValue({ status: 'inactive' });
+  await expect(getWorkspaceMembershipQuote(actorId, { ...input, couponCode: definition.code }, () => now)).rejects.toMatchObject({ code: 'paused' });
+  await expect(createWorkspaceCoupon(actorId, { ...definition, sourceType: 'influencer' }, requestKey)).rejects.toMatchObject({ code: 'validation' });
+  expect(await createWorkspaceCoupon(actorId, { ...definition, sourceType: 'influencer', influencerId: requestKey }, requestKey)).toMatchObject({ influencerId: requestKey });
 });

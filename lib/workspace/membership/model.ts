@@ -9,15 +9,16 @@ export const SOURCE_TYPES = ['influencer', 'partner', 'institution', 'founder', 
 export const QUOTE_VERSION = 'workspace-pricing-v1';
 export const START_RULE_VERSION = 'workspace-membership-start-v1';
 export const MAX_PRICE_PAISE = 100_000_000;
-export const COUPON_ERRORS = ['invalid_code', 'expired', 'not_started', 'paused', 'archived', 'wrong_plan', 'discount_invalid', 'unavailable'] as const;
+export const COUPON_ERRORS = ['invalid_code', 'expired', 'not_started', 'paused', 'archived', 'wrong_plan', 'discount_invalid', 'capacity', 'coupon_used', 'unavailable'] as const;
 export type CouponError = typeof COUPON_ERRORS[number];
 export const COUPON_MESSAGES: Record<CouponError, string> = {
+  capacity: 'This coupon’s available capacity has been reached.', coupon_used: 'You have already used this coupon, or have a checkout reserved with it.',
   invalid_code: 'This Workspace coupon code is not valid.', expired: 'This coupon has expired.', not_started: 'This coupon is not available yet.',
   paused: 'This coupon is paused.', archived: 'This coupon is archived.', wrong_plan: 'This coupon does not apply to the selected plan.',
   discount_invalid: 'This coupon cannot be applied to the selected price.', unavailable: 'Coupon preview is temporarily unavailable.',
 };
 export type Plan = { id: string; code: PlanCode; version: number; displayName: string; durationMonths: number; basePricePaise: number; taxRateBps: number; currency: 'INR'; isCurrent: boolean; available: boolean };
-export type CouponDefinition = { code: string; discountType: 'fixed' | 'percentage'; discountValue: number; startsAt: string | null; expiresAt: string | null; usageLimit: number | null; planCodes: PlanCode[]; campaignName: string; sourceType: typeof SOURCE_TYPES[number]; sourceName: string };
+export type CouponDefinition = { influencerId?: string | null; code: string; discountType: 'fixed' | 'percentage'; discountValue: number; startsAt: string | null; expiresAt: string | null; usageLimit: number | null; planCodes: PlanCode[]; campaignName: string; sourceType: typeof SOURCE_TYPES[number]; sourceName: string };
 export type Coupon = Omit<CouponDefinition, 'startsAt' | 'expiresAt'> & { id: string; status: CouponStatus; version: number; startsAt: Date | null; expiresAt: Date | null };
 export function isPlanCode(value: unknown): value is PlanCode { return typeof value === 'string' && (PLAN_CODES as readonly string[]).includes(value); }
 export function normalizeCouponCode(input: unknown): string | null {
@@ -42,7 +43,7 @@ export function calculatePrice(basePricePaise: number, taxRateBps: number, disco
     const maximum = discount.discountType === 'fixed' ? MAX_PRICE_PAISE : discount.discountType === 'percentage' ? 9999 : 0;
     if (!isBoundedInteger(discount.discountValue, maximum)) throw new Error('discount_invalid');
     discountPaise = discount.discountType === 'fixed' ? discount.discountValue : roundBps(basePricePaise, discount.discountValue);
-    if (discountPaise >= basePricePaise) throw new Error('discount_invalid');
+    if (discountPaise <= 0 || discountPaise >= basePricePaise) throw new Error('discount_invalid');
   }
   const taxableAmountPaise = basePricePaise - discountPaise;
   const gstAmountPaise = roundBps(taxableAmountPaise, taxRateBps);
@@ -56,7 +57,7 @@ function instant(input: unknown): input is string | null {
 }
 export function validateCouponDefinition(input: unknown): CouponDefinition | null {
   const keys = ['code', 'discountType', 'discountValue', 'startsAt', 'expiresAt', 'usageLimit', 'planCodes', 'campaignName', 'sourceType', 'sourceName'];
-  if (!object(input) || Object.keys(input).length !== keys.length || Object.keys(input).some(key => !keys.includes(key))) return null;
+  if (!object(input) || keys.some(key => !(key in input)) || Object.keys(input).some(key => ![...keys, 'influencerId'].includes(key)) || (input.influencerId !== undefined && input.influencerId !== null && (typeof input.influencerId !== 'string' || !UUID.test(input.influencerId) || input.sourceType !== 'influencer'))) return null;
   const code = normalizeCouponCode(input.code);
   if (!code || !['fixed', 'percentage'].includes(String(input.discountType)) || !isBoundedInteger(input.discountValue, input.discountType === 'fixed' ? MAX_PRICE_PAISE : 9999) ||
     !instant(input.startsAt) || !instant(input.expiresAt) || (input.startsAt && input.expiresAt && Date.parse(input.expiresAt) <= Date.parse(input.startsAt)) ||
@@ -64,7 +65,7 @@ export function validateCouponDefinition(input: unknown): CouponDefinition | nul
     !Array.isArray(input.planCodes) || !input.planCodes.length || input.planCodes.length > 3 || !input.planCodes.every(isPlanCode) || new Set(input.planCodes).size !== input.planCodes.length ||
     !(SOURCE_TYPES as readonly unknown[]).includes(input.sourceType)) return null;
   for (const key of ['campaignName', 'sourceName']) if (typeof input[key] !== 'string' || !input[key].trim() || input[key].length > 120 || /[\u0000-\u001f\u007f]/.test(input[key])) return null;
-  return { code, discountType: input.discountType as CouponDefinition['discountType'], discountValue: input.discountValue, startsAt: input.startsAt, expiresAt: input.expiresAt,
+  return { ...(input.influencerId === undefined ? {} : { influencerId: input.influencerId as string | null }), code, discountType: input.discountType as CouponDefinition['discountType'], discountValue: input.discountValue, startsAt: input.startsAt, expiresAt: input.expiresAt,
     usageLimit: input.usageLimit as number | null, planCodes: PLAN_CODES.filter(code => (input.planCodes as unknown[]).includes(code)), campaignName: (input.campaignName as string).trim(), sourceType: input.sourceType as CouponDefinition['sourceType'], sourceName: (input.sourceName as string).trim() };
 }
 export function couponFailure(coupon: Coupon | null, plan: Plan, now: Date): CouponError | null {

@@ -21,6 +21,6 @@ it('renders all approved plans, exclusive GST and advisory unreserved quote with
 it('marks unavailable plans disabled and renders an empty admin definition state without fake counters', () => {
   const html = renderToStaticMarkup(React.createElement(ActivationPreview, { plans: plans.map(plan => ({ ...plan, available: false })), initialQuote: null }));
   expect(html.match(/disabled=""/g)!.length).toBeGreaterThanOrEqual(4);
-  const admin = renderToStaticMarkup(React.createElement(WorkspaceCoupons, { initial: { coupons: [], hasNext: false, page: 1 } }));
+  const admin = renderToStaticMarkup(React.createElement(WorkspaceCoupons, { initialInfluencers: [], initial: { coupons: [], hasNext: false, page: 1 } }));
   expect(admin).toContain('IST'); expect(admin).toContain('Create active coupon'); expect(admin).toContain('all three'); expect(admin).not.toMatch(/usedCount|Razorpay|already paid/);
 });

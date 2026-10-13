@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
-import { and, desc, eq, ilike, inArray, sql } from 'drizzle-orm';
+import { and, count, desc, eq, ilike, inArray, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { users, workspaceMembershipPlans as plans, workspaceCoupons as coupons, workspaceCouponPlans as applicability, workspaceAuditEvents as audits, workspaceEligibilityAttempts as attempts, workspaceEligibilitySettings as settings, workspacePolicyVersions as policies } from '@/lib/db/schema';
+import { users, workspaceMembershipPlans as plans, workspaceCoupons as coupons, workspaceCouponPlans as applicability, workspaceInfluencers as influencers, workspaceCouponRedemptions as redemptions, workspaceAuditEvents as audits, workspaceEligibilityAttempts as attempts, workspaceEligibilitySettings as settings, workspacePolicyVersions as policies } from '@/lib/db/schema';
 import { resolveJourney, UUID, validateSettings, EVALUATOR_VERSION, ELIGIBILITY_POLICY_VERSION } from '../eligibility/model';
 import { calculatePrice, couponFailure, membershipStartInfo, PLAN_CODES, QUOTE_VERSION, validPlan, validateCouponDefinition, parseQuoteInput, isBoundedInteger, COUPON_STATUSES, type CouponDefinition, type CouponStatus, type QuoteInput } from './model';
 
@@ -45,6 +45,16 @@ export async function readMembershipQuote(tx: Parameters<Parameters<typeof db.tr
   if (input.couponCode) {
     const failure = couponFailure(coupon ? { ...coupon, planCodes: couponPlans.map(row => row.planCode) } : null, plan, now);
     if (failure) throw new MembershipError(failure);
+    if (coupon!.influencerId) {
+      const influencer = await tx.query.workspaceInfluencers.findFirst({ where: eq(influencers.id, coupon!.influencerId) });
+      if (influencer?.status !== 'active') throw new MembershipError('paused');
+    }
+    const use = await tx.query.workspaceCouponRedemptions.findFirst({ where: and(eq(redemptions.couponId, coupon!.id), eq(redemptions.userId, userId), inArray(redemptions.status, ['reserved', 'redeemed'])) });
+    if (use) throw new MembershipError('coupon_used');
+    if (coupon!.usageLimit !== null) {
+      const [occupied] = await tx.select({ n: count() }).from(redemptions).where(and(eq(redemptions.couponId, coupon!.id), inArray(redemptions.status, ['reserved', 'redeemed'])));
+      if (occupied.n >= coupon!.usageLimit) throw new MembershipError('capacity');
+    }
   }
   const amounts = calculatePrice(plan.basePricePaise, plan.taxRateBps, coupon);
   const expiry = Math.min(now.getTime() + 10 * 60_000, attempt!.eligibleUntil!.getTime(), coupon?.expiresAt?.getTime() ?? Infinity);
@@ -79,6 +89,10 @@ export async function createWorkspaceCoupon(actorId: string, definition: CouponD
         if (prior.action !== 'coupon_created' || prior.payloadHash !== payloadHash || !prior.couponId) throw new MembershipError('conflict');
         return await tx.query.workspaceCoupons.findFirst({ where: eq(coupons.id, prior.couponId) });
       }
+      if (validated.influencerId) {
+        const [influencer] = await tx.select().from(influencers).where(eq(influencers.id, validated.influencerId)).for('share');
+        if (influencer?.status !== 'active') throw new MembershipError('validation');
+      } else if (validated.sourceType === 'influencer') throw new MembershipError('validation');
       const current = await tx.select().from(plans).where(and(eq(plans.isCurrent, true), inArray(plans.code, validated.planCodes))).for('share');
       if (current.length !== validated.planCodes.length || current.some(plan => !validPlan(plan))) throw new MembershipError('unavailable');
       try { for (const plan of current) calculatePrice(plan.basePricePaise, plan.taxRateBps, validated); } catch { throw new MembershipError('discount_invalid'); }

@@ -5,6 +5,7 @@ vi.mock('@/lib/workspace/payments/runtime',()=>({workspacePaymentRuntime:mocks.r
 vi.mock('@/lib/workspace/eligibility/service',()=>({getWorkspaceUser:mocks.user}));
 vi.mock('@/lib/admin-authorization',()=>({getAuthorizedAdminSession:mocks.admin}));
 vi.mock('@/lib/workspace/payments/repository',()=>({postgresFinanceStore:{readOrder:mocks.readOrder},readWorkspaceFinancialRefund:mocks.readRefund,listFinancialOrders:mocks.list,financialCouponCounts:mocks.counts}));
+vi.mock('@/lib/workspace/membership/reporting',()=>({influencerCouponReport:mocks.counts}));
 import { POST as create } from '@/app/api/workspace/membership/orders/route';
 import { GET as read } from '@/app/api/workspace/membership/orders/[id]/route';
 import { POST as confirm } from '@/app/api/workspace/payments/razorpay/confirm/route';

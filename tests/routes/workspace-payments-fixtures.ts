@@ -1,5 +1,7 @@
 import { currentRefundPolicy, type RefundPolicyAcceptance } from '@/lib/workspace/refund-policy/model';
 import { currentCreatorTerms, type CreatorTermsAcceptance } from '@/lib/workspace/terms/model';
+import { PgDialect } from 'drizzle-orm/pg-core';
+import type { SQL } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
 import { readMembershipQuote } from '@/lib/workspace/membership/service';
@@ -20,7 +22,8 @@ export function financialHarness({ acceptTerms = true, acceptRefundPolicy = true
   const now = { value: financeNow }, offer = { value: { ...definition, id: randomUUID(), status: 'active', version: 1, usageLimit: 1 as number | null, createdBy: randomUUID(), createdAt: financeNow, updatedAt: financeNow, startsAt: null as Date | null, expiresAt: null as Date | null } };
   const catalog = structuredClone(plans), settings = { ...structuredClone(setting), configurationHash: digest(setting.config) }, currentPolicy = { ...structuredClone(policy), contentHash: digest(policy.declarations) }, eligibleUntil = { value: new Date('2026-11-30T12:00:00.000Z') };
   async function quote(userId: string, input: { planCode: string; planVersionId: string; couponCode?: string }, clock = () => now.value) {
-    const tx = { query: {
+    const tx = { select: () => ({ from: () => ({ where: () => Promise.resolve([{ n: state.redemptions.filter(r => r.couponId === offer.value.id && r.status !== 'released').length }]) }) }), query: {
+      workspaceCouponRedemptions: { findFirst: async ({ where }: { where: SQL }) => { const params = new PgDialect().sqlToQuery(where).params; return state.redemptions.find(r => r.couponId === params[0] && r.userId === params[1] && r.status !== 'released'); } },
       users: { findFirst: async () => ({ id: userId }) }, workspaceEligibilityAttempts: { findFirst: async () => ({ id: userId, userId, result: 'eligible', eligibleUntil: eligibleUntil.value, policyId: policy.id, decidedAt: financeNow, reapplyAt: null, reasons: [] }) },
       workspaceMembershipPlans: { findFirst: async () => catalog.find(p => p.code === input.planCode) }, workspaceEligibilitySettings: { findFirst: async () => settings }, workspacePolicyVersions: { findFirst: async () => currentPolicy },
       workspaceCoupons: { findFirst: async () => input.couponCode?.toUpperCase() === offer.value.code ? offer.value : undefined }, workspaceCouponPlans: { findMany: async () => offer.value.planCodes.map(planCode => ({ planCode })) },

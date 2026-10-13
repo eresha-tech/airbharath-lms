@@ -559,8 +559,20 @@ export const workspaceMembershipPlans = pgTable('workspace_membership_plans', {
   uniqueIndex('workspace_plans_code_version_idx').on(t.code, t.version), uniqueIndex('workspace_plans_current_idx').on(t.code).where(sql`${t.isCurrent} = true`),
   check('workspace_plans_definition_check', sql`${t.version} > 0 AND length(${t.displayName}) BETWEEN 1 AND 80 AND ${t.basePricePaise} BETWEEN 1 AND 100000000 AND ${t.taxRateBps} = 1800 AND ${t.currency} = 'INR' AND ((${t.code} = 'quarterly' AND ${t.durationMonths} = 3) OR (${t.code} = 'half_yearly' AND ${t.durationMonths} = 6) OR (${t.code} = 'yearly' AND ${t.durationMonths} = 12))`),
 ]);
+export const workspaceInfluencers = pgTable('workspace_influencers', {
+  id: uuid('id').primaryKey(), displayName: text('display_name').notNull(), description: text('description'),
+  status: text('status').$type<'active' | 'inactive'>().default('active').notNull(),
+  createdBy: uuid('created_by').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  updatedBy: uuid('updated_by').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(), updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(), version: integer('version').default(1).notNull(),
+}, t => [check('workspace_influencer_definition_check', sql`length(${t.displayName}) BETWEEN 1 AND 120 AND (${t.description} IS NULL OR length(${t.description}) BETWEEN 1 AND 500) AND ${t.status} IN ('active','inactive') AND ${t.version}>0`)]);
+export const workspaceInfluencerHistory = pgTable('workspace_influencer_history', {
+  id: uuid('id').defaultRandom().primaryKey(), influencerId: uuid('influencer_id').notNull().references(() => workspaceInfluencers.id, { onDelete: 'restrict' }),
+  actorId: uuid('actor_id').notNull().references(() => users.id, { onDelete: 'restrict' }), version: integer('version').notNull(),
+  snapshot: jsonb('snapshot').notNull(), createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, t => [unique('workspace_influencer_history_version_unique').on(t.influencerId, t.version)]);
 export const workspaceCoupons = pgTable('workspace_coupons', {
-  id: uuid('id').defaultRandom().primaryKey(), scope: text('scope').default('workspace_membership').notNull(), code: text('code').notNull(),
+  id: uuid('id').defaultRandom().primaryKey(), influencerId: uuid('influencer_id').references(() => workspaceInfluencers.id, { onDelete: 'restrict' }), scope: text('scope').default('workspace_membership').notNull(), code: text('code').notNull(),
   status: text('status').$type<CouponStatus>().default('active').notNull(), discountType: text('discount_type').$type<CouponDefinition['discountType']>().notNull(), discountValue: integer('discount_value').notNull(),
   startsAt: timestamp('starts_at', { withTimezone: true }), expiresAt: timestamp('expires_at', { withTimezone: true }), usageLimit: integer('usage_limit'),
   campaignName: text('campaign_name').notNull(), sourceType: text('source_type').$type<CouponDefinition['sourceType']>().notNull(), sourceName: text('source_name').notNull(),
