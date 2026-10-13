@@ -183,6 +183,13 @@
       "when": 1791874707763,
       "tag": "0025_workspace_held_capture_coupon_consistency",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791879822188,
+      "tag": "0026_workspace_membership_pricing_v2",
+      "breakpoints": true
     }
   ]
 }
