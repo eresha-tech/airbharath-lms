@@ -69,15 +69,15 @@ describe('versioned Creator Terms content and controls', () => {
     const html = renderToStaticMarkup(React.createElement(Agreement, { onAccepted: vi.fn() }));
     const checkbox = html.match(/<input[^>]+type="checkbox"[^>]*>/)![0];
     expect(checkbox).not.toContain('checked'); expect(html).toContain(creatorTermsHref().replace('&', '&amp;'));
-    expect(html).toContain('Save Creator Terms agreement'); expect(html).toContain('disabled=""'); expect(html).not.toContain('Refund Policy');
+    expect(html).not.toContain('Save Creator Terms agreement'); expect(html).not.toContain('<button'); expect(html).not.toContain('Refund Policy');
   });
   it('shows saved server evidence after reload without prechecking, and never represents V1 as current', () => {
     const receipt = { termsVersion: CURRENT_CREATOR_TERMS.version, termsContentHash: CURRENT_CREATOR_TERMS.contentHash, acceptedAt: financeNow.toISOString() };
     const html = renderToStaticMarkup(React.createElement(Agreement, { onAccepted: vi.fn(), initialAcceptance: receipt }));
-    expect(html).toContain('Your Creator Terms agreement has been recorded.');
+    expect(html).toContain('A previous agreement is on file.');
     expect(html.match(/<input[^>]+type="checkbox"[^>]*>/)![0]).not.toContain('checked');
     const stale = renderToStaticMarkup(React.createElement(Agreement, { onAccepted: vi.fn(), initialAcceptance: { ...receipt, termsVersion: V1_IDENTITY.version, termsContentHash: V1_IDENTITY.contentHash } }));
-    expect(stale).not.toContain('Your Creator Terms agreement has been recorded.');
+    expect(stale).not.toContain('A previous agreement is on file.');
   });
 });
 describe('durable acceptance service contract', () => {
