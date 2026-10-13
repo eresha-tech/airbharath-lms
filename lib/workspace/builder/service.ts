@@ -46,7 +46,7 @@ export function builderService(store: BuildStore, environment: string | undefine
     buildId(userId);
     return store.transaction(userId, async tx => {
       const context = await tx.context();
-      const permit = () => { const now = clock(), c = creatorCapabilities(context.evidence, now, environment, context.financialReview); if (context.user.id !== userId || !context.profileId || !(edit ? c.canEditWorkspace : c.canViewCreatorWorkspace)) throw new BuildError('forbidden'); return now; };
+      const permit = () => { const now = clock(), c = creatorCapabilities(context.evidence, now, environment, context.financialReview, context.grant); if (context.user.id !== userId || !context.profileId || !(edit ? c.canEditWorkspace : c.canViewCreatorWorkspace)) throw new BuildError('forbidden'); return now; };
       permit(); return work(tx, context, permit);
     });
   }
@@ -55,7 +55,7 @@ export function builderService(store: BuildStore, environment: string | undefine
     return transaction(userId, edit, async (tx, context, permit) => {
       const project = await tx.project(draftId); if (!project || project.userId !== userId || project.creatorProfileId !== context.profileId) throw new BuildError('not_found');
       const source = approved(await tx.source(project.approvedSubmissionId, draftId), project); permit();
-      return work(tx, project, source, permit, creatorCapabilities(context.evidence, clock(), environment, context.financialReview).canEditWorkspace);
+      return work(tx, project, source, permit, creatorCapabilities(context.evidence, clock(), environment, context.financialReview, context.grant).canEditWorkspace);
     });
   }
   return {

@@ -1,5 +1,6 @@
 'use client';
-import { WorkspaceInfluencers, type InfluencerRow } from './WorkspaceInfluencers';
+import { type InfluencerRow } from './WorkspaceInfluencers';
+import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { COUPON_STATUSES, PLAN_CODES, SOURCE_TYPES, formatPaise, parseDecimalUnits, type CouponStatus, type PlanCode } from '@/lib/workspace/membership/model';
 import { formatWorkspaceDate } from '@/lib/workspace/eligibility/model';
@@ -18,8 +19,8 @@ export function WorkspaceCoupons({ initial, initialInfluencers }: { initial: Ser
   const command = useRef<{ signature: string; key: string } | null>(null);
   function keyFor(input: unknown) { const signature = JSON.stringify(input); if (!command.current || command.current.signature !== signature) command.current = { signature, key: crypto.randomUUID() }; return command.current.key; }
   async function load(page = 1) {
-    const response = await fetch(`/api/admin/workspace/coupons?${new URLSearchParams({ q: query, status, page: String(page) })}`, { cache: 'no-store' });
-    const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Coupons could not be loaded.'); setList(data);
+    const response = await fetch(`/api/admin/workspace/coupons?${new URLSearchParams({ q: query, status, page: String(page) })}`, { cache: 'no-store',signal:AbortSignal.timeout(15000) });
+    const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Coupons could not be loaded.'); setList(data);window.history.replaceState(null,'','?'+new URLSearchParams({q:query,status,page:String(page)}));
   }
   async function refresh(page = 1) { setBusy(true); setNotice(''); try { await load(page); } catch (error) { setNotice(error instanceof Error ? error.message : 'Coupons unavailable.'); } finally { setBusy(false); } }
   async function change(row: Row, next: CouponStatus) {
@@ -46,14 +47,14 @@ export function WorkspaceCoupons({ initial, initialInfluencers }: { initial: Ser
     } catch (error) { setNotice(error instanceof Error && error.name !== 'RangeError' ? error.message : 'Check the dates. Values use IST.'); } finally { setBusy(false); }
   }
   return <div className="ph-no-capture space-y-8"><p role="status" aria-live="polite" className="text-sm">{notice}</p>
-    <WorkspaceInfluencers rows={influencers} onChange={setInfluencers} />
+    <div className="flex flex-wrap gap-5 text-sm"><Link href="/admin/workspace/influencers" className="text-primary underline">Manage influencers</Link><Link href="/admin/coupons" className="text-primary underline">LMS Course Coupons (separate)</Link></div>
     <details className="rounded-xl border border-border bg-card p-6"><summary className="cursor-pointer font-semibold">Create a Workspace coupon</summary><form onSubmit={create} className="mt-6 space-y-5"><div className="grid gap-5 sm:grid-cols-2">
       <label className="text-sm">Code<input name="code" required minLength={3} maxLength={32} pattern="[A-Za-z0-9][A-Za-z0-9_-]{2,31}" autoComplete="off" className={field} /></label>
       <label className="text-sm">Discount type<select value={discountType} onChange={event => setDiscountType(event.target.value as 'fixed' | 'percentage')} className={field}><option value="fixed">Fixed amount (₹)</option><option value="percentage">Percentage (%)</option></select></label>
       <label className="text-sm">{discountType === 'fixed' ? 'Discount in rupees (up to 2 decimals)' : 'Discount percentage (up to 2 decimals)'}<input name="discount" required inputMode="decimal" pattern="[0-9]+(\.[0-9]{1,2})?" className={field} /><span className="mt-2 block text-xs text-muted-foreground">Must leave a positive paid base on every selected plan.</span></label>
       <label className="text-sm">Usage limit<input name="usageLimit" type="number" min={1} max={2147483647} step={1} className={field} /><span className="mt-2 block text-xs text-muted-foreground">Leave blank for unlimited. Accepted checkout reservations also consume capacity.</span></label>
       <label className="text-sm">Starts at (IST, optional)<input name="startsAt" type="datetime-local" step={60} className={field} /></label><label className="text-sm">Expires at (IST, optional)<input name="expiresAt" type="datetime-local" step={60} className={field} /></label>
-      <label className="text-sm">Campaign name<input name="campaignName" required maxLength={120} className={field} /></label>{sourceType === 'influencer' ? <label className="text-sm">Influencer<select name="influencerId" required className={field}><option value="">Select active influencer</option>{influencers.filter(row => row.status === 'active').map(row => <option key={row.id} value={row.id}>{row.displayName}</option>)}</select></label> : <label className="text-sm">Source name<input name="sourceName" required maxLength={120} className={field} /></label>}
+      <label className="text-sm">Campaign name<input name="campaignName" required maxLength={120} className={field} /></label>{sourceType === 'influencer' ? <label className="text-sm">Find active influencer<input aria-label="Search active influencers" className={field} maxLength={120} onChange={async e=>{try{const r=await fetch('/api/admin/workspace/influencers?status=active&q='+encodeURIComponent(e.target.value),{cache:'no-store',signal:AbortSignal.timeout(15000)});if(r.ok)setInfluencers((await r.json()).influencers);else setNotice('Influencer search unavailable.');}catch{setNotice('Influencer search unavailable.');}}}/><select name="influencerId" required className={field}><option value="">Select active influencer</option>{influencers.filter(row => row.status === 'active').map(row => <option key={row.id} value={row.id}>{row.displayName}</option>)}</select></label> : <label className="text-sm">Source name<input name="sourceName" required maxLength={120} className={field} /></label>}
       <label className="text-sm">Source type<select name="sourceType" value={sourceType} onChange={e => setSourceType(e.target.value)} className={field}>{SOURCE_TYPES.map(type => <option key={type} value={type}>{type.replaceAll('_', ' ')}</option>)}</select></label>
     </div><fieldset><legend className="text-sm font-medium">Applicable plans</legend><div className="mt-3 flex flex-wrap gap-5">{PLAN_CODES.map(code => <label key={code} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={planCodes.includes(code)} onChange={event => setPlanCodes(event.target.checked ? [...planCodes, code] : planCodes.filter(value => value !== code))} />{code.replaceAll('_', ' ')}</label>)}</div><p className="mt-3 text-xs text-muted-foreground">Select all three for all current Workspace plans. Applicability and economics cannot be edited after creation.</p></fieldset>
       <button disabled={busy || !planCodes.length} className="rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50">{busy ? 'Saving…' : 'Create active coupon'}</button>
@@ -74,7 +75,7 @@ function CouponFinancialCounts({ couponId }: { couponId: string }) {
   async function load() {
     setLoading(true); setError('');
     try {
-      const response = await fetch(`/api/admin/workspace/coupons/${couponId}/financial?mode=${mode}`, { cache: 'no-store' });
+      const response = await fetch(`/api/admin/workspace/coupons/${couponId}/financial?mode=${mode}`, { cache: 'no-store',signal:AbortSignal.timeout(15000) });
       if (!response.ok) throw new Error('Financial counts are unavailable. Retry after migration readiness is confirmed.');
       setCounts(await response.json());
     } catch { setError('Financial counts are unavailable. Retry after migration readiness is confirmed.'); }

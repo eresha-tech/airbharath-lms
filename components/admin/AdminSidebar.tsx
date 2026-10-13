@@ -92,7 +92,7 @@ export const adminNavGroups: AdminNavGroup[] = [
         icon: CreditCard,
       },
       {
-        title: "Coupons & Discounts",
+        title: "LMS Course Coupons",
         href: "/admin/coupons",
         icon: Tag,
       },
@@ -100,18 +100,7 @@ export const adminNavGroups: AdminNavGroup[] = [
   },
   {
     groupTitle: "Workspace",
-    items: [
-      { title: "Eligibility", href: "/admin/workspace/eligibility", icon: ShieldCheck },
-      { title: "Course Reviews", href: "/admin/workspace/course-reviews", icon: BookOpen },
-      { title: "Course Builds", href: "/admin/workspace/course-builds", icon: BookOpen },
-      { title: "Private Course Drafts", href: "/admin/workspace/course-drafts", icon: BookOpen },
-      { title: "Workspace Creators", href: "/admin/workspace/creators", icon: Users },
-      { title: "Workspace Refunds", href: "/admin/workspace-refunds", icon: CreditCard },
-      { title: "Workspace Financial Orders", href: "/admin/workspace/orders", icon: CreditCard },
-      { title: "Workspace Coupons", href: "/admin/workspace/coupons", icon: Tag },
-      { title: "Workspace Settings", href: "/admin/workspace/settings", icon: Tag },
-      { title: "Manual Applications", href: "/admin/workspace-applications", icon: Briefcase },
-    ],
+    items: [{ title: "Workspace administration", href: "/admin/workspace", icon: Users }],
   },
   {
     groupTitle: "Placement & Community",

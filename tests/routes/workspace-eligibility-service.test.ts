@@ -1,3 +1,4 @@
+vi.mock('@/lib/workspace/access/repository',()=>({readGrantEvidence:async()=>null}));
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import type { SQL } from 'drizzle-orm';

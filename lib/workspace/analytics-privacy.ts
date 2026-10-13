@@ -2,6 +2,7 @@ import type { CaptureResult } from 'posthog-js';
 import { COUPON_ERRORS, isPlanCode } from './membership/model';
 import { EVALUATOR_VERSION, ELIGIBILITY_POLICY_VERSION } from './eligibility/model';
 export function workspaceAnalyticsPath(pathname: string) {
+  if (pathname === '/admin/workspace') return pathname;
   if (pathname === '/admin/workspace-refunds') return pathname;
   if (pathname.startsWith('/admin/workspace-refunds/')) return '/admin/workspace-refunds/[id]';
   if (pathname === '/workspace') return '/workspace';
@@ -39,7 +40,7 @@ export function sanitizeWorkspaceAnalytics(event: CaptureResult | null): Capture
   if (login) return null;
   if (!event.event.startsWith('workspace_') && !['$pageview', '$pageleave'].includes(event.event)) return null;
   const membership = event.event.startsWith('workspace_plan_') || event.event.startsWith('workspace_coupon_');
-  const eligibility = membership || event.event.startsWith('workspace_eligibility_') || (!!path?.startsWith('/admin/workspace/') || !!path?.startsWith('/admin/workspace-refunds')) || (!!path?.startsWith('/workspace/') && path !== '/workspace/manual-application');
+  const eligibility = membership || event.event.startsWith('workspace_eligibility_') || (path === '/admin/workspace' || !!path?.startsWith('/admin/workspace/') || !!path?.startsWith('/admin/workspace-refunds')) || (!!path?.startsWith('/workspace/') && path !== '/workspace/manual-application');
   const technical = ['$current_url', 'pathname', '$device_id', '$session_id', '$window_id', '$lib', '$lib_version', '$browser', '$browser_version', '$os', '$os_version', '$device_type', '$screen_height', '$screen_width', '$viewport_height', '$viewport_width'];
   const allowed = new Set([...technical, 'feature', 'eventVersion', ...(eligibility ? ['evaluatorVersion', 'policyVersion', ...(membership ? ['planCode', 'outcome', 'discountType', 'hasCoupon'] : [])] : ['aviationBackground', 'courseReadiness', 'audienceStatus', 'audienceSize', 'stepNumber', 'failureCategory', 'entryPoint', 'distinct_id', '$is_identified', '$process_person_profile'])]);
   const properties: CaptureResult['properties'] = {};

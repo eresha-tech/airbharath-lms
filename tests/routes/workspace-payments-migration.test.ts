@@ -26,7 +26,7 @@ it('enforces identity, ownership, capacity, safe release and deferred financial 
 });
 it('preserves public disabled CTA and keeps financial administration read-only', () => {
   expect(read('components/workspace/ActivationPreview.tsx')).toContain('Payments not yet enabled');
-  const page = read('app/(admin)/admin/workspace/orders/page.tsx');
+  const page = (read('app/(admin)/admin/workspace/orders/page.tsx') + read('components/admin/WorkspaceList.tsx') + read('app/(admin)/admin/workspace/layout.tsx'));
   expect(page).toContain('getAuthorizedAdminSession'); expect(page).toContain('ph-no-capture');
   expect(page).not.toContain('Mark Paid'); expect(page).not.toContain('Active membership');
   expect(read('components/workspace/WorkspaceCoupons.tsx')).toContain('releasedReservations');

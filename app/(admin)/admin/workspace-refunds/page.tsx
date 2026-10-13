@@ -1,20 +1,4 @@
-import { membershipState } from '@/lib/workspace/activation/model';
-import { redirect } from 'next/navigation';
-import { getAuthorizedAdminSession } from '@/lib/admin-authorization';
-import { listAdminRefunds, listExternalRefundReviews } from '@/lib/workspace/refunds/repository';
-import { refundStatus } from '@/lib/workspace/refunds/model';
-import { formatWorkspaceDate } from '@/lib/workspace/eligibility/model';
-import { formatPaise } from '@/lib/workspace/membership/model';
-import { AdminRefundActions } from '@/components/workspace/RefundActions';
+import {WorkspaceList,type AdminSearch} from '@/components/admin/WorkspaceList';
 export const dynamic='force-dynamic';
-export const metadata={title:'Workspace refund review — AirBharath',robots:{index:false,follow:false}};
-export default async function RefundAdminPage(){
- const actor=await getAuthorizedAdminSession();if(!actor)redirect('/login');
- let rows,external;try{[rows,external]=await Promise.all([listAdminRefunds(actor.id),listExternalRefundReviews(actor.id)]);}catch{return <p role="status" className="ph-no-capture p-6">Refund review is unavailable. Apply the reviewed migration only in a separately authorized verification task.</p>;}
- return <main className="ph-no-capture ph-sensitive space-y-7"><header><p className="text-xs uppercase tracking-widest text-primary">Workspace finances</p><h1 className="mt-3 font-outfit text-3xl font-semibold">Refund review</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">Pending requests appear first. Timely requests may be reviewed after their deadline. Access continues until a full refund is authoritatively confirmed.</p></header>
- {!rows.length&&<p className="rounded-xl border border-border p-6">No refund requests yet.</p>}
- {rows.map(({request,order,attempt,completion,membership,name,email,phone})=><article key={request.id} className="rounded-2xl border border-border bg-card p-6"><div className="flex flex-wrap justify-between gap-4"><h2 className="font-outfit text-xl">{name||'Creator'} · {order.planSnapshot.displayName}</h2><p className="text-sm font-medium">{refundStatus(request.decision,attempt?.state,!!completion)}</p></div><p className="mt-2 break-all text-sm text-muted-foreground">{email||phone||'No contact recorded'}</p>
- <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">{[['Order',order.id],['Amount paid',formatPaise(order.totalPaise)],['Coupon / attribution',order.couponCode?`${order.couponCode} · ${order.couponSnapshot?.sourceName||'Recorded attribution'}`:'No coupon'],['Paid at',order.paidAt?formatWorkspaceDate(order.paidAt):'Not established'],['Request deadline',formatWorkspaceDate(request.eligibilityDeadline)],['Requested at',formatWorkspaceDate(request.requestedAt)],['Membership / activation',completion?'Refunded — historical data retained':membership?membershipState(membership.startsAt,membership.endsAt,new Date()):order.activationState],['Execution',attempt?.state||'Not initiated'],['Reason',request.reason]].map(([label,value])=><div key={label}><dt className="text-muted-foreground">{label}</dt><dd className="mt-1 break-words">{value}</dd></div>)}</dl>
- {request.note&&<p className="mt-5 whitespace-pre-wrap text-sm leading-7">{request.note}</p>}{request.rejectionReason&&<p className="mt-4 whitespace-pre-wrap text-sm">Rejection reason: {request.rejectionReason}</p>}
- {!completion&&<AdminRefundActions orderId={order.id} decision={request.decision} execution={attempt?.state}/>}</article>)}{external.length>0&&<section className="space-y-4"><h2 className="font-outfit text-2xl">Provider refunds requiring review</h2>{external.map(({order,name,outcome,observedAt})=><article key={order.id} className="rounded-2xl border border-border p-6"><h3 className="font-medium">{name||'Creator'} · {order.planSnapshot.displayName}</h3><p className="mt-3 text-sm">{outcome==='partial_review'?'An external partial refund was observed. Full-refund entitlement revocation has not occurred.':'Provider evidence requires review.'}</p><p className="mt-2 break-all text-xs text-muted-foreground">Order {order.id} · {formatPaise(order.totalPaise)} · observed {formatWorkspaceDate(observedAt)}</p><AdminRefundActions orderId={order.id} decision="external" execution="uncertain"/></article>)}</section>}</main>;
-}
+export const metadata={robots:{index:false,follow:false}};
+export default async function Page({searchParams=Promise.resolve({})}:{searchParams?:AdminSearch}){return WorkspaceList({kind:'refunds',searchParams});}

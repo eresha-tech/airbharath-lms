@@ -35,7 +35,7 @@ it.each(['/admin/workspace/course-reviews','/admin/workspace/course-reviews/'+ke
  const safe=sanitizeWorkspaceAnalytics(event)!;expect(safe.properties.$current_url).toBe('https://example.test'+workspaceAnalyticsPath(pathname));for(const value of [key,owner,draftId,'private'])expect(JSON.stringify(safe)).not.toContain(value);expect(sanitizeWorkspaceAnalytics({...event,event:'$autocapture'})).toBeNull();expect(sanitizeWorkspaceAnalytics({...event,event:'workspace_course_review_approved'})).toBeNull();
 });
 it('private review pages are noindex and have capture protection; public payments remain fail-closed',()=>{
- for(const path of ['app/(admin)/admin/workspace/course-reviews/page.tsx','app/(admin)/admin/workspace/course-reviews/[id]/page.tsx']){const source=readFileSync(path,'utf8');expect(source).toContain('index: false, follow: false');expect(source).toContain('ph-no-capture');}
+ for(const path of ['app/(admin)/admin/workspace/course-reviews/page.tsx','app/(admin)/admin/workspace/course-reviews/[id]/page.tsx']){const source=readFileSync(path,'utf8')+readFileSync('app/(admin)/admin/workspace/layout.tsx','utf8')+readFileSync('components/admin/WorkspaceShell.tsx','utf8');expect(source.replace(/\s/g,'')).toContain('index:false,follow:false');expect(source).toContain('ph-no-capture');}
  expect(readFileSync('app/(workspace)/workspace/(creator)/layout.tsx','utf8')).toContain('index: false');
  const config=readFileSync('lib/workspace/payments/configuration-core.mjs','utf8');expect(config).toContain('WORKSPACE_PAYMENT_ENABLED');
 });

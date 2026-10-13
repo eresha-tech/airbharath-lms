@@ -24,7 +24,7 @@ export function reviewService(creators: CreatorStore, admins: AdminReviewStore, 
     try {
       return await creators.transaction(userId, async tx => {
         const context = await tx.context();
-        const capability = creatorCapabilities(context.evidence, clock(), environment, context.financialReview);
+        const capability = creatorCapabilities(context.evidence, clock(), environment, context.financialReview, context.grant);
         if (!context.profileId || !(edit ? capability.canEditWorkspace : capability.canViewCreatorWorkspace)) throw new ReviewError('forbidden');
         return work(tx);
       });
@@ -39,7 +39,7 @@ export function reviewService(creators: CreatorStore, admins: AdminReviewStore, 
       return creator<Submission>(userId, true, async tx => {
         const draft = await tx.draft(draftId); if (!draft) throw new ReviewError('not_found');
         const now = clock(); const context = await tx.context();
-        if (!creatorCapabilities(context.evidence, now, environment, context.financialReview).canEditWorkspace) throw new ReviewError('forbidden');
+        if (!creatorCapabilities(context.evidence, now, environment, context.financialReview, context.grant).canEditWorkspace) throw new ReviewError('forbidden');
         const prior = await tx.reviews.request(command.requestKey);
         if (prior) { if (prior.commandHash !== commandHash) throw new ReviewError('conflict'); return prior; }
         const latest = await tx.reviews.latest(draftId);

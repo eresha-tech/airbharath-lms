@@ -1,7 +1,9 @@
+vi.mock('@/lib/workspace/admin/lists',()=>({adminList:mocks.adminList}));
+import {adminListFixture} from './workspace-admin-list-fixtures';
 import { createElement } from 'react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-const mocks=vi.hoisted(()=>({state:vi.fn(),history:vi.fn(),read:vi.fn(),admin:vi.fn(),inspect:vi.fn(),list:vi.fn(),summaries:vi.fn(),draft:vi.fn()}));
+const mocks=vi.hoisted(()=>({state:vi.fn(),history:vi.fn(),read:vi.fn(),adminList:vi.fn(),admin:vi.fn(),inspect:vi.fn(),list:vi.fn(),summaries:vi.fn(),draft:vi.fn()}));
 vi.mock('@/lib/workspace/creator/pages',()=>({requireCreatorWorkspace:mocks.state}));
 vi.mock('@/lib/workspace/review/repository',()=>({workspaceReviews:()=>({history:mocks.history})}));
 vi.mock('@/lib/workspace/creator/repository',()=>({workspaceContent:()=>({read:mocks.draft})}));
@@ -22,7 +24,7 @@ import { content,evidence,owner,other,key,draftId,profileId,now } from './worksp
 import { creatorCapabilities } from '@/lib/workspace/creator/model';
 let tree:BuildTree;let state:ReturnType<typeof creatorCapabilities>;
 const draft={...content,id:draftId,userId:owner,creatorProfileId:profileId,version:3,currency:'INR',status:'draft' as const,requestKey:key,creationHash:'a'.repeat(64),createdAt:now,updatedAt:now};
-beforeEach(()=>{
+beforeEach(()=>{mocks.adminList.mockResolvedValue(adminListFixture());
  tree={project:{id:key,draftId,approvedSubmissionId:other,status:'building',version:1,createdAt:now,updatedAt:now},source:{...content,id:other,currency:'INR',submissionNumber:1,approvedAt:now},modules:[{id:profileId,title:'Approved outline module',description:'Approved scope',position:0,version:1,createdAt:now,updatedAt:now}],lessons:[{id:owner,moduleId:profileId,title:'Saved private lesson',summary:'Private plan',position:0,version:1,createdAt:now,updatedAt:now}],canEdit:true,inspection:{creatorName:'Synthetic Creator',creatorStatus:'enabled'}};
  state=creatorCapabilities(evidence,now,'test');mocks.state.mockImplementation(async()=>({user:{id:owner},capabilities:state}));mocks.read.mockResolvedValue(tree);mocks.admin.mockResolvedValue({id:other});mocks.inspect.mockResolvedValue({...tree,canEdit:false});mocks.list.mockResolvedValue({rows:[{project:tree.project,source:tree.source,creatorName:'Synthetic Creator',moduleCount:1,lessonCount:1}],hasNext:false});mocks.summaries.mockResolvedValue({available:true,rows:{}});mocks.draft.mockResolvedValue(draft);mocks.history.mockResolvedValue({submissions:[{submission:{...tree.source,draftId,version:3,reviewStatus:'approved',submittedAt:now},events:[]}],hasNext:false});
 });

@@ -8,7 +8,8 @@ import type { AccessEvidence } from '../activation/model';
 import { CreatorError, creatorCapabilities, validateDraft, validateProfile, version, type DraftContent, type ProfileContent } from './model';
 export type Draft = typeof workspaceCourseDrafts.$inferSelect;
 export type ProfileDetails = typeof workspaceCreatorProfileDetails.$inferSelect;
-export type CreatorContext = { user: { id: string; fullName: string | null }; profileId: string | null; evidence: AccessEvidence | null; financialReview: boolean; planName: string | null };
+import type { GrantEvidence } from '../access/model';
+export type CreatorContext = { grant?: GrantEvidence | null; user: { id: string; fullName: string | null }; profileId: string | null; evidence: AccessEvidence | null; financialReview: boolean; planName: string | null };
 export interface CreatorTransaction {
   reviews: SubmissionTransaction;
   summary?(): Promise<CourseSummary>;
@@ -26,7 +27,7 @@ export function creatorService(store: CreatorStore, environment: string | undefi
   async function run<T>(userId: string, edit: boolean, work: (tx: CreatorTransaction, context: CreatorContext, now: Date) => Promise<T>) {
     return store.transaction(userId, async tx => {
       const context = await tx.context(); const now = clock();
-      const capabilities = creatorCapabilities(context.evidence, now, environment, context.financialReview);
+      const capabilities = creatorCapabilities(context.evidence, now, environment, context.financialReview, context.grant);
       if (!(edit ? capabilities.canEditWorkspace : capabilities.canViewCreatorWorkspace) || !context.profileId) throw new CreatorError('restricted');
       return work(tx, context, now);
     });
@@ -34,7 +35,7 @@ export function creatorService(store: CreatorStore, environment: string | undefi
   return {
     overview: (userId: string, page = 1) => run(userId, false, async (tx, context, now) => {
       const list = await tx.list(page);
-      return { ...context, capabilities: creatorCapabilities(context.evidence, now, environment, context.financialReview), ...list, reviewStatuses: await tx.reviews.statuses(list.drafts.map(draft => draft.id)), details: await tx.details() };
+      return { ...context, capabilities: creatorCapabilities(context.evidence, now, environment, context.financialReview, context.grant), ...list, reviewStatuses: await tx.reviews.statuses(list.drafts.map(draft => draft.id)), details: await tx.details() };
     }),
     dashboardSummary: (userId: string) => run(userId, false, async tx => { if (!tx.summary) throw new Error('Course summary unavailable'); return tx.summary(); }),
     read: (userId: string, id: string) => run(userId, false, async tx => { const draft = await tx.draft(id); if (!draft) throw new CreatorError('not_found'); return draft; }),
@@ -53,7 +54,7 @@ export function creatorService(store: CreatorStore, environment: string | undefi
         if (!await tx.draft(id)) throw new CreatorError('not_found');
         if (!permitsDraftEdit((await tx.reviews.latest(id))?.reviewStatus)) throw new CreatorError('review_locked');
         const now = clock();
-        if (!creatorCapabilities(context.evidence, now, environment, context.financialReview).canEditWorkspace) throw new CreatorError('restricted');
+        if (!creatorCapabilities(context.evidence, now, environment, context.financialReview, context.grant).canEditWorkspace) throw new CreatorError('restricted');
         const updated = await tx.update(id, expectedVersion, content, now);
         if (!updated) throw new CreatorError('conflict'); return updated;
       });

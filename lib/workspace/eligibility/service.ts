@@ -1,3 +1,4 @@
+import { readGrantEvidence } from '../access/repository';
 import { classifyWorkspaceRuntime } from '@/lib/workspace/payments/classification';
 import { creatorCapabilities } from '../creator/model';
 import { readWorkspaceAccess } from '../activation/repository';
@@ -27,8 +28,9 @@ export async function getWorkspaceJourneyState(userId: string, clock = () => new
   const financialReview = access?.latestOrder?.activationState === 'held_for_review';
   const memberState = access?.row && (access.row.profile.status !== 'enabled' || (!capability.hasCreatorAccess && !['expired', 'refunded'].includes(capability.state || ''))) ? 'creator_unavailable' : capability.state;
   const state = financialReview ? 'financial_review' : memberState || (access?.latestOrder?.financialState === 'captured' ? 'activation_pending' : null);
-  const creator = creatorCapabilities(access?.row ? { refundedAt: access.row.refund?.confirmedAt, profileStatus: access.row.profile.status, activationState: access.row.order.activationState, providerMode: access.row.order.providerMode, commercialPolicyVersion: access.row.order.commercialPolicyVersion, membership: access.row.membership } : null, now, classifyWorkspaceRuntime(), financialReview);
-  return { ...resolveJourney(!!user, latest, now), hasCreatorAccess: capability.hasCreatorAccess, hasPaidEntitlement: capability.hasPaidEntitlement, ...(financialReview ? { hasCreatorAccess: false, hasPaidEntitlement: false } : {}), ...(state ? { state, destination: creator.canViewCreatorWorkspace ? '/workspace/dashboard' : '/workspace/member' } : {}), attempt: latest ? eligibilityReceipt(latest) : null };
+  const creator = creatorCapabilities(access?.row ? { refundedAt: access.row.refund?.confirmedAt, profileStatus: access.row.profile.status, activationState: access.row.order.activationState, providerMode: access.row.order.providerMode, commercialPolicyVersion: access.row.order.commercialPolicyVersion, membership: access.row.membership } : null, now, classifyWorkspaceRuntime(), financialReview, user ? await readGrantEvidence(userId) : null);
+  if (!state && !['none','ineligible'].includes(creator.grantState)) return { ...resolveJourney(!!user, latest, now), hasCreatorAccess: creator.hasCreatorAccess, hasPaidEntitlement: creator.hasPaidEntitlement, state: creator.grantState === 'active' ? 'complimentary' : creator.grantState, destination: creator.canViewCreatorWorkspace ? '/workspace/dashboard' : '/workspace/member', attempt: latest ? eligibilityReceipt(latest) : null };
+  return { ...resolveJourney(!!user, latest, now), hasCreatorAccess: creator.hasCreatorAccess, hasPaidEntitlement: creator.hasPaidEntitlement, ...(state ? { state, destination: creator.canViewCreatorWorkspace ? '/workspace/dashboard' : '/workspace/member' } : {}), attempt: latest ? eligibilityReceipt(latest) : null };
 }
 export async function getEligibilityFormConfig() {
   const [currentSettings, policy] = await Promise.all([

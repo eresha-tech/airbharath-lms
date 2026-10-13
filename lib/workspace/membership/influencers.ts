@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { users, workspaceInfluencers as influencers } from '@/lib/db/schema';
 import { object, UUID } from '../eligibility/model';
@@ -11,11 +11,11 @@ export function influencerDefinition(raw: unknown) {
   if (/[\u0000-\u001f\u007f]/.test(raw.displayName + (raw.description || ''))) return null;
   return { displayName: raw.displayName.trim(), description: raw.description === null ? null : (raw.description as string).trim(), status: raw.status as 'active' | 'inactive' };
 }
-export async function listInfluencers(actorId: string) {
+export async function listInfluencers(actorId: string, q = '', page = 1, size = 25, status = 'all') {
   return db.transaction(async tx => {
     const [actor] = await tx.select({ role: users.role }).from(users).where(eq(users.id, actorId)).for('share');
     if (actor?.role !== 'admin') throw new MembershipError('forbidden');
-    return tx.select({ id: influencers.id, displayName: influencers.displayName, description: influencers.description, status: influencers.status, version: influencers.version }).from(influencers).orderBy(desc(influencers.createdAt), desc(influencers.id)).limit(500);
+    return tx.select({ id: influencers.id, displayName: influencers.displayName, description: influencers.description, status: influencers.status, version: influencers.version }).from(influencers).where(and(q ? ilike(influencers.displayName, '%'+q.replace(/[\\%_]/g,'\\$&')+'%') : undefined, status==='all'?undefined:eq(influencers.status,status as 'active'|'inactive'))).orderBy(desc(influencers.createdAt), desc(influencers.id)).limit(size+1).offset((page-1)*size);
   });
 }
 export async function saveInfluencer(actorId: string, id: string, raw: unknown, expectedVersion?: number) {

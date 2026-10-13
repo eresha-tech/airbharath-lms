@@ -1,0 +1,7 @@
+import {WorkspaceList,type AdminSearch} from '@/components/admin/WorkspaceList';
+import {getAuthorizedAdminSession} from '@/lib/admin-authorization';
+import {selectedUser} from '@/lib/workspace/admin/details';
+import {GrantActions} from '@/components/admin/GrantActions';
+export const dynamic='force-dynamic';
+export default async function Page({searchParams}:{searchParams:AdminSearch}){const raw=await searchParams,actor=await getAuthorizedAdminSession();let user;try{user=actor&&typeof raw.user==='string'?await selectedUser(actor.id,raw.user):null;}catch{user=null;}
+return <div className="space-y-10"><WorkspaceList kind="grants" searchParams={Promise.resolve(Object.fromEntries(Object.entries(raw).filter(([k])=>k!=='user')))}/>{user&&<section aria-label="Selected account" className="space-y-4"><h2 className="text-xl font-semibold">Selected account: {user.name||'Account'}</h2><p className="text-sm text-muted-foreground">Eligibility: {user.result||'Not evaluated'} · Creator identity: {user.profile_status||'Not created'}{user.open_grant?' · Open grant exists':''}</p><GrantActions userId={user.id} allowed={user.result==='eligible'&&!!user.eligible_until&&new Date(user.eligible_until)>new Date()&&(!user.profile_status||user.profile_status==='enabled')&&!user.open_grant}/></section>}<WorkspaceList kind="users" searchParams={Promise.resolve({q:raw.q||'',size:raw.size||'25',page:raw.page||'1'})}/></div>;}

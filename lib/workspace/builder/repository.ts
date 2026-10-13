@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { users, workspaceCreatorProfiles as profiles, workspaceMembershipOrders as orders, workspaceCourseDrafts as drafts, workspaceCourseSubmissions as submissions, workspaceCourseReviewEvents as reviews, workspaceCourseProjects as projects, workspaceCourseModules as modules, workspaceCourseLessons as lessons } from '@/lib/db/schema';
+import { readGrantEvidence } from '../access/repository';
 import { readWorkspaceAccess } from '../activation/repository';
 import { environment } from '../creator/model';
 import { BuildError } from './model';
@@ -26,10 +27,11 @@ export const postgresBuildStore: BuildStore = {
     await tx.select({ id: orders.id }).from(orders).where(eq(orders.userId, userId)).orderBy(orders.id).for('update');
     const [profile] = await tx.select().from(profiles).where(eq(profiles.userId, userId)).for('update');
     const access = await readWorkspaceAccess(userId, tx);
+    const grant = await readGrantEvidence(userId, tx);
     const owner = (project: Project) => and(eq(modules.projectId, project.id), eq(modules.userId, userId));
     const lessonOwner = (project: Project, moduleId?: string) => and(eq(lessons.projectId, project.id), eq(lessons.userId, userId), moduleId ? eq(lessons.moduleId, moduleId) : undefined);
     return work({
-      context: async () => ({ user, profileId: profile?.id || null, evidence: access.row ? { refundedAt: access.row.refund?.confirmedAt, profileStatus: access.row.profile.status, activationState: access.row.order.activationState, providerMode: access.row.order.providerMode, commercialPolicyVersion: access.row.order.commercialPolicyVersion, membership: access.row.membership } : null, financialReview: access.latestOrder?.activationState === 'held_for_review', planName: access.row?.order.planSnapshot.displayName || null }),
+      context: async () => ({ user, grant, profileId: profile?.id || null, evidence: access.row ? { refundedAt: access.row.refund?.confirmedAt, profileStatus: access.row.profile.status, activationState: access.row.order.activationState, providerMode: access.row.order.providerMode, commercialPolicyVersion: access.row.order.commercialPolicyVersion, membership: access.row.membership } : null, financialReview: access.latestOrder?.activationState === 'held_for_review', planName: access.row?.order.planSnapshot.displayName || null }),
       source: async (id, draftId) => {
         // Match the established creator/review order: draft before submission.
         await tx.select({ id: drafts.id }).from(drafts).where(and(eq(drafts.id, draftId), eq(drafts.userId, userId))).for('update');

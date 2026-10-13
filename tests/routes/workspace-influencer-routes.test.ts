@@ -9,7 +9,7 @@ const definition = { displayName: 'Synthetic', description: null, status: 'activ
 const request = (body: unknown, source = origin) => new Request(origin + '/api/admin/workspace/influencers', { method: 'POST', headers: { origin: source, 'content-type': 'application/json' }, body: JSON.stringify(body) });
 beforeEach(() => { vi.stubEnv('NEXT_PUBLIC_BASE_URL', origin); mocks.admin.mockResolvedValue({ id: actorId }); mocks.list.mockResolvedValue([]); mocks.save.mockResolvedValue({ id: requestKey, ...definition, version: 1, createdBy: actorId }); });
 it.each([null, undefined])('anonymous or missing persisted admin cannot access any influencer handler', async actor => {
-  mocks.admin.mockResolvedValue(actor); expect((await GET()).status).toBe(403); expect((await POST(request({ id: requestKey, definition }))).status).toBe(403); expect((await PATCH(request({ id: requestKey, definition, expectedVersion: 1 }))).status).toBe(403); expect(mocks.save).not.toHaveBeenCalled(); expect(mocks.list).not.toHaveBeenCalled();
+  mocks.admin.mockResolvedValue(actor); expect((await GET(new Request('http://localhost/api/admin/workspace/influencers'))).status).toBe(403); expect((await POST(request({ id: requestKey, definition }))).status).toBe(403); expect((await PATCH(request({ id: requestKey, definition, expectedVersion: 1 }))).status).toBe(403); expect(mocks.save).not.toHaveBeenCalled(); expect(mocks.list).not.toHaveBeenCalled();
 });
 it('same-origin commands use persisted actor, version guards and private responses', async () => {
   const created = await POST(request({ id: requestKey, definition })); expect(created.status).toBe(201); expect(created.headers.get('cache-control')).toBe('no-store'); expect(JSON.stringify(await created.json())).not.toContain('createdBy');

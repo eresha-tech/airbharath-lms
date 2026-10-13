@@ -1,7 +1,9 @@
+vi.mock('@/lib/workspace/admin/lists',()=>({adminList:mocks.adminList}));
+import {adminListFixture} from './workspace-admin-list-fixtures';
 vi.mock('@/lib/workspace/builder/repository', () => ({ readBuildSummaries: async () => ({ available: true, rows: {} }) }));
 import { beforeEach, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-const mocks = vi.hoisted(() => ({ state: vi.fn(), content: vi.fn(), admin: vi.fn(), inspect: vi.fn(), summary: vi.fn() }));
+const mocks = vi.hoisted(() => ({ state: vi.fn(), content: vi.fn(), adminList: vi.fn(),admin: vi.fn(), inspect: vi.fn(), summary: vi.fn() }));
 vi.mock('@/lib/workspace/review/repository', () => ({ workspaceReviews: () => ({ history: async () => ({ submissions: [], hasNext: false }) }) }));
 vi.mock('@/lib/workspace/creator/pages', () => ({ requireCreatorWorkspace: mocks.state }));
 vi.mock('@/lib/workspace/creator/repository', () => ({ workspaceContent: () => ({ read: mocks.content, dashboardSummary: mocks.summary }), inspectDrafts: mocks.inspect }));
@@ -19,7 +21,7 @@ import { CreatorError, creatorCapabilities } from '@/lib/workspace/creator/model
 import { content, evidence, now, owner, draftId, profileId, profile } from './workspace-creator-fixtures';
 const row = { ...content, id: draftId, userId: owner, creatorProfileId: profileId, version: 5, currency: 'INR', status: 'draft', createdAt: now, updatedAt: now };
 let state: Record<string, unknown>;
-beforeEach(() => { state = { user: { id: owner, fullName: 'Account suggestion' }, profileId, evidence, capabilities: creatorCapabilities(evidence, now, 'test'), planName: 'Quarterly', drafts: [row], total: 1, hasNext: false, details: { ...profile, version: 1 } }; mocks.state.mockImplementation(async () => state); mocks.summary.mockResolvedValue({total:1,drafts:1,underReview:0,changesRequested:0,approved:0,building:0}); mocks.content.mockResolvedValue(row); mocks.admin.mockResolvedValue(null); mocks.inspect.mockResolvedValue([{ draft: row, creatorName: 'Creator', creatorStatus: 'enabled' }]); });
+beforeEach(() => {mocks.adminList.mockResolvedValue(adminListFixture()); state = { user: { id: owner, fullName: 'Account suggestion' }, profileId, evidence, capabilities: creatorCapabilities(evidence, now, 'test'), planName: 'Quarterly', drafts: [row], total: 1, hasNext: false, details: { ...profile, version: 1 } }; mocks.state.mockImplementation(async () => state); mocks.summary.mockResolvedValue({total:1,drafts:1,underReview:0,changesRequested:0,approved:0,building:0}); mocks.content.mockResolvedValue(row); mocks.admin.mockResolvedValue(null); mocks.inspect.mockResolvedValue([{ draft: row, creatorName: 'Creator', creatorStatus: 'enabled' }]); });
 it('dashboard has actual count, membership dates, early access notice, draft links and no invented analytics', async () => {
   const html = renderToStaticMarkup(await Dashboard()); expect(html).toContain('Early Access Active'); expect(html).toContain('Your paid membership term begins on 9 November 2026.'); expect(html).toContain('Quarterly'); expect(html).toContain('Continue Draft'); expect(html).toContain(content.title); expect(html).not.toMatch(/Revenue|Sales|Payout|Completion rate|DGCA/);
 });
@@ -40,7 +42,7 @@ it('shell preserves My Learning and membership status, highlights current naviga
 });
 it('admin draft list/detail require persisted authorization; inspection has no write actions and handles failure', async () => {
   await expect(AdminList({ searchParams: Promise.resolve({}) })).rejects.toThrow('REDIRECT:/login'); await expect(AdminDetail({ params: Promise.resolve({ id: draftId }) })).rejects.toThrow('REDIRECT:/login'); expect(mocks.inspect).not.toHaveBeenCalled();
-  mocks.admin.mockResolvedValue({ id: owner }); const html = renderToStaticMarkup(await AdminDetail({ params: Promise.resolve({ id: draftId }) })); expect(html).toContain('Creator'); expect(html).toContain('Owner account'); expect(html).toContain(content.description); expect(html).not.toContain('<form'); mocks.inspect.mockRejectedValue(new Error('private SQL credential')); const failure = renderToStaticMarkup(await AdminList({ searchParams: Promise.resolve({}) })); expect(failure).toContain('Draft inspection is unavailable'); expect(failure).not.toContain('SQL');
+  mocks.admin.mockResolvedValue({ id: owner }); const html = renderToStaticMarkup(await AdminDetail({ params: Promise.resolve({ id: draftId }) })); expect(html).toContain('Creator'); expect(html).toContain('Owner account'); expect(html).toContain(content.description); expect(html).not.toContain('<form'); mocks.adminList.mockRejectedValue(new Error('private SQL credential')); const failure = renderToStaticMarkup(await AdminList({ searchParams: Promise.resolve({}) })); expect(failure).toContain('List unavailable'); expect(failure).not.toContain('SQL');
 });
 it('dashboard tolerates capability-resolved creator access without inventing a financial source', async()=>{
  state.evidence=null;state.planName=null;state.capabilities={...(state.capabilities as object),canEditWorkspace:true,state:null};

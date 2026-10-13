@@ -911,3 +911,28 @@ export const workspaceVerifiedEmails = pgTable('workspace_verified_emails', {
 },t=>[unique('workspace_verified_email_challenge_unique').on(t.challengeId),uniqueIndex('workspace_verified_email_user_idx').on(t.userId).where(sql`${t.active}`),uniqueIndex('workspace_verified_email_address_idx').on(t.email).where(sql`${t.active}`),check('workspace_verified_email_check',sql`${t.email}=lower(btrim(${t.email})) AND length(${t.email}) BETWEEN 3 AND 254 AND ((${t.active} AND ${t.revokedAt} IS NULL) OR (NOT ${t.active} AND ${t.revokedAt} IS NOT NULL AND ${t.revokedAt}>=${t.verifiedAt}))`)]);
 export const workspaceEmailRateLimits = pgTable('workspace_email_rate_limits', {key:text('key').notNull(),windowAt:timestamp('window_at',{withTimezone:true}).notNull(),count:integer('count').notNull()},t=>[primaryKey({columns:[t.key,t.windowAt]}),check('workspace_email_rate_check',sql`${t.key} ~ '^[a-f0-9]{64}$' AND ${t.count}>0`)]);
 export const workspaceEmailNoticeBindings = pgTable('workspace_email_notice_bindings', {noticeId:uuid('notice_id').primaryKey().references(()=>workspaceRefundNotices.id,{onDelete:'restrict'}),verificationId:uuid('verification_id').references(()=>workspaceVerifiedEmails.id,{onDelete:'restrict'}),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull()});
+
+// Complimentary authorization evidence is separate from paid membership/financial ledgers.
+export const workspaceAccessGrants = pgTable('workspace_access_grants', {
+  id: uuid('id').defaultRandom().primaryKey(), userId: uuid('user_id').notNull().references(()=>users.id,{onDelete:'restrict'}), creatorProfileId: uuid('creator_profile_id').notNull(),
+  eligibilityAttemptId: uuid('eligibility_attempt_id').notNull().references(()=>workspaceEligibilityAttempts.id,{onDelete:'restrict'}),
+  source: text('source').default('admin_complimentary').notNull(), scope: text('scope').default('creator_workspace').notNull(), environment: text('environment').$type<'development'|'test'|'production'>().notNull(),
+  status: text('status').$type<'active'|'revoked'|'expired'>().default('active').notNull(), startsAt: timestamp('starts_at',{withTimezone:true}).notNull(), expiresAt: timestamp('expires_at',{withTimezone:true}).notNull(),
+  reason: text('reason').notNull(), grantedBy: uuid('granted_by').notNull().references(()=>users.id,{onDelete:'restrict'}), requestKey: uuid('request_key').notNull(), payloadHash: text('payload_hash').notNull(),
+  termsVersion: text('terms_version').notNull(), termsContentHash: text('terms_content_hash').notNull(), createdAt: timestamp('created_at',{withTimezone:true}).notNull(),
+  closedAt: timestamp('closed_at',{withTimezone:true}), closedBy: uuid('closed_by').references(()=>users.id,{onDelete:'restrict'}), closeReason: text('close_reason'),
+},t=>[
+  uniqueIndex('workspace_grant_actor_key_idx').on(t.grantedBy,t.requestKey),uniqueIndex('workspace_grant_owner_idx').on(t.id,t.userId),
+  uniqueIndex('workspace_grant_open_owner_idx').on(t.userId,t.environment).where(sql`${t.status}='active'`),index('workspace_grant_owner_expiry_idx').on(t.userId,t.environment,t.expiresAt),index('workspace_grant_created_idx').on(t.createdAt,t.id),
+  foreignKey({columns:[t.creatorProfileId,t.userId],foreignColumns:[workspaceCreatorProfiles.id,workspaceCreatorProfiles.userId],name:'workspace_grant_profile_owner_fk'}).onDelete('restrict'),
+  foreignKey({columns:[t.termsVersion,t.termsContentHash],foreignColumns:[workspaceCreatorTermsVersions.termsVersion,workspaceCreatorTermsVersions.contentHash],name:'workspace_grant_terms_fk'}).onDelete('restrict'),
+  check('workspace_grant_context_check',sql`${t.source}='admin_complimentary' AND ${t.scope}='creator_workspace' AND ${t.environment} IN ('development','test','production') AND ${t.payloadHash} ~ '^[a-f0-9]{64}$' AND length(btrim(${t.reason})) BETWEEN 10 AND 1000`),
+  check('workspace_grant_term_check',sql`${t.startsAt}>=${t.createdAt} AND ${t.startsAt}<=${t.createdAt}+interval '30 days' AND ${t.expiresAt}>${t.startsAt} AND ${t.expiresAt}<=(((${t.startsAt} AT TIME ZONE 'Asia/Kolkata')+interval '12 months') AT TIME ZONE 'Asia/Kolkata')`),
+  check('workspace_grant_status_check',sql`(${t.status}='active' AND ${t.closedAt} IS NULL AND ${t.closedBy} IS NULL AND ${t.closeReason} IS NULL) OR (${t.status} IN ('revoked','expired') AND ${t.closedAt} IS NOT NULL AND ${t.closedAt}>=${t.createdAt} AND ${t.closedBy} IS NOT NULL AND length(btrim(${t.closeReason})) BETWEEN 10 AND 1000 AND (${t.status}<>'expired' OR ${t.closedAt}>=${t.expiresAt}))`),
+]);
+export const workspaceAccessGrantEvents = pgTable('workspace_access_grant_events',{
+  id: uuid('id').defaultRandom().primaryKey(),grantId: uuid('grant_id').notNull(),userId:uuid('user_id').notNull(),actorId:uuid('actor_id').notNull().references(()=>users.id,{onDelete:'restrict'}),
+  action:text('action').$type<'granted'|'revoked'|'expired'>().notNull(),reason:text('reason').notNull(),requestKey:uuid('request_key').notNull(),payloadHash:text('payload_hash').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).notNull(),
+},t=>[uniqueIndex('workspace_grant_event_actor_key_idx').on(t.actorId,t.requestKey),uniqueIndex('workspace_grant_event_action_idx').on(t.grantId,t.action),index('workspace_grant_event_created_idx').on(t.createdAt,t.id),
+  foreignKey({columns:[t.grantId,t.userId],foreignColumns:[workspaceAccessGrants.id,workspaceAccessGrants.userId],name:'workspace_grant_event_owner_fk'}).onDelete('restrict'),
+  check('workspace_grant_event_context_check',sql`${t.action} IN ('granted','revoked','expired') AND length(btrim(${t.reason})) BETWEEN 10 AND 1000 AND ${t.payloadHash} ~ '^[a-f0-9]{64}$'`)]);

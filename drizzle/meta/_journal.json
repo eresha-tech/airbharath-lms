@@ -197,6 +197,20 @@
       "when": 1791889784066,
       "tag": "0027_workspace_verified_creator_email",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791910203969,
+      "tag": "0028_workspace_creator_access_grants",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791911309962,
+      "tag": "0029_workspace_grant_completion_record_fix",
+      "breakpoints": true
     }
   ]
 }

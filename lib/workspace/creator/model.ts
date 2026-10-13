@@ -1,3 +1,4 @@
+import { resolveComplimentaryAccess, type GrantEvidence } from '../access/model';
 import { classifyWorkspaceRuntime } from '../payments/classification';
 import { CreatorError, plain, version } from './text';
 export { CreatorError, plain, version, categoryLabel, priceLabel } from './text';
@@ -7,10 +8,12 @@ export const MAX_PRICE_PAISE = 100_000_000;
 export type OutlineItem = { title: string; description: string; ordering: number };
 export type DraftContent = { title: string; category: Category; description: string; targetLearner: string; learningOutcomes: string[]; outline: OutlineItem[]; tentativePricePaise: number | null };
 export type ProfileContent = { displayName: string; professionalHeadline: string; shortBio: string; primaryAviationCategory: Category; professionalProfileUrl: string | null };
-export function creatorCapabilities(evidence: AccessEvidence | null, now: Date, environment: string | undefined, financialReview = false) {
+export function creatorCapabilities(evidence: AccessEvidence | null, now: Date, environment: string | undefined, financialReview = false, grant?: GrantEvidence | null) {
   const access = resolveMembershipAccess(evidence, now, environment);
   const historical = !!evidence && ['expired','refunded'].includes(access.state || '') && resolveMembershipAccess({ ...evidence, refundedAt: null }, new Date(evidence.membership.endsAt.getTime() - 1), environment).hasCreatorAccess && evidence.membership.fulfilledAt <= now;
-  return { ...access, canViewCreatorWorkspace: !financialReview && (access.hasCreatorAccess || historical), canEditWorkspace: !financialReview && access.hasCreatorAccess && access.hasPaidEntitlement };
+  const complimentary = resolveComplimentaryAccess(grant, now, environment);
+  const paid = !financialReview && access.hasCreatorAccess && access.hasPaidEntitlement;
+  return { ...access, hasCreatorAccess: paid || complimentary.active, hasPaidEntitlement: paid, grantState: complimentary.state, accessSource: paid && complimentary.active ? 'paid_and_complimentary' : paid ? 'paid' : complimentary.active ? 'complimentary' : 'retained', canViewCreatorWorkspace: (!financialReview && (access.hasCreatorAccess || historical)) || complimentary.active || complimentary.historical, canEditWorkspace: paid || complimentary.active };
 }
 export function environment() { return classifyWorkspaceRuntime(); }
 function record(value: unknown): Record<string, unknown> {
