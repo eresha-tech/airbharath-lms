@@ -7,7 +7,7 @@ import { financialConfiguration } from '@/lib/workspace/payments/configuration';
 import { ActivationPreview } from '@/components/workspace/ActivationPreview';
 import { readCurrentCreatorTermsAcceptance } from '@/lib/workspace/terms/repository';
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Choose a Workspace plan — AirBharath' };
+export const metadata = { title: 'Choose a Workspace plan — AirBharath', robots: { index: false, follow: false } };
 export default async function ActivatePage() {
   const user = await getWorkspaceUser();
   if (!user) redirect('/login?callbackUrl=%2Fworkspace%2Fapply');

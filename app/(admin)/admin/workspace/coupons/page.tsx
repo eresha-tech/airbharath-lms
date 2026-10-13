@@ -5,6 +5,7 @@ import { listInfluencers } from '@/lib/workspace/membership/influencers';
 import { listWorkspaceCoupons } from '@/lib/workspace/membership/service';
 import { WorkspaceCoupons } from '@/components/workspace/WorkspaceCoupons';
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Workspace coupon campaigns — AirBharath', robots: { index: false, follow: false } };
 export default async function CouponsPage() {
   const actor = await getAuthorizedAdminSession();
   if (!actor) redirect('/login');

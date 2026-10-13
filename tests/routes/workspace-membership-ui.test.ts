@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { expect, it, vi } from 'vitest';
@@ -23,4 +24,8 @@ it('marks unavailable plans disabled and renders an empty admin definition state
   expect(html.match(/disabled=""/g)!.length).toBeGreaterThanOrEqual(4);
   const admin = renderToStaticMarkup(React.createElement(WorkspaceCoupons, { initialInfluencers: [], initial: { coupons: [], hasNext: false, page: 1 } }));
   expect(admin).toContain('IST'); expect(admin).toContain('Create active coupon'); expect(admin).toContain('all three'); expect(admin).not.toMatch(/usedCount|Razorpay|already paid/);
+});
+
+it('keeps the authenticated activation page out of search indexes', () => {
+  for (const path of ['app/(user)/workspace/activate/page.tsx', 'app/(admin)/admin/workspace/coupons/page.tsx']) expect(readFileSync(path, 'utf8')).toContain('robots: { index: false, follow: false }');
 });
