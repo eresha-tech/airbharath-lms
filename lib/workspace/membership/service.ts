@@ -1,3 +1,5 @@
+import { readEmailProof } from '../email/repository';
+import { normalizeEmail } from '../email/model';
 import { createHash } from 'node:crypto';
 import { and, count, desc, eq, ilike, inArray, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
@@ -26,7 +28,7 @@ export async function getWorkspaceMembershipQuote(userId: string, input: QuoteIn
 }
 // Reuse the same economics/hash inside accepted-order transactions after financial locks.
 export async function readMembershipQuote(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], userId: string, input: QuoteInput, clock = () => new Date()) {
-  const user = await tx.query.users.findFirst({ where: eq(users.id, userId), columns: { id: true } });
+  const user = await tx.query.users.findFirst({ where: eq(users.id, userId), columns: { id: true, email: true } });
   if (!user) throw new MembershipError('authentication');
   const attempt = await tx.query.workspaceEligibilityAttempts.findFirst({ where: eq(attempts.userId, userId), orderBy: [desc(attempts.decidedAt), desc(attempts.id)] });
   const [plan, currentSettings, policy, coupon] = await Promise.all([
@@ -56,6 +58,7 @@ export async function readMembershipQuote(tx: Parameters<Parameters<typeof db.tr
       if (occupied.n >= coupon!.usageLimit) throw new MembershipError('capacity');
     }
   }
+  const emailProof = await readEmailProof(tx,userId,now);
   const amounts = calculatePrice(plan.basePricePaise, plan.taxRateBps, coupon);
   const expiry = Math.min(now.getTime() + 10 * 60_000, attempt!.eligibleUntil!.getTime(), coupon?.expiresAt?.getTime() ?? Infinity);
   const quote = { quoteVersion: QUOTE_VERSION, planCode: plan.code, planVersionId: plan.id, planVersion: plan.version, planName: plan.displayName, durationMonths: plan.durationMonths, currency: plan.currency,
@@ -63,7 +66,7 @@ export async function readMembershipQuote(tx: Parameters<Parameters<typeof db.tr
     membershipStart: membershipStartInfo(currentSettings.config.launchAt, now), advisory: true as const, reserved: false as const };
   // Bound economics, offer/version, qualification and applicable start/policy versions without exposing IDs in analytics.
   const { generatedAt: _generatedAt, expiresAt: _expiresAt, ...economics } = quote;
-  const result = { ...quote, quoteHash: hash({ quote: economics, couponId: coupon?.id, couponVersion: coupon?.version, settingsId: currentSettings.id, settingsHash: currentSettings.configurationHash, policyId: policy.id, policyHash: policy.contentHash, eligibilityAttemptId: attempt!.id, acceptedPolicyId: attempt!.policyId, eligibilityValidUntil: attempt!.eligibleUntil }) };
+  const result = { ...quote, quoteHash: hash({ emailContact: normalizeEmail(user.email), emailVerificationId: emailProof?.id || null, quote: economics, couponId: coupon?.id, couponVersion: coupon?.version, settingsId: currentSettings.id, settingsHash: currentSettings.configurationHash, policyId: policy.id, policyHash: policy.contentHash, eligibilityAttemptId: attempt!.id, acceptedPolicyId: attempt!.policyId, eligibilityValidUntil: attempt!.eligibleUntil }) };
   return { quote: result, context: { attempt: attempt!, plan, currentSettings, policy, coupon } };
 }
 export type MembershipQuoteContext = Awaited<ReturnType<typeof readMembershipQuote>>;

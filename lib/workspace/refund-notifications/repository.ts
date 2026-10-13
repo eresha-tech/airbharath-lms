@@ -1,19 +1,21 @@
 import 'server-only';
+import { currentEmailProof } from '../email/model';
+import { noticeDigest } from './model';
 import { and, eq, sql } from 'drizzle-orm';
-import { workspaceRefundNotices as notices, workspaceRefundNoticeDeliveries as deliveries, workspaceRefundNoticeDeliveryAttempts as attempts, workspaceMembershipOrders as orders, users, workspaceRefundRequests as requests, workspaceRefundAttempts as refunds, workspaceRefundCompletions as completions } from '@/lib/db/schema';
+import { workspaceRefundNotices as notices, workspaceRefundNoticeDeliveries as deliveries, workspaceRefundNoticeDeliveryAttempts as attempts, workspaceMembershipOrders as orders, users, workspaceRefundRequests as requests, workspaceRefundAttempts as refunds, workspaceRefundCompletions as completions, workspaceEmailNoticeBindings as emailBindings, workspaceVerifiedEmails as verifiedEmails } from '@/lib/db/schema';
 import { randomUUID } from 'node:crypto';
 import { NOTICE_MAX_ATTEMPTS, noticeRetryAt, type NoticeOutcome } from './model';
 import type { NoticeStore, NoticeClaim, NoticeBinding, NoticeSummary } from './store';
 export function createPostgresNoticeStore(db: typeof import('@/lib/db').db): NoticeStore {
   const databaseNow = async (tx: Pick<typeof db, 'execute'>) => new Date((await tx.execute(sql`select clock_timestamp() as time`))[0].time as string | Date);
-  async function locked<T>(claim: NoticeClaim, work: (tx: Pick<typeof db, 'update'>, row: typeof deliveries.$inferSelect, now: Date) => Promise<T>, fallback: T) {
+  async function locked<T>(claim: NoticeClaim, work: (tx: Pick<typeof db, 'update' | 'execute'>, row: typeof deliveries.$inferSelect, now: Date) => Promise<T>, fallback: T) {
     return db.transaction(async tx => {
       const [row] = await tx.select().from(deliveries).where(eq(deliveries.id,claim.deliveryId)).for('update');
       if (!row || row.currentAttemptId !== claim.attemptId || !['claimed','submitted'].includes(row.state)) return fallback;
       return work(tx, row, await databaseNow(tx));
     });
   }
-  async function seal(tx: Pick<typeof db, 'update'>, row: typeof deliveries.$inferSelect, now: Date, outcome: NoticeOutcome) {
+  async function seal(tx: Pick<typeof db, 'update' | 'execute'>, row: typeof deliveries.$inferSelect, now: Date, outcome: NoticeOutcome) {
     const retryable = outcome.state === 'retryable_failure' && row.attemptCount < NOTICE_MAX_ATTEMPTS;
     const state = outcome.state === 'retryable_failure' && !retryable ? 'blocked' : outcome.state;
     const reason = outcome.state === 'retryable_failure' && !retryable ? 'retry_exhausted' : outcome.reason;
@@ -46,15 +48,17 @@ export function createPostgresNoticeStore(db: typeof import('@/lib/db').db): Not
       });
     },
     async inspect(claim) {
-      const [row]=await db.select({notice:{kind:notices.kind},user:{id:users.id,email:users.email},request:{id:requests.id,decision:requests.decision,decidedBy:requests.decidedBy,decidedAt:requests.decidedAt,rejectionReason:requests.rejectionReason},refund:{providerRefundId:refunds.providerRefundId,state:refunds.state},completion:{id:completions.id}}).from(deliveries).innerJoin(notices,eq(notices.id,deliveries.noticeId)).innerJoin(orders,eq(orders.id,notices.membershipOrderId)).innerJoin(users,eq(users.id,orders.userId)).leftJoin(requests,eq(requests.membershipOrderId,orders.id)).leftJoin(refunds,eq(refunds.membershipOrderId,orders.id)).leftJoin(completions,eq(completions.membershipOrderId,orders.id)).where(and(eq(deliveries.id,claim.deliveryId),eq(deliveries.currentAttemptId,claim.attemptId),eq(deliveries.state,'claimed'))).limit(1);
+      const [row]=await db.select({notice:{kind:notices.kind},user:{id:users.id,email:users.email},proof:verifiedEmails,request:{id:requests.id,decision:requests.decision,decidedBy:requests.decidedBy,decidedAt:requests.decidedAt,rejectionReason:requests.rejectionReason},refund:{providerRefundId:refunds.providerRefundId,state:refunds.state},completion:{id:completions.id}}).from(deliveries).innerJoin(notices,eq(notices.id,deliveries.noticeId)).innerJoin(orders,eq(orders.id,notices.membershipOrderId)).innerJoin(users,eq(users.id,orders.userId)).leftJoin(emailBindings,eq(emailBindings.noticeId,notices.id)).leftJoin(verifiedEmails,eq(verifiedEmails.id,emailBindings.verificationId)).leftJoin(requests,eq(requests.membershipOrderId,orders.id)).leftJoin(refunds,eq(refunds.membershipOrderId,orders.id)).leftJoin(completions,eq(completions.membershipOrderId,orders.id)).where(and(eq(deliveries.id,claim.deliveryId),eq(deliveries.currentAttemptId,claim.attemptId),eq(deliveries.state,'claimed'))).limit(1);
       if (!row)return null;
       return {facts:{userId:row.user.id,kind:row.notice.kind,request:!!row.request,rejected:row.request?.decision==='rejected'&&!!row.request.decidedBy&&!!row.request.decidedAt,rejectionReason:row.request?.rejectionReason??null,initiated:!!row.refund?.providerRefundId&&['processing','completed'].includes(row.refund.state),completed:!!row.completion},
-        // users.email is optional/mutable and has NO verification evidence. Never fabricate verified status.
-        recipient:{userId:row.user.id,email:row.user.email,verification:'unverified'}};
+        // The proof is frozen to this notice at creation; never choose another current recipient.
+        recipient:{userId:row.user.id,email:row.proof?.email||row.user.email,verification:currentEmailProof(row.user.email,row.proof,row.user.id,new Date())?'verified':'unverified',verifiedAt:row.proof?.verifiedAt}};
     },
     dispatch(claim,binding:NoticeBinding) {
       return locked(claim,async(tx,row,now)=>{
         if(row.state!=='claimed'||!row.leaseUntil||row.leaseUntil<=now)return false;
+        const recipient=await tx.execute(sql`SELECT p.email FROM workspace_refund_notice_deliveries d JOIN workspace_refund_notices n ON n.id=d.notice_id JOIN workspace_membership_orders o ON o.id=n.membership_order_id JOIN users u ON u.id=o.user_id LEFT JOIN workspace_email_notice_bindings b ON b.notice_id=n.id LEFT JOIN workspace_verified_emails p ON p.id=b.verification_id AND p.user_id=u.id AND p.active AND p.email=lower(btrim(u.email)) AND p.verified_at<=clock_timestamp() WHERE d.id=${row.id} FOR SHARE OF u`);
+        if(typeof recipient[0]?.email!=='string'||noticeDigest([row.id,recipient[0].email])!==binding.recipientHash){await seal(tx,row,now,{state:'blocked',reason:'recipient_changed'});return false;}
         if(row.payloadHash&& (row.payloadHash!==binding.payloadHash||row.recipientHash!==binding.recipientHash||row.providerConfigHash!==binding.providerConfigHash||row.templateVersion!==binding.templateVersion)){await seal(tx,row,now,{state:'blocked',reason:'payload_changed'});return false;}
         await tx.update(attempts).set({...binding,dispatchAt:now,state:'submitted'}).where(eq(attempts.id,claim.attemptId));
         await tx.update(deliveries).set({...binding,state:'submitted',updatedAt:now,version:sql`${deliveries.version}+1`}).where(eq(deliveries.id,row.id));return true;

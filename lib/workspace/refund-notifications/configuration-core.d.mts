@@ -6,7 +6,7 @@ export interface NoticeReadiness {
   noticeDeliveryAuthorized: boolean;
   noticeWorkerScheduled: false;
   noticeActualAcceptanceVerified: false;
-  noticeRecipientVerificationAvailable: false;
+  noticeRecipientVerificationAvailable: true;
   noticesReady: false;
   noticeStatus: 'operational_verification_pending';
   noticeReasons: string[];

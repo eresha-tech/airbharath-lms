@@ -1,0 +1,12 @@
+import { beforeEach,expect,it,vi } from 'vitest';
+const m=vi.hoisted(()=>({user:vi.fn(),runtime:vi.fn(),request:vi.fn(),confirm:vi.fn(),status:vi.fn()}));
+vi.mock('@/lib/workspace/eligibility/service',()=>({getWorkspaceUser:m.user}));
+vi.mock('@/lib/workspace/email/runtime',()=>({emailVerificationRuntime:m.runtime}));
+vi.mock('@/lib/workspace/email/repository',()=>({postgresEmailStore:{status:m.status}}));
+import { POST as requestCode } from '@/app/api/workspace/email/request/route';
+import { POST as confirmCode } from '@/app/api/workspace/email/confirm/route';
+import { GET } from '@/app/api/workspace/email/route';
+beforeEach(()=>{vi.resetAllMocks();process.env.NEXT_PUBLIC_BASE_URL='http://localhost:3000';process.env.DATABASE_ENV='development';m.user.mockResolvedValue({id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'});m.runtime.mockReturnValue({request:m.request,confirm:m.confirm});});
+it.each([requestCode,confirmCode])('rejects missing and cross-site origins before invoking the OTP service',async action=>{for(const headers of [new Headers(),new Headers({Origin:'https://untrusted.example','Sec-Fetch-Site':'cross-site'})]){const r=await action(new Request('http://localhost:3000/api/workspace/email/request',{method:'POST',headers,body:'{}'}));expect(r.status).toBe(403)}expect(m.runtime).not.toHaveBeenCalled()});
+it('rejects missing identity without reading another account proof',async()=>{m.user.mockResolvedValue(null);expect((await GET()).status).toBe(401);expect(m.status).not.toHaveBeenCalled()});
+it('redacts provider/database errors and returns private no-store responses',async()=>{m.request.mockRejectedValue(Error('internal provider failure'));const r=await requestCode(new Request('http://localhost:3000/api/workspace/email/request',{method:'POST',headers:{Origin:'http://localhost:3000','Content-Type':'application/json'},body:JSON.stringify({email:'synthetic@example.invalid'})}));expect(r.status).toBe(503);expect(await r.text()).not.toContain('internal provider');expect(r.headers.get('cache-control')).toBe('no-store')});
