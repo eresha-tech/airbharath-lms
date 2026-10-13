@@ -1,0 +1,14 @@
+/* Scoped brand tokens keep small links, labels and action buttons readable. */
+.workspace-admin {
+  --primary: 243.6 65% 43%;
+  --primary-foreground: 0 0% 100%;
+  --muted-foreground: 220 15% 42%;
+  --ring: 243.6 65% 43%;
+}
+.dark .workspace-admin {
+  --primary: 243.6 100% 76.9%;
+  --primary-foreground: 240 15% 10%;
+  --muted-foreground: 216 20% 75%;
+  --ring: 243.6 100% 76.9%;
+}
+.workspace-admin :is(h1,h2,h3,p,dd) { overflow-wrap: anywhere; }

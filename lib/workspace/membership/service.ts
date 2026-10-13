@@ -1,7 +1,7 @@
 import { readEmailProof } from '../email/repository';
 import { normalizeEmail } from '../email/model';
 import { createHash } from 'node:crypto';
-import { and, count, desc, eq, ilike, inArray, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { users, workspaceMembershipPlans as plans, workspaceCoupons as coupons, workspaceCouponPlans as applicability, workspaceInfluencers as influencers, workspaceCouponRedemptions as redemptions, workspaceAuditEvents as audits, workspaceEligibilityAttempts as attempts, workspaceEligibilitySettings as settings, workspacePolicyVersions as policies } from '@/lib/db/schema';
 import { resolveJourney, UUID, validateSettings, EVALUATOR_VERSION, ELIGIBILITY_POLICY_VERSION } from '../eligibility/model';
@@ -71,10 +71,15 @@ export async function readMembershipQuote(tx: Parameters<Parameters<typeof db.tr
 }
 export type MembershipQuoteContext = Awaited<ReturnType<typeof readMembershipQuote>>;
 export type MembershipQuote = Awaited<ReturnType<typeof getWorkspaceMembershipQuote>>;
-export async function listWorkspaceCoupons(query = '', status = 'all', page = 1) {
-  const rows = await db.query.workspaceCoupons.findMany({ where: and(eq(coupons.scope, 'workspace_membership'), query ? ilike(coupons.code, `${query.replaceAll('_', '\\_')}%`) : undefined, status === 'all' ? undefined : eq(coupons.status, status as CouponStatus)), orderBy: [desc(coupons.createdAt), desc(coupons.id)], limit: 21, offset: (page - 1) * 20 });
-  const links = rows.length ? await db.query.workspaceCouponPlans.findMany({ where: inArray(applicability.couponId, rows.map(row => row.id)) }) : [];
-  return { coupons: rows.slice(0, 20).map(row => ({ ...row, planCodes: links.filter(link => link.couponId === row.id).map(link => link.planCode) })), hasNext: rows.length > 20, page };
+export async function listWorkspaceCoupons(query = '', status = 'all', page = 1, size = 20, sort: 'newest'|'oldest'|'name' = 'newest', actorId?: string) {
+  if (!Number.isInteger(page)||page<1||page>500||![20,25,50].includes(size)||!['newest','oldest','name'].includes(sort)||query.length>32||(status!=='all'&&!(COUPON_STATUSES as readonly string[]).includes(status))) throw new MembershipError('validation');
+  async function read(reader: typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0]) {
+    const rows = await reader.query.workspaceCoupons.findMany({ where: and(eq(coupons.scope, 'workspace_membership'), query ? ilike(coupons.code, `${query.replace(/[\\%_]/g,'\\$&')}%`) : undefined, status === 'all' ? undefined : eq(coupons.status, status as CouponStatus)), orderBy: sort==='name'?[asc(coupons.code),asc(coupons.id)]:sort==='oldest'?[asc(coupons.createdAt),asc(coupons.id)]:[desc(coupons.createdAt),desc(coupons.id)], limit: size+1, offset: (page - 1) * size });
+    const shown=rows.slice(0,size);
+    const links = shown.length ? await reader.query.workspaceCouponPlans.findMany({ where: inArray(applicability.couponId, shown.map(row => row.id)) }) : [];
+    return { coupons: shown.map(row => ({ ...row, planCodes: links.filter(link => link.couponId === row.id).map(link => link.planCode) })), hasNext: rows.length > size, page };
+  }
+  return actorId ? db.transaction(async tx=>{await lockAdmin(tx,actorId);return read(tx);}) : read(db);
 }
 async function lockAdmin(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], actorId: string) {
   const [actor] = await tx.select({ role: users.role }).from(users).where(eq(users.id, actorId)).for('share');

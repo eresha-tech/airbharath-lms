@@ -7,9 +7,9 @@ import { membershipFailure } from '@/lib/workspace/membership/http';
 export async function GET(request: Request) {
   const actor = await getAuthorizedAdminSession();
   if (!actor) return privateJson({ error: 'Forbidden' }, 403);
-  const params=new URL(request.url).searchParams,q=(params.get('q')||'').trim(),page=Number(params.get('page')||1),size=Number(params.get('size')||25),status=params.get('status')||'all';
-  if(q.length>120||!Number.isInteger(page)||page<1||page>500||![25,50].includes(size)||!['all','active','inactive'].includes(status))return privateJson({error:'Invalid filters.'},400);
-  try { const rows=await listInfluencers(actor.id,q,page,size,status);return privateJson({ influencers:rows.slice(0,size),hasNext:rows.length>size,page,size }); } catch (e) { return membershipFailure(e); }
+  const params=new URL(request.url).searchParams,q=(params.get('q')||'').trim(),page=Number(params.get('page')||1),size=Number(params.get('size')||25),status=params.get('status')||'all',sort=params.get('sort')||'newest';
+  if([...params.keys()].some(k=>params.getAll(k).length>1)||!(/^[1-9]\d{0,2}$/.test(params.get('page')||'1'))||q.length>120||!Number.isInteger(page)||page<1||page>500||![25,50].includes(size)||!['all','active','inactive'].includes(status)||!['newest','oldest','name'].includes(sort))return privateJson({error:'Invalid filters.'},400);
+  try { const rows=await listInfluencers(actor.id,q,page,size,status,sort as 'newest'|'oldest'|'name');return privateJson({ influencers:rows.slice(0,size),hasNext:rows.length>size,page,size }); } catch (e) { return membershipFailure(e); }
 }
 async function command(request: Request, edit: boolean, actor: { id: string } | null) {
   if (!eligibilitySameOrigin(request)) return privateJson({ error: 'Request origin is not allowed.' }, 403);

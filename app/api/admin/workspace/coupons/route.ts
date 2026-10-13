@@ -6,11 +6,13 @@ import { COUPON_STATUSES, validateCouponDefinition } from '@/lib/workspace/membe
 import { createWorkspaceCoupon, listWorkspaceCoupons } from '@/lib/workspace/membership/service';
 import { membershipFailure } from '@/lib/workspace/membership/http';
 export async function GET(request: Request) {
-  if (!await getAuthorizedAdminSession()) return privateJson({ error: 'Forbidden' }, 403);
+  const actor=await getAuthorizedAdminSession();
+  if (!actor) return privateJson({ error: 'Forbidden' }, 403);
   const params = new URL(request.url).searchParams;
-  const query = (params.get('q') || '').trim().toUpperCase(), status = params.get('status') || 'all', page = Number(params.get('page') || 1);
-  if ((query && !/^[A-Z0-9_-]{1,32}$/.test(query)) || (status !== 'all' && !(COUPON_STATUSES as readonly string[]).includes(status)) || !Number.isInteger(page) || page < 1 || page > 500) return privateJson({ error: 'Invalid filters.' }, 400);
-  try { return privateJson(await listWorkspaceCoupons(query, status, page)); } catch (error) { return membershipFailure(error); }
+  if([...params.keys()].some(k=>params.getAll(k).length>1)||!(/^[1-9]\d{0,2}$/.test(params.get('page')||'1')))return privateJson({error:'Invalid filters.'},400);
+  const query = (params.get('q') || '').trim().toUpperCase(), status = params.get('status') || 'all', page = Number(params.get('page') || 1),size=Number(params.get('size')||25),sort=params.get('sort')||'newest';
+  if ((query && !/^[A-Z0-9_-]{1,32}$/.test(query)) || (status !== 'all' && !(COUPON_STATUSES as readonly string[]).includes(status)) || !Number.isInteger(page) || page < 1 || page > 500 || ![25,50].includes(size) || !['newest','oldest','name'].includes(sort)) return privateJson({ error: 'Invalid filters.' }, 400);
+  try { return privateJson(await listWorkspaceCoupons(query, status, page,size,sort as 'newest'|'oldest'|'name',actor.id)); } catch (error) { return membershipFailure(error); }
 }
 export async function POST(request: Request) {
   if (!eligibilitySameOrigin(request)) return privateJson({ error: 'Request origin is not allowed.' }, 403);

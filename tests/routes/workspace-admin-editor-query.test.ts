@@ -1,0 +1,12 @@
+import {beforeEach,expect,it,vi} from 'vitest';
+const mocks=vi.hoisted(()=>({actor:vi.fn(),coupons:vi.fn(),influencers:vi.fn()}));
+vi.mock('@/lib/admin-authorization',()=>({getAuthorizedAdminSession:mocks.actor}));
+vi.mock('@/lib/workspace/membership/service',()=>({listWorkspaceCoupons:mocks.coupons,createWorkspaceCoupon:vi.fn(),MembershipError:class extends Error{code='unavailable'}}));
+vi.mock('@/lib/workspace/membership/influencers',()=>({listInfluencers:mocks.influencers,saveInfluencer:vi.fn()}));
+import {GET as coupons} from '@/app/api/admin/workspace/coupons/route';
+import {GET as influencers} from '@/app/api/admin/workspace/influencers/route';
+const actor='00000000-0000-4000-8000-000000000001';
+beforeEach(()=>{mocks.actor.mockResolvedValue({id:actor});mocks.coupons.mockResolvedValue({coupons:[],page:1,hasNext:false});mocks.influencers.mockResolvedValue([]);});
+it.each(['page=1e2','page=501','page=1&page=2','size=1000','sort=unsafe','status=unknown'])('coupon and influencer requests reject %s before reading records',async q=>{expect((await coupons(new Request('http://localhost/api/admin/workspace/coupons?'+q))).status).toBe(400);expect((await influencers(new Request('http://localhost/api/admin/workspace/influencers?'+q))).status).toBe(400);expect(mocks.coupons).not.toHaveBeenCalled();expect(mocks.influencers).not.toHaveBeenCalled();});
+it('coupon bounded read receives persisted actor, normalized prefix, 50 size and stable sort',async()=>{const r=await coupons(new Request('http://localhost/api/admin/workspace/coupons?q=synthetic&size=50&sort=name&page=2'));expect(r.status).toBe(200);expect(r.headers.get('cache-control')).toBe('no-store');expect(mocks.coupons).toHaveBeenCalledWith('SYNTHETIC','all',2,50,'name',actor);});
+it('influencer read has honest has-more and receives persisted actor and URL filters',async()=>{const r=await influencers(new Request('http://localhost/api/admin/workspace/influencers?q=synthetic&status=inactive&size=50&sort=name&page=2'));expect(r.status).toBe(200);expect(r.headers.get('cache-control')).toBe('no-store');expect(mocks.influencers).toHaveBeenCalledWith(actor,'synthetic',2,50,'inactive','name');expect(await r.json()).toMatchObject({page:2,size:50,hasNext:false});});
