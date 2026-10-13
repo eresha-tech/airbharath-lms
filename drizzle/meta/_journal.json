@@ -169,6 +169,13 @@
       "when": 1791863010586,
       "tag": "0023_chubby_jimmy_woo",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791864738426,
+      "tag": "0024_workspace_influencer_history_truncate_guard",
+      "breakpoints": true
     }
   ]
 }
