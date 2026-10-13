@@ -176,6 +176,13 @@
       "when": 1791864738426,
       "tag": "0024_workspace_influencer_history_truncate_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791874707763,
+      "tag": "0025_workspace_held_capture_coupon_consistency",
+      "breakpoints": true
     }
   ]
 }
