@@ -166,7 +166,7 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
       const acceptedPaidAt = invalidTiming ? null : paidAt;
       const changed = await tx.patchOrder(current.id, { financialState: 'captured', winningPaymentId: payment.providerPaymentId, paidAt: acceptedPaidAt, refundEligibleUntil: acceptedPaidAt ? refundDeadline(acceptedPaidAt) : null,
         activationState: businessReason || reservationConflict ? 'held_for_review' : 'pending_activation', reviewReason: reservationConflict ? 'reservation_inconsistent' : businessReason || null });
-      if (reservation?.status === 'reserved') await tx.patchRedemption(reservation.id, { status: 'redeemed', redeemedAt: now });
+      if (reservation?.status === 'reserved' && !businessReason && !reservationConflict && acceptedPaidAt) await tx.patchRedemption(reservation.id, { status: 'redeemed', redeemedAt: now });
       await finish(businessReason || reservationConflict ? 'needs_review' : 'processed', reservationConflict ? 'reservation_inconsistent' : businessReason || undefined);
       return changed;
     });
