@@ -1,3 +1,5 @@
+import { normalizedIndianMobile } from '@/lib/phone-number';
+import { localUatOtpMode, localUatRequestAllowed } from '@/lib/local-uat-otp';
 import { NextResponse } from 'next/server';
 import { formatPhoneNumber, verifyOTP, setSessionCookie } from '@/lib/auth';
 import { sessionRoleFromPersistedRole } from '@/lib/auth-policy';
@@ -9,6 +11,10 @@ export async function POST(req: Request) {
     if (!phone || !otp) {
       return NextResponse.json({ error: 'Phone and OTP are required' }, { status: 400 });
     }
+
+    if (!normalizedIndianMobile(phone)) return NextResponse.json({ error:'Valid 10-digit mobile number required' }, { status:400 });
+
+    if (localUatOtpMode() !== 'off' && !localUatRequestAllowed(req)) return NextResponse.json({ error:'OTP service is temporarily unavailable' }, { status:503 });
 
     const limit = await consumeOtpRateLimit('verify', formatPhoneNumber(phone));
     if (limit.status === 'unavailable') {

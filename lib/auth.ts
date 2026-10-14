@@ -1,3 +1,5 @@
+import { localUatOtpMode } from './local-uat-otp';
+import { localUatOtpProvider } from './local-uat-otp-provider';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
@@ -90,6 +92,10 @@ export function formatPhoneNumber(phone: string): string {
  */
 export async function sendOTP(phone: string): Promise<{ success: boolean; message: string }> {
   const formattedPhone = formatPhoneNumber(phone);
+  if (localUatOtpMode() !== 'off') {
+    const provider = await localUatOtpProvider(formattedPhone);
+    return provider?.send(formattedPhone) ? { success:true, message:'Local UAT verification ready' } : { success:false, message:'OTP service is unavailable' };
+  }
   const authKey = process.env.OTP_PROVIDER_AUTHKEY || process.env.MSG91_AUTH_KEY;
   const templateId = process.env.MSG91_TEMPLATE_ID;
   const otpServiceUrl = process.env.OTP_PROVIDER_URL || 'https://control.msg91.com';
@@ -134,6 +140,13 @@ export async function sendOTP(phone: string): Promise<{ success: boolean; messag
  */
 export async function resendOTP(phone: string, retryType: 'text' | 'voice' = 'text'): Promise<{ success: boolean; message: string }> {
   const formattedPhone = formatPhoneNumber(phone);
+  if (localUatOtpMode() !== 'off') {
+    const { consumeOtpRateLimit } = await import('./otp-rate-limit');
+    const limit = await consumeOtpRateLimit('send',formattedPhone);
+    if (limit.status !== 'allowed') return { success:false, message:'Please wait before requesting another OTP' };
+    const provider = await localUatOtpProvider(formattedPhone);
+    return provider?.send(formattedPhone) ? { success:true, message:'Local UAT verification ready' } : { success:false, message:'OTP service is unavailable' };
+  }
   const authKey = process.env.OTP_PROVIDER_AUTHKEY || process.env.MSG91_AUTH_KEY;
   const otpServiceUrl = process.env.OTP_PROVIDER_URL || 'https://control.msg91.com';
 
@@ -166,6 +179,10 @@ export async function resendOTP(phone: string, retryType: 'text' | 'voice' = 'te
  */
 export async function verifyOTP(phone: string, otp: string): Promise<{ success: boolean; user?: any; isNewUser?: boolean; message?: string }> {
   const formattedPhone = formatPhoneNumber(phone);
+  if (localUatOtpMode() !== 'off') {
+    const provider = await localUatOtpProvider(formattedPhone);
+    if (!provider?.verify(formattedPhone,otp)) return { success:false, message:'Invalid or expired OTP' };
+  } else {
   const authKey = process.env.OTP_PROVIDER_AUTHKEY || process.env.MSG91_AUTH_KEY;
   const otpServiceUrl = process.env.OTP_PROVIDER_URL || 'https://control.msg91.com';
 
@@ -191,6 +208,8 @@ export async function verifyOTP(phone: string, otp: string): Promise<{ success: 
     return { success: false, message: 'Invalid or expired OTP' };
   }
 
+  }
+
   let user = await db.query.users.findFirst({
     where: eq(users.phone, formattedPhone),
   });
@@ -202,5 +221,6 @@ export async function verifyOTP(phone: string, otp: string): Promise<{ success: 
     user = inserted;
   }
 
+  if (localUatOtpMode() !== 'off' && user.role !== 'student') return { success:false, message:'OTP service is unavailable' };
   return { success: true, user, isNewUser };
 }

@@ -99,7 +99,7 @@ function LoginForm() {
   const handleSendOTP = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.length !== 10) {
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
       setMessage('Please enter a valid 10-digit Indian mobile number');
       setIsSuccess(false);
       return;
@@ -118,7 +118,7 @@ function LoginForm() {
 
       setStep('otp');
       setResendTimer(30);
-      setMessage('A 4-digit verification OTP has been sent to your mobile.');
+      setMessage(data.message === 'Local UAT verification ready' ? 'Local UAT verification is ready. No SMS was sent.' : 'A 4-digit verification OTP has been sent to your mobile.');
       setIsSuccess(true);
     } catch (err: any) {
       setMessage(err.message || 'Failed to send OTP. Please try again.');
@@ -144,7 +144,7 @@ function LoginForm() {
       if (!res.ok) throw new Error(data.error || 'Failed to resend OTP');
 
       setResendTimer(30);
-      setMessage('A fresh 4-digit OTP has been resent to your mobile number.');
+      setMessage(data.message === 'Local UAT verification ready' ? 'Local UAT verification is ready. No SMS was sent.' : 'A fresh 4-digit OTP has been resent to your mobile number.');
       setIsSuccess(true);
     } catch (err: any) {
       setMessage(err.message || 'Failed to resend OTP');

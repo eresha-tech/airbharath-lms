@@ -1,3 +1,5 @@
+import { localUatOtpMode } from './local-uat-otp';
+import { localUatOtpProvider } from './local-uat-otp-provider';
 import { createHash } from 'node:crypto';
 
 export const OTP_RATE_LIMIT_POLICY = {
@@ -68,6 +70,10 @@ export async function consumeOtpRateLimit(
   operation: 'send' | 'verify',
   normalizedPhone: string,
 ): Promise<RateLimitResult> {
+  if (localUatOtpMode() !== 'off') {
+    const provider = await localUatOtpProvider(normalizedPhone);
+    return provider ? provider.limit(operation,normalizedPhone,OTP_RATE_LIMIT_POLICY) : { status:'unavailable' };
+  }
   if (operation === 'send') {
     const cooldownKey = keyFor('send-cooldown', normalizedPhone);
     const windowKey = keyFor('send-window', normalizedPhone);

@@ -1,3 +1,5 @@
+import { normalizedIndianMobile } from '@/lib/phone-number';
+import { localUatOtpMode, localUatRequestAllowed } from '@/lib/local-uat-otp';
 import { NextResponse } from 'next/server';
 import { formatPhoneNumber, sendOTP } from '@/lib/auth';
 import { consumeOtpRateLimit } from '@/lib/otp-rate-limit';
@@ -5,9 +7,11 @@ import { consumeOtpRateLimit } from '@/lib/otp-rate-limit';
 export async function POST(req: Request) {
   try {
     const { phone } = await req.json();
-    if (!phone || phone.length < 10) {
+    if (!normalizedIndianMobile(phone)) {
       return NextResponse.json({ error: 'Valid 10-digit mobile number required' }, { status: 400 });
     }
+
+    if (localUatOtpMode() !== 'off' && !localUatRequestAllowed(req)) return NextResponse.json({ error:'OTP service is temporarily unavailable' }, { status:503 });
 
     const limit = await consumeOtpRateLimit('send', formatPhoneNumber(phone));
     if (limit.status === 'unavailable') {
