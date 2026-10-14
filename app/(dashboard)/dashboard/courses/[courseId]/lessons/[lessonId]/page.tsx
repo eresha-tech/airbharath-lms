@@ -59,12 +59,12 @@ export default async function LessonPage({ params }: LessonPageProps) {
     return redirect(`/dashboard/courses/${courseId}`);
   }
 
-  const [lessonObj, materialsList] = await Promise.all([
-    db.query.lessons.findFirst({ where: eq(lessons.id, lessonId) }).catch(() => null),
-    db.query.lessonMaterials.findMany({ where: eq(lessonMaterials.lessonId, lessonId) }).catch(() => []),
-  ]);
+  const lessonObj = await db.query.lessons.findFirst({
+    where: eq(lessons.id, lessonId),
+    with: { module: { columns: { courseId: true } } },
+  }).catch(() => null);
 
-  if (!lessonObj) {
+  if (!lessonObj?.module) {
     return redirect(`/dashboard/courses/${courseId}`);
   }
 
@@ -114,6 +114,9 @@ export default async function LessonPage({ params }: LessonPageProps) {
   if (!courseObj) {
     return redirect("/dashboard/courses");
   }
+  if (lessonObj.module.courseId !== courseObj.id) {
+    return redirect(`/dashboard/courses/${courseObj.id}`);
+  }
 
   // Check enrollment unless free preview or admin
   let isEnrolled = lessonObj.isFreePreview || isAdmin;
@@ -128,6 +131,9 @@ export default async function LessonPage({ params }: LessonPageProps) {
   if (!isEnrolled) {
     return redirect(`/courses/${courseObj.slug || courseObj.id}`);
   }
+  const materialsList = await db.query.lessonMaterials.findMany({
+    where: eq(lessonMaterials.lessonId, lessonId),
+  }).catch(() => []);
 
   // Flatten and sort all lessons to calculate sequential navigation across sections and modules
   const allLessonsInOrder: {

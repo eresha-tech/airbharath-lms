@@ -1,0 +1,12 @@
+import { beforeEach, expect, it, vi } from 'vitest';
+const mocks=vi.hoisted(()=>({access:vi.fn(),course:vi.fn(),certificate:vi.fn(),modules:vi.fn(),progress:vi.fn(),user:vi.fn(),generate:vi.fn(),email:vi.fn()}));
+vi.mock('@/lib/course-access',()=>({hasCourseAccess:mocks.access}));
+vi.mock('@/lib/db',()=>({db:{query:{courses:{findFirst:mocks.course},certificates:{findFirst:mocks.certificate},modules:{findMany:mocks.modules},progress:{findMany:mocks.progress},users:{findFirst:mocks.user}}}}));
+vi.mock('@/lib/certificate-generator',()=>({generateAndSaveCertificate:mocks.generate}));
+vi.mock('@/lib/mailercloud',()=>({sendMailercloudEmail:mocks.email}));
+import { claimCertificate } from '@/lib/certificate-service';
+const user='00000000-0000-4000-8000-000000000101',course='00000000-0000-4000-8000-000000000102';
+const cert={id:'synthetic-certificate',certificateCode:'SYNTHETIC',pdfUrl:'https://example.invalid/certificate',issuedAt:new Date(),status:'issued',issuedBy:null};
+beforeEach(()=>{mocks.access.mockResolvedValue({hasAccess:true});mocks.course.mockResolvedValue({title:'Synthetic course',certificateStatus:'active'});mocks.certificate.mockResolvedValue(null);mocks.modules.mockResolvedValue([{lessons:[{id:'synthetic-lesson'}]}]);mocks.progress.mockResolvedValue([{isCompleted:true}]);mocks.user.mockResolvedValue(null);mocks.generate.mockResolvedValue(cert);});
+it('active completed-course access can claim once, while an existing issued certificate is retained and idempotent',async()=>{expect(await claimCertificate({userId:user,courseId:course})).toMatchObject({success:true,alreadyExisted:false});mocks.certificate.mockResolvedValue(cert);expect(await claimCertificate({userId:user,courseId:course})).toMatchObject({success:true,alreadyExisted:true});expect(mocks.generate).toHaveBeenCalledTimes(1);});
+it('loss of course entitlement denies a new claim before eligibility, generation or email, without revoking old history',async()=>{mocks.access.mockResolvedValue({hasAccess:false});mocks.certificate.mockResolvedValue(cert);await expect(claimCertificate({userId:user,courseId:course})).rejects.toThrow('not enrolled');expect(mocks.certificate).not.toHaveBeenCalled();expect(mocks.generate).not.toHaveBeenCalled();expect(mocks.email).not.toHaveBeenCalled();expect(cert.status).toBe('issued');});
