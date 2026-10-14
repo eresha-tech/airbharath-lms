@@ -1,1 +1,2 @@
-export default function ActivationLoading(){return <main aria-busy="true" aria-label="Loading Workspace eligibility and membership plans" className="mx-auto max-w-6xl space-y-6 px-6 py-28"><p role="status">Loading your eligibility, email verification and membership plans…</p><div className="h-12 max-w-lg animate-pulse rounded-xl bg-muted"/><div className="grid gap-4 md:grid-cols-3">{[0,1,2].map(i=><div key={i} className="h-56 animate-pulse rounded-2xl bg-muted"/>)}</div></main>}
+import { WorkspaceLoading } from '@/components/workspace/ui/WorkspaceUI';
+export default function Loading(){return <WorkspaceLoading title='Workspace eligibility and membership plans' className='mx-auto max-w-6xl px-5 py-28'/>;}

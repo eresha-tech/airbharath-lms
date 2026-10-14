@@ -20,6 +20,7 @@ export function WorkspaceCoupons({ initial, initialInfluencers, filters,noncomme
   const [list, setList] = useState(initial), [query, setQuery] = useState(p.q), [status, setStatus] = useState(p.status);
   const [busy, setBusy] = useState(false), [notice, setNotice] = useState(''), [planCodes, setPlanCodes] = useState<PlanCode[]>([...PLAN_CODES]);
   const [discountType, setDiscountType] = useState<'fixed' | 'percentage'>('fixed');
+  const inflight = useRef(false);
   const command = useRef<{ signature: string; key: string } | null>(null);
   function keyFor(input: unknown) { const signature = JSON.stringify(input); if (!command.current || command.current.signature !== signature) command.current = { signature, key: crypto.randomUUID() }; return command.current.key; }
   async function load(page = 1) {
@@ -27,16 +28,18 @@ export function WorkspaceCoupons({ initial, initialInfluencers, filters,noncomme
     const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Coupons could not be loaded.'); setList(data);
   }
   async function change(row: Row, next: CouponStatus) {
-    setBusy(true); setNotice('');
+    if(inflight.current)return;
+    if(next==='archived'&&!window.confirm('Archive this coupon permanently? Existing financial history and redemptions are retained.'))return;
+    inflight.current=true;setBusy(true); setNotice('');
     const payload = { status: next, expectedVersion: row.version };
     try {
       const response = await fetch(`/api/admin/workspace/coupons/${row.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, signal:AbortSignal.timeout(15000), body: JSON.stringify({ ...payload, requestKey: keyFor({ id: row.id, ...payload }) }) });
       const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Status could not be confirmed.');
       await load(list.page); setNotice(`Coupon ${next}.`);
-    } catch (error) { setNotice(error instanceof Error ? error.message : 'Status could not be confirmed. Retry the same action or reload.'); } finally { setBusy(false); }
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Status could not be confirmed. Retry the same action or reload.'); } finally { inflight.current=false;setBusy(false); }
   }
   async function create(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const form = event.currentTarget, input = new FormData(form);
+    event.preventDefault(); if(inflight.current)return;inflight.current=true;const form = event.currentTarget, input = new FormData(form);
     const text = (name: string) => String(input.get(name) || '').trim();
     const date = (name: string) => text(name) ? new Date(`${text(name)}:00+05:30`).toISOString() : null;
     setBusy(true); setNotice('');
@@ -47,21 +50,21 @@ export function WorkspaceCoupons({ initial, initialInfluencers, filters,noncomme
       const response = await fetch('/api/admin/workspace/coupons', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal:AbortSignal.timeout(15000), body: JSON.stringify({ definition, requestKey: keyFor(definition) }) });
       const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Creation could not be confirmed.');
       await load(list.page); form.reset(); command.current = null; setNotice('Coupon created. No capacity was consumed or reserved.');
-    } catch (error) { setNotice(error instanceof Error && error.name !== 'RangeError' ? error.message : 'Check the dates. Values use IST.'); } finally { setBusy(false); }
+    } catch (error) { setNotice(error instanceof Error && error.name !== 'RangeError' ? error.message : 'Check the dates. Values use IST.'); } finally { inflight.current=false;setBusy(false); }
   }
   return <div className="ph-no-capture space-y-8"><p role="status" aria-live="polite" className="text-sm">{notice}</p>
     <div className="flex flex-wrap gap-5 text-sm"><Link href="/admin/workspace/influencers" className="text-primary underline">Manage influencers</Link><Link href="/admin/coupons" className="text-primary underline">LMS Course Coupons (separate)</Link></div>
-    <details className="rounded-xl border border-border bg-card p-6"><summary className="cursor-pointer font-semibold">Create a Workspace coupon</summary><form onSubmit={create} className="mt-6 space-y-5"><div className="grid gap-5 sm:grid-cols-2">
-      <label className="text-sm">Code<input name="code" required minLength={3} maxLength={32} pattern="[A-Za-z0-9][A-Za-z0-9_-]{2,31}" autoComplete="off" className={field} /></label>
+    <details className="rounded-xl border border-border bg-card p-6"><summary className="cursor-pointer font-semibold">Create a Workspace coupon</summary><form onSubmit={create} aria-busy={busy} className="mt-6 space-y-5"><fieldset disabled={busy} className="space-y-5"><legend className="sr-only">Workspace coupon definition</legend><div className="grid gap-5 sm:grid-cols-2">
+      <label className="text-sm">Code<input name="code" required minLength={3} maxLength={32} pattern={'[A-Za-z0-9][A-Za-z0-9_\\-]{2,31}'} autoComplete="off" spellCheck={false} className={field} /></label>
       <label className="text-sm">Discount type<select value={discountType} onChange={event => setDiscountType(event.target.value as 'fixed' | 'percentage')} className={field}><option value="fixed">Fixed amount (₹)</option><option value="percentage">Percentage (%)</option></select></label>
       <label className="text-sm">{discountType === 'fixed' ? 'Discount in rupees (up to 2 decimals)' : 'Discount percentage (up to 2 decimals)'}<input name="discount" required inputMode="decimal" pattern="[0-9]+(\.[0-9]{1,2})?" className={field} /><span className="mt-2 block text-xs text-muted-foreground">Must leave a positive paid base on every selected plan.</span></label>
       <label className="text-sm">Usage limit<input name="usageLimit" type="number" min={1} max={2147483647} step={1} className={field} /><span className="mt-2 block text-xs text-muted-foreground">Leave blank for unlimited. Accepted checkout reservations also consume capacity.</span></label>
       <label className="text-sm">Starts at (IST, optional)<input name="startsAt" type="datetime-local" step={60} className={field} /></label><label className="text-sm">Expires at (IST, optional)<input name="expiresAt" type="datetime-local" step={60} className={field} /></label>
       <label className="text-sm">Campaign name<input name="campaignName" required maxLength={120} className={field} /></label>{sourceType === 'influencer' ? <label className="text-sm">Find active influencer<input aria-label="Search active influencers" className={field} maxLength={120} onChange={async e=>{try{const r=await fetch('/api/admin/workspace/influencers?status=active&q='+encodeURIComponent(e.target.value),{cache:'no-store',signal:AbortSignal.timeout(15000)});if(r.ok)setInfluencers((await r.json()).influencers);else setNotice('Influencer search unavailable.');}catch{setNotice('Influencer search unavailable.');}}}/><select name="influencerId" required className={field}><option value="">Select active influencer</option>{influencers.filter(row => row.status === 'active').map(row => <option key={row.id} value={row.id}>{row.displayName}</option>)}</select></label> : <label className="text-sm">Source name<input name="sourceName" required maxLength={120} className={field} /></label>}
       <label className="text-sm">Source type<select name="sourceType" value={sourceType} onChange={e => setSourceType(e.target.value)} className={field}>{SOURCE_TYPES.map(type => <option key={type} value={type}>{type.replaceAll('_', ' ')}</option>)}</select></label>
-    </div><fieldset><legend className="text-sm font-medium">Applicable plans</legend><div className="mt-3 flex flex-wrap gap-5">{PLAN_CODES.map(code => <label key={code} className="flex items-center gap-2 text-sm"><input type="checkbox" className="size-4 accent-primary" checked={planCodes.includes(code)} onChange={event => setPlanCodes(event.target.checked ? [...planCodes, code] : planCodes.filter(value => value !== code))} />{code.replaceAll('_', ' ')}</label>)}</div><p className="mt-3 text-xs text-muted-foreground">Select all three for all current Workspace plans. Applicability and economics cannot be edited after creation.</p></fieldset>
+    </div><fieldset><legend className="text-sm font-medium">Applicable plans</legend><div className="mt-3 flex flex-wrap gap-5">{PLAN_CODES.map(code => <label key={code} className="workspace-check-label flex items-center gap-2 text-sm"><input type="checkbox" className="workspace-checkbox" checked={planCodes.includes(code)} onChange={event => setPlanCodes(event.target.checked ? [...planCodes, code] : planCodes.filter(value => value !== code))} />{code.replaceAll('_', ' ')}</label>)}</div><p className="mt-3 text-xs text-muted-foreground">Select all three for all current Workspace plans. Applicability and economics cannot be edited after creation.</p></fieldset>
       <button disabled={busy || !planCodes.length} className="rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50">{busy ? 'Saving…' : 'Create active coupon'}</button>
-    </form></details>
+    </fieldset></form></details>
     <form method="get" className="flex flex-wrap items-end gap-3"><label className="text-sm">Code prefix<input name="q" value={query} onChange={event=>setQuery(event.target.value)} maxLength={32} className={field}/></label><label className="text-sm">Status<select name="status" value={status} onChange={event=>setStatus(event.target.value)} className={field}><option value="all">All</option>{COUPON_STATUSES.map(s=><option key={s}>{s}</option>)}</select></label><label className="text-sm">Sort<select name="sort" defaultValue={p.sort} className={field}><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="name">Code</option></select></label><label className="text-sm">Page size<select name="size" defaultValue={p.size} className={field}><option value="25">25</option><option value="50">50</option></select></label><button disabled={busy} className={button}>Search / filter</button></form>
     {!list.coupons.length && <p className="rounded-xl border border-dashed border-border p-8 text-sm text-muted-foreground">No Workspace coupons match this view.</p>}
     <div className="space-y-4">{list.coupons.map(row => <article key={row.id} className="rounded-xl border border-border bg-card p-6"><header className="flex flex-wrap items-center justify-between gap-3"><h2 className="min-w-0 break-all font-mono text-lg font-semibold">{row.code}</h2><span className="rounded-full border border-border px-3 py-1 text-xs">{row.status} · v{row.version}</span></header><p className="mt-3 text-sm">{row.discountType === 'fixed' ? formatPaise(row.discountValue) : `${Math.floor(row.discountValue / 100)}.${String(row.discountValue % 100).padStart(2, '0')}%`} off the pre-GST base · {row.planCodes.map(code => code.replaceAll('_', ' ')).join(', ')}</p>
@@ -76,12 +79,12 @@ function CouponFinancialCounts({ couponId,noncommercialEnvironment }: { couponId
   const [mode, setMode] = useState<'live' | 'test'>('live');
   const [loading, setLoading] = useState(false), [error, setError] = useState('');
   async function load() {
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setCounts(null);
     try {
       const response = await fetch(`/api/admin/workspace/coupons/${couponId}/financial?mode=${mode}`, { cache: 'no-store',signal:AbortSignal.timeout(15000) });
-      if (!response.ok) throw new Error('Financial counts are unavailable. Retry after migration readiness is confirmed.');
+      if (!response.ok) throw new Error('Financial counts are temporarily unavailable. Please try again.');
       setCounts(await response.json());
-    } catch { setError('Financial counts are unavailable. Retry after migration readiness is confirmed.'); }
+    } catch { setError('Financial counts are temporarily unavailable. Please try again.'); }
     finally { setLoading(false); }
   }
   const money = (value: string | null) => { const n = BigInt(value || '0'); return `₹${(n / BigInt(100)).toLocaleString('en-IN')}.${String(n % BigInt(100)).padStart(2, '0')}`; };

@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { ArrowDown, ArrowRight, ArrowUpRight, BookOpen, Check, CheckCircle2, CircleDollarSign, Layers3, ListChecks, Plane, Play, ShieldCheck, Users, BarChart3, Compass, GraduationCap, Wrench, Headphones, Building2, Radio, HeartHandshake, LockKeyhole } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { FULL_WORKSPACE_LAUNCH } from './ui/WorkspaceUI';
 import { trackWorkspace } from '@/lib/workspace/analytics';
 
 const journey = [
@@ -124,7 +125,7 @@ export function WorkspaceLanding() {
       </section>
 
       <section className="mx-auto grid max-w-7xl gap-8 px-5 py-20 sm:px-8 sm:py-24 lg:grid-cols-2 lg:gap-20">
-        <div><Eyebrow>The planned commercial model</Eyebrow><h2 className="workspace-heading text-3xl font-semibold sm:text-4xl">Simple creator membership.</h2><p className="mt-5 max-w-xl text-sm leading-7 text-muted-foreground">Compare prepaid 3-, 6- and 12-month creator memberships. Membership prices include 18% GST; eligible creators can review prices and terms before activation. Paid Early Access is targeted for 14 October 2026, subject to launch verification, for private profiles and course preparation. The full Workspace is targeted for 9 November 2026, with media uploads, finished-course review, publication and course sales planned for that release.</p></div>
+        <div><Eyebrow>The planned commercial model</Eyebrow><h2 className="workspace-heading text-3xl font-semibold sm:text-4xl">Simple creator membership.</h2><p className="mt-5 max-w-xl text-sm leading-7 text-muted-foreground">Compare prepaid 3-, 6- and 12-month creator memberships. Membership prices include 18% GST; eligible creators can review prices and terms before activation. Paid Early Access is targeted for 14 October 2026, subject to launch verification, for private profiles and course preparation. {FULL_WORKSPACE_LAUNCH} Media uploads, finished-course review, publication and course sales are planned for that release.</p></div>
         <div className="flex flex-col justify-center rounded-2xl border border-primary/30 bg-primary/10 p-8"><CheckCircle2 className="mb-4 size-6 text-[#6358c8] dark:text-primary" aria-hidden="true" /><h3 className="text-2xl font-semibold">No payment is required to apply.</h3><p className="mt-3 text-sm leading-7 text-muted-foreground">Workspace payments are awaiting launch verification. Review the membership plans, Creator Terms and Refund Policy before deciding to activate Workspace.</p></div>
       </section>
 

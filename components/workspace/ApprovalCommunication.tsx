@@ -9,7 +9,7 @@ import { APPROVAL_EMAIL_STATUS_LABELS } from '@/lib/workspace/options';
 import type { ApplicationDetail } from '@/lib/workspace/types';
 
 type Preview = { subject: string; html: string; applicantName: string; applicationReference: string; recipient: string; personalNote: string; expectedUpdatedAt: string; previewHash: string };
-const date = (value: string | null) => value ? new Date(value).toLocaleString('en-IN') : 'Not recorded';
+const date = (value: string | null) => value ? new Date(value).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) + ' IST' : 'Not recorded';
 
 export function ApprovalCommunication({ app, dirty, onUpdate, onReload, onBusy }: {
   app: ApplicationDetail; dirty: boolean; onUpdate: (changes: Partial<ApplicationDetail>) => void; onReload: () => void; onBusy: (busy: boolean) => void;
@@ -23,6 +23,7 @@ export function ApprovalCommunication({ app, dirty, onUpdate, onReload, onBusy }
   const [confirmed, setConfirmed] = useState(false);
   const [uncertain, setUncertain] = useState(false);
   const lock = useRef(false);
+  const dialogReturnFocus = useRef<HTMLElement | null>(null);
   const emailStatus = app.approvalEmailStatus || 'not_sent';
   const failureMessage = app.approvalEmailErrorCategory === 'not_configured' ? 'Email delivery is not configured.'
     : app.approvalEmailErrorCategory === 'provider_rejected' ? 'The provider did not accept the last attempt.'
@@ -41,9 +42,9 @@ export function ApprovalCommunication({ app, dirty, onUpdate, onReload, onBusy }
     if (!response.ok || !result) throw new Error(result?.error || 'Communication is unavailable. Reload to check the current state.');
     return result;
   }
-  async function showPreview() {
+  async function showPreview(trigger: HTMLElement) {
     if (unavailable || lock.current) return;
-    lock.current = true; pending('preview'); setError(''); setMessage('');
+    dialogReturnFocus.current = trigger; lock.current = true; pending('preview'); setError(''); setMessage('');
     try { const result = await call('preview', { personalNote: note }); setPreview(result); setConfirmed(false); setOpen(true); }
     catch (e) { setError(e instanceof Error ? e.message : 'Could not preview the email.'); }
     finally { lock.current = false; pending(null); }
@@ -75,16 +76,16 @@ export function ApprovalCommunication({ app, dirty, onUpdate, onReload, onBusy }
     {isApproved && <>
       {dirty && <p className="text-xs text-amber-800 dark:text-amber-300">Save or discard your review changes before sending communication.</p>}
       <div><label htmlFor="ws-approval-note" className="mb-2 block text-sm font-medium">Personal note <span className="text-xs text-muted-foreground">Optional · plain text only</span></label><Textarea id="ws-approval-note" value={note} rows={3} maxLength={1000} disabled={unavailable} onChange={e => { setNote(e.target.value); setPreview(null); setConfirmed(false); }} /><p className="mt-2 text-xs text-muted-foreground">{note.length}/1,000 characters. The full email template is controlled by AirBharath.</p></div>
-      <div className="flex flex-wrap gap-3"><Button type="button" variant="outline" disabled={unavailable} onClick={showPreview}>{busy === 'preview' ? <Loader2 aria-hidden="true" className="animate-spin" /> : <Eye aria-hidden="true" />}Preview Approval Email</Button><Button type="button" disabled={unavailable || !preview} onClick={() => setOpen(true)}><Mail aria-hidden="true" />{emailStatus === 'sent' ? 'Resend Approval Email' : emailStatus === 'failed' ? 'Retry Approval Email' : 'Send Approval Email'}</Button></div>
+      <div className="flex flex-wrap gap-3"><Button type="button" variant="outline" disabled={unavailable} onClick={event => void showPreview(event.currentTarget)}>{busy === 'preview' ? <Loader2 aria-hidden="true" className="animate-spin" /> : <Eye aria-hidden="true" />}Preview Approval Email</Button><Button type="button" disabled={unavailable || !preview} onClick={event => { dialogReturnFocus.current = event.currentTarget; setOpen(true); }}><Mail aria-hidden="true" />{emailStatus === 'sent' ? 'Resend Approval Email' : emailStatus === 'failed' ? 'Retry Approval Email' : 'Send Approval Email'}</Button></div>
       {!preview && !unavailable && <p className="text-xs text-muted-foreground">Preview the exact email before enabling Send.</p>}
     </>}
     {(emailStatus === 'sending' || uncertain) && <div className="space-y-3 rounded-lg bg-muted/60 p-4 text-xs leading-6"><p>Reload to check the latest result. If Sending remains, have an operator check the provider before retrying; another copy may already have been accepted.</p><Button type="button" size="sm" variant="outline" disabled={!!busy} onClick={onReload}>Reload communication status</Button></div>}
     {error && <p role="alert" className="text-sm text-red-700 dark:text-red-300">{error}</p>}
     {message && <p role="status" className="text-sm text-emerald-800 dark:text-emerald-300">{message}</p>}
-    <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-3xl ph-no-capture ph-sensitive"><DialogHeader><DialogTitle>Approval email preview</DialogTitle><DialogDescription>The rendered template below is the email that will be sent. Sending is a separate action.</DialogDescription></DialogHeader>
+    <Dialog open={open} onOpenChange={setOpen}><DialogContent onCloseAutoFocus={event => { event.preventDefault(); const target = dialogReturnFocus.current; if (target && !target.matches(':disabled')) target.focus(); }} className="workspace-ui workspace-dialog max-w-3xl ph-no-capture ph-sensitive"><DialogHeader className="pr-12"><DialogTitle>Approval email preview</DialogTitle><DialogDescription>The rendered template below is the email that will be sent. Sending is a separate action.</DialogDescription></DialogHeader>
       {preview && <><dl className="space-y-2 break-words text-sm"><div><dt className="text-xs text-muted-foreground">Subject</dt><dd className="font-semibold">{preview.subject}</dd></div><div><dt className="text-xs text-muted-foreground">Recipient</dt><dd>{preview.applicantName} · {preview.recipient}</dd></div><div><dt className="text-xs text-muted-foreground">Application reference</dt><dd className="font-mono text-xs">{preview.applicationReference}</dd></div></dl>
         <iframe title="Rendered Workspace approval email" sandbox="" referrerPolicy="no-referrer" srcDoc={preview.html} className="h-[50vh] min-h-72 w-full rounded-lg border bg-white" />
-        {emailStatus !== 'not_sent' && <label className="flex items-start gap-3 rounded-lg bg-muted p-4 text-sm leading-6"><input type="checkbox" checked={confirmed} disabled={!!busy} onChange={e => setConfirmed(e.target.checked)} className="mt-1 size-4 shrink-0" /><span>I confirm that I checked the previous attempt and want to send another copy. Delivery may already have occurred.</span></label>}
+        {emailStatus !== 'not_sent' && <label className="workspace-check-label flex items-start gap-3 rounded-lg bg-muted p-4 text-sm leading-6"><input type="checkbox" checked={confirmed} disabled={!!busy} onChange={e => setConfirmed(e.target.checked)} className="workspace-checkbox" /><span>I confirm that I checked the previous attempt and want to send another copy. Delivery may already have occurred.</span></label>}
         <Button type="button" disabled={unavailable || (emailStatus !== 'not_sent' && !confirmed)} onClick={send}>{busy === 'send' ? <Loader2 aria-hidden="true" className="animate-spin" /> : <Mail aria-hidden="true" />}{busy === 'send' ? 'Sending…' : emailStatus === 'sent' ? 'Confirm Resend Approval Email' : emailStatus === 'failed' ? 'Confirm Retry Approval Email' : 'Send Approval Email'}</Button>
       </>}
     </DialogContent></Dialog>

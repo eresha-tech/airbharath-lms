@@ -6,6 +6,7 @@ vi.mock('next/navigation',()=>({useRouter:()=>({replace:vi.fn(),refresh:vi.fn()}
 vi.mock('next/script',()=>({default:()=>null}));
 vi.mock('next/link', () => ({ default: ({ children, ...props }: React.PropsWithChildren<{ href: string }>) => React.createElement('a', props, children) }));
 vi.mock('@/lib/workspace/membership/analytics', () => ({ trackPlanSelected: vi.fn(), trackCouponApplied: vi.fn() }));
+import { WorkspaceLanding } from '@/components/workspace/WorkspaceLanding';
 import { ActivationPreview } from '@/components/workspace/ActivationPreview';
 import { WorkspaceCoupons } from '@/components/workspace/WorkspaceCoupons';
 import { calculatePrice, membershipStartInfo } from '@/lib/workspace/membership/model';
@@ -45,9 +46,12 @@ it('describes release targets without announcing open payments or current upload
   for (const file of ['components/workspace/WorkspaceLanding.tsx', 'app/(user)/workspace/activate/page.tsx']) {
     const source = readFileSync(file, 'utf8');
     expect(source).toContain('14 October 2026, subject to launch verification');
-    expect(source).toContain('targeted for 9 November 2026');
+    expect(source).toMatch(/FULL_WORKSPACE_LAUNCH|WorkspaceLaunchNotice/);
     expect(source).toContain('publication and course sales');
   }
+  const landing = renderToStaticMarkup(React.createElement(WorkspaceLanding));
+  expect(landing).toContain('Full AirBharath Workspace launches 9 November 2026.');
+  expect(landing).toContain('Workspace payments are awaiting launch verification');
   const member = readFileSync('app/(workspace)/workspace/(membership)/member/page.tsx', 'utf8');
   expect(member).toContain("['Original payment amount', formatPaise(row.order.totalPaise)]");
   expect(member).not.toContain('getCurrentPlans');

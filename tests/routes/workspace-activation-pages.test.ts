@@ -17,5 +17,5 @@ it('student cannot inspect admin membership records or self-grant', async () => 
 it('authorized admin can read membership history and DB failures render safe states', async () => {
   mocks.admin.mockResolvedValue({ id: 'persisted-admin', role: 'admin' }); expect(await CreatorPage({searchParams:Promise.resolve({})})).toBeDefined(); expect(mocks.list).toHaveBeenCalledWith('persisted-admin','creators',{});
   mocks.list.mockRejectedValue(new Error('private database error')); expect(renderToStaticMarkup(await CreatorPage({searchParams:Promise.resolve({})}))).toContain('List unavailable');
-  mocks.access.mockRejectedValue(new Error('private database error')); const page = JSON.stringify(await MemberPage()); expect(page).toContain('Membership status unavailable'); expect(page).not.toContain('private database error');
+  mocks.access.mockRejectedValue(new Error('private database error')); const page = renderToStaticMarkup(await MemberPage()); expect(page).toContain('Membership status unavailable'); expect(page).not.toContain('private database error');
 });

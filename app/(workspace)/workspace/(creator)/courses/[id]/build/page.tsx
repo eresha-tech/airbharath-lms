@@ -21,7 +21,7 @@ export default async function BuildPage({ params }: { params: Promise<{ id: stri
       try { history = await workspaceReviews().history(state.user.id, id); }
       catch (historyError) {
         if (historyError instanceof ReviewError && historyError.code === 'not_found') notFound();
-        return <div className="ph-no-capture"><h1>Course Builder unavailable</h1><p role="status">We could not verify the approved course. Please try again.</p></div>;
+        return <div className="ph-no-capture"><h1>Course Builder unavailable</h1><p role="status">We could not verify the approved course. Please try again.</p><Link href={`/workspace/courses/${id}`} className="mt-4 inline-flex min-h-11 items-center text-primary underline">Reload course overview</Link></div>;
       }
       const source = history.submissions[0]?.submission;
       if (source?.reviewStatus !== 'approved') notFound();

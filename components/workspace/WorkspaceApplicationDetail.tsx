@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink, Loader2, Save, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { APPLICATION_STATUSES, STATUS_LABELS, REVIEW_OPTIONS, REVIEW_LABELS, DEC
 import type { ApplicationDetail } from '@/lib/workspace/types';
 import { isHttpUrl } from '@/lib/workspace/validation';
 import { ApprovalCommunication } from './ApprovalCommunication';
+import { WorkspaceLoading } from './ui/WorkspaceUI';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return <section className="rounded-2xl border border-border bg-card p-5 sm:p-6"><h2 className="mb-5 border-b border-border pb-4 text-lg font-semibold">{title}</h2><dl className="grid gap-5 sm:grid-cols-2">{children}</dl></section>;
@@ -21,9 +22,10 @@ function ProfessionalLink({ url }: { url: string | null }) {
   return <a className="inline-flex max-w-full items-start gap-2 break-all text-sm underline underline-offset-4" href={url} target="_blank" rel="noopener noreferrer">{url}<ExternalLink aria-hidden="true" className="mt-1 size-3.5 shrink-0" /><span className="sr-only">(opens in a new tab)</span></a>;
 }
 const controlClass = 'min-h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
-const formatDate = (date: string | null) => date ? new Date(date).toLocaleString('en-IN') : 'Not yet recorded';
+const formatDate = (date: string | null) => date ? new Date(date).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) + ' IST' : 'Not yet recorded';
 
 export function WorkspaceApplicationDetail({ id }: { id: string }) {
+  const pending = useRef(false);
   const [app, setApp] = useState<ApplicationDetail | null>(null);
   const [status, setStatus] = useState<ApplicationStatus>('submitted');
   const [assessments, setAssessments] = useState<ReviewAssessments>({});
@@ -40,29 +42,29 @@ export function WorkspaceApplicationDetail({ id }: { id: string }) {
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true); setLoadError(''); setSaved(false); setSaveError(''); setConflict(false);
-    fetch(`/api/admin/workspace-applications/${id}`, { signal: controller.signal, cache: 'no-store' })
+    fetch(`/api/admin/workspace-applications/${id}`, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]), cache: 'no-store' })
       .then(async response => { const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Could not load application.'); return result.application as ApplicationDetail; })
-      .then(data => { setApp(data); setStatus(data.applicationStatus); setAssessments(data.reviewAssessments); setNotes(data.internalNotes); setReason(data.decisionReason); })
-      .catch(error => { if (!controller.signal.aborted) setLoadError(error.message); })
+      .then(data => { if (controller.signal.aborted) return; setApp(data); setStatus(data.applicationStatus); setAssessments(data.reviewAssessments); setNotes(data.internalNotes); setReason(data.decisionReason); })
+      .catch(error => { if (!controller.signal.aborted) setLoadError(['TimeoutError','AbortError','TypeError','SyntaxError'].includes(error.name) ? 'We could not load this application. Please retry.' : error.message); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [id, reload]);
   async function save(event: FormEvent) {
     event.preventDefault();
-    if (!app || saving || communicating || app.approvalEmailStatus === 'sending') return;
-    setSaving(true); setSaved(false); setSaveError('');
+    if (!app || pending.current || saving || communicating || app.approvalEmailStatus === 'sending') return;
+    pending.current = true; setSaving(true); setSaved(false); setSaveError('');
     try {
-      const response = await fetch(`/api/admin/workspace-applications/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ applicationStatus: status, reviewAssessments: assessments, internalNotes: notes, decisionReason: reason, expectedUpdatedAt: app.updatedAt }) });
+      const response = await fetch(`/api/admin/workspace-applications/${id}`, { signal: AbortSignal.timeout(15000), method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ applicationStatus: status, reviewAssessments: assessments, internalNotes: notes, decisionReason: reason, expectedUpdatedAt: app.updatedAt }) });
       const result = await response.json();
       if (!response.ok) { setConflict(response.status === 409); throw new Error(result.error || 'Could not save review.'); }
       setApp({ ...app, applicationStatus: status, reviewAssessments: assessments, internalNotes: notes, decisionReason: reason, updatedAt: result.updatedAt, reviewedAt: result.updatedAt, ...(status !== app.applicationStatus ? { statusChangedAt: result.updatedAt } : {}) });
       setSaved(true);
-    } catch (error) { setSaveError(error instanceof Error ? error.message : 'Could not save review. Your edits are still here.'); }
-    finally { setSaving(false); }
+    } catch (error) { setSaveError(error instanceof Error && !['TimeoutError','AbortError','TypeError','SyntaxError'].includes(error.name) ? error.message : 'Could not confirm the review save. Your edits are still here. Retry or reload to check the saved state.'); }
+    finally { pending.current = false; setSaving(false); }
   }
   function changed() { setSaved(false); }
   const back = <Button asChild variant="ghost" className="-ml-3"><Link href="/admin/workspace-applications"><ArrowLeft aria-hidden="true" />All applications</Link></Button>;
-  if (loading) return <div className="ph-no-capture space-y-6">{back}<p role="status" className="flex items-center gap-3 text-sm"><Loader2 aria-hidden="true" className="size-4 animate-spin" />Loading application…</p></div>;
+  if (loading) return <div className="ph-no-capture space-y-6">{back}<WorkspaceLoading title="application"/></div>;
   if (loadError || !app) return <div className="ph-no-capture space-y-6">{back}<div role="alert"><p className="mb-4">{loadError || 'Application not found.'}</p><Button onClick={() => setReload(r => r + 1)}>Try again</Button></div></div>;
   return <div className="ph-no-capture ph-sensitive space-y-6">
     {back}

@@ -1,3 +1,4 @@
+export const metadata = { robots: { index: false, follow: false } };
 import { redirect } from 'next/navigation';
 import { EligibilityShell } from '@/components/workspace/EligibilityShell';
 import { EligibilityForm } from '@/components/workspace/EligibilityForm';

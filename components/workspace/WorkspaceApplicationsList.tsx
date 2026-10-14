@@ -22,10 +22,10 @@ export function WorkspaceApplicationsList() {
     const controller = new AbortController();
     setLoading(true); setError('');
     const params = new URLSearchParams({ ...query, page: String(page) });
-    fetch(`/api/admin/workspace-applications?${params}`, { signal: controller.signal, cache: 'no-store' })
+    fetch(`/api/admin/workspace-applications?${params}`, { signal: AbortSignal.any([controller.signal,AbortSignal.timeout(15000)]), cache: 'no-store' })
       .then(async response => { const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Could not load applications.'); return data; })
-      .then(data => { setApplications(data.applications); setHasNext(data.hasNextPage); })
-      .catch(err => { if (!controller.signal.aborted) setError(err.message); })
+      .then(data => { if(controller.signal.aborted)return; setApplications(data.applications); setHasNext(data.hasNextPage); })
+      .catch(err => { if (!controller.signal.aborted) setError(['TimeoutError','AbortError','TypeError','SyntaxError'].includes(err.name)?'Applications could not be loaded. Please retry.':err.message); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [query, page, reload]);
