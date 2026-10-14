@@ -31,6 +31,8 @@ export async function middleware(request: NextRequest) {
 
   const isPublic =
     pathname === '/' ||
+    pathname === '/robots.txt' ||
+    pathname === '/sitemap.xml' ||
     pathname === '/workspace' ||
     pathname === '/workspace/creator-terms' ||
     pathname === '/workspace/refund-policy' ||

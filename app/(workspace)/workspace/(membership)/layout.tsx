@@ -14,5 +14,5 @@ export default async function MembershipLayout({ children }: { children: React.R
   try { state = await workspaceContent().overview(user.id); }
   catch (error) { if (!(error instanceof CreatorError) || error.code !== 'restricted') throw new Error('Workspace access could not be loaded. Please try again.'); }
   if (state) return <CreatorShell name={state.details?.displayName || user.fullName || 'Creator'} editable={state.capabilities.canEditWorkspace} retainedState={state.capabilities.state}>{children}</CreatorShell>;
-  return <div className="min-h-screen bg-background text-foreground"><Header /><main className="mx-auto max-w-4xl px-5 pb-16 pt-28">{children}</main><Footer /></div>;
+  return <div className="min-h-screen bg-background text-foreground"><Header /><main id="public-content" tabIndex={-1} className="mx-auto max-w-4xl px-5 pb-16 pt-28">{children}</main><Footer /></div>;
 }
