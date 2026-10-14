@@ -282,9 +282,9 @@ function LoginForm() {
         <div className="w-full max-w-5xl bg-card rounded-3xl shadow-xl border border-border overflow-hidden flex flex-col lg:flex-row transition-all duration-300">
 
           {/* Left Branding & Highlights Panel (Desktop / Tablet Large) */}
-          <div className="hidden lg:flex lg:w-5/12 bg-slate-950 dark:bg-card text-white dark:text-foreground p-8 xl:p-10 flex-col justify-between relative overflow-hidden border-r border-border/40">
+          <div className="hidden lg:flex lg:w-5/12 bg-primary-foreground dark:bg-card text-accent-light dark:text-foreground p-8 xl:p-10 flex-col justify-between relative overflow-hidden border-r border-border/40">
             {/* Background Aesthetic Layers */}
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 dark:from-card dark:via-card dark:to-card pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-br from-primary-foreground via-primary-foreground to-primary-foreground dark:from-card dark:via-card dark:to-card pointer-events-none" />
             <div className="absolute -top-24 -left-24 w-72 h-72 bg-primary/15 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -316,7 +316,7 @@ function LoginForm() {
                 <h1 className="text-2xl xl:text-3xl font-bold font-outfit leading-tight text-white dark:text-foreground">
                   Learn, Certify &amp; Elevate Your Career.
                 </h1>
-                <p className="text-xs xl:text-sm text-slate-300 dark:text-muted-foreground leading-relaxed font-normal">
+                <p className="text-xs xl:text-sm text-accent-light/90 dark:text-muted-foreground leading-relaxed font-normal">
                   Self-paced certificate programs in AI tools, digital marketing, entrepreneurship, and workplace productivity. Taught by IIM alumni and industry practitioners.
                 </p>
               </div>
@@ -329,7 +329,7 @@ function LoginForm() {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-white dark:text-foreground">Instant 4-Digit Mobile OTP</h4>
-                    <p className="text-[11px] text-slate-400 dark:text-muted-foreground">Fast, passwordless login with your mobile number.</p>
+                    <p className="text-[11px] text-accent-light/80 dark:text-muted-foreground">Fast, passwordless login with your mobile number.</p>
                   </div>
                 </div>
 
@@ -339,7 +339,7 @@ function LoginForm() {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-white dark:text-foreground">QR-Verifiable Credentials</h4>
-                    <p className="text-[11px] text-slate-400 dark:text-muted-foreground">Earn official certificates upon 100% completion.</p>
+                    <p className="text-[11px] text-accent-light/80 dark:text-muted-foreground">Earn official certificates upon 100% completion.</p>
                   </div>
                 </div>
 
@@ -349,14 +349,14 @@ function LoginForm() {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-white dark:text-foreground">100% Self-Paced Access</h4>
-                    <p className="text-[11px] text-slate-400 dark:text-muted-foreground">Access HD videos, notes, and doubt Q&amp;A anytime.</p>
+                    <p className="text-[11px] text-accent-light/80 dark:text-muted-foreground">Access HD videos, notes, and doubt Q&amp;A anytime.</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Bottom Note */}
-            <div className="relative z-10 pt-4 border-t border-white/10 dark:border-border text-[11px] text-slate-400 dark:text-muted-foreground flex items-center justify-between">
+            <div className="relative z-10 pt-4 border-t border-white/10 dark:border-border text-[11px] text-accent-light/80 dark:text-muted-foreground flex items-center justify-between">
               <span>Secure 256-Bit SSL Gateway</span>
               <span>ISO &amp; GST Compliant</span>
             </div>
@@ -707,7 +707,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="min-h-screen flex items-center justify-center bg-background">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <p className="text-xs font-semibold text-muted-foreground">Loading AirBharath...</p>

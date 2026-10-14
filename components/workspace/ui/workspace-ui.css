@@ -1,18 +1,4 @@
-/* Workspace-only controls; public site and legacy LMS retain their own tokens. */
-.workspace-ui {
-  --primary: 243.6 65% 43%;
-  --primary-foreground: 0 0% 100%;
-  --muted-foreground: 220 15% 42%;
-  --destructive: 0 72% 38%;
-  --ring: 243.6 65% 43%;
-}
-.dark .workspace-ui {
-  --primary: 243.6 100% 76.9%;
-  --primary-foreground: 244.4 47.2% 17.1%;
-  --muted-foreground: 216 20% 75%;
-  --destructive: 0 80% 75%;
-  --ring: 243.6 100% 76.9%;
-}
+/* Workspace controls inherit the shared AirBharath theme. */
 .workspace-ui :where(h1,h2,h3,p,dd,summary) { overflow-wrap: anywhere; }
 .workspace-ui :where(button,input,select,textarea) { max-width: 100%; }
 .workspace-ui :where(button,select,input:not([type=checkbox]):not([type=radio])) { min-height: 44px; }

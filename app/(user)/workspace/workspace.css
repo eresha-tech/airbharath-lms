@@ -1,4 +1,3 @@
-.workspace-page { --workspace-ink: #1a1740; }
 .workspace-page .workspace-grid {
   background-image: linear-gradient(hsl(var(--border) / .5) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / .5) 1px, transparent 1px);
   background-size: 48px 48px;

@@ -18,7 +18,6 @@ import { advertisedBundleOffer, rupees, type PublicCourse } from '@/lib/public/c
 import { readPublicCatalog } from '@/lib/public/catalog';
 import { readPublicWorkspaceInfo } from '@/lib/public/workspace';
 import { HeroBanner } from '@/components/landing/HeroBanner';
-import { FeaturedCourseCarousel } from '@/components/landing/FeaturedCourseCarousel';
 import { CoursesSection, PublicCourseCard } from '@/components/landing/CoursesSection';
 import { WorkspaceLanding } from '@/components/workspace/WorkspaceLanding';
 import { Footer } from '@/components/Footer';
@@ -68,31 +67,34 @@ it('distinguishes catalog-unavailable from genuine-empty results, without fictio
     expect(empty).not.toContain('category filter');
 });
 it('keeps hero course-first with linked published courses and the approved secondary destination', () => {
-    const result = html(React.createElement(HeroBanner, { courses: [course] }));
+    const result = html(React.createElement(HeroBanner, { featured: course }));
     expect(result.indexOf('Explore Courses')).toBeLessThan(result.indexOf('Become a Creator'));
     expect(result).toContain('href="/workspace"');
     expect(result).toContain('href="/courses"');
     expect(result).not.toMatch(/₹|aria-hidden="true"[^>]*>.*Explore Program/);
     expect(readFileSync('components/landing/HeroBanner.tsx', 'utf8')).not.toMatch(/setInterval|useEffect|HERO_SLIDES/);
 });
-it('keeps inactive slides inert while linking each published course to its own detail route', () => {
-    const result = html(React.createElement(FeaturedCourseCarousel, { courses: [course, { ...course, slug: 'ai-skills', title: 'AI Skills', isBundle: false }] }));
-    expect(result).toContain('aria-roledescription="carousel"');
-    expect(result).toContain('inert="" aria-hidden="true"');
-    expect(result).toContain('href="/courses/combo-pack"');
-    expect(result).toContain('href="/courses/ai-skills"');
-    expect(result).toContain('Next featured course');
+it('uses real fixed Masterclass artwork and destination without timers or carousel controls', () => {
+    const featured = { ...course, slug: 'actual bundle', thumbnailUrl: 'https://example.invalid/masterclass.webp' };
+    const result = html(React.createElement(HeroBanner, { featured }));
+    expect(result.match(/href="\/courses\/actual%20bundle"/g)).toHaveLength(3);
+    expect(result).toContain('masterclass.webp');
+    expect(result).not.toMatch(/carousel|Previous featured|Next featured|Pause|Play|₹/);
+    expect(readFileSync('components/landing/HeroBanner.tsx', 'utf8')).not.toMatch(/setInterval|setTimeout|useEffect|useState/);
 });
-it('renders one or zero published courses without rotation controls, and suppresses an unavailable offer', () => {
-    for (const courses of [[course], []]) {
-        const result = html(React.createElement(FeaturedCourseCarousel, { courses }));
-        expect(result).not.toContain('Next featured course');
-        expect(result).not.toContain('aria-roledescription="carousel"');
-    }
+it('does not invent a featured course when the bundle is unavailable, and preserves standard-only pricing', () => {
+    expect(html(React.createElement(HeroBanner))).toContain('Choose your next learning path');
     const result = html(React.createElement(PublicCourseCard, { course: { ...course, offerPrice: null } }));
     expect(result).not.toContain('<del>');
     expect(result).not.toContain('₹1,900');
     expect(result).toContain('₹3,300');
+});
+it('keeps the bundle fixed even when an individual course precedes it in the published catalog', async () => {
+    mocks.courses.mockResolvedValueOnce([{ ...course, slug: 'individual', title: 'Individual', isBundle: false }, { ...course, title: 'All-in-One Masterclass' }]);
+    const result = html(await Home());
+    const hero = result.slice(result.indexOf('<figure'), result.indexOf('</figure>'));
+    expect(hero).toContain('All-in-One Masterclass');
+    expect(hero).not.toContain('Individual');
 });
 it('renders eight purposeful homepage sections with courses followed by Workspace', async () => {
     const result = html(await Home());

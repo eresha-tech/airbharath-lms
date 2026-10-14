@@ -492,7 +492,7 @@ export default function AdminDashboardClient({
           <Button
             onClick={handleExportCSV}
             variant="outline"
-            className="border-slate-200 text-slate-700 hover:text-primary hover:bg-slate-100 font-bold h-10 px-4 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer"
+            className="border-border text-foreground hover:text-primary hover:bg-muted font-bold h-10 px-4 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer"
           >
             <Download className="h-3.5 w-3.5" />
             <span>Export CSV</span>
