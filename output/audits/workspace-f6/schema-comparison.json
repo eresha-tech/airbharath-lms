@@ -1,0 +1,464 @@
+{
+  "snapshot": "drizzle/meta/0029_snapshot.json",
+  "modeledPublicTables": 60,
+  "tables": [
+    {
+      "table": "public.certificates",
+      "columns": 8,
+      "snapshotForeignKeys": 3,
+      "snapshotIndexes": 1,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.coupons",
+      "columns": 7,
+      "snapshotForeignKeys": 0,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.course_authors",
+      "columns": 10,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.course_bundle_items",
+      "columns": 5,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 1,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.course_sections",
+      "columns": 7,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.courses",
+      "columns": 22,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.enrollments",
+      "columns": 6,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 1,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.feed_posts",
+      "columns": 5,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.invoices",
+      "columns": 9,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.jobs",
+      "columns": 8,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.lesson_comments",
+      "columns": 6,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.lesson_materials",
+      "columns": 7,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.lessons",
+      "columns": 15,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.modules",
+      "columns": 8,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.orders",
+      "columns": 8,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.playback_sessions",
+      "columns": 6,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.progress",
+      "columns": 5,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 1,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.users",
+      "columns": 7,
+      "snapshotForeignKeys": 0,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.video_captions",
+      "columns": 8,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 1,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.videos",
+      "columns": 11,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.workspace_access_grant_events",
+      "columns": 9,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 3,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_access_grants",
+      "columns": 20,
+      "snapshotForeignKeys": 6,
+      "snapshotIndexes": 5,
+      "snapshotChecks": 3
+    },
+    {
+      "table": "public.workspace_applications",
+      "columns": 51,
+      "snapshotForeignKeys": 3,
+      "snapshotIndexes": 2,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.workspace_audit_events",
+      "columns": 11,
+      "snapshotForeignKeys": 4,
+      "snapshotIndexes": 3,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_coupon_plans",
+      "columns": 2,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_coupon_redemptions",
+      "columns": 13,
+      "snapshotForeignKeys": 3,
+      "snapshotIndexes": 3,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_coupons",
+      "columns": 17,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 2,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_course_drafts",
+      "columns": 17,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 3,
+      "snapshotChecks": 6
+    },
+    {
+      "table": "public.workspace_course_lessons",
+      "columns": 11,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 2
+    },
+    {
+      "table": "public.workspace_course_modules",
+      "columns": 9,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 1,
+      "snapshotChecks": 2
+    },
+    {
+      "table": "public.workspace_course_projects",
+      "columns": 9,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 3,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_course_review_events",
+      "columns": 12,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 2,
+      "snapshotChecks": 3
+    },
+    {
+      "table": "public.workspace_course_submissions",
+      "columns": 24,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 6,
+      "snapshotChecks": 5
+    },
+    {
+      "table": "public.workspace_creator_profile_details",
+      "columns": 11,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 2,
+      "snapshotChecks": 4
+    },
+    {
+      "table": "public.workspace_creator_profiles",
+      "columns": 5,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 2,
+      "snapshotChecks": 2
+    },
+    {
+      "table": "public.workspace_creator_terms_acceptances",
+      "columns": 6,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_creator_terms_versions",
+      "columns": 6,
+      "snapshotForeignKeys": 0,
+      "snapshotIndexes": 1,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_eligibility_attempts",
+      "columns": 25,
+      "snapshotForeignKeys": 3,
+      "snapshotIndexes": 3,
+      "snapshotChecks": 5
+    },
+    {
+      "table": "public.workspace_eligibility_settings",
+      "columns": 8,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 1,
+      "snapshotChecks": 2
+    },
+    {
+      "table": "public.workspace_email_challenges",
+      "columns": 10,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 2,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_email_notice_bindings",
+      "columns": 3,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.workspace_email_rate_limits",
+      "columns": 3,
+      "snapshotForeignKeys": 0,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_influencer_history",
+      "columns": 6,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 0
+    },
+    {
+      "table": "public.workspace_influencers",
+      "columns": 9,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_membership_orders",
+      "columns": 62,
+      "snapshotForeignKeys": 8,
+      "snapshotIndexes": 9,
+      "snapshotChecks": 6
+    },
+    {
+      "table": "public.workspace_membership_plans",
+      "columns": 12,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 2,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_memberships",
+      "columns": 12,
+      "snapshotForeignKeys": 4,
+      "snapshotIndexes": 2,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_payment_attempts",
+      "columns": 18,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 3,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_payment_events",
+      "columns": 16,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 2,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_policy_versions",
+      "columns": 7,
+      "snapshotForeignKeys": 0,
+      "snapshotIndexes": 1,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_refund_attempts",
+      "columns": 16,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 1,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_refund_completions",
+      "columns": 12,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_refund_notice_deliveries",
+      "columns": 16,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 1,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_refund_notice_delivery_attempts",
+      "columns": 15,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_refund_notices",
+      "columns": 4,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_refund_observations",
+      "columns": 5,
+      "snapshotForeignKeys": 1,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_refund_policy_acceptances",
+      "columns": 6,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 0,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_refund_policy_versions",
+      "columns": 6,
+      "snapshotForeignKeys": 0,
+      "snapshotIndexes": 1,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_refund_requests",
+      "columns": 16,
+      "snapshotForeignKeys": 3,
+      "snapshotIndexes": 1,
+      "snapshotChecks": 1
+    },
+    {
+      "table": "public.workspace_verified_emails",
+      "columns": 7,
+      "snapshotForeignKeys": 2,
+      "snapshotIndexes": 2,
+      "snapshotChecks": 1
+    }
+  ],
+  "issues": [],
+  "foreignKeyNamingDrift": [
+    {
+      "table": "certificates",
+      "expected": "certificates_issued_by_users_id_fk",
+      "actual": "certificates_issued_by_fkey",
+      "semanticsMatch": true
+    },
+    {
+      "table": "course_sections",
+      "expected": "course_sections_course_id_courses_id_fk",
+      "actual": "course_sections_course_id_fkey",
+      "semanticsMatch": true
+    },
+    {
+      "table": "courses",
+      "expected": "courses_certificate_activated_by_users_id_fk",
+      "actual": "courses_certificate_activated_by_fkey",
+      "semanticsMatch": true
+    },
+    {
+      "table": "modules",
+      "expected": "modules_section_id_course_sections_id_fk",
+      "actual": "modules_section_id_fkey",
+      "semanticsMatch": true
+    },
+    {
+      "table": "video_captions",
+      "expected": "video_captions_video_id_videos_id_fk",
+      "actual": "video_captions_video_id_fkey",
+      "semanticsMatch": true
+    }
+  ],
+  "extraPublicTables": [
+    "otps"
+  ],
+  "otherTables": "Migration ledger and retained wsd1_clock test schema inventoried separately.",
+  "limits": "Whitespace-normalized types, column sets/nullability, FK keys/targets/actions and named unique/check/PK/index presence compared. Generated identifiers normalized to PostgreSQL63-byte limit. Defaults/full definitions retained in catalog; function bodies compared to last reviewed migration. No schema generation."
+}

@@ -1,0 +1,2288 @@
+{
+  "foreignKeyIndexCoverage": [
+    {
+      "schema": "public",
+      "table": "certificates",
+      "constraint": "certificates_course_id_courses_id_fk",
+      "columns": [
+        "course_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "certificates",
+      "constraint": "certificates_issued_by_fkey",
+      "columns": [
+        "issued_by"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "certificates",
+      "constraint": "certificates_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "user_course_cert_unique_idx"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "course_authors",
+      "constraint": "course_authors_course_id_courses_id_fk",
+      "columns": [
+        "course_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "course_bundle_items",
+      "constraint": "course_bundle_items_bundle_course_id_courses_id_fk",
+      "columns": [
+        "bundle_course_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "bundle_course_item_unique_idx"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "course_bundle_items",
+      "constraint": "course_bundle_items_course_id_courses_id_fk",
+      "columns": [
+        "course_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "course_sections",
+      "constraint": "course_sections_course_id_fkey",
+      "columns": [
+        "course_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "courses",
+      "constraint": "courses_certificate_activated_by_fkey",
+      "columns": [
+        "certificate_activated_by"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "courses",
+      "constraint": "courses_instructor_id_users_id_fk",
+      "columns": [
+        "instructor_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "enrollments",
+      "constraint": "enrollments_course_id_courses_id_fk",
+      "columns": [
+        "course_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "enrollments",
+      "constraint": "enrollments_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "user_course_unique_idx"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "feed_posts",
+      "constraint": "feed_posts_author_id_users_id_fk",
+      "columns": [
+        "author_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "invoices",
+      "constraint": "invoices_order_id_orders_id_fk",
+      "columns": [
+        "order_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "invoices",
+      "constraint": "invoices_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "jobs",
+      "constraint": "jobs_posted_by_users_id_fk",
+      "columns": [
+        "posted_by"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "lesson_comments",
+      "constraint": "lesson_comments_lesson_id_lessons_id_fk",
+      "columns": [
+        "lesson_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "lesson_comments",
+      "constraint": "lesson_comments_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "lesson_materials",
+      "constraint": "lesson_materials_lesson_id_lessons_id_fk",
+      "columns": [
+        "lesson_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "lessons",
+      "constraint": "lessons_module_id_modules_id_fk",
+      "columns": [
+        "module_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "modules",
+      "constraint": "modules_course_id_courses_id_fk",
+      "columns": [
+        "course_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "modules",
+      "constraint": "modules_section_id_fkey",
+      "columns": [
+        "section_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "orders",
+      "constraint": "orders_course_id_courses_id_fk",
+      "columns": [
+        "course_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "orders",
+      "constraint": "orders_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "playback_sessions",
+      "constraint": "playback_sessions_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "playback_sessions",
+      "constraint": "playback_sessions_video_id_videos_id_fk",
+      "columns": [
+        "video_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "progress",
+      "constraint": "progress_lesson_id_lessons_id_fk",
+      "columns": [
+        "lesson_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "progress",
+      "constraint": "progress_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "user_lesson_unique_idx"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "video_captions",
+      "constraint": "video_captions_video_id_fkey",
+      "columns": [
+        "video_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "video_caption_lang_unique_idx"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "videos",
+      "constraint": "videos_course_id_courses_id_fk",
+      "columns": [
+        "course_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "videos",
+      "constraint": "videos_lesson_id_lessons_id_fk",
+      "columns": [
+        "lesson_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grant_events",
+      "constraint": "workspace_access_grant_events_actor_id_users_id_fk",
+      "columns": [
+        "actor_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_grant_event_actor_key_idx"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grant_events",
+      "constraint": "workspace_grant_event_owner_fk",
+      "columns": [
+        "grant_id",
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_grant_event_action_idx"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grants",
+      "constraint": "workspace_access_grants_closed_by_users_id_fk",
+      "columns": [
+        "closed_by"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grants",
+      "constraint": "workspace_access_grants_eligibility_attempt_id_workspace_eligib",
+      "columns": [
+        "eligibility_attempt_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grants",
+      "constraint": "workspace_access_grants_granted_by_users_id_fk",
+      "columns": [
+        "granted_by"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_grant_actor_key_idx"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grants",
+      "constraint": "workspace_access_grants_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_grant_owner_expiry_idx"
+      ],
+      "partialFullPrefixIndexes": [
+        "workspace_grant_open_owner_idx"
+      ],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grants",
+      "constraint": "workspace_grant_profile_owner_fk",
+      "columns": [
+        "creator_profile_id",
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_grant_open_owner_idx",
+        "workspace_grant_owner_expiry_idx"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grants",
+      "constraint": "workspace_grant_terms_fk",
+      "columns": [
+        "terms_version",
+        "terms_content_hash"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_applications",
+      "constraint": "workspace_applications_approval_email_attempted_by_users_id_fk",
+      "columns": [
+        "approval_email_attempted_by"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_applications",
+      "constraint": "workspace_applications_approval_email_sent_by_users_id_fk",
+      "columns": [
+        "approval_email_sent_by"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_applications",
+      "constraint": "workspace_applications_reviewed_by_users_id_fk",
+      "columns": [
+        "reviewed_by"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_audit_events",
+      "constraint": "workspace_audit_events_actor_id_users_id_fk",
+      "columns": [
+        "actor_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_audit_events_actor_key_idx"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_audit_events",
+      "constraint": "workspace_audit_events_coupon_id_workspace_coupons_id_fk",
+      "columns": [
+        "coupon_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_audit_events_coupon_created_idx"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_audit_events",
+      "constraint": "workspace_audit_events_previous_settings_id_workspace_eligibili",
+      "columns": [
+        "previous_settings_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_audit_events",
+      "constraint": "workspace_audit_events_settings_id_workspace_eligibility_settin",
+      "columns": [
+        "settings_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_audit_events_settings_created_idx"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupon_plans",
+      "constraint": "workspace_coupon_plans_coupon_id_workspace_coupons_id_fk",
+      "columns": [
+        "coupon_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_coupon_plans_coupon_id_plan_code_pk"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupon_redemptions",
+      "constraint": "workspace_coupon_redemptions_coupon_id_workspace_coupons_id_fk",
+      "columns": [
+        "coupon_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_redemptions_capacity_idx"
+      ],
+      "partialFullPrefixIndexes": [
+        "workspace_redemptions_user_coupon_idx"
+      ],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupon_redemptions",
+      "constraint": "workspace_coupon_redemptions_membership_order_id_user_id_coupon",
+      "columns": [
+        "membership_order_id",
+        "user_id",
+        "coupon_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_redemptions_capacity_idx",
+        "workspace_redemptions_order_idx",
+        "workspace_redemptions_user_coupon_idx"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupon_redemptions",
+      "constraint": "workspace_coupon_redemptions_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupons",
+      "constraint": "workspace_coupons_created_by_users_id_fk",
+      "columns": [
+        "created_by"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupons",
+      "constraint": "workspace_coupons_influencer_id_workspace_influencers_id_fk",
+      "columns": [
+        "influencer_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_drafts",
+      "constraint": "workspace_course_drafts_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_drafts_owner_updated_idx",
+        "workspace_drafts_request_owner_idx"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_drafts",
+      "constraint": "workspace_drafts_owner_fk",
+      "columns": [
+        "creator_profile_id",
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_drafts_owner_updated_idx",
+        "workspace_drafts_request_owner_idx"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_lessons",
+      "constraint": "workspace_lessons_module_owner_fk",
+      "columns": [
+        "module_id",
+        "project_id",
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_lessons_position_unique"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_modules",
+      "constraint": "workspace_modules_project_owner_fk",
+      "columns": [
+        "project_id",
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_modules_position_unique"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_projects",
+      "constraint": "workspace_projects_approved_owner_fk",
+      "columns": [
+        "approved_submission_id",
+        "user_id",
+        "creator_profile_id",
+        "draft_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_projects_draft_idx",
+        "workspace_projects_source_idx"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_projects",
+      "constraint": "workspace_projects_profile_owner_fk",
+      "columns": [
+        "creator_profile_id",
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_projects_draft_idx"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_review_events",
+      "constraint": "workspace_course_review_events_actor_admin_user_id_users_id_fk",
+      "columns": [
+        "actor_admin_user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_review_events_request_idx"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_review_events",
+      "constraint": "workspace_course_review_events_submission_id_workspace_course_s",
+      "columns": [
+        "submission_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_review_events_transition_idx"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_submissions",
+      "constraint": "workspace_submissions_draft_owner_fk",
+      "columns": [
+        "draft_id",
+        "user_id",
+        "creator_profile_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_submissions_number_idx",
+        "workspace_submissions_open_idx",
+        "workspace_submissions_owner_idx",
+        "workspace_submissions_request_idx"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_profile_details",
+      "constraint": "workspace_creator_profile_details_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_profile_details_owner_idx"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_profile_details",
+      "constraint": "workspace_profile_details_owner_fk",
+      "columns": [
+        "creator_profile_id",
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_profile_details_owner_idx",
+        "workspace_profile_details_profile_idx"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_profiles",
+      "constraint": "workspace_creator_profiles_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_creator_profiles_user_idx"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_terms_acceptances",
+      "constraint": "workspace_creator_terms_acceptances_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_terms_user_version_unique"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_terms_acceptances",
+      "constraint": "workspace_terms_acceptance_document_fk",
+      "columns": [
+        "terms_version",
+        "terms_content_hash"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_eligibility_attempts",
+      "constraint": "workspace_eligibility_attempts_policy_id_workspace_policy_versi",
+      "columns": [
+        "policy_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_eligibility_attempts",
+      "constraint": "workspace_eligibility_attempts_settings_id_workspace_eligibilit",
+      "columns": [
+        "settings_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_eligibility_attempts",
+      "constraint": "workspace_eligibility_attempts_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_eligibility_attempts_user_decided_idx",
+        "workspace_eligibility_attempts_user_key_idx"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_eligibility_settings",
+      "constraint": "workspace_eligibility_settings_published_by_users_id_fk",
+      "columns": [
+        "published_by"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_email_challenges",
+      "constraint": "workspace_email_challenges_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_email_challenge_user_created_idx"
+      ],
+      "partialFullPrefixIndexes": [
+        "workspace_email_one_open_idx"
+      ],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_email_notice_bindings",
+      "constraint": "workspace_email_notice_bindings_notice_id_workspace_refund_noti",
+      "columns": [
+        "notice_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_email_notice_bindings_pkey"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_email_notice_bindings",
+      "constraint": "workspace_email_notice_bindings_verification_id_workspace_verif",
+      "columns": [
+        "verification_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_influencer_history",
+      "constraint": "workspace_influencer_history_actor_id_users_id_fk",
+      "columns": [
+        "actor_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_influencer_history",
+      "constraint": "workspace_influencer_history_influencer_id_workspace_influencer",
+      "columns": [
+        "influencer_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_influencer_history_version_unique"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_influencers",
+      "constraint": "workspace_influencers_created_by_users_id_fk",
+      "columns": [
+        "created_by"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_influencers",
+      "constraint": "workspace_influencers_updated_by_users_id_fk",
+      "columns": [
+        "updated_by"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "constraint": "workspace_membership_orders_coupon_id_workspace_coupons_id_fk",
+      "columns": [
+        "coupon_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "constraint": "workspace_membership_orders_eligibility_attempt_id_workspace_el",
+      "columns": [
+        "eligibility_attempt_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "constraint": "workspace_membership_orders_plan_version_id_workspace_membershi",
+      "columns": [
+        "plan_version_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "constraint": "workspace_membership_orders_policy_id_workspace_policy_versions",
+      "columns": [
+        "policy_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "constraint": "workspace_membership_orders_settings_id_workspace_eligibility_s",
+      "columns": [
+        "settings_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "constraint": "workspace_membership_orders_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_orders_user_request_idx"
+      ],
+      "partialFullPrefixIndexes": [
+        "workspace_orders_unresolved_user_idx"
+      ],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "constraint": "workspace_orders_refund_policy_snapshot_fk",
+      "columns": [
+        "refund_policy_acceptance_id",
+        "user_id",
+        "refund_policy_version",
+        "refund_policy_content_hash",
+        "refund_policy_accepted_at"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_orders_unresolved_user_idx",
+        "workspace_orders_user_request_idx"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "constraint": "workspace_orders_terms_snapshot_fk",
+      "columns": [
+        "creator_terms_acceptance_id",
+        "user_id",
+        "creator_terms_version",
+        "creator_terms_content_hash",
+        "creator_terms_accepted_at"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_orders_unresolved_user_idx",
+        "workspace_orders_user_request_idx"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_plans",
+      "constraint": "workspace_membership_plans_published_by_users_id_fk",
+      "columns": [
+        "published_by"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_memberships",
+      "constraint": "workspace_memberships_creator_profile_id_user_id_workspace_crea",
+      "columns": [
+        "creator_profile_id",
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_memberships_user_term_idx"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_memberships",
+      "constraint": "workspace_memberships_membership_order_id_user_id_workspace_mem",
+      "columns": [
+        "membership_order_id",
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_memberships_order_idx",
+        "workspace_memberships_user_term_idx"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_memberships",
+      "constraint": "workspace_memberships_plan_version_id_workspace_membership_plan",
+      "columns": [
+        "plan_version_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_memberships",
+      "constraint": "workspace_memberships_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_memberships_user_term_idx"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_payment_attempts",
+      "constraint": "workspace_payment_attempts_membership_order_id_user_id_provider",
+      "columns": [
+        "membership_order_id",
+        "user_id",
+        "provider_account_id",
+        "provider_mode",
+        "provider_order_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_payments_order_idx",
+        "workspace_payments_provider_id_idx",
+        "workspace_payments_winner_idx"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_payment_events",
+      "constraint": "workspace_payment_events_membership_order_id_workspace_membersh",
+      "columns": [
+        "membership_order_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_attempts",
+      "constraint": "workspace_refund_attempts_request_id_membership_order_id_user_i",
+      "columns": [
+        "request_id",
+        "membership_order_id",
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_refund_attempt_order_unique",
+        "workspace_refund_attempt_request_unique"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_completions",
+      "constraint": "workspace_refund_completions_membership_order_id_user_id_worksp",
+      "columns": [
+        "membership_order_id",
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_refund_completion_order_unique"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_notice_deliveries",
+      "constraint": "workspace_refund_notice_deliveries_notice_id_workspace_refund_n",
+      "columns": [
+        "notice_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_refund_delivery_notice_unique"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_notice_delivery_attempts",
+      "constraint": "workspace_refund_notice_delivery_attempts_delivery_id_workspace",
+      "columns": [
+        "delivery_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_refund_delivery_attempt_number_unique"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_notices",
+      "constraint": "workspace_refund_notices_membership_order_id_workspace_membersh",
+      "columns": [
+        "membership_order_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_refund_notice_unique"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_observations",
+      "constraint": "workspace_refund_observations_membership_order_id_workspace_mem",
+      "columns": [
+        "membership_order_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_refund_observation_unique"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_policy_acceptances",
+      "constraint": "workspace_refund_policy_acceptance_document_fk",
+      "columns": [
+        "policy_version",
+        "policy_content_hash"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_policy_acceptances",
+      "constraint": "workspace_refund_policy_acceptances_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_refund_policy_user_version_unique"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_requests",
+      "constraint": "workspace_refund_requests_decided_by_users_id_fk",
+      "columns": [
+        "decided_by"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_requests",
+      "constraint": "workspace_refund_requests_membership_order_id_user_id_workspace",
+      "columns": [
+        "membership_order_id",
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [
+        "workspace_refund_request_key_unique",
+        "workspace_refund_request_order_unique"
+      ],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_requests",
+      "constraint": "workspace_refund_requests_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_refund_request_key_unique"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_verified_emails",
+      "constraint": "workspace_verified_emails_challenge_id_workspace_email_challeng",
+      "columns": [
+        "challenge_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_verified_email_challenge_unique"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "public",
+      "table": "workspace_verified_emails",
+      "constraint": "workspace_verified_emails_user_id_users_id_fk",
+      "columns": [
+        "user_id"
+      ],
+      "fullNonPartialPrefixIndexes": [],
+      "partialFullPrefixIndexes": [
+        "workspace_verified_email_user_idx"
+      ],
+      "partialKeyPrefixIndexes": [],
+      "covered": false,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "wsd1_clock_682c6438a13747e59257533f1a55773d",
+      "table": "workspace_refund_notice_deliveries",
+      "constraint": "workspace_refund_notice_deliveries_notice_id_workspace_refund_n",
+      "columns": [
+        "notice_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_refund_delivery_notice_unique"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    },
+    {
+      "schema": "wsd1_clock_682c6438a13747e59257533f1a55773d",
+      "table": "workspace_refund_notice_delivery_attempts",
+      "constraint": "workspace_refund_notice_delivery_attempts_delivery_id_workspace",
+      "columns": [
+        "delivery_id"
+      ],
+      "fullNonPartialPrefixIndexes": [
+        "workspace_refund_delivery_attempt_number_unique"
+      ],
+      "partialFullPrefixIndexes": [],
+      "partialKeyPrefixIndexes": [],
+      "covered": true,
+      "note": "Full-prefix coverage is conservative, not an instruction to add every uncovered index."
+    }
+  ],
+  "exactDuplicateCandidates": [],
+  "defaultCollationIndexes": [
+    {
+      "schema": "public",
+      "table": "certificates",
+      "name": "certificates_certificate_code_unique",
+      "unique": true,
+      "keys": [
+        "certificate_code"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "coupons",
+      "name": "coupons_code_unique",
+      "unique": true,
+      "keys": [
+        "code"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "invoices",
+      "name": "invoices_invoice_number_unique",
+      "unique": true,
+      "keys": [
+        "invoice_number"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "orders",
+      "name": "orders_razorpay_order_id_unique",
+      "unique": true,
+      "keys": [
+        "razorpay_order_id"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "users",
+      "name": "users_phone_unique",
+      "unique": true,
+      "keys": [
+        "phone"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "video_captions",
+      "name": "video_caption_lang_unique_idx",
+      "unique": true,
+      "keys": [
+        "video_id",
+        "language_code"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grant_events",
+      "name": "workspace_grant_event_action_idx",
+      "unique": true,
+      "keys": [
+        "grant_id",
+        "action"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grants",
+      "name": "workspace_grant_open_owner_idx",
+      "unique": true,
+      "keys": [
+        "user_id",
+        "environment"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grants",
+      "name": "workspace_grant_owner_expiry_idx",
+      "unique": false,
+      "keys": [
+        "user_id",
+        "environment",
+        "expires_at"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_applications",
+      "name": "workspace_applications_application_reference_unique",
+      "unique": true,
+      "keys": [
+        "application_reference"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_applications",
+      "name": "workspace_applications_email_idx",
+      "unique": false,
+      "keys": [
+        "email"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupon_plans",
+      "name": "workspace_coupon_plans_coupon_id_plan_code_pk",
+      "unique": true,
+      "keys": [
+        "coupon_id",
+        "plan_code"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupon_redemptions",
+      "name": "workspace_redemptions_capacity_idx",
+      "unique": false,
+      "keys": [
+        "coupon_id",
+        "status"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupons",
+      "name": "workspace_coupons_scope_code_idx",
+      "unique": true,
+      "keys": [
+        "scope",
+        "code"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupons",
+      "name": "workspace_coupons_status_created_idx",
+      "unique": false,
+      "keys": [
+        "status",
+        "created_at"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_submissions",
+      "name": "workspace_submissions_queue_idx",
+      "unique": false,
+      "keys": [
+        "review_status",
+        "submitted_at",
+        "id"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_terms_acceptances",
+      "name": "workspace_terms_acceptance_snapshot_unique",
+      "unique": true,
+      "keys": [
+        "id",
+        "user_id",
+        "terms_version",
+        "terms_content_hash",
+        "accepted_at"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_terms_acceptances",
+      "name": "workspace_terms_user_version_unique",
+      "unique": true,
+      "keys": [
+        "user_id",
+        "terms_version"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_terms_versions",
+      "name": "workspace_creator_terms_versions_pkey",
+      "unique": true,
+      "keys": [
+        "terms_version"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_terms_versions",
+      "name": "workspace_terms_version_hash_unique",
+      "unique": true,
+      "keys": [
+        "terms_version",
+        "content_hash"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_email_rate_limits",
+      "name": "workspace_email_rate_limits_key_window_at_pk",
+      "unique": true,
+      "keys": [
+        "key",
+        "window_at"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "name": "workspace_orders_financial_idx",
+      "unique": false,
+      "keys": [
+        "financial_state",
+        "activation_state",
+        "created_at"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "name": "workspace_orders_owner_provider_idx",
+      "unique": true,
+      "keys": [
+        "id",
+        "user_id",
+        "provider_account_id",
+        "provider_mode",
+        "provider_order_id"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "name": "workspace_orders_provider_order_idx",
+      "unique": true,
+      "keys": [
+        "provider_account_id",
+        "provider_mode",
+        "provider_order_id"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "name": "workspace_orders_receipt_idx",
+      "unique": true,
+      "keys": [
+        "provider_account_id",
+        "provider_mode",
+        "provider_receipt"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "name": "workspace_orders_recovery_idx",
+      "unique": false,
+      "keys": [
+        "provider_setup_state",
+        "created_at"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_plans",
+      "name": "workspace_plans_code_version_idx",
+      "unique": true,
+      "keys": [
+        "code",
+        "version"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_plans",
+      "name": "workspace_plans_current_idx",
+      "unique": true,
+      "keys": [
+        "code"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_payment_attempts",
+      "name": "workspace_payments_provider_id_idx",
+      "unique": true,
+      "keys": [
+        "provider_account_id",
+        "provider_mode",
+        "provider_payment_id"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_payment_events",
+      "name": "workspace_events_pending_idx",
+      "unique": false,
+      "keys": [
+        "processing_state",
+        "next_attempt_at",
+        "received_at"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_payment_events",
+      "name": "workspace_events_provider_event_idx",
+      "unique": true,
+      "keys": [
+        "provider_account_id",
+        "provider_mode",
+        "event_id"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_policy_versions",
+      "name": "workspace_policy_versions_current_idx",
+      "unique": true,
+      "keys": [
+        "kind"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_policy_versions",
+      "name": "workspace_policy_versions_version_unique",
+      "unique": true,
+      "keys": [
+        "version"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_attempts",
+      "name": "workspace_refund_provider_id_idx",
+      "unique": true,
+      "keys": [
+        "provider_account_id",
+        "provider_mode",
+        "provider_refund_id"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_completions",
+      "name": "workspace_refund_completion_provider_unique",
+      "unique": true,
+      "keys": [
+        "provider_account_id",
+        "provider_mode",
+        "provider_refund_id"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_notice_deliveries",
+      "name": "workspace_refund_delivery_queue_idx",
+      "unique": false,
+      "keys": [
+        "state",
+        "next_attempt_at",
+        "lease_until"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_notices",
+      "name": "workspace_refund_notice_unique",
+      "unique": true,
+      "keys": [
+        "membership_order_id",
+        "kind"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_observations",
+      "name": "workspace_refund_observation_unique",
+      "unique": true,
+      "keys": [
+        "membership_order_id",
+        "evidence_hash"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_policy_acceptances",
+      "name": "workspace_refund_policy_acceptance_snapshot_unique",
+      "unique": true,
+      "keys": [
+        "id",
+        "user_id",
+        "policy_version",
+        "policy_content_hash",
+        "accepted_at"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_policy_acceptances",
+      "name": "workspace_refund_policy_user_version_unique",
+      "unique": true,
+      "keys": [
+        "user_id",
+        "policy_version"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_policy_versions",
+      "name": "workspace_policy_version_hash_unique",
+      "unique": true,
+      "keys": [
+        "policy_version",
+        "content_hash"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_policy_versions",
+      "name": "workspace_refund_policy_versions_pkey",
+      "unique": true,
+      "keys": [
+        "policy_version"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_requests",
+      "name": "workspace_refund_queue_idx",
+      "unique": false,
+      "keys": [
+        "decision",
+        "requested_at"
+      ]
+    },
+    {
+      "schema": "public",
+      "table": "workspace_verified_emails",
+      "name": "workspace_verified_email_address_idx",
+      "unique": true,
+      "keys": [
+        "email"
+      ]
+    },
+    {
+      "schema": "wsd1_clock_682c6438a13747e59257533f1a55773d",
+      "table": "workspace_refund_notice_deliveries",
+      "name": "workspace_refund_delivery_queue_idx",
+      "unique": false,
+      "keys": [
+        "state",
+        "next_attempt_at",
+        "lease_until"
+      ]
+    }
+  ],
+  "functionSourceMatches": [
+    {
+      "function": "workspace_build_item_guard",
+      "migration": "0017_marvelous_captain_midlands.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_build_positions_guard",
+      "migration": "0017_marvelous_captain_midlands.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_build_project_guard",
+      "migration": "0017_marvelous_captain_midlands.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_capture_event_time_guard",
+      "migration": "0016_tired_prowler.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_check_course_review_consistency",
+      "migration": "0015_warm_sprite.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_coupon_influencer_guard",
+      "migration": "0023_chubby_jimmy_woo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_coupon_paid_evidence_guard",
+      "migration": "0023_chubby_jimmy_woo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_email_binding_immutable",
+      "migration": "0027_workspace_verified_creator_email.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_email_challenge_guard",
+      "migration": "0027_workspace_verified_creator_email.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_email_contact_change",
+      "migration": "0027_workspace_verified_creator_email.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_email_notice_bind",
+      "migration": "0027_workspace_verified_creator_email.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_email_order_required",
+      "migration": "0027_workspace_verified_creator_email.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_email_proof_guard",
+      "migration": "0027_workspace_verified_creator_email.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_grant_complete",
+      "migration": "0029_workspace_grant_completion_record_fix.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_grant_guard",
+      "migration": "0028_workspace_creator_access_grants.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_guard_course_review_event",
+      "migration": "0015_warm_sprite.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_guard_course_submission",
+      "migration": "0015_warm_sprite.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_guard_creator_content",
+      "migration": "0014_outgoing_freak.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_guard_review_locked_draft",
+      "migration": "0015_warm_sprite.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_influencer_guard",
+      "migration": "0023_chubby_jimmy_woo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_influencer_history_append",
+      "migration": "0023_chubby_jimmy_woo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_influencer_history_guard",
+      "migration": "0023_chubby_jimmy_woo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_influencer_reject_truncate",
+      "migration": "0024_workspace_influencer_history_truncate_guard.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_membership_refund_insert_guard",
+      "migration": "0020_gigantic_mordo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_new_order_refund_policy_guard",
+      "migration": "0020_gigantic_mordo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_new_order_terms_guard",
+      "migration": "0018_ambiguous_khan.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_phase13_immutable_history",
+      "migration": "0009_normal_baron_zemo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_phase13_version_pointer_only",
+      "migration": "0009_normal_baron_zemo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_phase14_applicability_immutable",
+      "migration": "0010_illegal_toxin.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_phase14_coupon_complete",
+      "migration": "0011_workspace_coupon_audit_freshness.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_phase14_coupon_immutable",
+      "migration": "0011_workspace_coupon_audit_freshness.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_phase14_plan_immutable",
+      "migration": "0010_illegal_toxin.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_phase15_event_guard",
+      "migration": "0012_useful_warhawk.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_phase15_financial_complete",
+      "migration": "0025_workspace_held_capture_coupon_consistency.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_phase15_order_guard",
+      "migration": "0013_peaceful_spiral.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_phase15_payment_guard",
+      "migration": "0012_useful_warhawk.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_phase15_redemption_guard",
+      "migration": "0012_useful_warhawk.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_phase15b_complete",
+      "migration": "0028_workspace_creator_access_grants.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_phase15b_membership_guard",
+      "migration": "0021_workspace_live_financial_modes.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_phase15b_profile_guard",
+      "migration": "0013_peaceful_spiral.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_refund_approval_complete",
+      "migration": "0020_gigantic_mordo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_refund_attempt_guard",
+      "migration": "0020_gigantic_mordo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_refund_completion_guard",
+      "migration": "0020_gigantic_mordo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_refund_delivery_attempt_guard",
+      "migration": "0022_lethal_barracuda.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_refund_delivery_guard",
+      "migration": "0022_lethal_barracuda.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_refund_history_guard",
+      "migration": "0020_gigantic_mordo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_refund_notice_insert_guard",
+      "migration": "0020_gigantic_mordo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_refund_policy_acceptance_insert_guard",
+      "migration": "0020_gigantic_mordo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_refund_policy_document_guard",
+      "migration": "0020_gigantic_mordo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_refund_policy_history_guard",
+      "migration": "0020_gigantic_mordo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_refund_request_guard",
+      "migration": "0020_gigantic_mordo.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_terms_acceptance_insert_guard",
+      "migration": "0018_ambiguous_khan.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_terms_document_guard",
+      "migration": "0018_ambiguous_khan.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    },
+    {
+      "function": "workspace_terms_history_guard",
+      "migration": "0018_ambiguous_khan.sql",
+      "bodyMatchesLatestReviewedMigration": true
+    }
+  ],
+  "limits": [
+    "Composite equality prefixes may use a subset index; flags require workload/retention review.",
+    "Default-collation index candidates include text identifiers; a mismatch is not proof of data corruption.",
+    "Function-body comparison complements ledger/constraints; it does not claim production state."
+  ]
+}
