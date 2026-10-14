@@ -27,6 +27,7 @@ async function main() {
     const refunds = load('@/lib/workspace/refunds/repository').createPostgresRefundStore(db);
     const activationStore = load('@/lib/workspace/activation/repository').createPostgresActivationStore(db);
     console.log('Local UAT worker ready: only the three demo students and matching Test account/orders.');
+    let nextRecoveryAt = 0, nextNoticeAt = 0;
     while (!stopping) {
       const signal = AbortSignal.timeout(30_000);
       const provider = load('@/lib/workspace/payments/provider').createRazorpayAdapter(process.env, fetch, signal);
@@ -44,10 +45,11 @@ async function main() {
           and e.processing_state in ('pending','retry','processing') and (e.next_attempt_at is null or e.next_attempt_at<=clock_timestamp())
           order by e.received_at,e.id limit 3`;
         for (const event of events) { if (stopping || signal.aborted) break; await payments.processEvent(event.id); }
-        const orders = await client`select o.id,o.user_id from workspace_membership_orders o join users u on u.id=o.user_id
+        const orders = events.length || Date.now() >= nextRecoveryAt ? await client`select o.id,o.user_id from workspace_membership_orders o join users u on u.id=o.user_id
           where u.phone in ${client(phones)} and u.role='student' and o.provider_mode='test'
           and o.provider_account_id=${configuration.accountId} and o.fulfilled_at is null and o.closed_at is null
-          order by o.created_at,o.id limit 3`;
+          order by o.created_at,o.id limit 3` : [];
+        if (events.length || Date.now() >= nextRecoveryAt) nextRecoveryAt = Date.now() + 15_000;
         for (const order of orders) {
           if (stopping || signal.aborted) break;
           await payments.reconcileOrder(order.user_id, order.id);
@@ -62,13 +64,14 @@ async function main() {
             or (d.state in ('claimed','submitted') and d.lease_until<=clock_timestamp()))
           order by n.created_at,n.id limit ${limit}`).map(row => row.id);
         const noticeConfig = load('@/lib/workspace/refund-notifications/configuration').noticeConfiguration();
-        if (noticeConfig && !stopping && !signal.aborted) {
+        if (noticeConfig && Date.now() >= nextNoticeAt && !stopping && !signal.aborted) {
+          nextNoticeAt = Date.now() + 15_000;
           const noticeProvider = load('@/lib/workspace/refund-notifications/provider').createNoticeMailercloudAdapter(process.env, fetch, signal);
           await load('@/lib/workspace/refund-notifications/service').createRefundNoticeDeliveryService({ ...notices, candidates }, noticeProvider, noticeConfig).run(signal, 3);
         }
         if (events.length || orders.length) console.log(`Local UAT worker visited ${events.length} demo events and ${orders.length} demo orders; normal guards determine fulfillment.`);
       } catch { console.warn('Local UAT worker cycle needs retry; no financial state was forced.'); }
-      if (!stopping) await new Promise(resolve => setTimeout(resolve, 15_000));
+      if (!stopping) await new Promise(resolve => setTimeout(resolve, 1000));
     }
   } finally { await client.end({ timeout: 2 }); }
 }

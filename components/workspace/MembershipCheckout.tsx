@@ -1,9 +1,10 @@
 'use client';
 import Script from 'next/script';
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { MembershipQuote } from '@/lib/workspace/membership/service';
 import { formatPaise } from '@/lib/workspace/membership/model';
+import { waitForWorkspaceActivation } from '@/lib/workspace/payments/activation-watch';
 
 type Receipt = { id: string; totalPaise: number; currency: string; financialState: string; activationState: string };
 type Reply = { order?: Receipt; checkout?: { keyId: string; providerOrderId: string }; error?: string };
@@ -14,23 +15,35 @@ type RazorpayConstructor = new (options: { key: string; order_id: string; amount
 export function MembershipCheckout({ keyId, userId, quote, disabled }: { keyId: string; userId: string; quote: MembershipQuote | null; disabled: boolean }) {
   const router = useRouter(), inFlight = useRef(false);
   const [ready, setReady] = useState(false), [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [checking, setChecking] = useState(false);
+  const [awaitingActivation, setAwaitingActivation] = useState(false);
+  const activationCheck = useRef<AbortController | null>(null);
   const storageKey = `workspace-checkout-v1:${userId}`;
+  useEffect(() => () => activationCheck.current?.abort(), [storageKey]);
   async function json(path: string, body?: unknown): Promise<Reply> {
     const response = await fetch(path, { method: body ? 'POST' : 'GET', headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined, cache: 'no-store', signal: AbortSignal.timeout(20_000) });
     const data: Reply = await response.json();
     if (!response.ok) throw new Error(data.error || 'Payment processing is unavailable. Recover this request before starting another payment.');
     return data;
   }
-  async function checkAccess() {
+  const checkAccess = useCallback(async (confirmedPayment = false) => {
+    activationCheck.current?.abort();
+    const controller = new AbortController();
+    activationCheck.current = controller;
+    if (confirmedPayment) setAwaitingActivation(true);
     setChecking(true);
     try {
-      const response = await fetch('/api/workspace/journey', { cache: 'no-store', signal: AbortSignal.timeout(10_000) });
-      const journey = await response.json();
-      if (response.ok && journey.hasCreatorAccess === true && journey.hasPaidEntitlement === true) { sessionStorage.removeItem(storageKey); router.replace('/workspace/dashboard'); router.refresh(); }
-      else setMessage('Your payment is awaiting verified webhook processing and membership fulfillment. Check again shortly; do not pay again.');
-    } catch { setMessage('We could not check membership yet. Your payment request is retained. Please try again.'); }
-    finally { setChecking(false); }
-  }
+      const result = await waitForWorkspaceActivation({ signal: controller.signal, onUpdate: state => setMessage(state === 'waiting'
+        ? 'Confirming your payment and activating your Workspace… You will be redirected automatically. Please do not pay again.'
+        : 'We could not check membership yet. Retrying automatically; please do not pay again.') });
+      if (result === 'ready') {
+        try { sessionStorage.removeItem(storageKey); } catch { /* Verified access does not depend on browser storage. */ }
+        router.replace('/workspace/dashboard'); router.refresh();
+      } else if (result === 'authentication') setMessage('Please sign in again to check your membership. Your payment request is retained; do not pay again.');
+      else if (result === 'timeout') setMessage('Your payment is still being verified. Check membership status again shortly; please do not pay again.');
+    } finally {
+      if (activationCheck.current === controller && !controller.signal.aborted) { activationCheck.current = null; setChecking(false); }
+    }
+  }, [router, storageKey]);
   async function pay() {
     if (inFlight.current || !ready || !quote) return;
     inFlight.current = true; setBusy(true); setMessage('');
@@ -44,12 +57,14 @@ export function MembershipCheckout({ keyId, userId, quote, disabled }: { keyId: 
       const data = pending.orderId ? await json(`/api/workspace/membership/orders/${pending.orderId}`) : await json('/api/workspace/membership/orders', pending.input);
       if (!data.order) throw new Error('Recover this payment request before continuing.');
       const order = data.order; pending.orderId = order.id; sessionStorage.setItem(storageKey, JSON.stringify(pending));
-      if (order.financialState === 'captured') { await checkAccess(); return; }
+      if (order.financialState === 'captured') { await checkAccess(true); return; }
       const Constructor = (window as Window & { Razorpay?: RazorpayConstructor }).Razorpay;
       if (!Constructor || !data.checkout || data.checkout.keyId !== keyId || !/^rzp_(test|live)_[A-Za-z0-9]+$/.test(keyId) || order.currency !== 'INR') throw new Error('Checkout is unavailable. Your existing order is retained.');
       const checkout = new Constructor({ key: keyId, order_id: data.checkout.providerOrderId, amount: order.totalPaise, currency: order.currency, name: 'AirBharath Workspace', description: `${keyId.startsWith('rzp_test_') ? 'Test Mode · ' : ''}prepaid Workspace membership`,
         handler: result => { if (result.razorpay_order_id !== data.checkout!.providerOrderId) { setMessage('Payment identifiers require review. Do not pay again.'); finish(); return; }
-          void json('/api/workspace/payments/razorpay/confirm', { orderId: order.id, providerPaymentId: result.razorpay_payment_id, signature: result.razorpay_signature }).then(() => checkAccess()).catch(() => setMessage('Confirmation could not complete. Your order is retained for genuine webhook reconciliation. Do not pay again.')).finally(finish);
+          void json('/api/workspace/payments/razorpay/confirm', { orderId: order.id, providerPaymentId: result.razorpay_payment_id, signature: result.razorpay_signature })
+            .catch(() => { /* Genuine webhook reconciliation remains authoritative if browser confirmation fails. */ })
+            .then(() => checkAccess(true)).finally(finish);
         }, modal: { ondismiss: () => { setMessage('Checkout closed. Any payment attempt remains associated with this order; retry recovers the same order.'); finish(); } } });
       checkout.on('payment.failed', () => { setMessage('The payment did not succeed. Retry uses this same provider order; no creator access has been granted.'); finish(); });
       checkout.open(); opened = true;
@@ -59,8 +74,8 @@ export function MembershipCheckout({ keyId, userId, quote, disabled }: { keyId: 
   return <div className="ph-no-capture">
     <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" onReady={() => setReady(true)} onError={() => setMessage('Checkout could not load. No payment was started.')} />
     {keyId.startsWith('rzp_test_') && <p className="mb-3 text-xs font-semibold text-primary">Razorpay Test Mode · no real money</p>}
-    <button type="button" disabled={disabled || busy || !ready || !quote} onClick={() => void pay()} className="flex w-full items-center justify-center rounded-xl bg-primary px-5 py-4 text-sm font-semibold text-primary-foreground disabled:opacity-50">{busy ? 'Recovering your order…' : quote ? `Pay ${formatPaise(quote.totalPaise)}` : 'Payment unavailable'}</button>
+    <button type="button" disabled={disabled || busy || checking || awaitingActivation || !ready || !quote} onClick={() => void pay()} className="flex w-full items-center justify-center rounded-xl bg-primary px-5 py-4 text-sm font-semibold text-primary-foreground disabled:opacity-50">{checking ? 'Activating your Workspace…' : awaitingActivation ? 'Payment verification pending' : busy ? 'Recovering your order…' : quote ? `Pay ${formatPaise(quote.totalPaise)}` : 'Payment unavailable'}</button>
     <p className="mt-4 text-xs leading-6 text-muted-foreground">Creator access requires verified provider capture timing and normal membership fulfillment. Checkout success alone does not grant access.</p>
-    {message && <><p role="status" className="mt-4 text-sm">{message}</p><button type="button" disabled={checking} onClick={() => void checkAccess()} className="mt-3 text-sm underline">{checking ? 'Checking…' : 'Check membership status'}</button></>}
+    {message && <><p role="status" className="mt-4 text-sm">{message}</p><button type="button" disabled={checking} onClick={() => void checkAccess(awaitingActivation)} className="mt-3 text-sm underline">{checking ? 'Activating…' : 'Check membership status'}</button></>}
   </div>;
 }
