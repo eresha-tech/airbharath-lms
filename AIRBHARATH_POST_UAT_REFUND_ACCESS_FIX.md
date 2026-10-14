@@ -20,11 +20,31 @@ The first two regressions initially produced 12 failures/5 passes; the dashboard
 
 **Legacy LMS:** actual local schema has no LMS refund tables or stored full/partial refund evidence. `orders` contains one paid row, no refund-marked rows; eight enrollments are active. The implemented payment flow is `/api/payments/razorpay/order` → signed callback `/verify` → paid order/enrollment/invoice. No LMS refund initiation, refund webhook or refund reconciliation path was found. LMS access uses active direct/bundle enrollment, not Workspace membership or refund tables. Existing invoice downloads remain owner-authorized/private; certificate claims check course access and retain existing credential history.
 
-The current `/terms` describes refund eligibility and processing time, but does not explicitly define access after full/partial refunds, independent grants/repurchases or certificate treatment. No policy or financial behavior was changed. **Proposal requiring owner approval and a separately reviewed migration:** define those rules; add durable, verified LMS refund evidence and purchase-to-entitlement provenance before revoking only that purchase's entitlement. Enrollment has no originating-order field; inferring ownership from the latest order could damage free/manual/bundle access. Preserve original orders, enrollments, invoices and certificates. No migration was generated/applied.
+The current `/terms` describes refund eligibility and processing time, but does not explicitly define access after full/partial refunds, independent grants/repurchases or certificate treatment. Published/accepted terms and financial behavior remain unchanged. The owner's subsequent approval establishes the future policy direction below, not authorization to implement it or apply it to existing purchases. Enrollment has no originating-order field; inferring ownership from the latest order could damage free/manual/bundle access. No migration was generated/applied.
 
 **Workspace:** read-only inspection evaluated 236 membership owners through the actual access/grant repositories and resolver. All 25 selected refunded memberships have local Test completion records; none granted editing from the refunded paid membership without an active independent grant. The founder's demo case remains approved/uncertain, `provider_refund_http_400`, with no completion and no active grant. Continued access is therefore expected. This task made no Razorpay call to refresh that historical diagnostic.
 
 Workspace policy explicitly retains historical profile/proposal/private-build reads after confirmed full refund, while removing paid editing; valid complimentary grants remain independent. Existing service/event tests cover full confirmation, pending/failed/uncertain/partial evidence, duplicate events, ownership and grants. No Workspace product code or retained evidence was changed. No completed-refund editing bypass, premature revocation or wrong-order revocation was reproduced. The affected URL/account, completed refund evidence and exact remaining action were requested; they remain unavailable.
+
+## Owner-approved future LMS policy direction
+
+Recorded after investigation commit `4102d8d`. This is a proposed future policy; it does not amend current accepted commercial terms.
+
+- Authoritatively confirmed successful **full** refund: revoke only the entitlement attributable to that purchase. Refunding an All-in-One Masterclass bundle removes that bundle purchase's access; separately purchased courses and other valid independent entitlements remain evaluated independently.
+- **Partial** refund: retain access. Ambiguous partial refunds go to Admin review; no automatic item-specific revocation without a future explicit policy approval.
+- Requested, internally approved, provider-pending, failed or uncertain refund: no refund-based revocation. A request/approval/webhook receipt alone is insufficient confirmation.
+- Retain orders, enrollments, invoices, financial records and refund history. Revoke the relevant entitlement rather than deleting its historical records. This approval does not establish automatic certificate revocation.
+- **No retrospective application to existing purchases** without separate legal/commercial review and explicit owner approval. No existing customer entitlement may be inferred into the new policy merely by backfilling data.
+
+Implementation requirements for a separately authorized task:
+
+1. Finalize the legal text, effective purchase cohort and versioned policy applicability. Preserve existing purchases under their accepted rules until separately reviewed/approved.
+2. Design purchase-level entitlement provenance, including bundle-to-course effects and independent paid/free/manual/granted sources. Existing aggregated enrollment rows cannot safely establish which order granted access; ambiguous legacy mapping needs review, not guessed backfills.
+3. Propose a reviewed migration for durable LMS refund intents, provider evidence/completion, and source-specific entitlement state. Preserve existing financial/history rows; rehearse compatibility before any separately authorized application. No schema push/reset is part of the proposal.
+4. Add LMS-scoped authenticated Admin operations, verified provider intake and reconciliation. Match account/mode/payment/order/amount/currency; persist evidence; require authoritative completed full-refund proof before a source-specific revocation. Keep partial/uncertain cases on hold for access changes and route ambiguity to review. Do not reuse Workspace membership records as LMS evidence.
+5. Make duplicate/reordered events idempotent, preserve unrelated entitlements, and verify dashboard, lesson/progress/playback APIs, certificate eligibility and owner-authorized invoice/history behavior against the same access decision. Add real local PostgreSQL tests and separately authorized genuine Test-provider verification before release.
+
+These are requirements/proposals only. This documentation follow-up changes no schema, financial logic, terms page, customer entitlement or environment. Only this report changed; `git diff --check` passed. The prior implementation validation remains historical; no tests/build or DB/provider operations were repeated for this report-only update.
 
 ## Real local verification and preservation
 
@@ -55,7 +75,7 @@ Workspace policy explicitly retains historical profile/proposal/private-build re
 
 ## Remaining blockers and next evidence
 
-1. **Legacy LMS:** owner-approved full/partial refund access policy and durable refund/purchase provenance require a separate proposal/migration task. No completed LMS refund could be reproduced locally because the evidence/workflow is absent; do not claim full-refund E2E coverage.
+1. **Legacy LMS:** future full/partial access policy direction is owner-approved above. Legal/commercial finalization, applicability to future purchases, durable refund/purchase provenance and a separately reviewed/authorized implementation/migration remain pending. Existing purchases are excluded absent separate review and explicit approval. No completed LMS refund could be reproduced locally because the evidence/workflow is absent; do not claim full-refund E2E coverage.
 2. **Workspace:** resolve the existing provider refund rejection, then separately authorize genuine Test refund/webhook verification and prove the founder's actual confirmed-refund editing denials. No successful refund or genuine refund webhook is claimed here.
 3. Supply the affected course/account, local URL, authoritative refund status and precise operation that remained available. Historical visibility alone is not an editing entitlement. No stale-browser root cause is asserted without those steps.
 
