@@ -1,0 +1,975 @@
+{
+  "beforeBaselineSha256": "49127060609b2e8117a45752ed05c3b4ab0b04351a36fcf13a29e86edcb207e2",
+  "afterFingerprintSha256": "49127060609b2e8117a45752ed05c3b4ab0b04351a36fcf13a29e86edcb207e2",
+  "differences": {
+    "identity": false,
+    "structure": false,
+    "counts": false,
+    "fingerprintTables": []
+  },
+  "normalization": "Postgres.js Result arrays normalized to JSON arrays before strict comparison; original baseline never replaced.",
+  "identityBefore": {
+    "database": "airbharath_lms",
+    "oid": "16384",
+    "port": "5433",
+    "system": "7680462735222304705",
+    "version": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+    "read_only": "on"
+  },
+  "identityAfter": {
+    "database": "airbharath_lms",
+    "oid": "16384",
+    "port": "5433",
+    "system": "7680462735222304705",
+    "version": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+    "read_only": "on"
+  },
+  "countsBefore": [
+    {
+      "schema": "drizzle",
+      "table": "__drizzle_migrations",
+      "count": "30"
+    },
+    {
+      "schema": "public",
+      "table": "certificates",
+      "count": "0"
+    },
+    {
+      "schema": "public",
+      "table": "coupons",
+      "count": "2"
+    },
+    {
+      "schema": "public",
+      "table": "course_authors",
+      "count": "2"
+    },
+    {
+      "schema": "public",
+      "table": "course_bundle_items",
+      "count": "4"
+    },
+    {
+      "schema": "public",
+      "table": "course_sections",
+      "count": "4"
+    },
+    {
+      "schema": "public",
+      "table": "courses",
+      "count": "6"
+    },
+    {
+      "schema": "public",
+      "table": "enrollments",
+      "count": "8"
+    },
+    {
+      "schema": "public",
+      "table": "feed_posts",
+      "count": "2"
+    },
+    {
+      "schema": "public",
+      "table": "invoices",
+      "count": "1"
+    },
+    {
+      "schema": "public",
+      "table": "jobs",
+      "count": "4"
+    },
+    {
+      "schema": "public",
+      "table": "lesson_comments",
+      "count": "0"
+    },
+    {
+      "schema": "public",
+      "table": "lesson_materials",
+      "count": "0"
+    },
+    {
+      "schema": "public",
+      "table": "lessons",
+      "count": "25"
+    },
+    {
+      "schema": "public",
+      "table": "modules",
+      "count": "15"
+    },
+    {
+      "schema": "public",
+      "table": "orders",
+      "count": "1"
+    },
+    {
+      "schema": "public",
+      "table": "otps",
+      "count": "6"
+    },
+    {
+      "schema": "public",
+      "table": "playback_sessions",
+      "count": "15"
+    },
+    {
+      "schema": "public",
+      "table": "progress",
+      "count": "2"
+    },
+    {
+      "schema": "public",
+      "table": "users",
+      "count": "780"
+    },
+    {
+      "schema": "public",
+      "table": "video_captions",
+      "count": "0"
+    },
+    {
+      "schema": "public",
+      "table": "videos",
+      "count": "5"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grant_events",
+      "count": "57"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grants",
+      "count": "52"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_applications",
+      "count": "3"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_audit_events",
+      "count": "169"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupon_plans",
+      "count": "193"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupon_redemptions",
+      "count": "130"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupons",
+      "count": "133"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_drafts",
+      "count": "180"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_lessons",
+      "count": "514"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_modules",
+      "count": "78"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_projects",
+      "count": "27"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_review_events",
+      "count": "163"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_submissions",
+      "count": "101"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_profile_details",
+      "count": "32"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_profiles",
+      "count": "271"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_terms_acceptances",
+      "count": "312"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_terms_versions",
+      "count": "2"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_eligibility_attempts",
+      "count": "671"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_eligibility_settings",
+      "count": "9"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_email_challenges",
+      "count": "179"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_email_notice_bindings",
+      "count": "18"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_email_rate_limits",
+      "count": "553"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_influencer_history",
+      "count": "97"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_influencers",
+      "count": "84"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "count": "443"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_plans",
+      "count": "9"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_memberships",
+      "count": "224"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_payment_attempts",
+      "count": "308"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_payment_events",
+      "count": "46"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_policy_versions",
+      "count": "4"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_attempts",
+      "count": "31"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_completions",
+      "count": "23"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_notice_deliveries",
+      "count": "99"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_notice_delivery_attempts",
+      "count": "100"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_notices",
+      "count": "133"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_observations",
+      "count": "72"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_policy_acceptances",
+      "count": "256"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_policy_versions",
+      "count": "1"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_requests",
+      "count": "87"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_verified_emails",
+      "count": "66"
+    },
+    {
+      "schema": "wsd1_clock_682c6438a13747e59257533f1a55773d",
+      "table": "workspace_refund_notice_deliveries",
+      "count": "10"
+    },
+    {
+      "schema": "wsd1_clock_682c6438a13747e59257533f1a55773d",
+      "table": "workspace_refund_notice_delivery_attempts",
+      "count": "19"
+    }
+  ],
+  "countsAfter": [
+    {
+      "schema": "drizzle",
+      "table": "__drizzle_migrations",
+      "count": "30"
+    },
+    {
+      "schema": "public",
+      "table": "certificates",
+      "count": "0"
+    },
+    {
+      "schema": "public",
+      "table": "coupons",
+      "count": "2"
+    },
+    {
+      "schema": "public",
+      "table": "course_authors",
+      "count": "2"
+    },
+    {
+      "schema": "public",
+      "table": "course_bundle_items",
+      "count": "4"
+    },
+    {
+      "schema": "public",
+      "table": "course_sections",
+      "count": "4"
+    },
+    {
+      "schema": "public",
+      "table": "courses",
+      "count": "6"
+    },
+    {
+      "schema": "public",
+      "table": "enrollments",
+      "count": "8"
+    },
+    {
+      "schema": "public",
+      "table": "feed_posts",
+      "count": "2"
+    },
+    {
+      "schema": "public",
+      "table": "invoices",
+      "count": "1"
+    },
+    {
+      "schema": "public",
+      "table": "jobs",
+      "count": "4"
+    },
+    {
+      "schema": "public",
+      "table": "lesson_comments",
+      "count": "0"
+    },
+    {
+      "schema": "public",
+      "table": "lesson_materials",
+      "count": "0"
+    },
+    {
+      "schema": "public",
+      "table": "lessons",
+      "count": "25"
+    },
+    {
+      "schema": "public",
+      "table": "modules",
+      "count": "15"
+    },
+    {
+      "schema": "public",
+      "table": "orders",
+      "count": "1"
+    },
+    {
+      "schema": "public",
+      "table": "otps",
+      "count": "6"
+    },
+    {
+      "schema": "public",
+      "table": "playback_sessions",
+      "count": "15"
+    },
+    {
+      "schema": "public",
+      "table": "progress",
+      "count": "2"
+    },
+    {
+      "schema": "public",
+      "table": "users",
+      "count": "780"
+    },
+    {
+      "schema": "public",
+      "table": "video_captions",
+      "count": "0"
+    },
+    {
+      "schema": "public",
+      "table": "videos",
+      "count": "5"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grant_events",
+      "count": "57"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grants",
+      "count": "52"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_applications",
+      "count": "3"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_audit_events",
+      "count": "169"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupon_plans",
+      "count": "193"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupon_redemptions",
+      "count": "130"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupons",
+      "count": "133"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_drafts",
+      "count": "180"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_lessons",
+      "count": "514"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_modules",
+      "count": "78"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_projects",
+      "count": "27"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_review_events",
+      "count": "163"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_submissions",
+      "count": "101"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_profile_details",
+      "count": "32"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_profiles",
+      "count": "271"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_terms_acceptances",
+      "count": "312"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_terms_versions",
+      "count": "2"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_eligibility_attempts",
+      "count": "671"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_eligibility_settings",
+      "count": "9"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_email_challenges",
+      "count": "179"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_email_notice_bindings",
+      "count": "18"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_email_rate_limits",
+      "count": "553"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_influencer_history",
+      "count": "97"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_influencers",
+      "count": "84"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "count": "443"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_plans",
+      "count": "9"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_memberships",
+      "count": "224"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_payment_attempts",
+      "count": "308"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_payment_events",
+      "count": "46"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_policy_versions",
+      "count": "4"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_attempts",
+      "count": "31"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_completions",
+      "count": "23"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_notice_deliveries",
+      "count": "99"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_notice_delivery_attempts",
+      "count": "100"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_notices",
+      "count": "133"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_observations",
+      "count": "72"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_policy_acceptances",
+      "count": "256"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_policy_versions",
+      "count": "1"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_requests",
+      "count": "87"
+    },
+    {
+      "schema": "public",
+      "table": "workspace_verified_emails",
+      "count": "66"
+    },
+    {
+      "schema": "wsd1_clock_682c6438a13747e59257533f1a55773d",
+      "table": "workspace_refund_notice_deliveries",
+      "count": "10"
+    },
+    {
+      "schema": "wsd1_clock_682c6438a13747e59257533f1a55773d",
+      "table": "workspace_refund_notice_delivery_attempts",
+      "count": "19"
+    }
+  ],
+  "retainedTableCount": 64,
+  "totalRowsBefore": 6871,
+  "totalRowsAfter": 6871,
+  "ledgerBefore": [
+    {
+      "hash": "244506bff67e0e4e102593d277f4959d7b6762345ea6d475764700f55bb8fb47",
+      "time": "1789124954048"
+    },
+    {
+      "hash": "24c2bbabe9a8d16a6f027d09a13004dddea01c21113990a5939a642b0237c232",
+      "time": "1790099480260"
+    },
+    {
+      "hash": "24033fb008c9e085cd515ff9c6321e518a8bb5e8995ef7ce22c19b9a98b7c2ad",
+      "time": "1790162267688"
+    },
+    {
+      "hash": "5e2ada1b77d981fe1e27d321272f7f08fb2c7243067634b57c8213a0e785cc98",
+      "time": "1790183727889"
+    },
+    {
+      "hash": "0bf51a3afa92ba842b517fdf2c85af9fd73bc2827c7c374853cbe3a9199bea82",
+      "time": "1790192348972"
+    },
+    {
+      "hash": "588509617acbb775563f379101f8d5b34534bfbfbe536110682bbb22707f81f8",
+      "time": "1790197129493"
+    },
+    {
+      "hash": "0d6b625cca0a51c04d313a53c9a66ccd647927e9efda2959252cc11b2d95a9eb",
+      "time": "1790236152530"
+    },
+    {
+      "hash": "f0312d81ee36aed56aa48ece4bd09cdf218a375e39879d55623ef9ec819f11aa",
+      "time": "1790924690885"
+    },
+    {
+      "hash": "ae6c3b89c04374d642a03f0097e3bc52a3b7c3e1ce6b8f752d7f9625135732ac",
+      "time": "1790935874838"
+    },
+    {
+      "hash": "6dc0436b50fa865ad5410dd2f95d48be569cd176f812abd47c144ad57ea359e5",
+      "time": "1791274423029"
+    },
+    {
+      "hash": "d806715b9b519bb50eaa3f6f60c9be1b02ea98ebed248a856a91ecd56f30c92e",
+      "time": "1791281066952"
+    },
+    {
+      "hash": "92d9e796e3b2136e86f144c4a2ff099d81e6e26c12541999dd95a52e34485ec9",
+      "time": "1791284353170"
+    },
+    {
+      "hash": "4e59a99a11347779b12c793df406727148ba7b6ef3f42764952f57f733274d97",
+      "time": "1791286852175"
+    },
+    {
+      "hash": "42b4fcf2ae41c84e5129f68fee5791283b293a8f576c5d694ac2f25825d39d05",
+      "time": "1791368221505"
+    },
+    {
+      "hash": "286e94347d50db660ce6bcae06c1e1b6eb0baed316b2f3d9d8aedd9af04d6598",
+      "time": "1791436807652"
+    },
+    {
+      "hash": "06fa5c3d985fc53978c87d84b4f4fb2bb3c4200bee73547a76d8508e49d49586",
+      "time": "1791527685957"
+    },
+    {
+      "hash": "fbdad83667fe5785b54d86ade9487cf42d71eca2d84382d44b52196dad232e35",
+      "time": "1791632016797"
+    },
+    {
+      "hash": "ef7c2ef68287770bc7942fdec9b3b286907aa0e27c6d7d842a596cc0aee740f3",
+      "time": "1791649837299"
+    },
+    {
+      "hash": "f96d3fba6b4234717d40f7325e4d1dea0e4c530175278dd7bfe27979c491ec53",
+      "time": "1791784683791"
+    },
+    {
+      "hash": "d7bee0d65cf2606a4ce72c5cf67f60bcddb61309097d1c894888d012764b7ff8",
+      "time": "1791788010129"
+    },
+    {
+      "hash": "1a37339ad50039807da846f63ce07c749d14037a1cb592ff75cbd257a775c3fb",
+      "time": "1791794762975"
+    },
+    {
+      "hash": "761f5926b78ed41293c8d58139df69a752ad322b8905191280f1e29ad6542421",
+      "time": "1791816179271"
+    },
+    {
+      "hash": "050382a0cacd25693074ef5eeead51cf24c6ca20624fed1266f220d198e4226b",
+      "time": "1791830175876"
+    },
+    {
+      "hash": "eb52bf03f803cf181d155483794f853e9d08c00240e29dd0ba3ace5cd1e7f910",
+      "time": "1791863010586"
+    },
+    {
+      "hash": "a43c81bc2dbe9cae06883946221e6487c51fd85d05ad2a49db38690250627f8e",
+      "time": "1791864738426"
+    },
+    {
+      "hash": "b96fa25f789a333d31e2a4ce439281bf6c938460bdcae76b04797b36d88d7b03",
+      "time": "1791874707763"
+    },
+    {
+      "hash": "5af885540dc1927ed3a7ed9fe54fb94a83f7658b2d2f7e49c09a02a37c3c66b8",
+      "time": "1791879822188"
+    },
+    {
+      "hash": "6d187548a5c33a1a11d7b5a15506ed5c606b439a9f58850480a5c059d3fbbf59",
+      "time": "1791889784066"
+    },
+    {
+      "hash": "3442d66cf351d68a71ec466234ddf57da3d0e45ba8db567fef55a2d128263400",
+      "time": "1791910203969"
+    },
+    {
+      "hash": "1bf64230f790c4ed99906b25416766ad7f6d3789e0e6bd0760aad205e6051a91",
+      "time": "1791911309962"
+    }
+  ],
+  "ledgerAfter": [
+    {
+      "hash": "244506bff67e0e4e102593d277f4959d7b6762345ea6d475764700f55bb8fb47",
+      "time": "1789124954048"
+    },
+    {
+      "hash": "24c2bbabe9a8d16a6f027d09a13004dddea01c21113990a5939a642b0237c232",
+      "time": "1790099480260"
+    },
+    {
+      "hash": "24033fb008c9e085cd515ff9c6321e518a8bb5e8995ef7ce22c19b9a98b7c2ad",
+      "time": "1790162267688"
+    },
+    {
+      "hash": "5e2ada1b77d981fe1e27d321272f7f08fb2c7243067634b57c8213a0e785cc98",
+      "time": "1790183727889"
+    },
+    {
+      "hash": "0bf51a3afa92ba842b517fdf2c85af9fd73bc2827c7c374853cbe3a9199bea82",
+      "time": "1790192348972"
+    },
+    {
+      "hash": "588509617acbb775563f379101f8d5b34534bfbfbe536110682bbb22707f81f8",
+      "time": "1790197129493"
+    },
+    {
+      "hash": "0d6b625cca0a51c04d313a53c9a66ccd647927e9efda2959252cc11b2d95a9eb",
+      "time": "1790236152530"
+    },
+    {
+      "hash": "f0312d81ee36aed56aa48ece4bd09cdf218a375e39879d55623ef9ec819f11aa",
+      "time": "1790924690885"
+    },
+    {
+      "hash": "ae6c3b89c04374d642a03f0097e3bc52a3b7c3e1ce6b8f752d7f9625135732ac",
+      "time": "1790935874838"
+    },
+    {
+      "hash": "6dc0436b50fa865ad5410dd2f95d48be569cd176f812abd47c144ad57ea359e5",
+      "time": "1791274423029"
+    },
+    {
+      "hash": "d806715b9b519bb50eaa3f6f60c9be1b02ea98ebed248a856a91ecd56f30c92e",
+      "time": "1791281066952"
+    },
+    {
+      "hash": "92d9e796e3b2136e86f144c4a2ff099d81e6e26c12541999dd95a52e34485ec9",
+      "time": "1791284353170"
+    },
+    {
+      "hash": "4e59a99a11347779b12c793df406727148ba7b6ef3f42764952f57f733274d97",
+      "time": "1791286852175"
+    },
+    {
+      "hash": "42b4fcf2ae41c84e5129f68fee5791283b293a8f576c5d694ac2f25825d39d05",
+      "time": "1791368221505"
+    },
+    {
+      "hash": "286e94347d50db660ce6bcae06c1e1b6eb0baed316b2f3d9d8aedd9af04d6598",
+      "time": "1791436807652"
+    },
+    {
+      "hash": "06fa5c3d985fc53978c87d84b4f4fb2bb3c4200bee73547a76d8508e49d49586",
+      "time": "1791527685957"
+    },
+    {
+      "hash": "fbdad83667fe5785b54d86ade9487cf42d71eca2d84382d44b52196dad232e35",
+      "time": "1791632016797"
+    },
+    {
+      "hash": "ef7c2ef68287770bc7942fdec9b3b286907aa0e27c6d7d842a596cc0aee740f3",
+      "time": "1791649837299"
+    },
+    {
+      "hash": "f96d3fba6b4234717d40f7325e4d1dea0e4c530175278dd7bfe27979c491ec53",
+      "time": "1791784683791"
+    },
+    {
+      "hash": "d7bee0d65cf2606a4ce72c5cf67f60bcddb61309097d1c894888d012764b7ff8",
+      "time": "1791788010129"
+    },
+    {
+      "hash": "1a37339ad50039807da846f63ce07c749d14037a1cb592ff75cbd257a775c3fb",
+      "time": "1791794762975"
+    },
+    {
+      "hash": "761f5926b78ed41293c8d58139df69a752ad322b8905191280f1e29ad6542421",
+      "time": "1791816179271"
+    },
+    {
+      "hash": "050382a0cacd25693074ef5eeead51cf24c6ca20624fed1266f220d198e4226b",
+      "time": "1791830175876"
+    },
+    {
+      "hash": "eb52bf03f803cf181d155483794f853e9d08c00240e29dd0ba3ace5cd1e7f910",
+      "time": "1791863010586"
+    },
+    {
+      "hash": "a43c81bc2dbe9cae06883946221e6487c51fd85d05ad2a49db38690250627f8e",
+      "time": "1791864738426"
+    },
+    {
+      "hash": "b96fa25f789a333d31e2a4ce439281bf6c938460bdcae76b04797b36d88d7b03",
+      "time": "1791874707763"
+    },
+    {
+      "hash": "5af885540dc1927ed3a7ed9fe54fb94a83f7658b2d2f7e49c09a02a37c3c66b8",
+      "time": "1791879822188"
+    },
+    {
+      "hash": "6d187548a5c33a1a11d7b5a15506ed5c606b439a9f58850480a5c059d3fbbf59",
+      "time": "1791889784066"
+    },
+    {
+      "hash": "3442d66cf351d68a71ec466234ddf57da3d0e45ba8db567fef55a2d128263400",
+      "time": "1791910203969"
+    },
+    {
+      "hash": "1bf64230f790c4ed99906b25416766ad7f6d3789e0e6bd0760aad205e6051a91",
+      "time": "1791911309962"
+    }
+  ],
+  "structureSha256": "d0e9dfba8259443cc07ccdbf2cbbcdda5338b022b6f3c4aa76dc4bc9af51c81c",
+  "originalF6Artifacts": [
+    {
+      "path": "WORKSPACE_LAUNCH_F6_DATABASE_AUDIT.md",
+      "sha256": "ff625c5c8e5fe3d002026ba2126f55205e6abf1630cb13323eecb7f4ea9c66db",
+      "unchanged": true
+    },
+    {
+      "path": "output/audits/workspace-f6/catalog-after.json",
+      "sha256": "85a81c5fbf4fd0174630128ba7f5ce2c3bb0a57a256a81a07d74ecbb0209b373",
+      "unchanged": true
+    },
+    {
+      "path": "output/audits/workspace-f6/catalog-before.json",
+      "sha256": "207143e845324d4e775b4652caac6258d5b816f33b5705cce271d8016542a03d",
+      "unchanged": true
+    },
+    {
+      "path": "output/audits/workspace-f6/index-analysis.json",
+      "sha256": "8ab01d6ba6d658082386cd87e92981d2f33c8a4f32cd9846f081e2f86f330e2d",
+      "unchanged": true
+    },
+    {
+      "path": "output/audits/workspace-f6/integrity-and-plans.json",
+      "sha256": "a84f4b49b8eddf38c048deb577f59496f50276b8c6849241f74fa204a8b5c41d",
+      "unchanged": true
+    },
+    {
+      "path": "output/audits/workspace-f6/preservation.json",
+      "sha256": "a5bf34633145c3e99377df492272e9d57558e1cdda1a7af75bbc8678bb8ecd57",
+      "unchanged": true
+    },
+    {
+      "path": "output/audits/workspace-f6/retention-guard-finding.json",
+      "sha256": "b283181814be4241409b7db61e1be9be78ab9cb9639175c3cba8a19e5cfc4b8f",
+      "unchanged": true
+    },
+    {
+      "path": "output/audits/workspace-f6/schema-comparison.json",
+      "sha256": "3c1c5e16e219bdf8b74c31b62cf158bcc3344a640e8703feea61dfc0f79bf833",
+      "unchanged": true
+    },
+    {
+      "path": "output/audits/workspace-f6/source-map.json",
+      "sha256": "bc3fc05782652d4673ffdab12d25bede528efa43ce156abcd1e34f75182289bd",
+      "unchanged": true
+    },
+    {
+      "path": "output/audits/workspace-f6/table-inventory.json",
+      "sha256": "9b146140ac131ed5919bfee50ba03e576cdb22a6d63d673d9a3d074c12e09520",
+      "unchanged": true
+    }
+  ],
+  "connectionMode": "Exact local TCP and /tmp socket identity match; default_transaction_read_only=on, repeatable read read only",
+  "journalSourceEntries": 31,
+  "appliedLedgerEntries": 30,
+  "proposalAppliedToRetainedDatabase": false
+}
