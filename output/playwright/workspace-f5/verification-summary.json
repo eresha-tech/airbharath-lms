@@ -1,0 +1,635 @@
+{
+  "scope": "Workspace F.5 only",
+  "startingHead": "c6b241c",
+  "environment": "development",
+  "database": {
+    "name": "airbharath_lms",
+    "port": 5433,
+    "oid": "16384",
+    "systemIdentifier": "7680462735222304705"
+  },
+  "routes": {
+    "/workspace": {
+      "hydrated": true
+    },
+    "/workspace/activate": {
+      "hydrated": true
+    },
+    "/workspace/apply": {
+      "hydrated": true
+    },
+    "/workspace/creator-terms": {
+      "hydrated": true
+    },
+    "/workspace/eligibility-result": {
+      "hydrated": true
+    },
+    "/workspace/manual-application": {
+      "hydrated": true
+    },
+    "/workspace/refund-policy": {
+      "hydrated": true
+    },
+    "/workspace/dashboard": {
+      "hydrated": true
+    },
+    "/workspace/profile": {
+      "hydrated": true
+    },
+    "/workspace/courses": {
+      "hydrated": true
+    },
+    "/workspace/courses/new": {
+      "hydrated": true
+    },
+    "/workspace/courses/[id]": {
+      "hydrated": true
+    },
+    "/workspace/courses/[id]/build": {
+      "hydrated": true
+    },
+    "/workspace/member": {
+      "hydrated": true
+    },
+    "/workspace/member/billing": {
+      "hydrated": true
+    },
+    "/workspace/refunds": {
+      "hydrated": true
+    },
+    "/admin/workspace": {
+      "hydrated": true
+    },
+    "/admin/workspace-applications": {
+      "hydrated": true
+    },
+    "/admin/workspace-applications/[id]": {
+      "hydrated": true
+    },
+    "/admin/workspace-refunds": {
+      "hydrated": true
+    },
+    "/admin/workspace-refunds/[id]": {
+      "hydrated": true
+    },
+    "/admin/workspace/access-grants": {
+      "hydrated": true
+    },
+    "/admin/workspace/access-grants/[id]": {
+      "hydrated": true
+    },
+    "/admin/workspace/creators": {
+      "hydrated": true
+    },
+    "/admin/workspace/creators/[id]": {
+      "hydrated": true
+    },
+    "/admin/workspace/eligibility": {
+      "hydrated": true
+    },
+    "/admin/workspace/eligibility/[attemptId]": {
+      "hydrated": true
+    },
+    "/admin/workspace/course-drafts": {
+      "hydrated": true
+    },
+    "/admin/workspace/course-drafts/[id]": {
+      "hydrated": true
+    },
+    "/admin/workspace/course-reviews": {
+      "hydrated": true
+    },
+    "/admin/workspace/course-reviews/[id]": {
+      "hydrated": true
+    },
+    "/admin/workspace/course-builds": {
+      "hydrated": true
+    },
+    "/admin/workspace/course-builds/[id]": {
+      "hydrated": true
+    },
+    "/admin/workspace/audit": {
+      "hydrated": true
+    },
+    "/admin/workspace/coupons": {
+      "hydrated": true
+    },
+    "/admin/workspace/influencers": {
+      "hydrated": true
+    },
+    "/admin/workspace/memberships": {
+      "hydrated": true
+    },
+    "/admin/workspace/orders": {
+      "hydrated": true
+    },
+    "/admin/workspace/orders/[id]": {
+      "hydrated": true
+    },
+    "/admin/workspace/refund-exceptions": {
+      "hydrated": true
+    },
+    "/admin/workspace/reports": {
+      "hydrated": true
+    },
+    "/admin/workspace/settings": {
+      "hydrated": true
+    },
+    "/admin/workspace/notices": {
+      "hydrated": true
+    },
+    "/admin/workspace/events": {
+      "hydrated": true
+    },
+    "/admin/workspace/notices/[id]": {
+      "hydrated": true
+    },
+    "/admin/workspace/events/[id]": {
+      "hydrated": true
+    }
+  },
+  "uniqueBrowserChecks": [
+    "public_entry_legal_single_main_and_anonymous_auth_boundary",
+    "normal_eligibility_slow_failure_same_key_retry_success_and_launch_copy",
+    "email_slow_failure_retry_real_fake_transport_commit_superseded_and_expired_challenge_controls",
+    "actual_server_plan_quotes_coupon_apply_remove_and_latest_plan_amount",
+    "independent_legal_checkbox_failure_retry_commit_uncheck_retention_reload_no_auto_consent",
+    "profile_slow_failed_save_retains_fields_duplicate_click_guard_retry_commit_reload",
+    "proposal_failure_retry_same_creation_key_persisted_private_draft",
+    "normal_course_submission_locked_proposal_and_supported_status",
+    "admin_review_slow_failure_retry_and_persisted_transition",
+    "normal_admin_approval_private_builder_failed_save_retry_text_reload_no_publication",
+    "actual_creator_permission_state_CREATOR",
+    "actual_creator_permission_state_PAID",
+    "actual_creator_permission_state_REVOKED",
+    "actual_creator_permission_state_EXPIRED",
+    "actual_creator_permission_state_REFUNDED",
+    "grant_pending_terms_normal_receipt_enables_access_without_purchase_refund_receipt",
+    "cross_user_private_course_denial_and_held_payment_independent_grant_visibility",
+    "manual_application_mobile_native_consent_slow_failure_duplicate_guard_retry_real_commit",
+    "application_detail_named_skeleton_failed_read_retry_failed_save_preserved_notes_commit_reload",
+    "actual_approval_preview_dialog_44px_close_escape_focus_and_narrow_scroll_without_send",
+    "coupon_editor_pending_controls_duplicate_guard_failed_save_retry_one_key_persisted_creation",
+    "financial_read_failure_does_not_display_zero_or_stale_counts_normal_retry",
+    "permanent_coupon_archive_cancel_has_no_request_confirm_uses_normal_audited_action",
+    "influencer_empty_state_pending_lock_failed_save_duplicate_guard_retry_real_persistence",
+    "admin_grant_failure_retry_normal_persistence_and_history",
+    "shared_grant_confirmation_checkbox_normal_revocation_and_reload",
+    "timely_refund_request_failure_retry_actual_receipt_reload_no_premature_revocation",
+    "admin_refund_confirmation_normal_rejection_preserves_paid_access_and_provider_off",
+    "actual_admin_student_demoted_and_anonymous_private_api_denial",
+    "native_coupon_pattern_v_flag_valid_accepts_hyphen_underscore_rejects_space_slash_without_console_error",
+    "public_routes_hydrated_payment_disabled_anonymous_ineligible_and_unpaid_creator_denial",
+    "all_creator_member_billing_routes_hydrated_private_active_navigation_paid_after_rejected_refund_still_editable",
+    "navigation-admin-a_all_list_and_detail_destinations_hydrated_read_only",
+    "settings_slow_failed_publication_locks_fields_same_publication_retry_reload_no_db_write",
+    "bounded_coupon_filter_page_size_reload_keyboard_space_native_checkbox",
+    "navigation-admin-b_all_list_and_detail_destinations_hydrated_read_only",
+    "desktop_tablet_390_and_320_layouts_no_overflow_mobile_drawer_trap_escape_return_focus_link_close",
+    "narrow_application_preview_viewport_without_send",
+    "dark_reduced_motion_creator_render_focus_tokens_and_readable_controls",
+    "sampled_light_dark_primary_muted_error_contrast_keyboard_focus_44px_save_long_unsaved_name_reload",
+    "settled_390_drawer_and_320_dialog_visual_capture_opacity_one_focus_without_send",
+    "out_of_order_quote_response_stays_associated_with_latest_selected_plan",
+    "grant_refund_empty_filters_invalid_filter_reset_and_legacy_lms_coupon_navigation"
+  ],
+  "phases": {
+    "onboarding": true,
+    "creator": true,
+    "manual": true,
+    "admin": true,
+    "pattern": true,
+    "navigationPublic": true,
+    "navigationCreator": true,
+    "navigation-admin-a": true,
+    "navigation-admin-b": true,
+    "responsive": true,
+    "accessibility": true,
+    "overlays": true,
+    "activationRace": true
+  },
+  "viewportChecks": [
+    {
+      "width": 1440,
+      "path": "/workspace/dashboard"
+    },
+    {
+      "width": 1440,
+      "path": "/workspace/profile"
+    },
+    {
+      "width": 1440,
+      "path": "/workspace/courses"
+    },
+    {
+      "width": 1440,
+      "path": "/workspace/courses/[id]/build"
+    },
+    {
+      "width": 1440,
+      "path": "/workspace/member"
+    },
+    {
+      "width": 1440,
+      "path": "/workspace/member/billing"
+    },
+    {
+      "width": 1440,
+      "path": "/admin/workspace"
+    },
+    {
+      "width": 1440,
+      "path": "/admin/workspace/coupons?q=WSF5UI"
+    },
+    {
+      "width": 1440,
+      "path": "/admin/workspace/influencers?q=WSF5UNIQUE"
+    },
+    {
+      "width": 1440,
+      "path": "/admin/workspace/access-grants/[id]"
+    },
+    {
+      "width": 1440,
+      "path": "/workspace/activate"
+    },
+    {
+      "width": 768,
+      "path": "/workspace/dashboard"
+    },
+    {
+      "width": 768,
+      "path": "/workspace/profile"
+    },
+    {
+      "width": 768,
+      "path": "/workspace/courses"
+    },
+    {
+      "width": 768,
+      "path": "/workspace/courses/[id]/build"
+    },
+    {
+      "width": 768,
+      "path": "/workspace/member"
+    },
+    {
+      "width": 768,
+      "path": "/workspace/member/billing"
+    },
+    {
+      "width": 768,
+      "path": "/admin/workspace"
+    },
+    {
+      "width": 768,
+      "path": "/admin/workspace/coupons?q=WSF5UI"
+    },
+    {
+      "width": 768,
+      "path": "/admin/workspace/influencers?q=WSF5UNIQUE"
+    },
+    {
+      "width": 768,
+      "path": "/admin/workspace/access-grants/[id]"
+    },
+    {
+      "width": 768,
+      "path": "/workspace/activate"
+    },
+    {
+      "width": 390,
+      "path": "/workspace/dashboard"
+    },
+    {
+      "width": 390,
+      "path": "/workspace/profile"
+    },
+    {
+      "width": 390,
+      "path": "/workspace/courses"
+    },
+    {
+      "width": 390,
+      "path": "/workspace/courses/[id]/build"
+    },
+    {
+      "width": 390,
+      "path": "/workspace/member"
+    },
+    {
+      "width": 390,
+      "path": "/workspace/member/billing"
+    },
+    {
+      "width": 390,
+      "path": "/admin/workspace"
+    },
+    {
+      "width": 390,
+      "path": "/admin/workspace/coupons?q=WSF5UI"
+    },
+    {
+      "width": 390,
+      "path": "/admin/workspace/influencers?q=WSF5UNIQUE"
+    },
+    {
+      "width": 390,
+      "path": "/admin/workspace/access-grants/[id]"
+    },
+    {
+      "width": 390,
+      "path": "/workspace/activate"
+    },
+    {
+      "width": 320,
+      "path": "/workspace/dashboard"
+    },
+    {
+      "width": 320,
+      "path": "/workspace/profile"
+    },
+    {
+      "width": 320,
+      "path": "/workspace/courses"
+    },
+    {
+      "width": 320,
+      "path": "/workspace/courses/[id]/build"
+    },
+    {
+      "width": 320,
+      "path": "/workspace/member"
+    },
+    {
+      "width": 320,
+      "path": "/workspace/member/billing"
+    },
+    {
+      "width": 320,
+      "path": "/admin/workspace"
+    },
+    {
+      "width": 320,
+      "path": "/admin/workspace/coupons?q=WSF5UI"
+    },
+    {
+      "width": 320,
+      "path": "/admin/workspace/influencers?q=WSF5UNIQUE"
+    },
+    {
+      "width": 320,
+      "path": "/admin/workspace/access-grants/[id]"
+    },
+    {
+      "width": 320,
+      "path": "/workspace/activate"
+    }
+  ],
+  "contrastSamples": [
+    {
+      "theme": "light",
+      "name": "primary",
+      "ratio": 10.17
+    },
+    {
+      "theme": "light",
+      "name": "muted",
+      "ratio": 5.78
+    },
+    {
+      "theme": "light",
+      "name": "error",
+      "ratio": 7.46
+    },
+    {
+      "theme": "dark",
+      "name": "primary",
+      "ratio": 5.81
+    },
+    {
+      "theme": "dark",
+      "name": "muted",
+      "ratio": 10.43
+    },
+    {
+      "theme": "dark",
+      "name": "error",
+      "ratio": 8.4
+    }
+  ],
+  "screenshots": [
+    "activation-verified-desktop.png",
+    "activation-verified-mobile.png",
+    "admin-application-loading.png",
+    "admin-financial-report-desktop.png",
+    "admin-influencer-mobile.png",
+    "admin-mobile-drawer.png",
+    "approval-preview-320.png",
+    "creator-dashboard-dark-mobile.png",
+    "creator-dashboard-desktop.png",
+    "creator-dashboard-mobile.png",
+    "creator-mobile-drawer.png",
+    "creator-profile-desktop.png",
+    "eligibility-result-desktop.png",
+    "expired-email-code-mobile-proof.png",
+    "manual-consent-mobile.png",
+    "private-builder-desktop.png"
+  ],
+  "finalPageErrors": [],
+  "finalConsoleErrors": [],
+  "resolvedHistoricalConsoleFinding": "F5-15: invalid native coupon pattern; corrected and separately reverified",
+  "providerRequests": 0,
+  "analyticsRequests": 0,
+  "serverTransportGuard": {
+    "fakeMailer": 3,
+    "fakeLimiter": 1,
+    "externalBlocked": 7,
+    "genuineProviderCalls": 0
+  },
+  "postconditions": {
+    "independentLegalReceiptCounts": {
+      "terms": 1,
+      "refundPolicy": 1,
+      "verifiedEmails": 1
+    },
+    "complimentaryFinancialCounts": {
+      "workspace_membership_orders": 0,
+      "workspace_memberships": 0,
+      "workspace_payment_attempts": 0,
+      "workspace_coupon_redemptions": 0
+    },
+    "rolesRemainStudentExceptPersistedAdmin": true,
+    "heldCaptureTimingNull": true,
+    "paidRefundDecision": "rejected",
+    "creatorStates": {
+      "CREATOR": {
+        "canEdit": true,
+        "source": "complimentary"
+      },
+      "PAID": {
+        "canEdit": true,
+        "source": "paid"
+      },
+      "REFUNDED": {
+        "canEdit": false,
+        "source": "retained"
+      },
+      "HELD_WITH_GRANT": {
+        "canEdit": true,
+        "source": "complimentary"
+      },
+      "REVOKED": {
+        "canEdit": false,
+        "source": "retained"
+      },
+      "EXPIRED": {
+        "canEdit": false,
+        "source": "retained"
+      }
+    },
+    "genuineProviderCalls": 0
+  },
+  "preservation": {
+    "identity": {
+      "database": "airbharath_lms",
+      "oid": "16384",
+      "port": "5433",
+      "system": "7680462735222304705"
+    },
+    "ledger": [
+      {
+        "hash": "244506bff67e0e4e102593d277f4959d7b6762345ea6d475764700f55bb8fb47",
+        "time": "1789124954048"
+      },
+      {
+        "hash": "24c2bbabe9a8d16a6f027d09a13004dddea01c21113990a5939a642b0237c232",
+        "time": "1790099480260"
+      },
+      {
+        "hash": "24033fb008c9e085cd515ff9c6321e518a8bb5e8995ef7ce22c19b9a98b7c2ad",
+        "time": "1790162267688"
+      },
+      {
+        "hash": "5e2ada1b77d981fe1e27d321272f7f08fb2c7243067634b57c8213a0e785cc98",
+        "time": "1790183727889"
+      },
+      {
+        "hash": "0bf51a3afa92ba842b517fdf2c85af9fd73bc2827c7c374853cbe3a9199bea82",
+        "time": "1790192348972"
+      },
+      {
+        "hash": "588509617acbb775563f379101f8d5b34534bfbfbe536110682bbb22707f81f8",
+        "time": "1790197129493"
+      },
+      {
+        "hash": "0d6b625cca0a51c04d313a53c9a66ccd647927e9efda2959252cc11b2d95a9eb",
+        "time": "1790236152530"
+      },
+      {
+        "hash": "f0312d81ee36aed56aa48ece4bd09cdf218a375e39879d55623ef9ec819f11aa",
+        "time": "1790924690885"
+      },
+      {
+        "hash": "ae6c3b89c04374d642a03f0097e3bc52a3b7c3e1ce6b8f752d7f9625135732ac",
+        "time": "1790935874838"
+      },
+      {
+        "hash": "6dc0436b50fa865ad5410dd2f95d48be569cd176f812abd47c144ad57ea359e5",
+        "time": "1791274423029"
+      },
+      {
+        "hash": "d806715b9b519bb50eaa3f6f60c9be1b02ea98ebed248a856a91ecd56f30c92e",
+        "time": "1791281066952"
+      },
+      {
+        "hash": "92d9e796e3b2136e86f144c4a2ff099d81e6e26c12541999dd95a52e34485ec9",
+        "time": "1791284353170"
+      },
+      {
+        "hash": "4e59a99a11347779b12c793df406727148ba7b6ef3f42764952f57f733274d97",
+        "time": "1791286852175"
+      },
+      {
+        "hash": "42b4fcf2ae41c84e5129f68fee5791283b293a8f576c5d694ac2f25825d39d05",
+        "time": "1791368221505"
+      },
+      {
+        "hash": "286e94347d50db660ce6bcae06c1e1b6eb0baed316b2f3d9d8aedd9af04d6598",
+        "time": "1791436807652"
+      },
+      {
+        "hash": "06fa5c3d985fc53978c87d84b4f4fb2bb3c4200bee73547a76d8508e49d49586",
+        "time": "1791527685957"
+      },
+      {
+        "hash": "fbdad83667fe5785b54d86ade9487cf42d71eca2d84382d44b52196dad232e35",
+        "time": "1791632016797"
+      },
+      {
+        "hash": "ef7c2ef68287770bc7942fdec9b3b286907aa0e27c6d7d842a596cc0aee740f3",
+        "time": "1791649837299"
+      },
+      {
+        "hash": "f96d3fba6b4234717d40f7325e4d1dea0e4c530175278dd7bfe27979c491ec53",
+        "time": "1791784683791"
+      },
+      {
+        "hash": "d7bee0d65cf2606a4ce72c5cf67f60bcddb61309097d1c894888d012764b7ff8",
+        "time": "1791788010129"
+      },
+      {
+        "hash": "1a37339ad50039807da846f63ce07c749d14037a1cb592ff75cbd257a775c3fb",
+        "time": "1791794762975"
+      },
+      {
+        "hash": "761f5926b78ed41293c8d58139df69a752ad322b8905191280f1e29ad6542421",
+        "time": "1791816179271"
+      },
+      {
+        "hash": "050382a0cacd25693074ef5eeead51cf24c6ca20624fed1266f220d198e4226b",
+        "time": "1791830175876"
+      },
+      {
+        "hash": "eb52bf03f803cf181d155483794f853e9d08c00240e29dd0ba3ace5cd1e7f910",
+        "time": "1791863010586"
+      },
+      {
+        "hash": "a43c81bc2dbe9cae06883946221e6487c51fd85d05ad2a49db38690250627f8e",
+        "time": "1791864738426"
+      },
+      {
+        "hash": "b96fa25f789a333d31e2a4ce439281bf6c938460bdcae76b04797b36d88d7b03",
+        "time": "1791874707763"
+      },
+      {
+        "hash": "5af885540dc1927ed3a7ed9fe54fb94a83f7658b2d2f7e49c09a02a37c3c66b8",
+        "time": "1791879822188"
+      },
+      {
+        "hash": "6d187548a5c33a1a11d7b5a15506ed5c606b439a9f58850480a5c059d3fbbf59",
+        "time": "1791889784066"
+      },
+      {
+        "hash": "3442d66cf351d68a71ec466234ddf57da3d0e45ba8db567fef55a2d128263400",
+        "time": "1791910203969"
+      },
+      {
+        "hash": "1bf64230f790c4ed99906b25416766ad7f6d3789e0e6bd0760aad205e6051a91",
+        "time": "1791911309962"
+      }
+    ],
+    "rows": 6812,
+    "functionMatches": true,
+    "priorRowsPreserved": 5644,
+    "freshRowsPreserved": 6683
+  },
+  "publicPaymentsEnabled": false,
+  "isolatedAppStopped": true,
+  "limits": [
+    "Google Chrome headless; no complete accessibility certification",
+    "Remote public assets blocked; cached fonts/local image substitution where intercepted",
+    "Synthetic provider transports only; no genuine payment/email/SMS proof",
+    "Production deployment/capacity and frozen media/publication excluded"
+  ]
+}
