@@ -218,6 +218,13 @@
       "when": 1791948748716,
       "tag": "0030_workspace_retained_history_truncate_guards",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792014286931,
+      "tag": "0031_workspace_phone_only_onboarding",
+      "breakpoints": true
     }
   ]
 }

@@ -1,3 +1,4 @@
+import { normalizeEmail } from '../email/model';
 import { currentRefundPolicy, acceptanceMatches as policyMatches } from '../refund-policy/model';
 import { REFUND_EVENTS } from '../refunds/model';
 import { randomUUID } from 'node:crypto';
@@ -27,8 +28,6 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
       const prior = await tx.findRequest(userId, input.requestKey);
       if (prior) { if (prior.requestPayloadHash !== payloadHash || !scoped(prior)) throw new PaymentError('conflict'); return prior; }
       if (await tx.findUnresolved(userId)) throw new PaymentError('conflict');
-      const emailProof = await tx.readVerifiedEmail(userId);
-      if (!emailProof || emailProof.userId!==userId || !emailProof.active || emailProof.verifiedAt>clock()) throw new PaymentError('email_required');
       const { quoteHash: expectedHash, requestKey, ...identifiers } = input;
       let selection;
       try { selection = await tx.readQuote(userId, identifiers, clock); } catch (error) {
@@ -36,6 +35,7 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
         throw error;
       }
       const { quote, context } = selection, now = new Date(quote.generatedAt);
+      if (!normalizeEmail(context.contactEmail)) throw new PaymentError('email_required');
       if (quote.quoteHash !== expectedHash) throw new PaymentError('quote_changed');
       const terms = currentTerms(), acceptance = await tx.readCreatorTermsAcceptance(userId, terms);
       if (!acceptanceMatches(acceptance, userId, terms, now)) throw new PaymentError('terms_required');
@@ -52,7 +52,7 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
         refundPolicyAcceptanceId: policyAcceptance.id, refundPolicyVersion: policyAcceptance.policyVersion, refundPolicyContentHash: policyAcceptance.policyContentHash, refundPolicyAcceptedAt: policyAcceptance.acceptedAt,
         planCode: quote.planCode, planSnapshot: { version: quote.planVersion, displayName: quote.planName }, purchaseKind: 'initial', basePricePaise: quote.basePricePaise, discountPaise: quote.discountPaise, taxableAmountPaise: quote.taxableAmountPaise, gstRateBps: quote.gstRateBps, gstAmountPaise: quote.gstAmountPaise, totalPaise: quote.totalPaise, currency: quote.currency, durationMonths: quote.durationMonths,
         quoteHash: quote.quoteHash, quoteVersion: quote.quoteVersion, pricingRuleVersion: QUOTE_VERSION, membershipStartRuleVersion: quote.membershipStart.version, launchAt: new Date(quote.membershipStart.launchAt), membershipStartRule: quote.membershipStart.rule,
-        contextHash: digest({ settings: context.currentSettings.configurationHash, policy: context.policy.contentHash, attempt: context.attempt.id, verifiedEmailId: emailProof.id }),
+        contextHash: digest({ settings: context.currentSettings.configurationHash, policy: context.policy.contentHash, attempt: context.attempt.id, contactEmail: context.contactEmail }),
         couponId: coupon?.id || null, couponCode: coupon?.code || null, couponSnapshot: coupon ? { campaignName: coupon.campaignName, sourceType: coupon.sourceType, sourceName: coupon.sourceName, discountType: coupon.discountType, discountValue: coupon.discountValue, version: coupon.version, usageLimit: coupon.usageLimit } : null,
         requestKey, requestPayloadHash: payloadHash, commercialPolicyVersion: commercialPolicy(provider.context.mode), createdAt: now, providerAccountId: provider.context.accountId, providerMode: provider.context.mode, providerReceipt: receiptFor(id) });
       if (coupon) await tx.insertRedemption({ couponId: coupon.id, userId, membershipOrderId: id, reservedAt: now, checkoutDeadline: new Date(now.getTime() + 600_000), holdPolicyVersion: HOLD_POLICY });

@@ -14,7 +14,7 @@ import { setting, policy } from './workspace-eligibility-fixtures';
 export const financeNow = new Date('2026-10-12T12:00:00.000Z');
 export const testContext: ProviderContext = { accountId: 'acc_TESTACCOUNT15A', mode: 'test' };
 export const callbackSecret = 'synthetic-workspace-callback-secret-only';
-export function financialHarness({ acceptTerms = true, acceptRefundPolicy = true, verifiedEmail = true } = {}) {
+export function financialHarness({ acceptTerms = true, acceptRefundPolicy = true } = {}) {
   const terms = { ...currentCreatorTerms() }, termsAcceptances = new Map<string, CreatorTermsAcceptance>();
   const refundPolicy = currentRefundPolicy(), policyAcceptances = new Map<string, RefundPolicyAcceptance>();
   const state = { orders: [] as Order[], redemptions: [] as Redemption[], payments: [] as Payment[], events: [] as InboxEvent[] };
@@ -24,16 +24,15 @@ export function financialHarness({ acceptTerms = true, acceptRefundPolicy = true
   async function quote(userId: string, input: { planCode: string; planVersionId: string; couponCode?: string }, clock = () => now.value) {
     const tx = { select: () => ({ from: () => ({ where: () => Promise.resolve([{ n: state.redemptions.filter(r => r.couponId === offer.value.id && r.status !== 'released').length }]) }) }), query: {
       workspaceCouponRedemptions: { findFirst: async ({ where }: { where: SQL }) => { const params = new PgDialect().sqlToQuery(where).params; return state.redemptions.find(r => r.couponId === params[0] && r.userId === params[1] && r.status !== 'released'); } },
-      users: { findFirst: async () => ({ id: userId }) }, workspaceEligibilityAttempts: { findFirst: async () => ({ id: userId, userId, result: 'eligible', eligibleUntil: eligibleUntil.value, policyId: policy.id, decidedAt: financeNow, reapplyAt: null, reasons: [] }) },
+      users: { findFirst: async () => ({ id: userId, email: contactEmail.value }) }, workspaceEligibilityAttempts: { findFirst: async () => ({ id: userId, userId, result: 'eligible', eligibleUntil: eligibleUntil.value, policyId: policy.id, decidedAt: financeNow, reapplyAt: null, reasons: [] }) },
       workspaceMembershipPlans: { findFirst: async () => catalog.find(p => p.code === input.planCode) }, workspaceEligibilitySettings: { findFirst: async () => settings }, workspacePolicyVersions: { findFirst: async () => currentPolicy },
       workspaceCoupons: { findFirst: async () => input.couponCode?.toUpperCase() === offer.value.code ? offer.value : undefined }, workspaceCouponPlans: { findMany: async () => offer.value.planCodes.map(planCode => ({ planCode })) },
     } } as unknown as Parameters<typeof readMembershipQuote>[0];
     return readMembershipQuote(tx, userId, input as Parameters<typeof readMembershipQuote>[2], clock);
   }
   function fault(operation: string) { if (failAt === operation && failureCount++ === 0) throw new Error('synthetic rollback'); }
-  const emailVerification = {value:verifiedEmail};
+  const contactEmail = { value: 'synthetic@example.invalid' as string | null };
   const tx: FinanceTransaction = {
-    readVerifiedEmail: async userId => emailVerification.value ? { id: userId, userId, email: 'synthetic@example.invalid', challengeId: userId, verifiedAt: new Date(Math.min(financeNow.getTime(),now.value.getTime())), active: true } : null,
     readRefundPolicyAcceptance: async userId => policyAcceptances.get(userId),
     readCreatorTermsAcceptance: async userId => termsAcceptances.get(userId),
     findRequest: async (u, k) => state.orders.find(o => o.userId === u && o.requestKey === k),
@@ -82,5 +81,5 @@ export function financialHarness({ acceptTerms = true, acceptRefundPolicy = true
   async function input(userId: string = randomUUID(), coupon = true) { if (acceptTerms) termsAcceptances.set(userId, { id: randomUUID(), userId, termsVersion: terms.version, termsContentHash: terms.contentHash, acceptedAt: now.value, createdAt: now.value }); if (acceptRefundPolicy) policyAcceptances.set(userId, { id: randomUUID(), userId, policyVersion: refundPolicy.version, policyContentHash: refundPolicy.contentHash, acceptedAt: now.value, createdAt: now.value }); const identifiers = { planCode: 'quarterly' as const, planVersionId: plans[0].id, ...(coupon ? { couponCode: offer.value.code } : {}) }; const selection = await quote(userId, identifiers); return { userId, request: { ...identifiers, quoteHash: selection.quote.quoteHash, requestKey: randomUUID() } }; }
   async function ready(coupon = true) { const i = await input(randomUUID(), coupon); const order = await service.acceptOrder(i.userId, i.request); await service.ensureProviderOrder(i.userId, order.id); return order; }
   function captured(order: Order, patch: Partial<ProviderPayment> = {}) { const p: ProviderPayment = { ...testContext, id: 'pay_'+randomUUID().replaceAll('-', ''), orderId: order.providerOrderId!, amountPaise: order.totalPaise, currency: 'INR', state: 'captured', providerCreatedAt: financeNow, capturedAt: now.value, captureTimeSource: 'test_authoritative', refundedPaise: 0, ...patch }; observations.push(p); return p; }
-  return { emailVerification, refundPolicy, policyAcceptances, terms, termsAcceptances, state, store, provider, service, offer, catalog, settings, currentPolicy, eligibleUntil, input, ready, captured, observations, externalOrders, now, locked: () => locked, fail: (at: string) => { failAt = at; failureCount = 0; }, hash: digest };
+  return { contactEmail, refundPolicy, policyAcceptances, terms, termsAcceptances, state, store, provider, service, offer, catalog, settings, currentPolicy, eligibleUntil, input, ready, captured, observations, externalOrders, now, locked: () => locked, fail: (at: string) => { failAt = at; failureCount = 0; }, hash: digest };
 }

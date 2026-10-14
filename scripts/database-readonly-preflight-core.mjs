@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { queries } from './database-readonly-queries.mjs';
 
 const sha = value => createHash('sha256').update(value).digest('hex');
-const pinnedManifest = '9cbb4784a583aa683a5332d71de712ece0d00e530edd32b335052b65602ba975';
+// Reviewed additive 0031: old SQL hashes unchanged; exact 32-entry chain remains pinned.
+const pinnedManifest = 'e9494753700c4df15ce57261e7431ba8d0451c1e41d46db485a7d55886f6eaf8';
 const identifier = value => typeof value === 'string' && /^[A-Za-z_][A-Za-z0-9_$]{0,62}$/.test(value);
 export class PreflightError extends Error {
   constructor(code) { super(code); this.name = 'PreflightError'; this.code = code; }
@@ -45,13 +46,13 @@ export function preflightConfiguration(env) {
 
 export function loadReviewedSource(root = fileURLToPath(new URL('../', import.meta.url))) {
   const journal = JSON.parse(readFileSync(root + '/drizzle/meta/_journal.json', 'utf8')).entries;
-  if (journal.length !== 31 || journal.some((e, i) => e.idx !== i || !/^\d{4}_[a-z0-9_]+$/.test(e.tag) || !Number.isSafeInteger(e.when) || (i && e.when <= journal[i-1].when))) fail('preflight_source_unreviewed');
+  if (journal.length !== 32 || journal.some((e, i) => e.idx !== i || !/^\d{4}_[a-z0-9_]+$/.test(e.tag) || !Number.isSafeInteger(e.when) || (i && e.when <= journal[i-1].when))) fail('preflight_source_unreviewed');
   const migrations = journal.map(e => ({ ...e, sql: readFileSync(root + '/drizzle/' + e.tag + '.sql', 'utf8') }));
   const manifest = migrations.map(e => ({ idx: e.idx, sha256: sha(e.sql), tag: e.tag, when: e.when }));
   if (sha(JSON.stringify(manifest)) !== pinnedManifest) fail('preflight_source_unreviewed');
   const reviewedFiles = ['drizzle/meta/_journal.json','lib/db/schema.ts', ...journal.flatMap(e => ['drizzle/'+e.tag+'.sql', 'drizzle/meta/'+e.tag.slice(0,4)+'_snapshot.json'])].sort();
   const sourceFiles = reviewedFiles.map(path => ({ path, sha256: sha(readFileSync(root+'/'+path)) }));
-  if (sha(JSON.stringify(sourceFiles)) !== 'ac342a4ddd84928acf3c35da7220bafa496a398e8c30347872d520abb31faca3') fail('preflight_source_unreviewed');
+  if (sha(JSON.stringify(sourceFiles)) !== '2fed961b801f528b8c92c2f200d312e4abb9d95a22e1cffa40a27b289d6b9ba9') fail('preflight_source_unreviewed');
   const snapshots = journal.map(e => JSON.parse(readFileSync(root + '/drizzle/meta/' + e.tag.slice(0,4) + '_snapshot.json', 'utf8')));
   if (snapshots.some((s, i) => s.dialect !== 'postgresql' || (i && s.prevId !== snapshots[i-1].id))) fail('preflight_snapshot_lineage_invalid');
   return { manifest, migrations, snapshots };
@@ -165,7 +166,7 @@ export async function inspectDatabase({ env, connect, source = loadReviewedSourc
         if (expired) fail('preflight_deadline_exceeded');
         try {
           const rows = await tx.savepoint(sp => sp.unsafe(queries[name],parameters));
-          if (rows.length>({objects:2000,columns:10000,constraints:2000,indexes:2000,functions:1000,triggers:1000,ledger:31}[name] ?? 100)) { limitations.push(name+':catalog_limit_exceeded'); return null; }
+          if (rows.length>({objects:2000,columns:10000,constraints:2000,indexes:2000,functions:1000,triggers:1000,ledger:32}[name] ?? 100)) { limitations.push(name+':catalog_limit_exceeded'); return null; }
           return Array.from(rows);
         } catch { limitations.push(name+':unavailable'); return null; }
       }
@@ -198,7 +199,7 @@ export async function inspectDatabase({ env, connect, source = loadReviewedSourc
         expectedTarget: configuration.target, identity, tls: { ...tls, clientVerification:'verify-full' }, roles, ledger, ledgerEvidence:{present:presence ?? null,populatedSchema:populated,rows}, catalog, compatibility, prerequisites,
         capacity, activity, serverIdentifier, limitations, sourceManifestSha256:pinnedManifest,
         requiredGates:['separately_authorized_production_inspection','complete_catalog_and_definition_review','neon_direct_pooled_tls_and_capacity_proof','isolated_neon_branch_restore_and_pending_chain_rehearsal','founder_led_local_phase18_e2e_explicit_UAT_acceptance','separate_production_migration_and_deployment_authorizations'],
-        ownerProvisionalPrefix: { last:'0006_great_kate_bishop', entries:7, pending:24, evidence:'OWNER_PROVISIONAL_NOT_LEDGER_PROOF' } });
+        ownerProvisionalPrefix: { last:'0006_great_kate_bishop', entries:7, pending:25, evidence:'OWNER_PROVISIONAL_NOT_LEDGER_PROOF' } });
     });
   } finally { clearTimeout(deadline); await client.end({ timeout: 2 }); }
 }

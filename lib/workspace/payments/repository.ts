@@ -1,5 +1,3 @@
-import { readEmailProof } from '../email/repository';
-import type { EmailProof } from '../email/model';
 import type { RefundPolicyIdentity } from '../refund-policy/document';
 import type { RefundPolicyAcceptance } from '../refund-policy/model';
 import { workspaceRefundPolicyVersions as refundVersions, workspaceRefundPolicyAcceptances as refundAcceptances } from '@/lib/db/schema';
@@ -22,7 +20,6 @@ export type OrderPatch = Partial<Pick<Order, 'providerSetupState' | 'providerCre
 export type RedemptionPatch = Partial<Pick<Redemption, 'status' | 'redeemedAt' | 'releasedAt' | 'releaseReason' | 'releaseEvidenceHash' | 'releaseSource'>>;
 export type PaymentPatch = Partial<Pick<Payment, 'state' | 'winner' | 'lastObservedAt' | 'capturedAt' | 'captureTimeSource' | 'refundedPaise' | 'evidenceHash'>>;
 export interface FinanceTransaction {
-  readVerifiedEmail(userId: string): Promise<EmailProof | null>;
   readRefundPolicyAcceptance(userId: string, policy: RefundPolicyIdentity): Promise<RefundPolicyAcceptance | undefined>;
   readCreatorTermsAcceptance(userId: string, terms: CreatorTermsIdentity): Promise<CreatorTermsAcceptance | undefined>;
   findRequest(userId: string, key: string): Promise<Order | undefined>;
@@ -63,7 +60,6 @@ export function createPostgresFinanceStore(db: typeof import('@/lib/db').db) : F
         if (locks.couponId || locks.couponCode) await tx.select({ id: coupons.id }).from(coupons).where(locks.couponId ? eq(coupons.id, locks.couponId) : and(eq(coupons.scope, 'workspace_membership'), eq(coupons.code, locks.couponCode!))).for('update');
         if (locks.orderId) await tx.select({ id: orders.id }).from(orders).where(and(eq(orders.id, locks.orderId), eq(orders.userId, locks.userId))).for('update');
         const methods: FinanceTransaction = {
-          readVerifiedEmail: userId => readEmailProof(tx,userId),
           async readRefundPolicyAcceptance(userId, policy) {
             const [version] = await tx.select().from(refundVersions).where(eq(refundVersions.isCurrent, true)).for('share');
             if (!version || version.policyVersion !== policy.version || version.contentHash !== policy.contentHash || version.effectiveAt.toISOString() !== policy.effectiveAt) throw new PaymentError('refund_policy_required');

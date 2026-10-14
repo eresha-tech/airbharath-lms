@@ -61,8 +61,8 @@ function harness(count=7) {
   const connect = vi.fn(()=>client);
   return { data, unsafe, client, connect, run:(env:Record<string,string|undefined>=environment())=>inspectDatabase({env,connect,source}) };
 }
-it('pins all 31 reviewed SQL sources and 64 source/schema files without network or database use',()=>{
-  expect(source.manifest).toHaveLength(31); expect(source.snapshots).toHaveLength(31); expect(source.manifest[30].tag).toBe('0030_workspace_retained_history_truncate_guards');
+it('pins all 32 reviewed SQL sources and 66 source/schema files without network or database use',()=>{
+  expect(source.manifest).toHaveLength(32); expect(source.snapshots).toHaveLength(32); expect(source.manifest[31].tag).toBe('0031_workspace_phone_only_onboarding');
 });
 it('fails before connection construction without separate opt-in or explicit production manifest',async()=>{
   const h=harness(); for(const overrides of [{ALLOW_PRODUCTION_READONLY_PREFLIGHT:undefined},{DATABASE_ENV:'development'},{PREFLIGHT_NEON_BRANCH_ID:undefined},{PREFLIGHT_EXPECTED_DATABASE:undefined},{ALLOW_DATABASE_MIGRATION:'true'}]) await expect(h.run({...environment(),...overrides})).rejects.toThrow(/^preflight_/);
@@ -84,8 +84,8 @@ it('uses explicit encoded identity and certificate-verified bounded options, nev
   const c=preflightConfiguration({...environment(),PREFLIGHT_DATABASE_URL:environment().PREFLIGHT_DATABASE_URL.replace('synthetic-only','synthetic%3A%405433')});
   expect(c.options.password()).toBe('synthetic:@5433'); expect(c.options).toMatchObject({host:[environment().PREFLIGHT_EXPECTED_HOST],port:[5432],ssl:'verify-full',max:1,connect_timeout:5,prepare:false,debug:false,connection:{default_transaction_read_only:true,statement_timeout:5000,lock_timeout:1000}});
 });
-it.each([1,7,31])('reconciles the exact contiguous prefix of %i migrations',count=>{
-  const r=reconcileLedger(ledger(count),source,true,true); expect(r.state).toBe('MATCHED_PREFIX'); expect(r.installed).toHaveLength(count); expect(r.pending).toHaveLength(31-count);
+it.each([1,7,31,32])('reconciles the exact contiguous prefix of %i migrations',count=>{
+  const r=reconcileLedger(ledger(count),source,true,true); expect(r.state).toBe('MATCHED_PREFIX'); expect(r.installed).toHaveLength(count); expect(r.pending).toHaveLength(32-count);
 });
 it('never assumes the owner provisional 0006 boundary, accepting a different proven prefix',()=>{
   expect(reconcileLedger(ledger(8),source,true,true).pending?.[0]).toBe('0008_eager_energizer');
@@ -102,7 +102,7 @@ it('blocks gaps, duplicates, changed hashes and unknown future timestamps withou
 it('collects only fixed SELECT metadata inside a read-only transaction and closes every pool',async()=>{
   const h=harness(), report=await h.run();
   expect(h.client.begin).toHaveBeenCalledWith('isolation level repeatable read read only',expect.any(Function)); expect(h.client.end).toHaveBeenCalledWith({timeout:2});
-  expect(report.ledger.pending).toHaveLength(24); expect(report.ledgerEvidence.rows).toEqual(ledger()); expect(report.migrationAuthorized).toBe(false); expect(report.requiredGates).toContain('founder_led_local_phase18_e2e_explicit_UAT_acceptance');
+  expect(report.ledger.pending).toHaveLength(25); expect(report.ledgerEvidence.rows).toEqual(ledger()); expect(report.migrationAuthorized).toBe(false); expect(report.requiredGates).toContain('founder_led_local_phase18_e2e_explicit_UAT_acceptance');
   expect(report.compatibility.state).toBe('STRUCTURAL_MATCH_REVIEW_REQUIRED'); expect(report.prerequisites['0019']).toBe('UNKNOWN_UNTIL_EARLIER_PENDING_MIGRATIONS_REHEARSED');
   expect(report.limitations).toContain('serverIdentifier:unavailable');
   for(const [query] of h.unsafe.mock.calls) expect(query.trim()).toMatch(/^(select|with)\b/i);
@@ -161,3 +161,16 @@ it('reuses retained F6 function evidence offline to check migration-body parsing
 });
 
 it('redacts invalid ledger values while preserving the divergent-ledger blocker',async()=>{const h=harness();h.data.ledger=[{id:'private-synthetic-id',hash:'private-synthetic-hash',created_at:'private-synthetic-time'}];const r=await h.run();expect(r.ledger.state).toBe('BLOCKED');expect(JSON.stringify(r)).not.toContain('private-synthetic');expect(r.ledgerEvidence.rows).toEqual([{id:'[INVALID_ID]',hash:'[INVALID_HASH]',created_at:'[INVALID_TIMESTAMP]'}]);});
+it('refuses altered SQL, journal metadata and snapshots after the reviewed 0031 repin',()=>{
+  const root=mkdtempSync(join(tmpdir(),'preflight-source-pin-'));
+  try {
+    mkdirSync(join(root,'drizzle/meta'),{recursive:true}); mkdirSync(join(root,'lib/db'),{recursive:true});
+    const paths=['drizzle/meta/_journal.json','lib/db/schema.ts',...source.manifest.flatMap(e=>['drizzle/'+e.tag+'.sql','drizzle/meta/'+e.tag.slice(0,4)+'_snapshot.json'])];
+    for(const path of paths)writeFileSync(join(root,path),readFileSync(path));
+    expect(loadReviewedSource(root).manifest).toHaveLength(32);
+    for(const path of ['drizzle/0006_great_kate_bishop.sql','drizzle/0031_workspace_phone_only_onboarding.sql','drizzle/meta/0031_snapshot.json','drizzle/meta/_journal.json']) {
+      const original=readFileSync(join(root,path));writeFileSync(join(root,path),Buffer.concat([original,Buffer.from('\n ')]));
+      expect(()=>loadReviewedSource(root)).toThrow('preflight_source_unreviewed');writeFileSync(join(root,path),original);
+    }
+  } finally {rmSync(root,{recursive:true});}
+});

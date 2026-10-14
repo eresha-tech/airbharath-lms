@@ -21,7 +21,8 @@ it('retains every previously applied migration byte and the logical schema snaps
   const logical = ({ id: _id, prevId: _prevId, ...schema }: Record<string, unknown>) => schema;
   expect(logical(next)).toEqual(logical(before));
   const journal = JSON.parse(read('drizzle/meta/_journal.json'));
-  expect(journal.entries).toHaveLength(31);
+  expect(journal.entries).toHaveLength(32);
+  expect(journal.entries[31]).toMatchObject({ idx: 31, tag: '0031_workspace_phone_only_onboarding' });
   expect(journal.entries[30]).toMatchObject({ idx: 30, tag: '0030_workspace_retained_history_truncate_guards' });
   expect(digest(migration)).toBe(review.proposedSqlSha256);
 });

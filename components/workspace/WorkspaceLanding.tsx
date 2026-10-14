@@ -89,7 +89,7 @@ export function WorkspaceLanding({ info = { eligibility: null, plans: null } }: 
     <PublicHeading eyebrow="From idea to private lessons" title="A considered path to creating."/>
     <ol className="public-step-grid">{[
             ['Account & eligibility', 'Use your normal AirBharath account and complete the current eligibility check.'],
-            ['Your access path', 'When purchases are enabled, paid membership requires a verified email and acceptance of current Creator Terms and Refund Policy. An authorized Admin-issued complimentary grant follows its separate eligibility and Creator Terms requirements.'],
+            ['Your access path', 'When purchases are enabled, paid membership requires a valid contact email and acceptance of current Creator Terms and Refund Policy. An authorized Admin-issued complimentary grant follows its separate eligibility and Creator Terms requirements.'],
             ['Creator Profile', 'After authorized access, save your professional background and teaching focus.'],
             ['Course proposal', 'Prepare the course title, intended learners, learning objectives and outline.'],
             ['AirBharath review', 'Submit for review. Respond to requested changes; approval is not guaranteed.'],

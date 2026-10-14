@@ -1,6 +1,5 @@
 'use client';
-import { WorkspaceEmailVerification } from './WorkspaceEmailVerification';
-import type { EmailStatus } from '@/lib/workspace/email/model';
+import { WorkspaceContactEmail } from './WorkspaceContactEmail';
 import { RefundPolicyAcceptance, type RefundPolicyReceipt } from './RefundPolicyAcceptance';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -11,14 +10,14 @@ import { calculatePrice, formatPaise, normalizeCouponCode, type Plan } from '@/l
 import type { MembershipQuote } from '@/lib/workspace/membership/service';
 import { trackCouponApplied, trackPlanSelected } from '@/lib/workspace/membership/analytics';
 
-export function ActivationPreview({ plans, initialQuote, checkoutKeyId, userId, initialTermsAcceptance, initialPolicyAcceptance, initialEmailStatus }: { plans: Plan[]; initialQuote: MembershipQuote | null; checkoutKeyId?: string; userId?: string; initialTermsAcceptance?: CreatorTermsReceipt | null; initialPolicyAcceptance?: RefundPolicyReceipt | null; initialEmailStatus?: EmailStatus }) {
+export function ActivationPreview({ plans, initialQuote, checkoutKeyId, userId, initialTermsAcceptance, initialPolicyAcceptance, initialContactEmail }: { plans: Plan[]; initialQuote: MembershipQuote | null; checkoutKeyId?: string; userId?: string; initialTermsAcceptance?: CreatorTermsReceipt | null; initialPolicyAcceptance?: RefundPolicyReceipt | null; initialContactEmail?: string | null }) {
   const [selected, setSelected] = useState(initialQuote?.planCode || plans[0].code);
   const [quote, setQuote] = useState(initialQuote), [draft, setDraft] = useState(''), [appliedCode, setAppliedCode] = useState<string | undefined>();
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [destination, setDestination] = useState<string | undefined>();
   const [expired, setExpired] = useState(false);
   const [policyAccepted, setPolicyAccepted] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [emailVerified,setEmailVerified] = useState(initialEmailStatus?.verified || false);
+  const [contactReady, setContactReady] = useState(!!initialContactEmail);
   const request = useRef<AbortController | null>(null);
   useEffect(() => () => request.current?.abort(), []);
   useEffect(() => {
@@ -46,7 +45,7 @@ export function ActivationPreview({ plans, initialQuote, checkoutKeyId, userId, 
   }
   const plan = plans.find(plan => plan.code === selected)!;
   return <div className="ph-no-capture space-y-8">
-    <section aria-label="Eligibility confirmed" className="rounded-xl border border-border p-5"><h2 className="font-medium">Step 1 — Eligibility confirmed</h2><p className="mt-2 text-sm text-muted-foreground">Your eligibility is checked again before a new membership purchase.</p></section><WorkspaceEmailVerification initialStatus={initialEmailStatus || {email:null,verified:false,verifiedAt:null,challenge:null}} onVerified={verified=>{setEmailVerified(verified);if(verified)void preview(plans.find(p=>p.code===selected)!,appliedCode)}}/><fieldset><legend className="mb-4 text-sm font-medium">Step 3 — Choose your prepaid term</legend><div className="grid gap-4 md:grid-cols-3">{plans.map(plan => {
+    <section aria-label="Eligibility confirmed" className="rounded-xl border border-border p-5"><h2 className="font-medium">Step 1 — Eligibility confirmed</h2><p className="mt-2 text-sm text-muted-foreground">Your eligibility is checked again before a new membership purchase.</p></section><WorkspaceContactEmail initialEmail={initialContactEmail || null} onReady={email=>{setContactReady(!!email);if(email)void preview(plans.find(p=>p.code===selected)!,appliedCode)}}/><fieldset><legend className="mb-4 text-sm font-medium">Step 2 — Choose your prepaid term</legend><div className="grid gap-4 md:grid-cols-3">{plans.map(plan => {
       const active = selected === plan.code, total = calculatePrice(plan.basePricePaise, plan.taxRateBps).totalPaise;
       return <label key={plan.id} className={`relative flex cursor-pointer flex-col rounded-2xl border p-6 transition-colors focus-within:ring-2 focus-within:ring-ring ${active ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/50'} ${!plan.available ? 'cursor-not-allowed opacity-60' : ''}`}>
         <span className="flex items-center justify-between"><span className="font-outfit text-xl font-medium">{plan.displayName}</span><input type="radio" name="workspace-plan" value={plan.code} checked={active} disabled={!plan.available} onChange={() => { setSelected(plan.code); trackPlanSelected(plan.code); void preview(plan, appliedCode); }} className="size-4 accent-current" /></span>
@@ -54,7 +53,7 @@ export function ActivationPreview({ plans, initialQuote, checkoutKeyId, userId, 
       </label>;
     })}</div></fieldset>
     <div className="grid gap-8 lg:grid-cols-[1fr_0.85fr]">
-      <section className="min-w-0 rounded-2xl border border-border bg-card p-6 sm:p-8"><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary"><Check className="size-4" aria-hidden />Eligibility confirmed</p><h2 className="mt-6 font-outfit text-2xl">Step 4 — Coupon (optional)</h2>
+      <section className="min-w-0 rounded-2xl border border-border bg-card p-6 sm:p-8"><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary"><Check className="size-4" aria-hidden />Eligibility confirmed</p><h2 className="mt-6 font-outfit text-2xl">Step 3 — Coupon (optional)</h2>
         <form className="mt-5" onSubmit={event => { event.preventDefault(); const code = normalizeCouponCode(draft); if (!code) { request.current?.abort(); setBusy(false); setAppliedCode(draft.trim() || ' '); setQuote(null); setError('Use a coupon code of 3–32 letters, numbers, hyphens or underscores.'); trackCouponApplied('invalid_code'); return; } void preview(plan, code, true); }}>
           <label htmlFor="workspace-coupon" className="text-sm text-muted-foreground">Workspace membership coupon</label><div className="mt-2 flex flex-wrap gap-2"><input id="workspace-coupon" value={draft} onChange={event => setDraft(event.target.value)} maxLength={32} autoComplete="off" spellCheck={false} className="ph-no-capture min-w-0 flex-1 rounded-xl border border-border bg-background px-4 py-3 font-mono text-sm uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-describedby="coupon-note" /><button disabled={busy || !plan.available} className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50">{busy ? 'Updating…' : 'Apply'}</button></div>
           <p id="coupon-note" className="mt-3 text-xs leading-6 text-muted-foreground">Preview only. Applying a coupon does not reserve an offer, consume capacity or guarantee future availability.</p>
@@ -71,7 +70,7 @@ export function ActivationPreview({ plans, initialQuote, checkoutKeyId, userId, 
           {expired && <p className="mt-6 text-sm">This preview has expired. Refresh to check current eligibility, plans and coupon rules.</p>}
         </div>
         {!busy && (expired || error) && <button onClick={() => void preview(plan, appliedCode)} className="mt-5 text-sm underline underline-offset-4">Refresh preview</button>}
-        <div className="mt-8 border-t border-border pt-6"><h3 className="mb-4 font-medium">Step 5 — Agree and continue</h3><CreatorTermsAcceptance onAccepted={setTermsAccepted} initialAcceptance={initialTermsAcceptance} /><RefundPolicyAcceptance onAccepted={setPolicyAccepted} initialAcceptance={initialPolicyAcceptance} />{checkoutKeyId && userId ? <MembershipCheckout keyId={checkoutKeyId} userId={userId} quote={quote} disabled={busy || expired || !plan.available || !!error || !termsAccepted || !policyAccepted || !emailVerified} /> : <><button disabled className="flex w-full items-center justify-center gap-3 rounded-xl bg-muted px-5 py-4 text-sm font-semibold text-muted-foreground"><LockKeyhole className="size-4" aria-hidden />Payments not yet enabled<ArrowRight className="size-4" aria-hidden /></button><p className="mt-4 text-xs leading-6 text-muted-foreground">Workspace payments are awaiting launch verification. No charge, membership or creator access is created by this preview.</p></>}</div>
+        <div className="mt-8 border-t border-border pt-6"><h3 className="mb-4 font-medium">Step 4 — Agree and continue</h3><CreatorTermsAcceptance onAccepted={setTermsAccepted} initialAcceptance={initialTermsAcceptance} /><RefundPolicyAcceptance onAccepted={setPolicyAccepted} initialAcceptance={initialPolicyAcceptance} />{checkoutKeyId && userId ? <MembershipCheckout keyId={checkoutKeyId} userId={userId} quote={quote} disabled={busy || expired || !plan.available || !!error || !termsAccepted || !policyAccepted || !contactReady} /> : <><button disabled className="flex w-full items-center justify-center gap-3 rounded-xl bg-muted px-5 py-4 text-sm font-semibold text-muted-foreground"><LockKeyhole className="size-4" aria-hidden />Payments not yet enabled<ArrowRight className="size-4" aria-hidden /></button><p className="mt-4 text-xs leading-6 text-muted-foreground">Workspace payments are awaiting launch verification. No charge, membership or creator access is created by this preview.</p></>}</div>
       </section>
     </div>
   </div>;
