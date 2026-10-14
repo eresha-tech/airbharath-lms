@@ -1,0 +1,78 @@
+{
+  "startingHead": "93b5669",
+  "approvedSqlSha256": "f34c190f4e7877d5b0f3fab03c89874b825ef0f2cfebca520c1dc40adfbd5bd2",
+  "tcpAndSocketIdentityMatch": true,
+  "identity": {
+    "database": "airbharath_lms",
+    "oid": "16384",
+    "port": "5433",
+    "system": "7680462735222304705",
+    "version": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+    "read_only": "on"
+  },
+  "beforeRows": 6871,
+  "afterRows": 6872,
+  "tables": 64,
+  "ledgerBefore": 30,
+  "ledgerAfter": 31,
+  "pendingMigrationsAfter": 0,
+  "migratorRuns": [
+    {
+      "run": "first",
+      "command": "pnpm db:migrate",
+      "environment": "development",
+      "acknowledgement": "process-scoped ALLOW_DATABASE_MIGRATION=true",
+      "exitCode": 0,
+      "logSha256": "a08d7cd94faed8119294a65d2c90a0e0ab0fec19fe9768e6cd28012aff458d28",
+      "collationWarningUnresolved": true
+    },
+    {
+      "run": "second",
+      "command": "pnpm db:migrate",
+      "environment": "development",
+      "acknowledgement": "process-scoped ALLOW_DATABASE_MIGRATION=true",
+      "exitCode": 0,
+      "logSha256": "a08d7cd94faed8119294a65d2c90a0e0ab0fec19fe9768e6cd28012aff458d28",
+      "collationWarningUnresolved": true
+    }
+  ],
+  "secondRunNoOp": true,
+  "firstPostMigrationSnapshotSha256": "77f708655b1b19f98d0c86135b5bdfa0b81b37dbe51c76c774f6490784d12646",
+  "secondPostMigrationSnapshotSha256": "77f708655b1b19f98d0c86135b5bdfa0b81b37dbe51c76c774f6490784d12646",
+  "originalDataAndSchemaComparison": {
+    "originalRowsUnchanged": true,
+    "previousLedgerRowsUnchanged": true,
+    "onlyNewLedgerRow": true,
+    "existingSchemaUnchanged": true,
+    "newFunctions": 1,
+    "newTriggers": 21
+  },
+  "newGuards": 21,
+  "oldGuards": 18,
+  "totalGuardedWorkspaceTables": 39,
+  "excluded": "workspace_email_rate_limits",
+  "historicalSourceUnchanged": {
+    "WORKSPACE_LAUNCH_F6_DATABASE_AUDIT.md": "ff625c5c8e5fe3d002026ba2126f55205e6abf1630cb13323eecb7f4ea9c66db",
+    "WORKSPACE_LAUNCH_F6_TRUNCATE_GUARD_PROPOSAL.md": "9fccda72307083fedc972e0df8a458321a9c88dee63961d3398e75c69f8db835",
+    "drizzle/meta/_journal.json": "45068e95cd303393511fcc75aae4a39d3e3ebf23ed2117944f4bd29c64ad7d58",
+    "drizzle/meta/0030_snapshot.json": "b8194f47b84df5240de60b71b949be9c19b5e9c9b7060b455865f083f3e9018f",
+    "drizzle/0030_workspace_retained_history_truncate_guards.sql": "f34c190f4e7877d5b0f3fab03c89874b825ef0f2cfebca520c1dc40adfbd5bd2"
+  },
+  "priorBaselineFilesUnchangedSha256": {
+    "/tmp/workspace-f6-original-fingerprints.json": "49127060609b2e8117a45752ed05c3b4ab0b04351a36fcf13a29e86edcb207e2",
+    "/tmp/workspace-f6r-original-fingerprints.json": "49127060609b2e8117a45752ed05c3b4ab0b04351a36fcf13a29e86edcb207e2",
+    "/tmp/workspace-f6-after-fingerprints.json": "49127060609b2e8117a45752ed05c3b4ab0b04351a36fcf13a29e86edcb207e2",
+    "/tmp/workspace-f6r-after-fingerprints.json": "49127060609b2e8117a45752ed05c3b4ab0b04351a36fcf13a29e86edcb207e2"
+  },
+  "inventory": {
+    "KEEP": 61,
+    "REVIEW": 3,
+    "UNKNOWN": 0
+  },
+  "retainedDestructiveTests": false,
+  "tablesDeletedOrCleaned": false,
+  "newSyntheticFixtures": 0,
+  "providerCalls": 0,
+  "publicPaymentsEnabled": false,
+  "acknowledgementPersisted": false
+}
