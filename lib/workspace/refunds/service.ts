@@ -12,6 +12,8 @@ export interface RefundProvider {
   fetchPayment(id: string): Promise<ProviderPayment>;
   fetchRefunds(paymentId: string): Promise<ProviderRefund[]>;
   createRefund(input: { paymentId: string; amountPaise: number; requestId: string; attemptId: string }): Promise<ProviderRefund>;
+  // Opt-in contract: identical V1 payload and provider idempotency key on replay.
+  replayRefund?: RefundProvider['createRefund'];
 }
 // Every provider call below happens after the store's transaction has committed.
 export function createRefundService(store: RefundStore, provider?: RefundProvider) {
@@ -39,6 +41,21 @@ export function createRefundService(store: RefundStore, provider?: RefundProvide
   async function decide(actor: string, orderId: string, raw: unknown) {
     if (!UUID.test(actor) || !UUID.test(orderId)) throw new RefundError('forbidden');
     const command = parseRefundDecision(raw);
+    if (command.action === 'recover') {
+      const claim = await store.transaction(orderId, actor, async tx => {
+        admin(tx, actor);
+        if (tx.completion) return null;
+        const attempt = tx.attempt, order = tx.order, request = tx.request;
+        if (!provider?.replayRefund || !scoped(order) || provider.refundMutationAllowed?.() === false || request?.decision !== 'approved' || !attempt || attempt.state !== 'uncertain' || attempt.providerRefundId || !attempt.startedAt
+          || attempt.requestId !== request.id || request.userId !== order.userId || request.membershipOrderId !== order.id || attempt.membershipOrderId !== order.id || attempt.userId !== order.userId || attempt.providerPaymentId !== order.winningPaymentId || attempt.providerAccountId !== order.providerAccountId || attempt.providerMode !== order.providerMode || attempt.amountPaise !== order.totalPaise || attempt.currency !== order.currency || request.amountPaise !== attempt.amountPaise || request.currency !== attempt.currency) throw new RefundError('reconciliation_required');
+        await tx.patchAttempt({ lastCheckedAt: await tx.now() });
+        return { order, attempt };
+      });
+      // Explicit operator recovery only; workers never replay uncertain mutations.
+      // Concurrent recoveries share the same provider key and identical frozen body.
+      if (claim) await submit(claim, true);
+      return store.read(orderId, actor, true);
+    }
     if (command.action === 'reconcile') {
       await store.transaction(orderId, actor, async tx => { admin(tx, actor); });
       return reconcile(orderId);
@@ -105,10 +122,17 @@ export function createRefundService(store: RefundStore, provider?: RefundProvide
       return { order: tx.order, attempt };
     });
     if (!claim) return;
+    await submit(claim);
+  }
+  async function submit(claim: { order: Order; attempt: RefundAttempt }, replay = false) {
+    if (!provider) throw new RefundError('unavailable');
+    const attemptId = claim.attempt.id, orderId = claim.order.id;
     try {
       const [payment, refunds] = await Promise.all([provider.fetchPayment(claim.attempt.providerPaymentId), provider.fetchRefunds(claim.attempt.providerPaymentId)]);
-      if (!paymentMatches(claim.order, payment, provider.context) || payment.refundedPaise !== 0 || refunds.some(r => r.status !== 'failed')) { await reconcile(orderId); return; }
-      const refund = await provider.createRefund({ paymentId: claim.attempt.providerPaymentId, amountPaise: claim.attempt.amountPaise, requestId: claim.attempt.requestId, attemptId });
+      if (!paymentMatches(claim.order, payment, provider.context) || payment.refundedPaise !== 0 || (replay ? refunds.length > 0 : refunds.some(r => r.status !== 'failed'))) { await reconcile(orderId); return; }
+      const send = replay ? provider.replayRefund : provider.createRefund;
+      if (!send || provider.refundMutationAllowed?.() === false) throw new RefundError('unavailable');
+      const refund = await send.call(provider, { paymentId: claim.attempt.providerPaymentId, amountPaise: claim.attempt.amountPaise, requestId: claim.attempt.requestId, attemptId });
       if (!refundMatches(claim.order, refund, provider.context)) throw new RefundError('reconciliation_required');
       await store.transaction(orderId, null, async tx => {
         // Webhook may have completed first; stale HTTP response cannot downgrade it.
@@ -122,8 +146,11 @@ export function createRefundService(store: RefundStore, provider?: RefundProvide
       await store.transaction(orderId, null, async tx => {
         if (tx.completion || tx.attempt?.id !== attemptId || tx.attempt.state === 'completed') return;
         const definite = error instanceof ProviderFailure && error.outcome === 'definitive_rejection';
-        if (definite && error.evidenceHash) await tx.observe(error.evidenceHash, 'mismatch_review');
-        await tx.patchAttempt({ state: definite ? 'failed' : 'uncertain', errorCode: definite ? 'definitive_rejection' : 'provider_requires_reconciliation' });
+        const responseHash = error instanceof ProviderFailure ? error.evidenceHash || error.diagnostic?.responseHash : undefined;
+        if (responseHash) await tx.observe(responseHash, 'mismatch_review');
+        const diagnostic = error instanceof ProviderFailure ? error.diagnostic : undefined;
+        const errorCode = diagnostic && Number.isInteger(diagnostic.httpStatus) && diagnostic.httpStatus >= 400 && diagnostic.httpStatus <= 599 ? `provider_${diagnostic.operation}_http_${diagnostic.httpStatus}` : 'provider_requires_reconciliation';
+        await tx.patchAttempt({ state: definite ? 'failed' : 'uncertain', errorCode: definite ? 'definitive_rejection' : errorCode });
       });
     }
   }

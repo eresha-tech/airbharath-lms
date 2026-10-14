@@ -17,10 +17,10 @@ export function parseRefundRequest(raw: unknown): RequestCommand {
   return { requestKey: raw.requestKey, reason: raw.reason as RefundReason, note: typeof raw.note === 'string' ? raw.note.trim() || null : null };
 }
 export function parseRefundDecision(raw: unknown) {
-  if (!object(raw) || Object.keys(raw).some(k => !['action', 'confirmed', 'reason'].includes(k)) || !['approve', 'reject', 'retry', 'reconcile'].includes(String(raw.action)) || raw.confirmed !== true) throw new RefundError('validation');
+  if (!object(raw) || Object.keys(raw).some(k => !['action', 'confirmed', 'reason'].includes(k)) || !['approve', 'reject', 'retry', 'reconcile', 'recover'].includes(String(raw.action)) || raw.confirmed !== true) throw new RefundError('validation');
   const reason = typeof raw.reason === 'string' ? raw.reason.trim() : '';
   if ((raw.action === 'reject' && (!reason || reason.length > 2000)) || (raw.action !== 'reject' && raw.reason !== undefined) || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(reason)) throw new RefundError('validation');
-  return { action: raw.action as 'approve' | 'reject' | 'retry' | 'reconcile', reason };
+  return { action: raw.action as 'approve' | 'reject' | 'retry' | 'reconcile' | 'recover', reason };
 }
 export const requestPayloadHash = (command: RequestCommand) => digest({ reason: command.reason, note: command.note });
 export function refundableOrder(order: Order, now: Date, completed: boolean) {

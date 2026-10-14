@@ -6,7 +6,7 @@ import { object } from '../eligibility/model';
 import { PaymentError, PROVIDER_ORDER_ID, PROVIDER_PAYMENT_ID, type ProviderContext, type ProviderOrder, type ProviderPayment } from './model';
 
 export class ProviderFailure extends Error {
-  constructor(public outcome: 'definitive_rejection' | 'ambiguous', public evidenceHash?: string) { super(outcome); }
+  constructor(public outcome: 'definitive_rejection' | 'ambiguous', public evidenceHash?: string, public diagnostic?: { operation: 'read' | 'checkout' | 'refund'; httpStatus: number; responseHash?: string }) { super(outcome); }
 }
 export interface WorkspaceProvider {
   readonly context: ProviderContext;
@@ -47,17 +47,21 @@ function createAdapter(config: ProviderConfiguration, http: typeof fetch, allowe
       if (!response.ok) {
         // Only documented create input rejection proves no order escaped; all other failures retain the hold.
         const definitive = !!body && response.status === 400 && object(raw) && object(raw.error) && raw.error.code === 'BAD_REQUEST_ERROR' && raw.error.reason === 'input_validation_failed';
-        throw new ProviderFailure(definitive ? 'definitive_rejection' : 'ambiguous', definitive ? createHash('sha256').update(Buffer.concat(chunks)).digest('hex') : undefined);
+        const responseHash = createHash('sha256').update(Buffer.concat(chunks)).digest('hex');
+        throw new ProviderFailure(definitive ? 'definitive_rejection' : 'ambiguous', definitive ? responseHash : undefined, { operation: body ? path.endsWith('/refund') ? 'refund' : 'checkout' : 'read', httpStatus: response.status, responseHash });
       }
       return raw;
     } catch (error) { if (error instanceof ProviderFailure) throw error; throw new ProviderFailure('ambiguous'); }
   }
-  return { context: { accountId: config.accountId, mode: config.mode },
-    refundMutationAllowed: () => { try { allowed('refund'); return true; } catch { return false; } },
-    async createRefund(input) {
+  // V1 request encoding is shared by creation and explicit recovery. Changing this
+  // payload for an existing attempt would violate Razorpay's idempotency contract.
+  const createRefund: RefundProvider['createRefund'] = async input => {
       if (!PROVIDER_PAYMENT_ID.test(input.paymentId) || !Number.isSafeInteger(input.amountPaise) || input.amountPaise < 1 || !/^[a-f0-9-]{36}$/.test(input.attemptId) || !/^[a-f0-9-]{36}$/.test(input.requestId)) throw new PaymentError('validation');
       return parseProviderRefund(await request(`payments/${input.paymentId}/refund`, { amount: input.amountPaise, speed: 'normal', notes: { workspace_refund_request: input.requestId, workspace_refund_attempt: input.attemptId } }, input.attemptId), config);
-    },
+  };
+  return { context: { accountId: config.accountId, mode: config.mode },
+    refundMutationAllowed: () => { try { allowed('refund'); return true; } catch { return false; } },
+    createRefund, replayRefund: createRefund,
     async fetchRefunds(paymentId) {
       if (!PROVIDER_PAYMENT_ID.test(paymentId)) throw new PaymentError('validation');
       const raw = await request(`payments/${paymentId}/refunds?count=100&skip=0`);
