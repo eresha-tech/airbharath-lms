@@ -1,0 +1,44 @@
+{
+  "checks": [
+    "original_learner_access_and_certificate_eligibility_services_readonly",
+    "legacy_invoice_anonymous_cross_owner_and_demoted_admin_denied_before_generation",
+    "held_payment_UI_preserves_review_and_has_no_creator_open_link"
+  ],
+  "privateMetadata": [
+    {
+      "path": "/admin/coupons",
+      "status": 200,
+      "robots": "noindex, nofollow"
+    },
+    {
+      "path": "/dashboard/courses",
+      "status": 200,
+      "robots": "noindex, nofollow"
+    }
+  ],
+  "routeNegatives": [
+    {
+      "route": "/api/invoices/download/[original-order]",
+      "actor": "ANONYMOUS",
+      "status": 401,
+      "cacheControl": "private, no-store"
+    },
+    {
+      "route": "/api/invoices/download/[original-order]",
+      "actor": "ACTIVE",
+      "status": 403,
+      "cacheControl": "private, no-store"
+    },
+    {
+      "route": "/api/invoices/download/[original-order]",
+      "actor": "DEMOTED",
+      "status": 403,
+      "cacheControl": "private, no-store"
+    }
+  ],
+  "findings": [],
+  "externalProviderCalls": 0,
+  "originalEnrollmentsRead": 8,
+  "activeNoExpiryAccessConfirmed": 8,
+  "complete": true
+}

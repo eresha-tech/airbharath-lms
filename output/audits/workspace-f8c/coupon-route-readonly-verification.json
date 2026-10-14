@@ -1,0 +1,15 @@
+{
+  "route": "/api/coupons/validate",
+  "configuration": "isolated local development app; read-only quote handler and database lookup; provider calls blocked",
+  "standardPriceRupees": 3300,
+  "discountRupees": 1400,
+  "finalAmountRupees": 1900,
+  "valid": true,
+  "comboOnlyRestrictionVerified": true,
+  "otherCourseStatus": 400,
+  "codePublishedByTask": false,
+  "existingPublicCodeSource": "components/pricing/PricingView.tsx and existing Combo Pass detail autoCouponCode",
+  "ordersCreated": 0,
+  "countersUpdated": 0,
+  "enrollmentsChanged": 0
+}

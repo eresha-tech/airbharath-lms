@@ -1,0 +1,445 @@
+{
+  "identity": {
+    "database": "airbharath_lms",
+    "oid": "16384",
+    "system": "7680462735222304705",
+    "port": "5433",
+    "read_only": "on"
+  },
+  "ledgerEntries": 31,
+  "ledgerRange": "0000–0030",
+  "sourceHashesMatch": true,
+  "tables": 64,
+  "rows": 7687,
+  "triggerCount": 110,
+  "truncateProtectedWorkspaceTables": [
+    "workspace_access_grant_events",
+    "workspace_access_grants",
+    "workspace_applications",
+    "workspace_audit_events",
+    "workspace_coupon_plans",
+    "workspace_coupon_redemptions",
+    "workspace_coupons",
+    "workspace_course_drafts",
+    "workspace_course_lessons",
+    "workspace_course_modules",
+    "workspace_course_projects",
+    "workspace_course_review_events",
+    "workspace_course_submissions",
+    "workspace_creator_profile_details",
+    "workspace_creator_profiles",
+    "workspace_creator_terms_acceptances",
+    "workspace_creator_terms_versions",
+    "workspace_eligibility_attempts",
+    "workspace_eligibility_settings",
+    "workspace_email_challenges",
+    "workspace_email_notice_bindings",
+    "workspace_influencer_history",
+    "workspace_influencers",
+    "workspace_membership_orders",
+    "workspace_membership_plans",
+    "workspace_memberships",
+    "workspace_payment_attempts",
+    "workspace_payment_events",
+    "workspace_policy_versions",
+    "workspace_refund_attempts",
+    "workspace_refund_completions",
+    "workspace_refund_notice_deliveries",
+    "workspace_refund_notice_delivery_attempts",
+    "workspace_refund_notices",
+    "workspace_refund_observations",
+    "workspace_refund_policy_acceptances",
+    "workspace_refund_policy_versions",
+    "workspace_refund_requests",
+    "workspace_verified_emails"
+  ],
+  "originalRows": 7296,
+  "originalRowsPreserved": true,
+  "observedSchemaAndLedgerUnchanged": true,
+  "tableResults": [
+    {
+      "table": "drizzle.__drizzle_migrations",
+      "originalRows": 31,
+      "finalRows": 31,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.certificates",
+      "originalRows": 0,
+      "finalRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.coupons",
+      "originalRows": 2,
+      "finalRows": 2,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.course_authors",
+      "originalRows": 2,
+      "finalRows": 2,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.course_bundle_items",
+      "originalRows": 4,
+      "finalRows": 4,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.course_sections",
+      "originalRows": 4,
+      "finalRows": 4,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.courses",
+      "originalRows": 6,
+      "finalRows": 6,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.enrollments",
+      "originalRows": 8,
+      "finalRows": 8,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.feed_posts",
+      "originalRows": 2,
+      "finalRows": 2,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.invoices",
+      "originalRows": 1,
+      "finalRows": 1,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.jobs",
+      "originalRows": 4,
+      "finalRows": 4,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.lesson_comments",
+      "originalRows": 0,
+      "finalRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.lesson_materials",
+      "originalRows": 0,
+      "finalRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.lessons",
+      "originalRows": 25,
+      "finalRows": 25,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.modules",
+      "originalRows": 15,
+      "finalRows": 15,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.orders",
+      "originalRows": 1,
+      "finalRows": 1,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.otps",
+      "originalRows": 6,
+      "finalRows": 6,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.playback_sessions",
+      "originalRows": 15,
+      "finalRows": 15,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.progress",
+      "originalRows": 2,
+      "finalRows": 2,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.users",
+      "originalRows": 831,
+      "finalRows": 877,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.video_captions",
+      "originalRows": 0,
+      "finalRows": 0,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.videos",
+      "originalRows": 5,
+      "finalRows": 5,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_access_grant_events",
+      "originalRows": 98,
+      "finalRows": 137,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_access_grants",
+      "originalRows": 90,
+      "finalRows": 127,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_applications",
+      "originalRows": 3,
+      "finalRows": 3,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_audit_events",
+      "originalRows": 170,
+      "finalRows": 171,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_coupon_plans",
+      "originalRows": 194,
+      "finalRows": 195,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_coupon_redemptions",
+      "originalRows": 130,
+      "finalRows": 130,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_coupons",
+      "originalRows": 134,
+      "finalRows": 135,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_course_drafts",
+      "originalRows": 210,
+      "finalRows": 239,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_course_lessons",
+      "originalRows": 517,
+      "finalRows": 519,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_course_modules",
+      "originalRows": 82,
+      "finalRows": 85,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_course_projects",
+      "originalRows": 31,
+      "finalRows": 34,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_course_review_events",
+      "originalRows": 176,
+      "finalRows": 187,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_course_submissions",
+      "originalRows": 109,
+      "finalRows": 116,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_creator_profile_details",
+      "originalRows": 35,
+      "finalRows": 38,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_creator_profiles",
+      "originalRows": 313,
+      "finalRows": 353,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_creator_terms_acceptances",
+      "originalRows": 355,
+      "finalRows": 396,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_creator_terms_versions",
+      "originalRows": 2,
+      "finalRows": 2,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_eligibility_attempts",
+      "originalRows": 717,
+      "finalRows": 760,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_eligibility_settings",
+      "originalRows": 9,
+      "finalRows": 9,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_email_challenges",
+      "originalRows": 187,
+      "finalRows": 194,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_email_notice_bindings",
+      "originalRows": 21,
+      "finalRows": 24,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_email_rate_limits",
+      "originalRows": 593,
+      "finalRows": 628,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_influencer_history",
+      "originalRows": 97,
+      "finalRows": 97,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_influencers",
+      "originalRows": 84,
+      "finalRows": 84,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_membership_orders",
+      "originalRows": 451,
+      "finalRows": 458,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_membership_plans",
+      "originalRows": 9,
+      "finalRows": 9,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_memberships",
+      "originalRows": 230,
+      "finalRows": 235,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_payment_attempts",
+      "originalRows": 315,
+      "finalRows": 321,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_payment_events",
+      "originalRows": 46,
+      "finalRows": 46,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_policy_versions",
+      "originalRows": 4,
+      "finalRows": 4,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_refund_attempts",
+      "originalRows": 32,
+      "finalRows": 33,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_refund_completions",
+      "originalRows": 24,
+      "finalRows": 25,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_refund_notice_deliveries",
+      "originalRows": 99,
+      "finalRows": 99,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_refund_notice_delivery_attempts",
+      "originalRows": 100,
+      "finalRows": 100,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_refund_notices",
+      "originalRows": 136,
+      "finalRows": 139,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_refund_observations",
+      "originalRows": 73,
+      "finalRows": 74,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_refund_policy_acceptances",
+      "originalRows": 264,
+      "finalRows": 271,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_refund_policy_versions",
+      "originalRows": 1,
+      "finalRows": 1,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_refund_requests",
+      "originalRows": 88,
+      "finalRows": 89,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "public.workspace_verified_emails",
+      "originalRows": 74,
+      "finalRows": 81,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "wsd1_clock_682c6438a13747e59257533f1a55773d.workspace_refund_notice_deliveries",
+      "originalRows": 10,
+      "finalRows": 10,
+      "originalRowsPreserved": true
+    },
+    {
+      "table": "wsd1_clock_682c6438a13747e59257533f1a55773d.workspace_refund_notice_delivery_attempts",
+      "originalRows": 19,
+      "finalRows": 19,
+      "originalRowsPreserved": true
+    }
+  ]
+}

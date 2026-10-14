@@ -1,0 +1,13 @@
+{
+  "ownedAppsStopped": true,
+  "ports4058And4068Closed": true,
+  "ownedCopiesRemoved": true,
+  "syntheticSessionSecretAndTokensRemoved": true,
+  "originalOrderProbeFileRemoved": true,
+  "temporaryComponentFixtureRemoved": true,
+  "publicPaymentsEnabled": false,
+  "paymentEnablementFlagsPersisted": false,
+  "migrationApplied": false,
+  "genuineProviderCalls": 0,
+  "productionOperations": 0
+}
