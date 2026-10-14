@@ -1,0 +1,19 @@
+{
+  "scope": "Read-only local impact assessment; no correction applied",
+  "ownerIntent": "365-day access including existing enrollments after impact review",
+  "proposedClock": "enrolled_at + 365 elapsed days, subject to separate policy approval",
+  "currentPublishedAccessDays": null,
+  "impact": {
+    "enrollments": 8,
+    "without_fixed_expiry": 8,
+    "active_access_that_would_expire_now": 0,
+    "different_existing_expiry": 0
+  },
+  "protectedChangesRequired": [
+    "published courses access_days",
+    "explicit treatment of existing enrollments expires_at",
+    "renewal/duplicate/bundle enrollment semantics review",
+    "customer terms and communication review"
+  ],
+  "approval": "F.7B forbids entitlement/DB mutation; separate narrow correction required"
+}

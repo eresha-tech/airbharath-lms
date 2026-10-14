@@ -1,0 +1,135 @@
+{
+  "identity": {
+    "database": "airbharath_lms",
+    "oid": "16384",
+    "system": "7680462735222304705",
+    "port": "5433",
+    "read_only": "on"
+  },
+  "ledgerEntries": 31,
+  "sourceHashesMatch": true,
+  "originalTables": 64,
+  "originalRows": 6872,
+  "publishedCourses": [
+    {
+      "title": "AI Tools & Practical AI Skills Masterclass",
+      "slug": "ai-skills",
+      "price": "825.00",
+      "access_days": null,
+      "is_bundle": false
+    },
+    {
+      "title": "All-in-One Masterclass Combo Pass (All 4 Courses)",
+      "slug": "combo-pack",
+      "price": "3300.00",
+      "access_days": null,
+      "is_bundle": true
+    },
+    {
+      "title": "Digital Marketing & Content Creation Blueprint",
+      "slug": "content-creation",
+      "price": "825.00",
+      "access_days": null,
+      "is_bundle": false
+    },
+    {
+      "title": "Entrepreneurship & Startup Launch Masterclass",
+      "slug": "entrepreneurship",
+      "price": "825.00",
+      "access_days": null,
+      "is_bundle": false
+    },
+    {
+      "title": "MS Office, Excel & Business Productivity Suite",
+      "slug": "ms-office",
+      "price": "825.00",
+      "access_days": null,
+      "is_bundle": false
+    }
+  ],
+  "offer": {
+    "bundleSlug": "combo-pack",
+    "standardRupees": 3300,
+    "offerRupees": 1900,
+    "activeMatchingCoupons": 1,
+    "couponCodePublished": false,
+    "records": [
+      {
+        "discountType": "flat",
+        "discountRupeesOrPercent": 1400,
+        "expiresAt": null,
+        "usageLimit": 10000,
+        "usedCount": 0,
+        "codeMasked": true
+      }
+    ],
+    "restrictions": "Existing special coupon rule is Combo Pass only; expiry and usage limits enforced; no user-bound coupon field in LMS schema"
+  },
+  "settings": [
+    {
+      "version": 9,
+      "config": {
+        "launchAt": "2026-11-08T18:30:00.000Z",
+        "timezone": "Asia/Kolkata",
+        "cooldownDays": 7,
+        "profileRequired": true,
+        "allowedCategories": [
+          "pilot_flight_crew",
+          "cabin_crew",
+          "aircraft_maintenance",
+          "ground_operations",
+          "airport_operations",
+          "aviation_safety",
+          "aviation_security",
+          "flight_operations",
+          "aviation_management",
+          "aviation_hospitality",
+          "aviation_trainer",
+          "aviation_career",
+          "drone_uav",
+          "defence_aviation",
+          "other_aviation"
+        ],
+        "eligibilityValidityDays": 30,
+        "minimumExperienceMonths": 24
+      },
+      "evaluator_version": "workspace-eligibility-v1"
+    }
+  ],
+  "plans": [
+    {
+      "code": "quarterly",
+      "version": 5,
+      "display_name": "Quarterly",
+      "duration_months": 3,
+      "base_price_paise": 499915,
+      "tax_rate_bps": 1800,
+      "currency": "INR",
+      "available": true
+    },
+    {
+      "code": "half_yearly",
+      "version": 2,
+      "display_name": "Half-Yearly",
+      "duration_months": 6,
+      "base_price_paise": 847373,
+      "tax_rate_bps": 1800,
+      "currency": "INR",
+      "available": true
+    },
+    {
+      "code": "yearly",
+      "version": 2,
+      "display_name": "Yearly",
+      "duration_months": 12,
+      "base_price_paise": 1499915,
+      "tax_rate_bps": 1800,
+      "currency": "INR",
+      "available": true
+    }
+  ],
+  "legacyCounts": {
+    "enrollments": 8,
+    "lms_orders": 1
+  }
+}

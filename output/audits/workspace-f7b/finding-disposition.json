@@ -1,0 +1,170 @@
+[
+  {
+    "id": "F7A-01",
+    "priority": "P0",
+    "finding": "Conflicting unqualified LMS bundle price",
+    "status": "RESOLVED",
+    "disposition": "Active coupon verified through real read-only route: standard ₹3,300, discount ₹1,400, eligible total ₹1,900; separate conditional offer label. No coupon algorithm changed."
+  },
+  {
+    "id": "F7A-02",
+    "priority": "P0",
+    "finding": "Lifetime course promise conflicts with 365-day access",
+    "status": "RESOLVED IN UI; POLICY FOLLOW-UP",
+    "disposition": "Removed generic lifetime promise and false 365-day default. All five real published records have access_days=NULL. Show product-specific duration only when persisted; requested 365-day correction including existing enrollments is reviewed but separately scoped."
+  },
+  {
+    "id": "F7A-03",
+    "priority": "P1",
+    "finding": "Homepage has no Workspace product introduction",
+    "status": "RESOLVED",
+    "disposition": "Compact Workspace section follows featured LMS courses; secondary hero Become a Creator links to /workspace."
+  },
+  {
+    "id": "F7A-04",
+    "priority": "P1",
+    "finding": "Workspace navigation disappears at 1024px",
+    "status": "RESOLVED",
+    "disposition": "Accessible menu at 1024 and all widths; Workspace always reachable; full desktop navigation at 1200+."
+  },
+  {
+    "id": "F7A-05",
+    "priority": "P1",
+    "finding": "Narrow header logo and theme hitboxes overlap",
+    "status": "RESOLVED",
+    "disposition": "Readable brand, two mobile utilities and distinct 44px menu/theme targets; no control overlap at 320."
+  },
+  {
+    "id": "F7A-06",
+    "priority": "P1",
+    "finding": "Primary CTA and navigation contrast defects",
+    "status": "RESOLVED",
+    "disposition": "Public scoped contrast tokens; no white-on-white closing sign-in; 34 solid-background normal-text samples >=4.5:1."
+  },
+  {
+    "id": "F7A-07",
+    "priority": "P1",
+    "finding": "Carousel exposes inactive links and keeps rotating during keyboard focus",
+    "status": "RESOLVED",
+    "disposition": "Autoplay/carousel/slides removed. Static course-first hero; no hidden tab targets."
+  },
+  {
+    "id": "F7A-08",
+    "priority": "P1",
+    "finding": "Early Access capability hierarchy is outdated",
+    "status": "RESOLVED",
+    "disposition": "Current profile/proposal/review/private text building leads; planned media/publication/sales and November readiness explicitly separate."
+  },
+  {
+    "id": "F7A-09",
+    "priority": "P1",
+    "finding": "Membership costs and paid-term start are undiscoverable pre-application",
+    "status": "RESOLVED",
+    "disposition": "Server-read current plans render ₹5,899 / ₹9,999 / ₹17,699 incl. 18% GST; pre-launch paid term start 9 November 00:00 IST explained."
+  },
+  {
+    "id": "F7A-10",
+    "priority": "P1",
+    "finding": "Workspace policy names are not links and refund summary is absent",
+    "status": "RESOLVED",
+    "disposition": "Direct Creator Terms/Refund Policy/support links; 72-hour window from verified payment time, not launch date."
+  },
+  {
+    "id": "F7A-11",
+    "priority": "P1",
+    "finding": "Crawler endpoints redirect to login HTML",
+    "status": "RESOLVED",
+    "disposition": "Metadata routes return 200 text/plain and XML; middleware permits only exact crawler paths, private routes remain protected."
+  },
+  {
+    "id": "F7A-12",
+    "priority": "P1",
+    "finding": "Shared Workspace header steers visitors back to LMS purchases",
+    "status": "RESOLVED",
+    "disposition": "Courses-first navigation, explicit LMS Pricing, selected Workspace context and Check Eligibility CTA; no fictitious routes."
+  },
+  {
+    "id": "F7A-13",
+    "priority": "P2",
+    "finding": "Public eligibility explanation omits concrete requirements",
+    "status": "RESOLVED",
+    "disposition": "Read published policy version 9: 24 months, required HTTPS profile, current categories; adult declaration and separate course approval explained. No fallback threshold."
+  },
+  {
+    "id": "F7A-14",
+    "priority": "P2",
+    "finding": "Current private course-building workflow is unclear",
+    "status": "RESOLVED",
+    "disposition": "Account/eligibility/applicable access path/profile/proposal/review/approved private text builder sequence, including paid email/legal steps and scoped complimentary grants."
+  },
+  {
+    "id": "F7A-15",
+    "priority": "P2",
+    "finding": "No Workspace FAQ or complimentary-path explanation",
+    "status": "RESOLVED",
+    "disposition": "Nine factual Creator FAQs plus policy/support links; no unrestricted free-membership offer."
+  },
+  {
+    "id": "F7A-16",
+    "priority": "P2",
+    "finding": "Repeated sections inflate page length",
+    "status": "RESOLVED",
+    "disposition": "Eight sections per page; duplicated trust/features consolidated. Desktop homepage 11,172 → 5,834px; 390px homepage 17,657 → 10,131px."
+  },
+  {
+    "id": "F7A-17",
+    "priority": "P2",
+    "finding": "Credibility claims need owner evidence",
+    "status": "MITIGATED; OWNER REVIEW",
+    "disposition": "Unsubstantiated faculty/heritage/outcome text removed from refreshed page/shell copy. Neutral factual descriptions used. Existing artwork may contain legacy embedded promotional claims; owner proof or approved replacement remains required before release."
+  },
+  {
+    "id": "F7A-18",
+    "priority": "P2",
+    "finding": "Visual asset provenance is undocumented",
+    "status": "OWNER REVIEW OPEN",
+    "disposition": "Existing imagery/logo reused under approved design scope; no claim of licensing confirmation, no new bitmap assets. Artwork rights/provenance require owner confirmation."
+  },
+  {
+    "id": "F7A-19",
+    "priority": "P2",
+    "finding": "Resource and server/client boundaries merit measured optimization",
+    "status": "IMPLEMENTED; DELIVERY LIMIT",
+    "disposition": "One hero priority asset; responsive next/image dimensions/sizes and lazy card images; bounded six-row public query and small public DTO; no carousel preloads. Native image optimizer delivery is still unverified in this local harness."
+  },
+  {
+    "id": "F7A-20",
+    "priority": "P2",
+    "finding": "Source fallback conflates unavailable data with empty catalog",
+    "status": "RESOLVED",
+    "disposition": "Distinct unavailable vs empty catalog; no fictional fallback amount/course; pending refresh retry and generic public loading skeleton."
+  },
+  {
+    "id": "F7A-21",
+    "priority": "P2",
+    "finding": "Canonical/social metadata is absent",
+    "status": "RESOLVED",
+    "disposition": "Route-specific canonical/Open Graph/Twitter metadata; public sitemap. Origin based on existing invoice/certificate project links; live production configuration not inspected."
+  },
+  {
+    "id": "F7A-22",
+    "priority": "P2",
+    "finding": "Semantics and explicit search labeling need refinement",
+    "status": "RESOLVED",
+    "disposition": "Global skip-to-main, explicit search label, coherent headings and accessible native details; modal focus trap/restoration and readable touch targets."
+  },
+  {
+    "id": "F7A-23",
+    "priority": "P3",
+    "finding": "AirBharath naming varies",
+    "status": "RESOLVED ON REFRESHED SURFACES",
+    "disposition": "AirBharath brand spelling consistent; legal names, original course titles and historical evidence preserved."
+  },
+  {
+    "id": "F7A-24",
+    "priority": "P3",
+    "finding": "Decoration and passive hover treatments compete with content",
+    "status": "RESOLVED",
+    "disposition": "Restrained editorial composition, scoped color and static visuals; no decorative autoplay, fake interactive cards or new animation dependencies."
+  }
+]

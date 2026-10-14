@@ -1,0 +1,7 @@
+{
+  "route": "/api/workspace/profile-details",
+  "anonymousStatus": 401,
+  "cacheControl": "no-store",
+  "privateContentServed": false,
+  "mutation": false
+}
