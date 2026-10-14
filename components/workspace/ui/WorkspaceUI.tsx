@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
+import { FULL_WORKSPACE_LAUNCH } from '@/lib/workspace/launch-copy';
 
-export const FULL_WORKSPACE_LAUNCH = 'Full AirBharath Workspace launches 9 November 2026.';
+export { FULL_WORKSPACE_LAUNCH } from '@/lib/workspace/launch-copy';
 export const EARLY_ACCESS_PREPARATION = 'Early Access lets you create your profile, prepare course proposals and build approved private courses before the full release.';
 export function WorkspaceLaunchNotice({ compact = false }: { compact?: boolean }) {
   return <section aria-label="Full Workspace launch" className="rounded-xl border border-border bg-muted/30 p-4"><h2 className="font-outfit text-base font-semibold">{FULL_WORKSPACE_LAUNCH}</h2>{!compact && <><p className="mt-2 text-sm leading-6 text-muted-foreground">{EARLY_ACCESS_PREPARATION}</p><p className="mt-2 text-xs leading-6 text-muted-foreground">Media uploads, publication and course selling are planned for the full release. These features are not available during Early Access.</p></>}</section>;

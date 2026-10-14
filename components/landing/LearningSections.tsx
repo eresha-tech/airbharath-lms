@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import { PublicAction, PublicFAQ, PublicHeading } from '@/components/public/PublicUI';
+import { FULL_WORKSPACE_LAUNCH } from '@/lib/workspace/launch-copy';
 export function WorkspaceIntroduction() {
     return <section className="public-section public-tinted">
     <div className="public-container public-workspace-intro">
     <div>
     <PublicHeading eyebrow="AirBharath Workspace" title="Have aviation expertise to share?">Prepare your own courses—from building a Creator Profile and submitting proposals to developing approved private text lessons.</PublicHeading>
     <PublicAction secondary href="/workspace">Explore Creator Workspace</PublicAction>
-    <p className="public-hero-note">Full Workspace targeted for 9 November 2026, subject to readiness. Publication and selling are not available during Early Access.</p>
+    <p className="public-hero-note">{FULL_WORKSPACE_LAUNCH} Publication and selling are not available during Early Access.</p>
     </div>
     <div className="public-course-outline">
     <p className="public-eyebrow">Shaped by your experience</p>

@@ -50,7 +50,7 @@ it('describes release targets without announcing open payments or current upload
     expect(source).toContain('publication and course sales');
   }
   const landing = renderToStaticMarkup(React.createElement(WorkspaceLanding));
-  expect(landing).toContain('Full Workspace targeted for 9 November 2026, subject to readiness.');
+  expect(landing).toContain('Full AirBharath Workspace is targeted for 9 November 2026, subject to release readiness.');
   expect(landing).toContain('Workspace payments are awaiting launch verification');
   const member = readFileSync('app/(workspace)/workspace/(membership)/member/page.tsx', 'utf8');
   expect(member).toContain("['Original payment amount', formatPaise(row.order.totalPaise)]");

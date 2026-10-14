@@ -4,7 +4,7 @@ import { PublicFAQ, PublicHeading } from '@/components/public/PublicUI';
 import { WorkspaceEntryLink, WorkspacePageView } from './WorkspacePublicEntry';
 import type { PublicWorkspaceInfo } from '@/lib/public/workspace';
 import { rupees } from '@/lib/public/catalog-model';
-const FULL_WORKSPACE_LAUNCH = 'Full Workspace targeted for 9 November 2026, subject to readiness.';
+import { FULL_WORKSPACE_LAUNCH } from '@/lib/workspace/launch-copy';
 export function WorkspaceLanding({ info = { eligibility: null, plans: null } }: {
     info?: PublicWorkspaceInfo;
 }) {
@@ -145,7 +145,7 @@ export function WorkspaceLanding({ info = { eligibility: null, plans: null } }: 
             ['Are my courses public during Early Access?', 'No. Profiles, proposals and approved text course content are prepared privately. Upload, publish and sell controls are not active during Early Access.'],
             ['What does Creator membership cost?', 'The current published 3-, 6- and 12-month plans are shown above, inclusive of GST. LMS purchases and LMS coupons are separate. Public Workspace payments are awaiting launch verification.'],
             ['When does the paid term begin?', 'Pre-launch confirmed paid memberships start their paid term on 9 November 2026 at 00:00 IST, while authorized Early Access supports preparation before that date.'],
-            ['What is planned for November?', 'The full release is targeted for 9 November 2026, subject to readiness. Media uploads, final course review, publication and selling remain future features until separately released.'],
+            ['What is planned for November?', `${FULL_WORKSPACE_LAUNCH} Media uploads, final course review, publication and selling remain future features until separately released.`],
             ['Can I request a refund?', 'The applicable request window is 72 elapsed hours from authoritative verified payment time. Read the Workspace Refund Policy for eligibility, exclusions and the request process.'],
             ['Can I receive complimentary access?', 'Only an authorized Admin can issue a scoped, time-limited complimentary access grant under existing eligibility and Creator Terms requirements. Grants are not unrestricted free membership and cannot be self-issued.'],
             ['How do I get support?', 'Use Contact & Support or the existing support details in the footer. You may also submit the separate manual application for team review; it does not bypass eligibility or access rules.'],

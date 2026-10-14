@@ -43,7 +43,7 @@ export function CourseCard({ course, progress, href }: CourseCardProps) {
   const gstAmount = Math.round((rawPrice - basePrice) * 100) / 100;
 
   const thumbnailUrl = course.thumbnailUrl || course.thumbnail_url;
-  const accessDays = course.accessDays ?? course.access_days;
+  const accessDays = course.accessDays !== undefined ? course.accessDays : course.access_days;
   const categoryBadge =
     course.badge || course.category?.name || "Certificate Program";
 
@@ -79,7 +79,7 @@ export function CourseCard({ course, progress, href }: CourseCardProps) {
               </span>
             ) : (
               <span className="bg-primary/90 text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-md shadow-xs">
-                Lifetime Access
+                {accessDays === null ? "No fixed expiry" : "See course details"}
               </span>
             )}
           </div>

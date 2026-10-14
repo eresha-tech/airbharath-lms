@@ -1266,7 +1266,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                 <div className="flex justify-between items-center pt-2">
                   <span className="text-muted-foreground">Access Validity</span>
                   <span className="font-semibold text-foreground">
-                    {course.accessDays ? `${course.accessDays} Days` : "Lifetime Access"}
+                    {course.accessDays ? `${course.accessDays} Days` : "No fixed expiry"}
                   </span>
                 </div>
               </div>

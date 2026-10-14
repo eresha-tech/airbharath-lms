@@ -33,7 +33,7 @@ it('load error exposes an actionable retry without inventing an empty financial 
 });
 it('launch notice separates Early Access preparation from planned publication and selling', () => {
   const result = html(createElement(WorkspaceLaunchNotice));
-  expect(result).toContain('Full AirBharath Workspace launches 9 November 2026.'); expect(result).toContain('not available during Early Access');
+  expect(result).toContain('Full AirBharath Workspace is targeted for 9 November 2026, subject to release readiness.'); expect(result).toContain('not available during Early Access');
 });
 it('saved legal history does not pre-check or auto-acknowledge current purchase consent', () => {
   const accepted = vi.fn();

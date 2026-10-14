@@ -5,6 +5,7 @@ import { StudentLayoutWrapper } from "@/components/dashboard/StudentLayoutWrappe
 export const metadata: Metadata = {
   title: "Dashboard | AirBharath LMS",
   description: "Your aviation & technical learning dashboard",
+  robots: { index: false, follow: false },
 };
 
 export default function DashboardLayout({

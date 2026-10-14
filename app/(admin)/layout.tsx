@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "AirBharath Admin Portal",
   description: "AirBharath LMS management, curriculum, and metrics dashboard.",
+  robots: { index: false, follow: false },
 };
 
 export default async function AdminLayout({
