@@ -2,11 +2,33 @@
 
 **F.9C.1 LOCAL UAT PREPARED. Full E2E and founder acceptance remain pending.**
 
+## Owner-authorized continuation — current UAT command
+
+The owner subsequently authorized Razorpay Test checkout/refunds and Mailercloud delivery to owned test inboxes, confirmed the verified sender, and requested skipping Redis. The OTP failure was caused by restarting with plain `pnpm dev`, which correctly leaves the default-off mock disabled.
+
+Use **`pnpm dev:uat --providers`** for the authorized full local Test-provider setup. It is currently running on port 3000. Stop the existing server before starting this command; do not run a second app on another port. **`pnpm dev:uat`** without the argument enables only local demo phone OTP and eligibility; genuine payment/email providers remain off. Plain `pnpm dev` keeps its existing defaults.
+
+The launcher loads existing ignored configuration without printing it, reuses F.9A parsing, verifies the actual local database identity with an explicitly read-only connection, and refuses production/staging/deployed/remote or mismatched targets. Provider mode requires safe Workspace Test credentials and verified sender configuration. Missing `WORKSPACE_EMAIL_OTP_SECRET` and `CRON_SECRET` are generated only in process memory; they are not written into `.env`. Restart invalidates outstanding challenges created with the previous temporary email secret: request a fresh code. Authorization flags remain process-only.
+
+Redis stays disabled. The new `WORKSPACE_LOCAL_UAT_ELIGIBILITY_LIMITER_ENABLED` flag selects a bounded process-local limiter only with the existing local OTP gates, loopback request, matching live DB identity and one of the three persisted demo students. It retains the exact 20/user/15-minute and 5,000/global/hour policy, including Retry-After; unknown users, Admin, tunnel requests and misplaced flags fail closed without a Redis fallback. It defaults off. Production Redis logic is unchanged; process restarts reset local counters, so this is local UAT evidence, not distributed abuse-protection verification.
+
+The provider command starts a separate **local UAT worker**, every 15 seconds, with one connection and three-item bounded selections. It selects only the three demo students' matching Razorpay Test-account orders/events/notices. It calls the existing payment event processor, reconciler, fulfillment and refund notice services. It never injects paidAt, inserts memberships/profiles manually, runs the unrestricted historical worker batch or issues grants. Normal verified capture time, legal/email, payment and access checks remain authoritative. Other retained users/orders/events are outside its selectors. Genuine refund execution remains the normal Admin workflow; exceptional prepared-refund recovery is still an operator task, not an automatic replacement payment/refund.
+
+The owner's first tunnel URL returned HTTP 530. The replacement temporary endpoint reached this local app and rejected an invalid HMAC with **403 / signature**, without storing an event. No tunnel was created or changed by the agent, and no random tunnel URL is committed. Genuine Razorpay event delivery and capture/activation are not yet proven. Keep all five Workspace Test events enabled: payment.captured, payment.failed, order.paid, refund.created, refund.processed.
+
+**Founder sequence now:** use Creator 1 or 2 → request local phone OTP → enter 1234 → submit the normal eligibility form → enter an owned inbox and confirm its genuine six-digit code → independently accept both agreements → choose plan/coupon → complete Razorpay Test Checkout → allow the scoped worker to process the genuine webhook and normal fulfillment → inspect `/workspace/dashboard`. Keep the tunnel running. Student is intended for the ineligible/denial scenario; account labels do not hardcode eligibility. No agreements or eligibility decisions were fabricated during setup.
+
+Continuation verification: 114 focused Vitest tests (38 local/eligibility/OTP and 76 financial worker, fulfillment and notice-delivery regressions) and nine subprocess startup-guard tests passed; TypeScript and changed-file lint passed. Real read-only PostgreSQL proof allowed 20 requests and limited the 21st for each demo, and denied Admin/tunnel requests with zero writes or HTTP calls. Repeat authenticated local route smoke passed. The worker booted successfully with no pending demo orders; genuine payment, refund and notice outcomes await the founder. No full audit/build was repeated. No migration, production access, dependency/lockfile change, public Live charging or `.env` edit occurred.
+
+Continuation changed files: `app/api/workspace/eligibility/route.ts`, `lib/workspace/eligibility/limiter.ts`, new `lib/local-uat-eligibility-limit.ts`, the `dev:uat` script in `package.json`, new `scripts/workspace-local-uat.mjs`, new `scripts/workspace-local-uat-worker.cjs`, new `tests/routes/local-uat-eligibility-limit.test.ts`, new `tests/workspace-local-uat-startup.test.mjs`, and this guide. The original preparation evidence below is historical; its Redis-blocked/provider-off state is superseded only for this explicitly authorized local command.
+
+**Stop:** Ctrl+C stops the app and local worker. Disable the temporary Test webhook before stopping the tunnel. Restart plain development or provider-disabled UAT to remove Test-provider authorization. Do not delete completed immutable development history. Founder acceptance and production migration/deployment remain separate gates.
+
 Starting branch: `codex/workspace-1.8-launch`; HEAD: `248c63c`. This phase prepares the existing Phase 1.8 application. It does not authorize external transactions, production access, migration or deployment.
 
 ## Local environment and processes
 
-The owner authorized restarting this repository's dev server. One payment-disabled app is running on port 3000 with the phone mock enabled. Open [local UAT login](http://localhost:3000/login?callbackUrl=%2Fworkspace%2Fapply). Use the same hostname throughout the journey so session cookies remain consistent.
+The initial preparation used a payment-disabled app on port 3000 with the phone mock enabled. Open [local UAT login](http://localhost:3000/login?callbackUrl=%2Fworkspace%2Fapply). Use the same hostname throughout the journey so session cookies remain consistent. Current continuation startup is documented above.
 
 Use the existing secure, ignored local database configuration. Read-only inspection verified database `airbharath_lms`, port 5433, OID `16384`, system identifier `7680462735222304705`, and 31 ledger entries through `0030`; every ledger hash/timestamp matches the migration source and journal. No migration command was run.
 

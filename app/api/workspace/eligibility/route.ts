@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     // Only an owned, complete matching saved submission bypasses the new-write limiter.
     const prior = await recoverSubmission(user.id, validated.data);
     if (prior) return privateJson({ attempt: eligibilityReceipt(prior), created: false });
-    const limit = await consumeEligibilityLimit(user.id);
+    const limit = await consumeEligibilityLimit(user.id, request);
     if (limit.status === 'unavailable') return privateJson({ error: 'Eligibility is temporarily unavailable. Your answers are still here.' }, 503);
     if (limit.status === 'limited') return new Response(JSON.stringify({ error: 'Too many requests. Please try again later.' }), { status: 429, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Retry-After': String(limit.retryAfter) } });
     const result = await submitEligibility(user.id, validated.data);

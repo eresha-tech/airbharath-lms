@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:uat": "node scripts/workspace-local-uat.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

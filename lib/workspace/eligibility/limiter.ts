@@ -11,7 +11,12 @@ if u > tonumber(ARGV[1]) or g > tonumber(ARGV[3]) then
  return {0, math.max(1, redis.call('TTL', KEYS[1]), redis.call('TTL', KEYS[2]))}
 end
 return {1, 0}`;
-export async function consumeEligibilityLimit(userId: string): Promise<EligibilityLimit> {
+export async function consumeEligibilityLimit(userId: string, request?: Request): Promise<EligibilityLimit> {
+  const localFlag = process.env.WORKSPACE_LOCAL_UAT_ELIGIBILITY_LIMITER_ENABLED;
+  if (localFlag !== undefined && localFlag !== 'false') {
+    const { consumeLocalUatEligibilityLimit } = await import('@/lib/local-uat-eligibility-limit');
+    return consumeLocalUatEligibilityLimit(userId, LIMIT_POLICY, request);
+  }
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   const secret = process.env.JWT_SECRET;
