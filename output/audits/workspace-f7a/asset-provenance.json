@@ -1,0 +1,15 @@
+{
+  "existing_public_assets": [
+    "https://assets.airbharath.in/eresha-logo.webp",
+    "https://assets.airbharath.in/lms/combo.webp",
+    "https://assets.airbharath.in/lms/ai-skills.webp",
+    "https://assets.airbharath.in/lms/content-creation.webp",
+    "https://assets.airbharath.in/lms/entrepreneurship.webp",
+    "https://assets.airbharath.in/lms/ms-office.webp",
+    "existing certificate example and local favicon/icon assets"
+  ],
+  "rights": "No repository provenance/license trail located for brand/course/certificate artwork; owner confirmation required before reuse. Existing use is not proof of ownership.",
+  "icons": "Installed lucide-react LICENSE is ISC; preserve applicable notices.",
+  "fonts": "Existing Inter/Outfit/Plus Jakarta Sans; cached original Latin font bytes used only for local rendering.",
+  "new_assets": "None generated, installed, replaced or copied as standalone repository assets. Screenshots document current UI only."
+}

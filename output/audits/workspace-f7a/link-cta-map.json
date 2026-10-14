@@ -1,0 +1,277 @@
+{
+  "browser_checked_destinations": [
+    {
+      "href": "/",
+      "httpStatus": 200,
+      "destination": "/",
+      "h1": [
+        "Practical, Future-Ready Skills with AirBharath LMS"
+      ],
+      "scriptRazorpayCount": 0,
+      "formSubmitted": false
+    },
+    {
+      "href": "/workspace",
+      "httpStatus": 200,
+      "destination": "/workspace",
+      "h1": [
+        "Built for aviation professionals who have something worth teaching."
+      ],
+      "scriptRazorpayCount": 0,
+      "formSubmitted": false
+    },
+    {
+      "href": "/courses",
+      "httpStatus": 200,
+      "destination": "/courses",
+      "h1": [
+        "Explore All Certificate Courses"
+      ],
+      "scriptRazorpayCount": 0,
+      "formSubmitted": false
+    },
+    {
+      "href": "/pricing",
+      "httpStatus": 200,
+      "destination": "/pricing",
+      "h1": [
+        "Simple, Transparent Tuition."
+      ],
+      "scriptRazorpayCount": 0,
+      "formSubmitted": false
+    },
+    {
+      "href": "/faq",
+      "httpStatus": 200,
+      "destination": "/faq",
+      "h1": [
+        "Frequently Asked Questions."
+      ],
+      "scriptRazorpayCount": 0,
+      "formSubmitted": false
+    },
+    {
+      "href": "/about",
+      "httpStatus": 200,
+      "destination": "/about",
+      "h1": [
+        "Learning & Professional Excellence."
+      ],
+      "scriptRazorpayCount": 0,
+      "formSubmitted": false
+    },
+    {
+      "href": "/contact",
+      "httpStatus": 200,
+      "destination": "/contact",
+      "h1": [
+        "Let's Talk."
+      ],
+      "scriptRazorpayCount": 0,
+      "formSubmitted": false
+    },
+    {
+      "href": "/login",
+      "httpStatus": 200,
+      "destination": "/login",
+      "h1": [
+        "Learn, Certify & Elevate Your Career."
+      ],
+      "scriptRazorpayCount": 0,
+      "formSubmitted": false
+    },
+    {
+      "href": "/practice",
+      "httpStatus": 200,
+      "destination": "/practice",
+      "h1": [
+        "Practice what you learn. Build skills by doing, not just watching."
+      ],
+      "scriptRazorpayCount": 0,
+      "formSubmitted": false
+    },
+    {
+      "href": "/courses/combo-pack",
+      "httpStatus": 200,
+      "destination": "/courses/combo-pack",
+      "h1": [
+        "All-in-One Masterclass Combo Pass (All 4 Courses)"
+      ],
+      "scriptRazorpayCount": 1,
+      "formSubmitted": false
+    },
+    {
+      "href": "/courses/ai-skills",
+      "httpStatus": 200,
+      "destination": "/courses/ai-skills",
+      "h1": [
+        "AI Tools & Practical AI Skills Masterclass"
+      ],
+      "scriptRazorpayCount": 1,
+      "formSubmitted": false
+    },
+    {
+      "href": "/courses/content-creation",
+      "httpStatus": 200,
+      "destination": "/courses/content-creation",
+      "h1": [
+        "Digital Marketing & Content Creation Blueprint"
+      ],
+      "scriptRazorpayCount": 1,
+      "formSubmitted": false
+    },
+    {
+      "href": "/courses/entrepreneurship",
+      "httpStatus": 200,
+      "destination": "/courses/entrepreneurship",
+      "h1": [
+        "Entrepreneurship & Startup Launch Masterclass"
+      ],
+      "scriptRazorpayCount": 1,
+      "formSubmitted": false
+    },
+    {
+      "href": "/courses/ms-office",
+      "httpStatus": 200,
+      "destination": "/courses/ms-office",
+      "h1": [
+        "MS Office, Excel & Business Productivity Suite"
+      ],
+      "scriptRazorpayCount": 1,
+      "formSubmitted": false
+    },
+    {
+      "href": "/verify-certificate",
+      "httpStatus": 200,
+      "destination": "/verify-certificate",
+      "h1": [
+        "Verify AirBharath LMS Certificate"
+      ],
+      "scriptRazorpayCount": 0,
+      "formSubmitted": false
+    },
+    {
+      "href": "/dashboard",
+      "httpStatus": 200,
+      "destination": "/login",
+      "h1": [
+        "Learn, Certify & Elevate Your Career."
+      ],
+      "scriptRazorpayCount": 0,
+      "formSubmitted": false
+    },
+    {
+      "href": "/privacy",
+      "httpStatus": 200,
+      "destination": "/privacy",
+      "h1": [
+        "Privacy Policy"
+      ],
+      "scriptRazorpayCount": 0,
+      "formSubmitted": false
+    },
+    {
+      "href": "/terms",
+      "httpStatus": 200,
+      "destination": "/terms",
+      "h1": [
+        "Terms & Conditions"
+      ],
+      "scriptRazorpayCount": 0,
+      "formSubmitted": false
+    },
+    {
+      "href": "/workspace/apply",
+      "httpStatus": 200,
+      "destination": "/login?callbackUrl=%2Fworkspace%2Fapply",
+      "h1": [
+        "Learn, Certify & Elevate Your Career."
+      ],
+      "scriptRazorpayCount": 0,
+      "formSubmitted": false
+    },
+    {
+      "href": "/workspace/manual-application",
+      "httpStatus": 200,
+      "destination": "/workspace/manual-application",
+      "h1": [
+        "Manual creator application"
+      ],
+      "scriptRazorpayCount": 0,
+      "formSubmitted": false
+    },
+    {
+      "href": "/robots.txt",
+      "httpStatus": 200,
+      "inspection": "read-only HTTP GET",
+      "path": "/robots.txt",
+      "initialStatus": 307,
+      "location": "/login",
+      "finalUrl": "/login",
+      "finalStatus": 200,
+      "finalContentType": "text/html; charset=utf-8",
+      "note": "Followed 200 is login HTML, not a valid crawler resource"
+    },
+    {
+      "href": "/sitemap.xml",
+      "httpStatus": 200,
+      "inspection": "read-only HTTP GET",
+      "path": "/sitemap.xml",
+      "initialStatus": 307,
+      "location": "/login",
+      "finalUrl": "/login",
+      "finalStatus": 200,
+      "finalContentType": "text/html; charset=utf-8",
+      "note": "Followed 200 is login HTML, not a valid crawler resource"
+    },
+    {
+      "path": "/workspace/creator-terms",
+      "status": 200,
+      "h1": [
+        "AirBharath Workspace Creator Terms"
+      ],
+      "paymentDisabledNotice": 1
+    },
+    {
+      "path": "/workspace/refund-policy",
+      "status": 200,
+      "h1": [
+        "AirBharath Workspace Refund Policy"
+      ],
+      "paymentDisabledNotice": 1
+    }
+  ],
+  "in_page_anchors": [
+    "#courses",
+    "#benefits",
+    "#how-it-works",
+    "#certificate",
+    "#faq",
+    "#how-workspace-works",
+    "#apply"
+  ],
+  "support": "Public mailto shown; no email sent",
+  "anonymous_funnel": [
+    "/",
+    "/workspace",
+    "/workspace/apply",
+    "/login?callbackUrl=%2Fworkspace%2Fapply"
+  ],
+  "source_only_paid_funnel": [
+    "normal phone authentication",
+    "server eligibility",
+    "eligible result",
+    "activation: verified email + current agreements + plan/quote",
+    "payment-disabled gate; independently authorized capture/fulfillment required",
+    "server-side entitlement resolver",
+    "Creator Dashboard"
+  ],
+  "source_only_complimentary_funnel": [
+    "normal authentication",
+    "existing eligibility/current Creator Terms",
+    "persisted Admin access grant",
+    "existing server-side access resolver",
+    "Creator Dashboard"
+  ],
+  "limitations": "No login/OTP/form submission/financial transaction performed; authenticated paths reviewed from source only"
+}

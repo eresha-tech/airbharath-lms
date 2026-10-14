@@ -1,0 +1,226 @@
+{
+  "/": [
+    {
+      "order": 1,
+      "component": "HeroBanner",
+      "heading": "Practical, Future-Ready Skills with AirBharath LMS",
+      "purpose_and_takeaway": "LMS course discovery; understand self-paced technical programs",
+      "cta": "Explore All Courses → /courses; Student Login → /login; carousel → five existing course routes",
+      "layout_mobile": "Centered large heading, five-slide product carousel; vertical stacked cards on mobile",
+      "trust": "Heritage/faculty/credential assertions; repeats later trust content",
+      "conversion_duplicates_missing": "Primary learner conversion; no Creator explanation; price conflict in first slide"
+    },
+    {
+      "order": 2,
+      "component": "TrustStrip",
+      "heading": "Why AirBharath LMS",
+      "purpose_and_takeaway": "Why the learning platform is credible",
+      "cta": "None",
+      "layout_mobile": "Four compact tiles; one-column narrow mobile",
+      "trust": "Faculty, heritage, credentials and self-paced claims repeat sections 1/6/9",
+      "conversion_duplicates_missing": "Supporting trust; specific substantiation is absent"
+    },
+    {
+      "order": 3,
+      "component": "CoursesSection",
+      "heading": "Featured Certificate Programs",
+      "purpose_and_takeaway": "Compare the actual published local course catalog",
+      "cta": "View All Programs → /courses; course details; Explore Combo Pass",
+      "layout_mobile": "Three-column desktop cards, category filters, one-column mobile",
+      "trust": "Visible total incl. GST and 365-day badges are useful",
+      "conversion_duplicates_missing": "Strong learner conversion; no Creator product introduction; conflicts with hardcoded hero"
+    },
+    {
+      "order": 4,
+      "component": "SolutionSection",
+      "heading": "Built for Serious, Self-Paced Skill Building",
+      "purpose_and_takeaway": "Understand platform learning features",
+      "cta": "In-page feature explanation",
+      "layout_mobile": "Six feature cards and structured learning flow, stacked mobile",
+      "trust": "Concrete product capabilities; overlaps sections 5/7/8",
+      "conversion_duplicates_missing": "Reassurance; distinction between LMS capabilities and future Workspace needed"
+    },
+    {
+      "order": 5,
+      "component": "CareerTransitionJourney",
+      "heading": "How Learning on AirBharath Works",
+      "purpose_and_takeaway": "Understand learner onboarding",
+      "cta": "Course browsing CTA → /courses",
+      "layout_mobile": "Three numbered learning steps; mobile vertical sequence",
+      "trust": "Clear self-paced sequence; repeats general learning benefits",
+      "conversion_duplicates_missing": "Useful next-step explanation for students, not Creator onboarding"
+    },
+    {
+      "order": 6,
+      "component": "CertificateShowcase",
+      "heading": "Earn a QR-Verifiable Certificate of Completion",
+      "purpose_and_takeaway": "Understand completion credentials and verification",
+      "cta": "Verify certificate → /verify-certificate",
+      "layout_mobile": "Certificate example with explanatory feature grid; stacks mobile",
+      "trust": "Verifiable certificate demonstration; preserve non-regulatory interpretation",
+      "conversion_duplicates_missing": "Trust support; duplicates QR claims elsewhere; heading level skips"
+    },
+    {
+      "order": 7,
+      "component": "HeadlineSection",
+      "heading": "Built for Professionals, Students & Creators. Learn What’s Next.",
+      "purpose_and_takeaway": "Restate audience and platform benefits",
+      "cta": "Course browsing and Student Sign In",
+      "layout_mobile": "Large headline and benefit cards; stacks mobile",
+      "trust": "Faculty/heritage repeated",
+      "conversion_duplicates_missing": "Substantially duplicates hero/feature/trust sections; “Creators” is not Workspace explanation"
+    },
+    {
+      "order": 8,
+      "component": "TransformationMatrix",
+      "heading": "Upgrade Your Skills. Build Practical Confidence.",
+      "purpose_and_takeaway": "Contrast learning before/after",
+      "cta": "None",
+      "layout_mobile": "Before/after table becomes stacked comparisons",
+      "trust": "Self-paced outcomes; unsupported lifetime-course-access promise conflicts with cards",
+      "conversion_duplicates_missing": "Repeats feature benefits and creates commercial ambiguity"
+    },
+    {
+      "order": 9,
+      "component": "ExpertGuidanceSection",
+      "heading": "Learn From IIM Alumni & Industry Practitioners",
+      "purpose_and_takeaway": "Explain instructor credibility",
+      "cta": "None",
+      "layout_mobile": "Three practitioner pillars and heritage panel; stacks mobile",
+      "trust": "Faculty and 30-year heritage repeated without person-level evidence",
+      "conversion_duplicates_missing": "Useful if consolidated with verified proof; currently repetitive"
+    },
+    {
+      "order": 10,
+      "component": "LandingFAQ",
+      "heading": "Frequently Asked Questions",
+      "purpose_and_takeaway": "Answer learner questions",
+      "cta": "Seven accordions",
+      "layout_mobile": "Single-column readable disclosure controls",
+      "trust": "Answers about pacing, credentials, faculty and bundle",
+      "conversion_duplicates_missing": "Supports learner conversion; no Workspace-specific questions"
+    },
+    {
+      "order": 11,
+      "component": "FinalCTA",
+      "heading": "Build Practical, In-Demand Skills with AirBharath LMS",
+      "purpose_and_takeaway": "Close the learner journey",
+      "cta": "Explore All Courses → /courses; Student Sign In → /login",
+      "layout_mobile": "Purple panel, two buttons; mobile stack",
+      "trust": "Reuses learner promise",
+      "conversion_duplicates_missing": "Strong placement, but light-mode sign-in text is white on white; no Creator path"
+    }
+  ],
+  "/workspace": [
+    {
+      "order": 1,
+      "component": "Hero",
+      "heading": "Built for aviation professionals who have something worth teaching.",
+      "purpose_and_takeaway": "Identify aviation professionals as prospective creators",
+      "cta": "Become a Creator → /workspace/apply; See how → #how-workspace-works",
+      "layout_mobile": "Split text/concept illustration; stacks mobile",
+      "trust": "Aviation expertise, reviewed courses; concept caption distinguishes planned illustration",
+      "conversion_duplicates_missing": "Clear audience; future course-business promise dominates, current Early Access tools not explained"
+    },
+    {
+      "order": 2,
+      "component": "Vision",
+      "heading": "You already have the expertise.You shouldn't have to build the technology too.",
+      "purpose_and_takeaway": "Explain creator/platform responsibilities",
+      "cta": "None",
+      "layout_mobile": "Two responsibility cards and short future qualifier; mobile stack",
+      "trust": "Acknowledges future capabilities",
+      "conversion_duplicates_missing": "Overlaps capabilities and future journey; “today accepting applications” understates implemented preparation tools"
+    },
+    {
+      "order": 3,
+      "component": "Future journey",
+      "heading": "From expertise to your own course business.",
+      "purpose_and_takeaway": "Describe eventual course business",
+      "cta": "In-page anchor destination",
+      "layout_mobile": "Six numbered Create/Price/Review/Publish/Share/Teach & Grow steps",
+      "trust": "Explicit future label; DGCA/government approval disclaimer retained",
+      "conversion_duplicates_missing": "Future funnel is explained before available private proposal/review/build workflow"
+    },
+    {
+      "order": 4,
+      "component": "Capabilities",
+      "heading": "One Workspace for your aviation courses.",
+      "purpose_and_takeaway": "Present planned platform functionality",
+      "cta": "None",
+      "layout_mobile": "Six capability cards plus future AI callout; stacks mobile",
+      "trust": "Planned-capability wording present",
+      "conversion_duplicates_missing": "Overlaps vision/journey; operational vs future information needs stronger hierarchy"
+    },
+    {
+      "order": 5,
+      "component": "Aviation domains",
+      "heading": "Built specifically for aviation expertise.",
+      "purpose_and_takeaway": "Help visitors recognize their expertise",
+      "cta": "None",
+      "layout_mobile": "Twelve compact category chips; stacks mobile",
+      "trust": "Specific aviation domains",
+      "conversion_duplicates_missing": "Good audience recognition; actual eligibility declarations/criteria absent"
+    },
+    {
+      "order": 6,
+      "component": "Founding cohort",
+      "heading": "Become one of the first AirBharath Workspace Creators.",
+      "purpose_and_takeaway": "Describe early cohort benefits",
+      "cta": "Become a Creator → /workspace/apply",
+      "layout_mobile": "Dark split benefit panel; mobile stack",
+      "trust": "No guaranteed learners, sales or revenue; own-audience expectation explicit",
+      "conversion_duplicates_missing": "Useful qualified offer; early tools described as not yet launched"
+    },
+    {
+      "order": 7,
+      "component": "Membership",
+      "heading": "Simple creator membership.",
+      "purpose_and_takeaway": "Explain durations and release schedule",
+      "cta": "None; named plans/legal documents are plain text",
+      "layout_mobile": "Two columns; dates and GST embedded in paragraph; mobile stack",
+      "trust": "No payment to apply; payments awaiting launch verification",
+      "conversion_duplicates_missing": "Section seven contains key commercial information, no amounts/legal links/term-start/refund summary"
+    },
+    {
+      "order": 8,
+      "component": "Eligibility process",
+      "heading": "How creator eligibility works",
+      "purpose_and_takeaway": "Describe account/eligibility/activation sequence",
+      "cta": "None",
+      "layout_mobile": "Five numbered steps; mobile vertical cards",
+      "trust": "Eligibility does not activate access or approve a course",
+      "conversion_duplicates_missing": "Useful safeguard; verified email, agreements, approved private builder and complimentary grant distinctions omitted"
+    },
+    {
+      "order": 9,
+      "component": "Final application CTA",
+      "heading": "Become aCreator.",
+      "purpose_and_takeaway": "Invite normal self-service eligibility or optional manual application",
+      "cta": "Become a Creator → /workspace/apply; manual → /workspace/manual-application; public support mailto",
+      "layout_mobile": "Split CTA/contact card, stacks mobile",
+      "trust": "Normal account, no payment to apply, clear support contact",
+      "conversion_duplicates_missing": "Working conversion; “Become a Creator” can imply immediate access instead of check eligibility"
+    }
+  ],
+  "shared_shell": [
+    {
+      "component": "Header",
+      "source": "components/Header.tsx",
+      "purpose": "Brand, public product discovery, search, account and theme controls",
+      "cta": "Workspace; Explore Courses; Pricing; FAQ; About; Contact; Sign In; Get Started → /courses",
+      "mobile": "Menu works at 768/390/320; 1024 Workspace link/menu absent; 320 logo/theme overlap",
+      "trust": "Existing logo and LMS naming",
+      "conversion": "LMS Get Started/Pricing persist on Workspace; confusing product context"
+    },
+    {
+      "component": "Footer",
+      "source": "components/Footer.tsx",
+      "purpose": "Product/support/legal exits",
+      "cta": "Founding Creators → /workspace; generic privacy/terms; support contact",
+      "mobile": "Stacked groups, no document overflow",
+      "trust": "Public business support and address, no customer data",
+      "conversion": "Workspace legal destinations not linked; site exit paths remain functional"
+    }
+  ]
+}
