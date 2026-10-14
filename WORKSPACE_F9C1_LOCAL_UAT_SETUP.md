@@ -4,6 +4,14 @@
 
 ## Owner-authorized continuation — current UAT command
 
+### Refund access verification status
+
+Creator 1's Test refund request is saved and timely, but its current decision remains `requested`: no execution intent or immutable completion exists, and the account has no active complimentary grant. A request or approval alone must not revoke access. The Admin's default Live filter excludes this case; use `/admin/workspace-refunds?mode=test` for its normal review workflow.
+
+Read-only inspection of a separate existing, clearly tagged synthetic Test fixture with a completed refund, using the actual persisted access repository/resolver, returned `state=refunded`, `hasPaidEntitlement=false`, `hasCreatorAccess=false`, `canEditWorkspace=false`, and `canViewCreatorWorkspace=true`. This confirms paid editing removal and intended historical read retention; it is not evidence of a genuine completed refund for the founder's fresh payment. An independently active Admin grant remains a separate legitimate editing entitlement and is not silently revoked by refunding an order.
+
+All 196 focused tests passed across refund reconciliation/routes, Creator model/service, builder service and membership activation. They cover confirmed full refund versus pending/partial/uncertain states and server-enforced editing restrictions. No new refund was executed, no membership/profile/history was altered, and no production/provider operation was initiated by this verification. The fresh founder payment still requires normal Admin approval/execution, confirmed provider completion, then authenticated HTTP/UI write-denial checks before its end-to-end refund revocation can be marked verified. Only this report changed during the check.
+
 ### Paid activation UX correction
 
 The founder completed a genuine Quarterly Test payment for Creator 1. Read-only inspection confirmed processed `payment.captured` and `order.paid` events, one winning payment using `razorpay_payment_captured_event_v1`, and one fulfilled membership. Persisted paidAt is `2026-10-14T18:54:41.000Z`; refund deadline is `2026-10-17T18:54:41.000Z`, exactly 259,200,000 ms later. The original accepted total is 530,909 paise. Membership runs from `2026-11-08T18:30:00.000Z` to `2027-02-08T18:30:00.000Z` (9 November to 9 February at midnight IST). The authenticated journey reports both Creator access and paid entitlement; the real HTTP dashboard response returns Early Access content with the role still student. No payment/evidence/membership row was manually altered.
