@@ -37,7 +37,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "Practice Lab (Preview) · AirBharath LMS",
+  title: "Practice Lab (Preview) · AirBharath",
   description:
     "Practice what you learn. Build skills by doing, not just watching. Experience interactive practice, AI roleplays, real-world case challenges, and instant skill checks.",
 };

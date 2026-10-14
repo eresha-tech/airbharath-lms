@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { PublicBrand } from './public/PublicUI';
 import './public/public.css';
 const groups = [
-    ['Learn', [['/courses', 'All Courses'], ['/courses/combo-pack', 'All-in-One Combo Pass'], ['/courses/ai-skills', 'AI Skills'], ['/courses/content-creation', 'Digital Marketing & Content'], ['/courses/entrepreneurship', 'Entrepreneurship'], ['/courses/ms-office', 'MS Office & Productivity'], ['/practice', 'Practice Lab'], ['/verify-certificate', 'Certificate Verification'], ['/dashboard/courses', 'My Learning'], ['/pricing', 'LMS Pricing']]],
+    ['Learn', [['/courses', 'All Courses'], ['/courses/combo-pack', 'All-in-One Combo Pass'], ['/courses/ai-skills', 'AI Skills'], ['/courses/content-creation', 'Digital Marketing & Content'], ['/courses/entrepreneurship', 'Entrepreneurship'], ['/courses/ms-office', 'MS Office & Productivity'], ['/practice', 'Practice Lab'], ['/verify-certificate', 'Certificate Verification'], ['/dashboard/courses', 'My Learning'], ['/pricing', 'Course Pricing']]],
     ['Create', [['/workspace', 'AirBharath Workspace'], ['/workspace/apply', 'Check Eligibility'], ['/workspace/manual-application', 'Manual Application'], ['/workspace/creator-terms', 'Creator Terms'], ['/workspace/refund-policy', 'Workspace Refund Policy']]],
     ['Company & Support', [['/', 'Home'], ['/about', 'About AirBharath'], ['/contact', 'Contact & Support'], ['/faq', 'Learner FAQ'], ['/privacy', 'Privacy Policy'], ['/terms', 'Terms & Conditions'], ['/login', 'Sign In / Register']]],
 ] as const;
@@ -17,16 +17,16 @@ export function Footer() {
     <a href="mailto:academy@airbharath.in">academy@airbharath.in</a>
     </address>
     </div>
-      {groups.map(([heading, links]) => <nav key={heading} aria-label={heading}>
+      <div className="public-footer-links">{groups.map(([heading, links]) => <nav key={heading} aria-label={heading}>
         <h2>{heading}</h2>
         <ul>{links.map(([href, label]) => <li key={href}>
             <Link href={href}>{label}</Link>
             </li>)}</ul>
-        </nav>)}
+        </nav>)}</div>
     </div>
     <div className="public-footer-bottom">
     <p>© {new Date().getFullYear()} Eresha Technology Innovators Pvt. Ltd.</p>
-    <p>AirBharath LMS · AirBharath Workspace</p>
+    <p>AirBharath · AirBharath Workspace</p>
     </div>
   </div>
     </footer>;

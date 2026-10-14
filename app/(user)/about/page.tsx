@@ -15,9 +15,9 @@ import {
 import { Button } from "@/components/ui/button";
 
 export const metadata = {
-  title: "About Us | AirBharath LMS",
+  title: "About Us | AirBharath",
   description:
-    "Learn about AirBharath LMS, our mission, IIM alumni instructors, and 30+ years of aviation and technical learning heritage.",
+    "Learn about AirBharath, our mission, IIM alumni instructors, and 30+ years of aviation and technical learning heritage.",
 };
 
 export default function AboutPage() {
@@ -98,7 +98,7 @@ export default function AboutPage() {
         <div className="container mx-auto px-4 max-w-5xl space-y-6 text-center animate-fade-up">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/15 border border-primary/25 text-primary text-xs font-bold uppercase tracking-wider">
             <GraduationCap className="h-4 w-4" />
-            <span>About AirBharath LMS</span>
+            <span>About AirBharath</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold font-outfit tracking-tight leading-tight text-foreground">
@@ -106,7 +106,7 @@ export default function AboutPage() {
           </h1>
 
           <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            AirBharath LMS is a specialized professional learning platform built on more than 30 years of experience across aviation, education, and technology. We empower professionals, students, and aviation crew to build high-demand skills without putting their current careers on hold.
+            AirBharath is a specialized professional learning platform built on more than 30 years of experience across aviation, education, and technology. We empower professionals, students, and aviation crew to build high-demand skills without putting their current careers on hold.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2 text-xs font-semibold">
@@ -139,7 +139,7 @@ export default function AboutPage() {
               Bridging the gap between academic theory and real-world workplace execution.
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              Most online courses stop at passive video lectures. AirBharath LMS is designed for outcomes: structured modules, practical projects, hands-on tool mastery, and official certificates that stand up to employer scrutiny.
+              Most online courses stop at passive video lectures. AirBharath is designed for outcomes: structured modules, practical projects, hands-on tool mastery, and official certificates that stand up to employer scrutiny.
             </p>
           </div>
         </div>
@@ -240,7 +240,7 @@ export default function AboutPage() {
               30+ Years of Aviation &amp; Technology Heritage
             </h3>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              AirBharath LMS is developed by Eresha Technology Innovators Pvt. Ltd., bringing decades of aviation operational discipline, technological rigor, and academic pedigree to modern online education.
+              AirBharath is developed by Eresha Technology Innovators Pvt. Ltd., bringing decades of aviation operational discipline, technological rigor, and academic pedigree to modern online education.
             </p>
           </div>
 

@@ -78,7 +78,7 @@ export default async function VerifyCertificatePage({ params }: VerifyPageProps)
                       AirBharath LMS Official Credential
                     </h1>
                     <p className="text-xs sm:text-sm text-primary-foreground/80 max-w-md mx-auto">
-                      This official certificate record is authentic, valid, and cryptographically registered in the AirBharath LMS registry.
+                      This official certificate record is authentic, valid, and cryptographically registered in the AirBharath registry.
                     </p>
                   </div>
                 </div>
@@ -185,7 +185,7 @@ export default async function VerifyCertificatePage({ params }: VerifyPageProps)
                   <Link href="/verify-certificate">Search Again</Link>
                 </Button>
                 <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold">
-                  <Link href="/">Back to AirBharath LMS</Link>
+                  <Link href="/">Back to AirBharath</Link>
                 </Button>
               </div>
             </div>

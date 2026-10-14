@@ -19,10 +19,10 @@ export function PublicCourseCard({ course }: {
     <Link href={href}>{course.title}</Link>
     </h3>{course.description && <p className="public-course-description">{course.description}</p>}
     <div className="public-course-bottom">
-    <p className="public-price">{rupees(course.price)}</p>
-    <p className="public-price-caption">Standard total · inclusive of 18% GST</p>{course.offerPrice !== null && <div className="public-offer">
+    <p className="public-price">{course.offerPrice !== null ? <><del>{rupees(course.price)}</del><strong>{rupees(course.offerPrice)}</strong></> : rupees(course.price)}</p>
+    <p className="public-price-caption">Inclusive of 18% GST</p>{course.offerPrice !== null && <div className="public-offer">
         <strong>{rupees(course.offerPrice)} with an eligible coupon</strong>
-        <p>Combo Pass offer. Coupon validity and usage limits apply. Review the current offer on the course page.</p>
+        <p>Save {rupees(Number(course.price) - course.offerPrice)} only with an eligible coupon. Coupon validity and usage limits apply; checkout confirms eligibility.</p>
         </div>}<Link href={href} className="public-text-link">Explore Course<span className="sr-only">: {course.title}</span> →</Link>
     </div>
   </div>

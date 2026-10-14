@@ -9,7 +9,7 @@ import { PublicBrand } from './public/PublicUI';
 import { Sheet, SheetTrigger, SheetContent, SheetTitle, SheetDescription } from './ui/sheet';
 import { getClientUser, type ClientUser } from '@/lib/user-session-client';
 import './public/public.css';
-const desktopLinks = [['/courses', 'Courses'], ['/workspace', 'Workspace'], ['/pricing', 'LMS Pricing'], ['/about', 'About'], ['/contact', 'Support']] as const;
+const desktopLinks = [['/courses', 'Courses'], ['/workspace', 'Workspace'], ['/pricing', 'Course Pricing'], ['/about', 'About'], ['/contact', 'Support']] as const;
 const extraLinks = [['/practice', 'Practice Lab'], ['/#benefits', 'Learning features'], ['/#how-it-works', 'How learning works'], ['/#certificate', 'Certificate verification'], ['/faq', 'Learner FAQ']] as const;
 export default function Header() {
     const pathname = usePathname();
@@ -29,7 +29,7 @@ export default function Header() {
     }, []);
     const active = (href: string) => href === '/workspace' ? workspace : pathname === href || (href === '/courses' && pathname.startsWith('/courses/'));
     const accountHref = user?.role === 'admin' ? '/admin' : user ? '/dashboard' : '/login';
-    const accountLabel = user?.role === 'admin' ? 'Admin Portal' : user ? 'My Account' : 'Sign In';
+    const accountLabel = user ? 'My Account' : 'Login';
     return <header className="public-ui public-header">
     <a href="#public-content" className="public-skip">Skip to content</a>
     <div className="public-container public-header-row">

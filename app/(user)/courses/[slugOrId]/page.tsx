@@ -25,7 +25,8 @@ import { CourseViewTracker } from "@/components/courses/CourseViewTracker";
 import { formatISTDateTime } from "@/lib/lesson-availability";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { courses, enrollments, orders, progress } from "@/lib/db/schema";
+import { courses, enrollments, orders, progress, coupons } from "@/lib/db/schema";
+import { advertisedBundleOffer, rupees } from "@/lib/public/catalog-model";
 import { eq, and } from "drizzle-orm";
 import { hasCourseAccess, getBundleIncludedCourses } from "@/lib/course-access";
 import {
@@ -89,12 +90,12 @@ export async function generateMetadata({ params }: CoursePageProps) {
     }
   } catch {}
 
-  const finalTitle = seoTitle || `${courseTitle} | Airbharath LMS`;
+  const finalTitle = seoTitle || `${courseTitle} | AirBharath`;
   const finalDescription =
     seoDescription ||
     shortDesc ||
     fallbackDesc ||
-    `Master career-ready capabilities with ${courseTitle} on Airbharath LMS. Self-paced HD video modules and QR-verifiable certificate included.`;
+    `Master career-ready capabilities with ${courseTitle} on AirBharath. Self-paced HD video modules and QR-verifiable certificate included.`;
 
   return {
     title: finalTitle,
@@ -228,6 +229,10 @@ export default async function CoursePage({ params }: CoursePageProps) {
   }
 
   const rawPrice = Number(course.price) || 0;
+  const bundleOffer = course.slug === 'combo-pack' ? await db.query.coupons.findFirst({
+    where: eq(coupons.code, 'ABCOMBO'),
+    columns: { discountType: true, discountValue: true, expiryDate: true, usageLimit: true, usedCount: true },
+  }).then(coupon => advertisedBundleOffer(course.price, coupon || null)).catch(() => null) : null;
   const basePrice = Math.round((rawPrice / 1.18) * 100) / 100;
   const gstAmount = Math.round((rawPrice - basePrice) * 100) / 100;
 
@@ -326,14 +331,16 @@ export default async function CoursePage({ params }: CoursePageProps) {
       {/* 1. Hero Section Header */}
       <div className="relative w-full overflow-hidden text-foreground bg-card pt-24 md:pt-28 pb-10 md:pb-16 border-b border-border">
         {course.thumbnailUrl && (
-          <div className="absolute inset-0 z-0 opacity-10 mix-blend-overlay">
+          <div className="absolute inset-0 z-0">
             <Image
               src={course.thumbnailUrl}
               alt={course.title}
               fill
               className="object-cover"
+              sizes="100vw"
               priority
             />
+            <div className="absolute inset-0 bg-gradient-to-r from-card/95 via-card/85 to-card/60" />
           </div>
         )}
 
@@ -461,8 +468,9 @@ export default async function CoursePage({ params }: CoursePageProps) {
                     {isBundle ? "Bundle Investment" : "Course Investment"}
                   </span>
                   <div className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight font-outfit">
-                    {rawPrice === 0 ? "Free" : `₹${rawPrice.toLocaleString("en-IN")}`}
+                    {bundleOffer !== null ? <><del className="mr-3 text-xl font-normal text-muted-foreground">{rupees(course.price)}</del>{rupees(bundleOffer)}</> : rawPrice === 0 ? "Free" : `₹${rawPrice.toLocaleString("en-IN")}`}
                   </div>
+                  {bundleOffer !== null && <p className="text-sm text-muted-foreground">Save {rupees(rawPrice - bundleOffer)} with an eligible coupon. Validity and usage limits apply; checkout confirms eligibility.</p>}
 
                   {rawPrice > 0 && (
                     <div className="bg-muted/40 p-3.5 rounded-2xl border border-border/60 text-xs space-y-1 text-muted-foreground font-medium">
@@ -475,7 +483,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                         <span className="font-semibold text-foreground">₹{gstAmount}</span>
                       </div>
                       <div className="flex justify-between border-t border-border/60 pt-1 font-bold text-primary">
-                        <span>Total Payable:</span>
+                        <span>Standard total before coupon:</span>
                         <span>₹{rawPrice}</span>
                       </div>
                     </div>

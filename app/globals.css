@@ -20,105 +20,97 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    /* Brand Primary (AirBharath Primary Lavender #9089FF) */
-    --primary: 243.6 100% 76.9%;
-    --primary-foreground: 244.4 47.2% 17.1%;
+    /* Original AirBharath deep teal, before 9b8e104. */
+    --primary: 194 98% 20%;
+    --primary-foreground: 0 0% 100%;
 
     /* Secondary & Muted */
-    --secondary: 240 25% 98%;
+    --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 240 25% 96%;
+    --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
     /* Accent & Destructive */
-    --accent: 243.6 100% 76.9%;
-    --accent-foreground: 244.4 47.2% 17.1%;
-    --accent-light: 244.9 100% 90.4%;
+    --accent: 194 98% 95%;
+    --accent-foreground: 194 98% 20%;
+    --accent-light: 194 98% 90%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --success: 146.8 69.4% 55.1%;
     --success-foreground: 244.4 47.2% 17.1%;
 
     /* Borders, Inputs & Focus Rings */
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 243.6 100% 76.9%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 194 98% 20%;
     --radius: 0.5rem;
 
     /* Dashboard Sidebar Tokens */
     --sidebar: 0 0% 98.5%;
     --sidebar-foreground: 222.2 47.4% 18%;
-    --sidebar-primary: 243.6 100% 76.9%;
-    --sidebar-primary-foreground: 244.4 47.2% 17.1%;
-    --sidebar-accent: 243.6 100% 96%;
-    --sidebar-accent-foreground: 244.4 47.2% 17.1%;
+    --sidebar-primary: 194 98% 20%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 194 98% 94%;
+    --sidebar-accent-foreground: 194 98% 20%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 243.6 100% 76.9%;
+    --sidebar-ring: 194 98% 20%;
 
-    /* Chart Colors (Primary Lavender / Accent Light / Muted / Success / Amber) */
-    --chart-1: 243.6 100% 76.9%;
-    --chart-2: 244.9 100% 90.4%;
-    --chart-3: 217.2 16.2% 60.2%;
-    --chart-4: 146.8 69.4% 55.1%;
+    --chart-1: 194 98% 20%;
+    --chart-2: 189 94% 43%;
+    --chart-3: 221.2 83.2% 53.3%;
+    --chart-4: 142.1 76.2% 36.3%;
     --chart-5: 38 92% 50%;
 
     color-scheme: light;
   }
 
   .dark {
-    /* Base Surfaces (Approved #0A0A0A) */
-    --background: 0 0% 3.9%;
-    /* Primary Text (Approved #EEF2F7) */
-    --foreground: 213.3 42.9% 95.1%;
+    --background: 222.2 47.4% 6.5%;
+    --foreground: 210 40% 98%;
 
-    /* Panel Surfaces (Approved #131313) */
-    --card: 0 0% 7.5%;
-    --card-foreground: 213.3 42.9% 95.1%;
-    --popover: 0 0% 7.5%;
-    --popover-foreground: 213.3 42.9% 95.1%;
+    --card: 222.2 47.4% 9.5%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 47.4% 9.5%;
+    --popover-foreground: 210 40% 98%;
 
-    /* Primary Accent (Approved #9089FF) & Text on Accent (#1A1740) */
-    --primary: 243.6 100% 76.9%;
-    --primary-foreground: 244.4 47.2% 17.1%;
+    /* Original dark-mode cyan companion. */
+    --primary: 189 94% 43%;
+    --primary-foreground: 222.2 47.4% 7%;
 
-    /* Panel secondary / nested surfaces (Approved #191919) */
-    --secondary: 0 0% 9.8%;
-    --secondary-foreground: 213.3 42.9% 95.1%;
-    --muted: 0 0% 9.8%;
-    /* Muted Text (Approved #8B96A8) */
-    --muted-foreground: 217.2 16.2% 60.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
 
     /* Accent Tokens */
-    --accent: 243.6 100% 76.9%;
-    --accent-foreground: 244.4 47.2% 17.1%;
-    --accent-light: 244.9 100% 90.4%; /* #D2CEFF */
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --accent-light: 217.2 32.6% 17.5%;
 
-    /* Destructive & Success (#3DDC84) */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --success: 146.8 69.4% 55.1%;
     --success-foreground: 244.4 47.2% 17.1%;
 
-    /* Border & Input (Approved #2A2A2A) */
-    --border: 0 0% 16.5%;
-    --input: 0 0% 16.5%;
-    --ring: 243.6 100% 76.9%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 189 94% 43%;
 
     /* Sidebar Dark */
-    --sidebar: 0 0% 7.5%;
-    --sidebar-foreground: 213.3 42.9% 95.1%;
-    --sidebar-primary: 243.6 100% 76.9%;
-    --sidebar-primary-foreground: 244.4 47.2% 17.1%;
-    --sidebar-accent: 0 0% 9.8%;
-    --sidebar-accent-foreground: 213.3 42.9% 95.1%;
-    --sidebar-border: 0 0% 16.5%;
-    --sidebar-ring: 243.6 100% 76.9%;
+    --sidebar: 222.2 47.4% 8.5%;
+    --sidebar-foreground: 210 40% 95%;
+    --sidebar-primary: 189 94% 43%;
+    --sidebar-primary-foreground: 222.2 47.4% 7%;
+    --sidebar-accent: 217.2 32.6% 16%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 189 94% 43%;
 
     /* Chart Colors Dark */
-    --chart-1: 243.6 100% 76.9%; /* Primary series #9089FF */
-    --chart-2: 244.9 100% 90.4%; /* Accent Light #D2CEFF */
-    --chart-3: 217.2 16.2% 60.2%; /* Muted #8B96A8 */
-    --chart-4: 146.8 69.4% 55.1%; /* Success #3DDC84 */
+    --chart-1: 189 94% 43%;
+    --chart-2: 194 98% 45%;
+    --chart-3: 217.2 91.2% 59.8%;
+    --chart-4: 142.1 70.6% 45.3%;
     --chart-5: 38 92% 50%;
 
     color-scheme: dark;

@@ -24,12 +24,9 @@ import {
   Lock,
   Edit3,
   X,
-  Sun,
-  Moon,
-  Laptop,
   Palette,
 } from "lucide-react";
-import { useTheme } from "next-themes";
+import { DarkModeToggle } from "@/components/DarkModeToggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,10 +71,6 @@ export function SettingsView({ initialUser, stats }: SettingsViewProps) {
   const [errorMsg, setErrorMsg] = useState("");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Theme State
-  const { theme, setTheme } = useTheme();
-  const [themeMounted, setThemeMounted] = useState(false);
-
   // Local Notification Preferences
   const [emailNotify, setEmailNotify] = useState(true);
   const [repliesNotify, setRepliesNotify] = useState(true);
@@ -85,7 +78,6 @@ export function SettingsView({ initialUser, stats }: SettingsViewProps) {
   const [prefSaved, setPrefSaved] = useState(false);
 
   useEffect(() => {
-    setThemeMounted(true);
     if (typeof window !== "undefined") {
       const emailPref = localStorage.getItem("pref_email_notify") !== "false";
       const replyPref = localStorage.getItem("pref_reply_notify") !== "false";
@@ -528,7 +520,7 @@ export function SettingsView({ initialUser, stats }: SettingsViewProps) {
             <span>Account Security &amp; Authentication</span>
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Your login and authentication credentials for the AirBharath LMS portal.
+            Your login and authentication credentials for the AirBharath portal.
           </p>
         </div>
 
@@ -600,97 +592,13 @@ export function SettingsView({ initialUser, stats }: SettingsViewProps) {
             <span>Appearance &amp; Theme</span>
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Select your preferred visual mode for the AirBharath LMS interface.
+            Select your preferred visual mode for the AirBharath interface.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Light Theme Card */}
-          <button
-            type="button"
-            onClick={() => setTheme("light")}
-            className={`p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between gap-3 cursor-pointer ${
-              themeMounted && theme === "light"
-                ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-xs"
-                : "border-border/80 bg-muted/20 hover:border-border hover:bg-muted/40"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
-                <Sun className="w-4 h-4" />
-              </div>
-              {themeMounted && theme === "light" && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                  <CheckCircle2 className="w-3 h-3" />
-                  Active
-                </span>
-              )}
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-foreground">Light Mode</h4>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                Crisp, high-contrast daylight theme with deep teal accents.
-              </p>
-            </div>
-          </button>
-
-          {/* Dark Theme Card */}
-          <button
-            type="button"
-            onClick={() => setTheme("dark")}
-            className={`p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between gap-3 cursor-pointer ${
-              themeMounted && theme === "dark"
-                ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-xs"
-                : "border-border/80 bg-muted/20 hover:border-border hover:bg-muted/40"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                <Moon className="w-4 h-4" />
-              </div>
-              {themeMounted && theme === "dark" && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                  <CheckCircle2 className="w-3 h-3" />
-                  Active
-                </span>
-              )}
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-foreground">Dark Mode</h4>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                Deep dark surfaces with lavender accents for low light.
-              </p>
-            </div>
-          </button>
-
-          {/* System Default Card */}
-          <button
-            type="button"
-            onClick={() => setTheme("system")}
-            className={`p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between gap-3 cursor-pointer ${
-              themeMounted && theme === "system"
-                ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-xs"
-                : "border-border/80 bg-muted/20 hover:border-border hover:bg-muted/40"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="p-2 rounded-xl bg-slate-500/10 text-slate-500 dark:text-slate-400">
-                <Laptop className="w-4 h-4" />
-              </div>
-              {themeMounted && theme === "system" && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                  <CheckCircle2 className="w-3 h-3" />
-                  Active
-                </span>
-              )}
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-foreground">System Preference</h4>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                Automatically synchronizes with your device&apos;s OS theme.
-              </p>
-            </div>
-          </button>
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-border p-4">
+          <p className="text-sm text-muted-foreground">Starts with your device theme. Switch light or dark with one click; your choice is saved.</p>
+          <DarkModeToggle />
         </div>
       </div>
 

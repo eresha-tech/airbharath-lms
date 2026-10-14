@@ -18,6 +18,7 @@ import { advertisedBundleOffer, rupees, type PublicCourse } from '@/lib/public/c
 import { readPublicCatalog } from '@/lib/public/catalog';
 import { readPublicWorkspaceInfo } from '@/lib/public/workspace';
 import { HeroBanner } from '@/components/landing/HeroBanner';
+import { FeaturedCourseCarousel } from '@/components/landing/FeaturedCourseCarousel';
 import { CoursesSection, PublicCourseCard } from '@/components/landing/CoursesSection';
 import { WorkspaceLanding } from '@/components/workspace/WorkspaceLanding';
 import { Footer } from '@/components/Footer';
@@ -36,7 +37,9 @@ it('represents the active offer separately from standard price without publishin
     const value = await readPublicCatalog();
     const result = html(React.createElement(PublicCourseCard, { course: value.courses[0] }));
     expect(result).toContain('₹3,300');
+    expect(result).toContain('<del>₹3,300</del><strong>₹1,900</strong>');
     expect(result).toContain('₹1,900 with an eligible coupon');
+    expect(result).toContain('Save ₹1,400 only with an eligible coupon');
     expect(result).toContain('validity and usage limits');
     expect(result).not.toContain('ABCOMBO');
     expect(value.courses[0]).not.toHaveProperty('providerPaymentId');
@@ -64,13 +67,32 @@ it('distinguishes catalog-unavailable from genuine-empty results, without fictio
     expect(empty).toContain('No courses are currently listed');
     expect(empty).not.toContain('category filter');
 });
-it('makes hero static and course-first with the approved primary and secondary destinations', () => {
-    const result = html(React.createElement(HeroBanner, { featured: course }));
+it('keeps hero course-first with linked published courses and the approved secondary destination', () => {
+    const result = html(React.createElement(HeroBanner, { courses: [course] }));
     expect(result.indexOf('Explore Courses')).toBeLessThan(result.indexOf('Become a Creator'));
     expect(result).toContain('href="/workspace"');
     expect(result).toContain('href="/courses"');
-    expect(result).not.toMatch(/₹|carousel|aria-hidden="true"[^>]*>.*Explore Program/);
+    expect(result).not.toMatch(/₹|aria-hidden="true"[^>]*>.*Explore Program/);
     expect(readFileSync('components/landing/HeroBanner.tsx', 'utf8')).not.toMatch(/setInterval|useEffect|HERO_SLIDES/);
+});
+it('keeps inactive slides inert while linking each published course to its own detail route', () => {
+    const result = html(React.createElement(FeaturedCourseCarousel, { courses: [course, { ...course, slug: 'ai-skills', title: 'AI Skills', isBundle: false }] }));
+    expect(result).toContain('aria-roledescription="carousel"');
+    expect(result).toContain('inert="" aria-hidden="true"');
+    expect(result).toContain('href="/courses/combo-pack"');
+    expect(result).toContain('href="/courses/ai-skills"');
+    expect(result).toContain('Next featured course');
+});
+it('renders one or zero published courses without rotation controls, and suppresses an unavailable offer', () => {
+    for (const courses of [[course], []]) {
+        const result = html(React.createElement(FeaturedCourseCarousel, { courses }));
+        expect(result).not.toContain('Next featured course');
+        expect(result).not.toContain('aria-roledescription="carousel"');
+    }
+    const result = html(React.createElement(PublicCourseCard, { course: { ...course, offerPrice: null } }));
+    expect(result).not.toContain('<del>');
+    expect(result).not.toContain('₹1,900');
+    expect(result).toContain('₹3,300');
 });
 it('renders eight purposeful homepage sections with courses followed by Workspace', async () => {
     const result = html(await Home());

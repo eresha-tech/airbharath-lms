@@ -6,7 +6,7 @@ import { JobsView, type JobItemData } from "@/components/dashboard/JobsView";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Career Hub | AirBharath LMS",
+  title: "Career Hub | AirBharath",
   description: "Explore career opportunities, aviation roles, and technical openings.",
 };
 

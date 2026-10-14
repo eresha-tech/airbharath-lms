@@ -273,7 +273,7 @@ function LoginForm() {
           className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary transition-colors py-1.5 px-3 rounded-full hover:bg-muted"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to AirBharath LMS</span>
+          <span>Back to AirBharath</span>
         </Link>
       </div>
 
@@ -292,7 +292,7 @@ function LoginForm() {
             <div className="relative z-10 flex items-center gap-3">
               <img
                 src="https://assets.airbharath.in/eresha-logo.webp"
-                alt="AirBharath LMS"
+                alt="AirBharath"
                 className="h-10 w-auto bg-white/10 p-1.5 rounded-xl border border-white/20 shadow-xs"
               />
               <div>
@@ -370,11 +370,11 @@ function LoginForm() {
               <div className="lg:hidden text-center space-y-2 pb-2">
                 <img
                   src="https://assets.airbharath.in/eresha-logo.webp"
-                  alt="AirBharath LMS"
+                  alt="AirBharath"
                   className="h-9 w-auto mx-auto object-contain"
                 />
                 <h2 className="text-sm font-bold uppercase tracking-wider text-primary font-outfit">
-                  AirBharath LMS
+                  AirBharath
                 </h2>
               </div>
 
@@ -587,7 +587,7 @@ function LoginForm() {
                       Complete Your Profile
                     </h2>
                     <p className="text-xs sm:text-sm text-muted-foreground font-normal">
-                      Welcome to AirBharath LMS! Please enter your details as they should appear on your completion certificates.
+                      Welcome to AirBharath! Please enter your details as they should appear on your completion certificates.
                     </p>
                   </div>
 
@@ -678,7 +678,7 @@ function LoginForm() {
               {/* Footer Legal Agreement */}
               <div className="pt-2 border-t border-border text-center text-[11px] text-muted-foreground">
                 <p>
-                  By continuing, you agree to AirBharath LMS{' '}
+                  By continuing, you agree to AirBharath{' '}
                   <Link href="/terms" className="text-primary font-semibold hover:underline">
                     Terms &amp; Conditions
                   </Link>{' '}
@@ -697,7 +697,7 @@ function LoginForm() {
 
       {/* Page Footer */}
       <footer className="w-full px-6 py-4 text-center text-xs text-muted-foreground font-medium border-t border-border bg-card/50 backdrop-blur-xs">
-        <p>&copy; {new Date().getFullYear()} AirBharath LMS. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} AirBharath. All rights reserved.</p>
       </footer>
     </div>
   );
@@ -710,7 +710,7 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center bg-slate-50">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-xs font-semibold text-muted-foreground">Loading AirBharath LMS...</p>
+            <p className="text-xs font-semibold text-muted-foreground">Loading AirBharath...</p>
           </div>
         </div>
       }

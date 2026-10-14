@@ -173,7 +173,7 @@ export function CertificatesView({
             My Certificates &amp; Credentials
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl">
-            Access, download, share, and verify your official tamper-proof AirBharath LMS completion certificates with QR-verifiable authenticity.
+            Access, download, share, and verify your official tamper-proof AirBharath completion certificates with QR-verifiable authenticity.
           </p>
 
           {/* Quick Metrics */}
@@ -640,7 +640,7 @@ export function CertificatesView({
               Your credential journey begins here
             </h3>
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              Enroll in any AirBharath LMS masterclass to begin mastering industry skills and earn tamper-proof verified completion certificates.
+              Enroll in any AirBharath masterclass to begin mastering industry skills and earn tamper-proof verified completion certificates.
             </p>
           </div>
           <Button

@@ -5,12 +5,12 @@ import { FinalCTA } from '@/components/landing/FinalCTA';
 import { readPublicCatalog } from '@/lib/public/catalog';
 import { publicMetadata } from '@/lib/public/metadata';
 export const dynamic = 'force-dynamic';
-export const metadata = publicMetadata('/', 'AirBharath LMS — Practical Skills for Your Next Step', 'Explore self-paced AirBharath courses, build practical skills and discover Creator Workspace for aviation professionals.');
+export const metadata = publicMetadata('/', 'AirBharath — Practical Skills for Your Next Step', 'Explore self-paced AirBharath courses, build practical skills and discover Creator Workspace for aviation professionals.');
 export default async function Home() {
     const catalog = await readPublicCatalog();
-    const featured = catalog.courses.find(course => course.isBundle) || catalog.courses[0];
+    const featured = [...catalog.courses].sort((a, b) => Number(b.isBundle) - Number(a.isBundle));
     return <div className="public-ui">
-    <HeroBanner featured={featured}/>
+    <HeroBanner courses={featured}/>
     <CoursesSection catalog={catalog}/>
     <WorkspaceIntroduction />
     <LearningJourney />

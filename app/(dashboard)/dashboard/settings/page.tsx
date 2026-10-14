@@ -8,7 +8,7 @@ import { SettingsView, SettingsUser, SettingsStats } from "@/components/dashboar
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Account Settings | Airbharath LMS",
+  title: "Account Settings | AirBharath",
   description: "Manage your student profile, account security, and notification preferences.",
 };
 

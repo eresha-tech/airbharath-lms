@@ -39,7 +39,7 @@ export function ContactView() {
     e.preventDefault();
     const subject = encodeURIComponent(`[${category}] Inquiry from ${name || "Student"}`);
     const body = encodeURIComponent(
-      `Hello AirBharath LMS Team,\n\nName: ${name}\nEmail: ${email}\nProgram / Topic: ${category}\n\nMessage:\n${message}\n\n--\nSent from AirBharath LMS Contact Page`
+      `Hello AirBharath Team,\n\nName: ${name}\nEmail: ${email}\nProgram / Topic: ${category}\n\nMessage:\n${message}\n\n--\nSent from AirBharath Contact Page`
     );
     window.location.href = `mailto:${officialEmail}?subject=${subject}&body=${body}`;
     setIsSent(true);

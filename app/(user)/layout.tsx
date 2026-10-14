@@ -3,8 +3,8 @@ import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "AirBharath LMS - Premium Aviation & Technical Learning",
-  description: "Accelerate your learning with AirBharath LMS courses, certificates, and job opportunities.",
+  title: "AirBharath - Premium Aviation & Technical Learning",
+  description: "Accelerate your learning with AirBharath courses, certificates, and job opportunities.",
 };
 
 export default function UserLayout({

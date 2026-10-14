@@ -57,7 +57,7 @@ export function LearningTrust() {
     <div className="public-container public-trust">
     <PublicHeading eyebrow="Know what you’re choosing" title="A transparent place to learn.">Explore actual course outlines and requirements before deciding. Clear information should come before big promises.</PublicHeading>
     <div>
-    <p className="public-copy">AirBharath LMS brings self-paced learning and course information into one place. AirBharath Workspace offers a separate preparation path for aviation professionals who want to create courses.</p>
+    <p className="public-copy">AirBharath brings self-paced learning and course information into one place. AirBharath Workspace offers a separate preparation path for aviation professionals who want to create courses.</p>
     <div className="public-actions">
     <PublicAction secondary href="/about">About AirBharath</PublicAction>
     <Link href="/contact" className="public-text-link">Ask us a question</Link>
