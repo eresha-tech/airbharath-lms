@@ -1,0 +1,9 @@
+{
+  "result": "PASS",
+  "sourceFiles": 63,
+  "sourceHashesUnchanged": true,
+  "isolatedGenerate": "No schema changes",
+  "migrationApplied": false,
+  "journalEntries": 31,
+  "head": "0030_workspace_retained_history_truncate_guards"
+}

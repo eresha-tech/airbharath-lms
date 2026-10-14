@@ -1,0 +1,27 @@
+{
+  "validate": "PASS",
+  "vitestTests": 1118,
+  "vitestFiles": 92,
+  "nodeTests": 33,
+  "typecheck": "PASS",
+  "lint": "PASS",
+  "auditHarnessSyntaxChecks": 8,
+  "productionBuild": "PASS",
+  "productionBuildConfiguration": "isolated current product source, payments disabled, cached original font transport, no private provider credentials",
+  "migrationNoDrift": "PASS",
+  "dependencies": {
+    "next": "15.5.19",
+    "rootSharp": "0.35.4",
+    "nextSharp": "0.35.4",
+    "sameSharp": true
+  },
+  "publicPaymentsEnabled": false,
+  "genuineProviderCalls": 0,
+  "cleanup": {
+    "ownedVerificationServerStopped": true,
+    "port4058Closed": true,
+    "ownedTemporaryCopiesRemoved": true,
+    "syntheticSessionSecretAndTokensRemoved": true,
+    "persistedPaymentOrMigrationFlagsAdded": false
+  }
+}

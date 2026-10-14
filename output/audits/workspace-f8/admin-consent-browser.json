@@ -1,0 +1,42 @@
+{
+  "checks": [
+    "bounded_page_2_reload_and_URL_query_restore",
+    "status_filter_resets_page_and_empty_state",
+    "admin_mobile_drawer_focus_Escape_restore_and_no_document_overflow",
+    "student_and_demoted_admin_claim_cannot_issue_grants",
+    "authorized_admin_destination:/admin/workspace",
+    "authorized_admin_destination:/admin/workspace/creators",
+    "authorized_admin_destination:/admin/workspace/eligibility",
+    "authorized_admin_destination:/admin/workspace-applications",
+    "authorized_admin_destination:/admin/workspace/course-reviews",
+    "authorized_admin_destination:/admin/workspace/course-drafts",
+    "authorized_admin_destination:/admin/workspace/course-builds",
+    "authorized_admin_destination:/admin/workspace/memberships",
+    "authorized_admin_destination:/admin/workspace/orders",
+    "authorized_admin_destination:/admin/workspace-refunds",
+    "authorized_admin_destination:/admin/workspace/refund-exceptions",
+    "authorized_admin_destination:/admin/workspace/reports",
+    "authorized_admin_destination:/admin/workspace/coupons",
+    "authorized_admin_destination:/admin/workspace/influencers",
+    "authorized_admin_destination:/admin/workspace/notices",
+    "authorized_admin_destination:/admin/workspace/events",
+    "authorized_admin_destination:/admin/workspace/audit",
+    "authorized_admin_destination:/admin/workspace/settings",
+    "independent_legal_autosave_failed_save_retry_and_no_automatic_reload_consent",
+    "no_hydration_errors_or_provider_analytics_calls"
+  ],
+  "findings": [
+    {
+      "requirement": 5,
+      "status": "BLOCKED",
+      "finding": "History restored the page URL/data but left the Status control stale",
+      "actual": "revoked",
+      "expected": "all"
+    }
+  ],
+  "pageErrors": [],
+  "providerAttempts": [],
+  "analyticsAttempts": [],
+  "blocked": 0,
+  "complete": true
+}

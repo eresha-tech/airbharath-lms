@@ -1,0 +1,12 @@
+// F.8 commercial/entitlement observations only; no expiry or financial mutation.
+const fs=require('node:fs'),assert=require('node:assert/strict'),postgres=require(process.cwd()+'/node_modules/postgres');assert.equal(process.env.DATABASE_ENV,'development');const target=new URL(process.env.DATABASE_URL);assert.equal(target.hostname,'localhost');assert.equal(target.port,'5433');assert.equal(target.pathname,'/airbharath_lms');const sql=postgres(target.href,{max:1,prepare:false,onnotice:()=>{},connection:{default_transaction_read_only:'on',statement_timeout:10000}});
+(async()=>{try{const output=await sql.begin('isolation level repeatable read read only',async t=>{
+ const publishedCourses=await t`select slug,title,price,access_days from courses where is_published=true order by slug`;
+ const legacy=await t`select count(*)::int as enrollments,count(*) filter(where expires_at is null)::int as without_fixed_expiry from enrollments`;
+ const plans=await t`select code,version,duration_months,base_price_paise,tax_rate_bps,currency,available from workspace_membership_plans where is_current=true order by duration_months`;
+ const historicalAmounts=await t`select base_price_paise,gst_amount_paise,total_paise,count(*)::int as orders from workspace_membership_orders where plan_code='quarterly' and discount_paise=0 group by 1,2,3 order by 3`;
+ const database=await t`select datcollversion as recorded_collation_version,pg_database_collation_actual_version(oid) as actual_collation_version from pg_database where datname=current_database()`;
+ const policies=await t`select version,config from workspace_eligibility_settings where is_current=true`;
+ const grants=await t`select count(*)::int as grants,count(*) filter(where environment='development')::int as development_grants from workspace_access_grants`;
+ return {publishedCourses,legacy:legacy[0],plans,historicalAmounts,collation:database[0],policies,grants:grants[0],authorization:'read-only local verification; no prospective or retrospective 365-day policy approved under F.8',entitlementChanges:0};
+ });fs.writeFileSync('output/audits/workspace-f8/commercial-state.json',JSON.stringify(output,null,2)+'\n');console.log(JSON.stringify({publishedCourses:output.publishedCourses.length,legacy:output.legacy,currentPlans:output.plans.length,collation:output.collation,entitlementChanges:0}));}finally{await sql.end()}})().catch(e=>{console.error(JSON.stringify({failed:true,code:e.code||e.name}));process.exitCode=1});

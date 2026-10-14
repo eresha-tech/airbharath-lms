@@ -1,0 +1,172 @@
+{
+  "complete": true,
+  "checks": [
+    {
+      "name": "exact_local_identity_and_all_31_source_hashes"
+    },
+    {
+      "name": "current_authoritative_three_plan_GST_inclusive_catalog"
+    },
+    {
+      "name": "captured_without_authoritative_time_keeps_null_deadline_and_denies_creator_access"
+    },
+    {
+      "name": "ineligible_unpaid_and_admin_do_not_gain_creator_access_by_role"
+    },
+    {
+      "name": "all_page_owner_scoped_summary_and_existing_pagination",
+      "summary": {
+        "total": 25,
+        "drafts": 20,
+        "underReview": 2,
+        "changesRequested": 1,
+        "approved": 2,
+        "building": 1
+      },
+      "page1": 20,
+      "page2": 5
+    },
+    {
+      "name": "cross_owner_private_reads_and_open_review_edit_rejected"
+    },
+    {
+      "name": "normal_fake_refund_retains_reads_and_denies_paid_edits"
+    },
+    {
+      "name": "grant_requires_persisted_admin_eligibility_and_creator_terms"
+    },
+    {
+      "name": "complimentary_creator_profile_proposal_review_builder_without_payment"
+    },
+    {
+      "name": "two_connection_concurrent_grant_one_winner"
+    },
+    {
+      "name": "paid_plus_grant_revoke_and_refund_plus_independent_grant"
+    },
+    {
+      "name": "real_clock_expiry_and_revocation_immediately_deny_edits_keep_history"
+    },
+    {
+      "name": "synthetic_grant_and_event_update_delete_guards"
+    },
+    {
+      "name": "real_grant_list_pages_search_filter_sort_and_grants_excluded_from_revenue"
+    },
+    {
+      "name": "bounded_admin_creators",
+      "total": 310,
+      "rows": 25,
+      "hasMore": true
+    },
+    {
+      "name": "bounded_admin_users",
+      "total": 827,
+      "rows": 25,
+      "hasMore": true
+    },
+    {
+      "name": "bounded_admin_eligibility",
+      "total": 713,
+      "rows": 25,
+      "hasMore": true
+    },
+    {
+      "name": "bounded_admin_applications",
+      "total": 3,
+      "rows": 3,
+      "hasMore": false
+    },
+    {
+      "name": "bounded_admin_reviews",
+      "total": 108,
+      "rows": 25,
+      "hasMore": true
+    },
+    {
+      "name": "bounded_admin_drafts",
+      "total": 209,
+      "rows": 25,
+      "hasMore": true
+    },
+    {
+      "name": "bounded_admin_builds",
+      "total": 30,
+      "rows": 25,
+      "hasMore": true
+    },
+    {
+      "name": "bounded_admin_memberships",
+      "total": 230,
+      "rows": 25,
+      "hasMore": true
+    },
+    {
+      "name": "bounded_admin_orders",
+      "total": 432,
+      "rows": 25,
+      "hasMore": true
+    },
+    {
+      "name": "bounded_admin_refunds",
+      "total": 88,
+      "rows": 25,
+      "hasMore": true
+    },
+    {
+      "name": "bounded_admin_grants",
+      "total": 87,
+      "rows": 25,
+      "hasMore": true
+    },
+    {
+      "name": "bounded_admin_influencers",
+      "total": 84,
+      "rows": 25,
+      "hasMore": true
+    },
+    {
+      "name": "bounded_admin_coupons",
+      "total": 133,
+      "rows": 25,
+      "hasMore": true
+    },
+    {
+      "name": "bounded_admin_notices",
+      "total": 99,
+      "rows": 25,
+      "hasMore": true
+    },
+    {
+      "name": "bounded_admin_events",
+      "total": 46,
+      "rows": 25,
+      "hasMore": true
+    },
+    {
+      "name": "bounded_admin_audit",
+      "total": 263,
+      "rows": 25,
+      "hasMore": true
+    },
+    {
+      "name": "stable_cursor_under_insert_unique_boundaries"
+    },
+    {
+      "name": "fresh_order_requires_current_owned_email_and_independent_legal_receipts"
+    },
+    {
+      "name": "workspace_coupon_before_GST_readonly_quote_and_LMS_coupon_domain_isolation"
+    },
+    {
+      "name": "every_new_Workspace_fixture_has_zero_LMS_orders_or_enrollments"
+    }
+  ],
+  "checksCount": 34,
+  "tag": "WSF8_22d35ee0",
+  "newUsersInSuccessfulRun": 45,
+  "failedFirstRunNewUsersRetained": 4,
+  "financialEvidence": "real PostgreSQL with isolated in-memory Test provider, test_authoritative capture source",
+  "genuineProviderCalls": 0,
+  "historyRetained": true
+}
