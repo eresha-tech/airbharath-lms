@@ -1,8 +1,8 @@
 import 'server-only';
 import { databaseConfiguration } from '@/lib/db/configuration';
 
-// Owner-designated development demos. The original first number belongs to an Admin and is excluded.
-export const LOCAL_UAT_PHONES = ['919876543211', '919000090000', '919123456780'] as const;
+// Owner-designated local development demos; registration never grants privileges.
+export const LOCAL_UAT_PHONES = ['919876543222', '919000900009', '919696969696'] as const;
 const allowed = new Set<string>(LOCAL_UAT_PHONES);
 export const isLocalUatPhone = (phone: string) => allowed.has(phone);
 export function localUatOtpMode(env: Record<string, string | undefined> = process.env): 'off' | 'blocked' | 'local' {

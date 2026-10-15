@@ -1,60 +1,89 @@
-# Final local Creator payment UAT
+# Final local Creator payment UAT preparation
 
-## Current checkpoint
+## Current decision
 
-**LOCAL CREATOR PAYMENT UAT BLOCKED — demo configuration needs resolution.**
+**Registration READY. LOCAL CREATOR PAYMENT UAT BLOCKED at payment-only worker isolation.**
 
-Branch `codex/workspace-1.8-launch`, starting HEAD `dc837b0`; clean before this report. No subsequent commits or product changes were found. This is preparation evidence, not founder acceptance or payment verification.
+The owner’s “Unblock final local Creator payment UAT” instructions expressly require reporting a blocker if payment fulfillment cannot be isolated from refund processing using existing configuration. The registration blockers are resolved; the complete payment UAT cannot honestly be marked ready under the current no-refund-reconciliation requirement. No financial implementation was changed to work around this boundary.
 
-## A. Automated preflight
+Starting branch `codex/workspace-1.8-launch`, HEAD `37c8eb3`, clean worktree. Changes: the existing development OTP allowlist, its two regression test files, and this report. No new harness, migration, provider launcher, financial behavior or UI redesign was added.
 
-| Step | Status | Actual result / evidence | Expected result / route |
-|---|---|---|---|
-| Local database identity | PASS | Read-only verification: `airbharath_lms`, port 5433, OID `16384`, system identifier `7680462735222304705`; TCP and `/tmp` socket agree | Authorized development database only |
-| Migration ledger | PASS | 32 applied entries, `0000–0031`; every applied hash and timestamp matches source | No migration, reset or seed |
-| Contact/order prerequisite | PASS | Installed function exactly matches 0031; five other 0027 email/proof/notice functions unchanged | No ownership-proof prerequisite for new orders |
-| Catalog | PASS | Quarterly 589900, half-yearly 999900, yearly 1769900 paise, inclusive of GST | Choose Quarterly ₹5,899, INR, no coupon |
-| Requested demo accounts | BLOCKED | Requested numbers ending 3222 / 0009 / 9696 are absent and not allowlisted | Fresh account through normal phone registration |
-| Existing demo accounts | PASS, unsuitable primary history noted | Configured numbers end 3211 / 0000 / 6780. The first has one order/membership; other two have none. All have student role | Preserve existing histories; no account resets |
-| Running local app configuration | BLOCKED | Port-3000 repository listener is a development server without inherited local-UAT OTP/payment flags. No OTP request was attempted | Restart with reviewed runtime-only local-UAT configuration |
-| Local anonymous route smoke | PASS | `/login` and `/workspace` returned 200; activation, dashboard and billing redirected to sign-in. Workspace public page shows payment-disabled copy | `/login`, `/workspace`, private-route sign-in redirects |
-| Offline Test credential configuration | PASS, limited | Existing secret configuration classifies as Razorpay Test key/mode with account and distinct webhook secret configured; proposed payment-only readiness has no financial configuration errors | No Live mode; actual provider/account authentication is not yet checked |
-| Temporary webhook | NOT YET TESTED | Owner supplied a new HTTPS tunnel forwarding to port 3000 with the same Workspace secret. URL not persisted here; network probe held at approval checkpoint | `/api/workspace/payments/razorpay/webhook` |
-| Test worker configuration | BLOCKED | Existing `--providers` convenience mode also enables refunds, email and notices; do not use it for this purchase-only scope | Checkout/webhook/reconciliation only; refunds/SMS/email/notice delivery OFF |
+## Founder registration
 
-An explicit choice is pending: replace the local-only allowlist with the three new brief numbers, or retain the existing demos. No allowlist change, server restart or provider enablement has occurred.
+Open `http://localhost:3000/login?callbackUrl=%2Fworkspace%2Fapply` on this computer.
 
-The application’s existing independent capability gates support this proposed runtime-only configuration after approval: development database/runtime, Razorpay Test credentials and authorization, checkout/webhook/reconciliation ON; Live authorization, refunds, email verification delivery, notice delivery, Redis and development analytics OFF. The standard/public configuration remains unchanged. The existing worker must be restricted to the chosen UAT identities and must not process old refund attempts or deliver notices. No new tunnel is to be created.
+| Purpose | Local demo mobile | Local test OTP |
+|---|---|---|
+| Primary Creator | 9876543222 | 1234 |
+| Second Creator | 9000900009 | 1234 |
+| Student / negative checks | 9696969696 | 1234 |
 
-Safe local starting URL: `http://localhost:3000/login?callbackUrl=%2Fworkspace%2Fapply`. Do not use fixed OTP with the newly requested numbers until their allowlist/startup configuration is resolved. No global OTP fallback exists.
+Press **Send OTP** first, then enter `1234`. The existing cooldown, one-use code, expiry, attempt limits and normal student account/session issuance remain enforced. These credentials work only in the guarded local UAT process; no master-code fallback exists. No paid membership, eligibility approval or legal acceptance is pre-created.
 
-## B. Founder browser checklist
+Real local HTTP Send OTP returned **200** for all three numbers. Successful verification/registration was deliberately left to the founder, so these requests created **no user accounts**. The production route tests exercise valid fixed-code verification, normal account creation and signed student-session issuance for each approved number using mocked persistence. Real local send/verify with `1234` returned **503** for an unlisted fourth number and all three former demo numbers; invalid Indian mobile validation returned **400**. Former accounts and histories were preserved; only their inclusion in the local mock changed.
 
-All steps below are **NOT YET TESTED by the founder in this task**:
+## Running application and database
 
-1. Send phone OTP and register/login normally; complete valid eligibility.
-2. At `/workspace/activate`, confirm no mandatory email OTP Step 2; save/correct contact email.
-3. Independently accept Creator Terms and Refund Policy.
-4. Select Quarterly ₹5,899 inclusive of GST, INR, no coupon; confirm intended fresh account and no duplicate pending order.
-5. After separate explicit Test-provider authorization, complete official Razorpay Test Checkout using provider test data only.
-6. Wait for genuine signed webhook and normal fulfillment; never pay twice or manually force paid/member state.
-7. Confirm `/workspace/dashboard`, Creator Profile, membership dates and `/workspace/billing`. Qualifying pre-launch term starts 9 November 2026, 00:00 IST; Early Access follows verified capture/fulfillment.
-8. Confirm proposal/review/private-builder navigation follows existing permissions. No uploads, publication or sales.
+Only the verified repository Next.js port-3000 server and its own parent dev process were stopped. The existing `pnpm dev:uat` launcher restarted the app successfully on port 3000 in its default **external-providers-disabled** mode. The user’s tunnel was not created, changed, stopped or probed.
 
-## C. Genuine Test payment / fulfillment
+Confirmed runtime:
 
-**NOT YET TESTED.** No external Razorpay call, provider order, payment, refund, tunnel probe or Test worker was started by this task. Account authentication at Razorpay, current webhook-event configuration, HMAC delivery, authoritative paidAt, exact 72-hour refund deadline, duplicate delivery, one membership and dashboard access require the separately approved founder journey. Refund HTTP 400 and genuine refund-webhook verification remain separate unresolved release gates; no refund retry is authorized here.
+- `NODE_ENV=development`, `DATABASE_ENV=development`.
+- Explicit local UAT OTP and eligibility-limiter flags enabled, after the launcher’s live database identity check.
+- Redis credentials blanked; real SMS fallback unavailable in mock mode; development analytics disabled.
+- Checkout, Test payment authorization, Live authorization, webhook intake, reconciliation, refund execution, email verification delivery and refund-notice delivery all explicitly **false**.
+- No financial worker was started. No `.env` or persistent public payment switch was changed.
 
-## D. Focused negative/security evidence
+Fresh read-only checks before/after preparation confirmed:
 
-**PASS:** 124 focused tests across seven files: local OTP guards/routes, contact route, phone-only UI, payment routes/service and activation. These cover mock isolation, auth/session checks, missing/invalid contact, legal prerequisites, stale quotes, order ownership/idempotency and activation safety. These are automated/mocked regressions; they are not genuine webhook evidence or founder acceptance.
+- Authorized `localhost:5433/airbharath_lms`; TCP and `/tmp` socket reach the same server.
+- Database OID `16384`, system identifier `7680462735222304705`.
+- Exactly **32 applied migrations, 0000–0031**; every applied SQL hash and journal timestamp matches source. No migration command was run.
+- Installed contact/order function matches 0031; five other migration 0027 functions unchanged.
+- Quarterly **₹5,899**, half-yearly **₹9,999**, yearly **₹17,699**, inclusive of GST, unchanged.
+- All three new demo accounts remained absent after Send OTP smoke. Existing demo order/membership counts were unchanged. No database insert, account edit, reset, seed or historical deletion was performed by preparation.
 
-Prior unchanged-source evidence at `aff000b`/`dc837b0` is reused: real PostgreSQL contact/eligibility/legal/idempotency tests, unverified sensitive-notice denial, desktop/mobile activation checks, 1,337 Vitest tests plus 42 Node checks, TypeScript/lint and payment-disabled build. No product source change in this preparation, so the broad suite/build were not repeated.
+## Readiness checklist
 
-Unverified contact must continue to fail closed for sensitive financial/refund mail. Authenticated Billing & Support remains the status destination. Existing ownership-proof and immutable notice-binding safeguards are unchanged.
+| Check | Result | Evidence / limit |
+|---|---|---|
+| Local login and Workspace | PASS | `/login` and `/workspace` return 200; public Workspace retains payment-disabled copy |
+| Anonymous private routes | PASS | `/workspace/activate`, `/workspace/dashboard`, `/workspace/billing` redirect to normal sign-in |
+| Contact form / no mandatory email OTP | PASS, regression evidence | Phone-only activation component and contact route tests; no UI source changed. Prior real PostgreSQL and hydrated browser evidence at `aff000b`/`dc837b0` remains applicable |
+| OTP isolation | PASS | New allowlist only; real local send/negative smoke; production/staging, target mismatch, privileged-account, expiry, replay and rate-limit regressions |
+| Normal founder registration | READY / NOT YET PERFORMED | Founder performs successful verification and onboarding personally |
+| Eligibility and independent legal receipts | PRESERVED | No pre-approval or consent insertion; no policy change |
+| Current prices | PASS | Actual local catalog totals above; primary UAT must select Quarterly, INR, no coupon |
+| Test credential shape | PASS, offline only | Existing local secret configuration reports Test key/mode, account and distinct webhook secret configured; no actual Razorpay account authentication was attempted |
+| Payment-only full capability set | BLOCKED | Shared reconciliation capability and existing worker behavior described below |
+| Supplied tunnel / genuine webhook | NOT YET TESTED | Existing HTTPS target/path retained; no tunnel probe, signed event or provider call |
+| Genuine payment / fulfillment / dashboard | NOT YET TESTED | Checkout remains disabled; no provider order/payment or entitlement fabricated |
+| Founder acceptance | NOT GIVEN | Registration readiness is not payment UAT acceptance or release authorization |
 
-## Safety and next checkpoint
+## Exact payment-only isolation blocker
 
-No database mutation, migration, account reset, genuine MSG91/Mailercloud call, production Neon connection, financial rule change, refund operation, deployment or public charging occurred. The sole repository change is this report. An automatic permission-review timeout delayed one read-only preflight attempt; the smaller retry succeeded. Restricted-sandbox process enumeration was inconclusive; the successful host runtime inspection is the evidence used above.
+The individual Test checkout and webhook-intake switches exist. They could be enabled independently after separate authorization, but intake alone does not process the durable event or fulfill membership. Enabling them now would expose an incomplete journey, so they remain OFF.
 
-Resolve demo/startup configuration first. Then return **LOCAL CREATOR PAYMENT UAT READY — AWAITING FOUNDER TEST AUTHORIZATION**, presenting the exact reviewed payment-only configuration. The brief requires explicit founder approval before enabling checkout or making genuine provider calls. Founder acceptance remains **NOT GIVEN**; even a future purchase UAT PASS is not production authorization.
+Normal browser payment confirmation and activation recovery require `reconciliation`. That same capability also provisions the refund runtime (`lib/workspace/refunds/runtime.ts`) and authorizes refund recovery. `WORKSPACE_REFUND_ENABLED=false` prevents refund mutations; it does **not** independently disable refund GET/reconciliation work.
+
+Both existing worker entry points are unsuitable for the requested isolation:
+
+- `lib/workspace/payments/worker.ts` always drains `payments`, **refunds**, and `activation`; it explicitly invokes `refunds.recoverPrepared`.
+- `scripts/workspace-local-uat-worker.cjs` wires a refund-event processor and selects pending events without restricting them to payment event types. It also contains notice-delivery orchestration. The broad `--providers` launcher enables refunds/email/notices and was **not used**.
+
+Therefore the required set—capture confirmation, genuine payment-event processing and normal fulfillment, with **refund reconciliation OFF**—cannot be guaranteed by an existing runtime flag combination. No broad worker or scheduled job was enabled. Minimal follow-up for separate approval: introduce an independently enforced refund-reconciliation capability and a payment-only worker path that excludes refund events/recovery and mail/notice delivery, with regression coverage. This preparation task does not authorize changing those financial paths.
+
+Outstanding webhook setup before eventual payment UAT: independently authorize Test operations; confirm the currently configured Test account and payment event subscriptions; probe the existing owner-supplied tunnel only after approval; verify actual HMAC-protected delivery through normal processing. No new tunnel is required. The prior refund HTTP 400 and genuine refund-webhook verification remain separate unresolved release gates; no refund was retried.
+
+## Validation and changes
+
+**99 focused tests across nine files passed**, including OTP/store/routes, local eligibility limiter, contact, phone-only UI, payment routes/inbox/readiness and financial-worker regressions. **TypeScript, lint and `git diff --check` passed.** Per this task’s focused-only instruction, the full suite and production build were not repeated; no financial/UI/schema code changed.
+
+Changed files:
+
+1. `lib/local-uat-otp.ts` — replace the three owner-approved local demo numbers; preserve every environment, request, database, privilege and OTP guard.
+2. `tests/routes/local-uat-otp.test.ts` — assert the exact new allowlist and deny all former demos.
+3. `tests/routes/local-uat-otp-routes.test.ts` — exercise normal registration/session and negative guards using the new primary number.
+4. `AIRBHARATH_FINAL_LOCAL_CREATOR_PAYMENT_UAT.md` — update current preparation evidence and precise remaining blocker.
+
+No genuine Razorpay, MSG91, Mailercloud, production NeonDB, refund, deployment or public-payment operation occurred. The founder may begin local registration and eligibility now; stop at the disabled payment state. Do not start another phase or genuine payment operations under this preparation authorization.

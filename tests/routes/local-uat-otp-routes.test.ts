@@ -19,23 +19,23 @@ it.each(LOCAL_UAT_PHONES)('uses normal account creation and signed student-sessi
 it('refuses fourth number, old Admin number, invalid Indian mobile and verify without issue',async()=>{
  for(const phone of ['9123456781','9876543210']){expect((await send(request('send-otp',{phone}))).status).toBe(503);expect((await verify(request('verify-otp',{phone,otp:'1234'}))).status).toBe(503);}
  expect((await send(request('send-otp',{phone:'1234567890'}))).status).toBe(400);expect((await verify(request('verify-otp',{phone:'1234567890',otp:'1234'}))).status).toBe(400);
- expect((await verify(request('verify-otp',{phone:'9876543211',otp:'1234'}))).status).toBe(400);expect(mocks.insertUser).not.toHaveBeenCalled();expect(mocks.cookie).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();
+ expect((await verify(request('verify-otp',{phone:'9876543222',otp:'1234'}))).status).toBe(400);expect(mocks.insertUser).not.toHaveBeenCalled();expect(mocks.cookie).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();
 });
 it.each([{NODE_ENV:'production'},{DATABASE_ENV:'production'},{DATABASE_ENV:'staging'},{VERCEL:'1'}])('refuses misplaced mock activation in %j without real-provider fallback',async changes=>{
  for(const [key,value] of Object.entries(changes))vi.stubEnv(key,value);
- expect((await send(request('send-otp',{phone:'9876543211'}))).status).toBe(503);expect((await verify(request('verify-otp',{phone:'9876543211',otp:'1234'}))).status).toBe(503);expect(mocks.identity).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();
+ expect((await send(request('send-otp',{phone:'9876543222'}))).status).toBe(503);expect((await verify(request('verify-otp',{phone:'9876543222',otp:'1234'}))).status).toBe(503);expect(mocks.identity).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();
 });
 it('requires matching live local database identity and refuses existing privileged users',async()=>{
- mocks.identity.mockResolvedValueOnce([{database:'airbharath_lms',oid:'999',system_identifier:'wrong',address:'127.0.0.1',port:'5433'}]);expect((await send(request('send-otp',{phone:'9876543211'}))).status).toBe(503);
- mocks.selectRole.mockResolvedValue([{role:'admin'}]);expect((await send(request('send-otp',{phone:'9876543211'}))).status).toBe(503);expect(mocks.cookie).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();
+ mocks.identity.mockResolvedValueOnce([{database:'airbharath_lms',oid:'999',system_identifier:'wrong',address:'127.0.0.1',port:'5433'}]);expect((await send(request('send-otp',{phone:'9876543222'}))).status).toBe(503);
+ mocks.selectRole.mockResolvedValue([{role:'admin'}]);expect((await send(request('send-otp',{phone:'9876543222'}))).status).toBe(503);expect(mocks.cookie).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();
 });
 it('applies rate limits, wrong-code failure and replay denial through normal routes',async()=>{
- const phone='9876543211';expect((await send(request('send-otp',{phone}))).status).toBe(200);expect((await send(request('send-otp',{phone}))).status).toBe(429);
+ const phone='9876543222';expect((await send(request('send-otp',{phone}))).status).toBe(200);expect((await send(request('send-otp',{phone}))).status).toBe(429);
  expect((await verify(request('verify-otp',{phone,otp:'0000'}))).status).toBe(400);expect((await verify(request('verify-otp',{phone,otp:'1234'}))).status).toBe(200);expect((await verify(request('verify-otp',{phone,otp:'1234'}))).status).toBe(400);expect(fetch).not.toHaveBeenCalled();
 });
 it('refuses session issuance if the persisted role becomes privileged after the local provider check',async()=>{
- const phone='9876543211';expect((await send(request('send-otp',{phone}))).status).toBe(200);
- mocks.findUser.mockResolvedValue({id:'00000000-0000-4000-8000-000000000123',phone:'919876543211',role:'admin'});
+ const phone='9876543222';expect((await send(request('send-otp',{phone}))).status).toBe(200);
+ mocks.findUser.mockResolvedValue({id:'00000000-0000-4000-8000-000000000123',phone:'919876543222',role:'admin'});
  expect((await verify(request('verify-otp',{phone,otp:'1234'}))).status).toBe(400);
  expect(mocks.cookie).not.toHaveBeenCalled();expect(mocks.insertUser).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();
 });
