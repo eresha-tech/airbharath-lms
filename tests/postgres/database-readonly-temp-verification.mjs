@@ -12,7 +12,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync
 import { createServer } from 'node:net';
 import { join } from 'node:path';
 import postgres from 'postgres';
-import { inspectDatabase, loadReviewedSource } from '../../scripts/database-readonly-preflight-core.mjs';
+import { inspectDatabase, loadReviewedSource, verifyServerSsl } from '../../scripts/database-readonly-preflight-core.mjs';
 import { queries } from '../../scripts/database-readonly-queries.mjs';
 
 const bin = '/usr/lib/postgresql/16/bin';
@@ -116,6 +116,30 @@ try {
   assert.equal(serverDefault.read_only, 'off');
   results.checks.push({ name:'isolated server has normal writable transaction default', readOnly:serverDefault.read_only });
   await inspect('default NULL database ACL uses acldefault: PUBLIC-only TEMP accepted', 'preflight_temp_default', { flags: { temporary_objects: true, public_temp: true, nonpublic_temp: false } });
+  const sslProbe=client(auditRole,'preflight_temp_default');
+  await sslProbe.begin('isolation level repeatable read read only',async tx=>{
+    const [proof]=await tx.unsafe("select current_user as role, current_setting('transaction_read_only') as read_only");
+    assert.equal(proof.role,auditRole);assert.equal(proof.read_only,'on');
+    const rows=await tx.unsafe(queries.tls);
+    const evidence=verifyServerSsl(rows);
+    assert.equal(evidence.sslIsBoolean,true);assert.equal(evidence.sslValue,true);assert.equal(evidence.rowCount,1);
+    results.checks.push({name:'restricted role own-session pg_stat_ssl returns one native boolean and TLS version over verified TLS',...evidence});
+  });
+  await sslProbe.end({timeout:1});clients.delete(sslProbe);
+  // Plaintext is confined to this disposable Unix-socket fixture. This control
+  // proves backend SSL status separately from certificate/hostname verification.
+  const plain=postgres({host:socket,port,database:'preflight_temp_default',user:auditRole,ssl:false,
+    max:1,prepare:false,fetch_types:false,target_session_attrs:null,connect_timeout:5,onnotice(){},
+    connection:{default_transaction_read_only:true,search_path:'pg_catalog',statement_timeout:5000,lock_timeout:1000,idle_in_transaction_session_timeout:5000}});
+  clients.add(plain);
+  await plain.begin('isolation level repeatable read read only',async tx=>{
+    const rows=await tx.unsafe(queries.tls);assert.equal(rows.length,1);assert.equal(rows[0].ssl,false);assert.equal(rows[0].version,null);
+    assert.throws(()=>verifyServerSsl(rows),error=>{
+      assert.equal(error.diagnostic.serverSslEvidence.sslValue,false);assert.equal(error.diagnostic.serverSslEvidence.version,null);return true;
+    });
+    results.checks.push({name:'isolated plaintext backend reports false/null and remains rejected',ssl:false,version:null});
+  });
+  await plain.end({timeout:1});clients.delete(plain);
   // Simulate a server that does not honor the requested startup default. The
   // production options still request it; explicit BEGIN READ ONLY is independent.
   await inspect('writable session default still collects only inside explicit READ ONLY', 'preflight_temp_default', {existing:writableSession});

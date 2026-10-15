@@ -2,7 +2,7 @@ import { expect, it, vi } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { loadReviewedSource, preflightConfiguration, reconcileLedger, assessCatalog, inspectDatabase, PreflightError, preflightFailure } from '../../scripts/database-readonly-preflight-core.mjs';
+import { loadReviewedSource, preflightConfiguration, reconcileLedger, assessCatalog, inspectDatabase, PreflightError, preflightFailure, verifyServerSsl } from '../../scripts/database-readonly-preflight-core.mjs';
 import { main } from '../../scripts/database-readonly-preflight.mjs';
 const providerMock = vi.hoisted(()=>({factory:vi.fn()}));
 vi.mock('postgres',()=>({default:providerMock.factory}));
@@ -136,6 +136,40 @@ it('fails closed if privilege proof, verified TLS, read-only mode or identity is
   for(const [name,value,code] of [['roles',new Error('private server error'),'preflight_readonly_role_required'],['tls',[{ssl:false}],'preflight_tls_unverified'],['identity',[{database:'wrong',role:'inspection_readonly'}],'preflight_identity_mismatch']] as const){
     const h=harness();h.data[name]=value instanceof Error?value:[...value];await expect(h.run()).rejects.toThrow(code);expect(h.client.end).toHaveBeenCalled();
   }
+});
+it('rejects a truthy non-boolean server SSL value instead of treating it as TLS evidence',async()=>{
+  const h=harness();h.data.tls=[{ssl:'false',version:'TLSv1.3'}];
+  await expect(h.run()).rejects.toMatchObject({code:'preflight_tls_unverified',diagnostic:{stage:'tls_verification',serverSslEvidence:{rowCount:1,sslIsBoolean:false,sslEnabled:false,sslValue:null,version:'TLSv1.3',versionAllowed:true}}});
+  expect(h.unsafe.mock.calls.map(c=>c[0])).not.toContain(queries.ledgerPresence);
+});
+it.each([
+  [],[{ssl:null,version:null}],[{ssl:false,version:null}],[{version:'TLSv1.3'}],
+  [{ssl:1,version:'TLSv1.3'}],[{ssl:'true',version:'TLSv1.3'}],
+  [{ssl:true,version:null}],[{ssl:true,version:'TLSv1.1'}],[{ssl:true,version:'private-synthetic-version'}],
+  [{ssl:true,version:'TLSv1.3'},{ssl:true,version:'TLSv1.3'}],
+].map(rows=>({rows})))('retains only normalized server SSL failure evidence for $rows',async({rows})=>{
+  const h=harness();h.data.tls=rows;
+  try {await h.run();throw Error('Expected refusal');}
+  catch(error) {
+    expect(error).toBeInstanceOf(PreflightError);
+    const diagnostic=preflightFailure(error,'transaction_finish');
+    expect(diagnostic).toMatchObject({stage:'tls_verification',category:'tls_verification_failed',serverSslEvidence:{rowCount:rows.length,exactlyOneRow:rows.length===1}});
+    expect(JSON.stringify(diagnostic)).not.toContain('private-synthetic');
+  }
+  expect(h.unsafe.mock.calls.map(c=>c[0])).not.toContain(queries.ledgerPresence);
+});
+it.each(['TLSv1.2','TLSv1.3'])('accepts only a true boolean with supported server version %s',version=>{
+  expect(verifyServerSsl([{ssl:true,version}])).toMatchObject({exactlyOneRow:true,sslIsBoolean:true,sslValue:true,version,versionAllowed:true});
+});
+it('does not serialize raw TLS query errors or cipher details into SSL failure evidence',async()=>{
+  const h=harness();h.data.tls=[{ssl:false,version:'private-synthetic-version',cipher:'private-synthetic-cipher'}];providerMock.factory.mockReturnValueOnce(h.client);
+  const stderr=vi.spyOn(process.stderr,'write').mockImplementation(()=>true);
+  try {
+    expect(await main(environment())).toBe(1);
+    const text=String(stderr.mock.calls[0][0]), output=JSON.parse(text);
+    expect(output.serverSslEvidence).toMatchObject({sslValue:false,version:'UNRECOGNIZED',versionAllowed:false});
+    expect(text).not.toContain('private-synthetic');expect(text).not.toContain('synthetic-only');
+  } finally {stderr.mockRestore();}
 });
 it('records a ledger privilege failure as UNKNOWN without repairing it or escalating',async()=>{
   const h=harness();h.data.ledger=new Error('permission denied; private connection detail');const r=await h.run();expect(r.ledger.state).toBe('UNKNOWN');expect(r.ledger.pending).toBeNull();expect(r.limitations).toContain('ledger:unavailable');expect(JSON.stringify(r)).not.toContain('private connection detail');

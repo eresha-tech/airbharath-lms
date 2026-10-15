@@ -20,6 +20,27 @@ const diagnosed = (error, stage) => {
 const fail = code => { throw new PreflightError(code); };
 const bodyHash = value => sha(value.replaceAll('\r\n', '\n').trim());
 
+// pg_stat_ssl describes the backend connection; it does not prove client-side
+// certificate/hostname verification. Keep that independent verify-full policy.
+export function verifyServerSsl(rows) {
+  const row = rows?.[0], knownVersions = ['SSLv2','SSLv3','TLSv1','TLSv1.1','TLSv1.2','TLSv1.3'];
+  const serverSslEvidence = {
+    rowCount: Array.isArray(rows) ? rows.length : null,
+    exactlyOneRow: Array.isArray(rows) && rows.length===1,
+    sslFieldPresent: !!row && Object.hasOwn(row,'ssl'),
+    sslIsBoolean: typeof row?.ssl==='boolean',
+    sslEnabled: row?.ssl===true,
+    sslValue: typeof row?.ssl==='boolean' ? row.ssl : null,
+    versionIsString: typeof row?.version==='string',
+    version: knownVersions.includes(row?.version) ? row.version : row?.version==null ? null : 'UNRECOGNIZED',
+    versionAllowed: ['TLSv1.2','TLSv1.3'].includes(row?.version),
+  };
+  if (!serverSslEvidence.exactlyOneRow || !serverSslEvidence.sslEnabled || !serverSslEvidence.versionAllowed) throw new PreflightError('preflight_tls_unverified', {
+    ...safeDiagnostic(null, 'tls_verification', 'preflight_tls_unverified'), serverSslEvidence,
+  });
+  return serverSslEvidence;
+}
+
 export function preflightConfiguration(env) {
   if (env.ALLOW_PRODUCTION_READONLY_PREFLIGHT !== 'true') fail('preflight_owner_authorization_required');
   if (env.DATABASE_ENV !== 'production' || env.PREFLIGHT_CONNECTION_MODE !== 'direct' || env.ALLOW_DATABASE_MIGRATION === 'true') fail('preflight_environment_invalid');
@@ -196,7 +217,7 @@ export async function inspectDatabase({ env, connect, source = /** @type {Return
           limitations.push(name+':unavailable'); return null;
         }
       }
-      const identity = (await read('identity'))?.[0], tls = (await read('tls'))?.[0], roles = (await read('roles',[configuration.target.migrationRole]))?.[0];
+      const identity = (await read('identity'))?.[0], tlsRows = await read('tls'), tls = tlsRows?.[0], roles = (await read('roles',[configuration.target.migrationRole]))?.[0];
       stage = 'identity_verification';
       if (!identity || identity.database!==configuration.target.database || identity.role!==configuration.target.role || identity.authenticated_role!==configuration.target.role
         || identity.read_only!=='on' || (configuration.target.expectedOid && identity.oid!==configuration.target.expectedOid)) fail('preflight_identity_mismatch');
@@ -215,7 +236,7 @@ export async function inspectDatabase({ env, connect, source = /** @type {Return
         ...safeDiagnostic(null, stage, 'preflight_limits_unverified'), sessionSettingChecks,
       });
       stage = 'tls_verification';
-      if (!tls?.ssl || !['TLSv1.2','TLSv1.3'].includes(tls.version)) fail('preflight_tls_unverified');
+      verifyServerSsl(tlsRows);
       stage = 'privilege_verification';
       // PUBLIC-only TEMP is an explicit inspection exception, not an absent privilege.
       // Unknown/contradictory ACL provenance or any role-specific TEMP grant still refuses.
