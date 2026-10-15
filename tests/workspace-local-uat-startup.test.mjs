@@ -13,11 +13,13 @@ for (const [name, extra] of [
   ['wrong local port', { DATABASE_URL: 'postgresql://synthetic:synthetic@localhost:5432/airbharath_lms' }],
 ]) {
   test(`UAT launcher refuses ${name} before app/worker startup`, () => {
-    const result = spawnSync(process.execPath, ['scripts/workspace-local-uat.mjs', '--providers'], { env: { ...safe, ...extra }, encoding: 'utf8', timeout: 10_000 });
+    for (const mode of ['--providers', '--payments-only']) {
+    const result = spawnSync(process.execPath, ['scripts/workspace-local-uat.mjs', mode], { env: { ...safe, ...extra }, encoding: 'utf8', timeout: 10_000 });
     assert.equal(result.status, 1);
     assert.match(result.stderr, /preflight refused startup/);
     assert.doesNotMatch(result.stdout, /Test payments\/email enabled|worker ready/);
     assert.doesNotMatch(result.stderr, /synthetic|postgresql:\/\//);
+    }
   });
 }
 test('standalone UAT worker is disabled without its explicit flag', () => {
@@ -27,4 +29,9 @@ test('standalone UAT worker is disabled without its explicit flag', () => {
 test('standalone UAT worker refuses production even with misplaced flags', () => {
   const result = spawnSync(process.execPath, ['scripts/workspace-local-uat-worker.cjs'], { env: { ...safe, NODE_ENV: 'production', WORKSPACE_LOCAL_UAT_OTP_ENABLED: 'true', WORKSPACE_LOCAL_UAT_FINANCIAL_WORKER_ENABLED: 'true' }, encoding: 'utf8', timeout: 10_000 });
   assert.equal(result.status, 1); assert.match(result.stderr, /worker refused startup/); assert.doesNotMatch(result.stdout, /worker ready/);
+});
+
+test('UAT launcher rejects mixed broad and payment-only modes before startup', () => {
+  const result=spawnSync(process.execPath,['scripts/workspace-local-uat.mjs','--providers','--payments-only'],{env:safe,encoding:'utf8',timeout:10000});
+  assert.equal(result.status,1);assert.match(result.stderr,/uat_invalid_arguments/);assert.doesNotMatch(result.stdout,/worker ready|Local UAT:/);
 });

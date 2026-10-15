@@ -221,7 +221,7 @@ export function createWorkspacePaymentService(store: FinanceStore, provider: Wor
   }
   async function runReconciliationBatch(limit = 10) {
     if (!Number.isInteger(limit) || limit < 1 || limit > 25) throw new PaymentError('validation');
-    const pending = await store.pendingEvents(clock(), limit, provider.context);
+    const pending = await store.pendingEvents(clock(), limit, provider.context, refundEvents ? [] : REFUND_EVENTS);
     for (const event of pending) await processEvent(event.id);
     const orders = await store.recoveryOrders(limit, provider.context);
     for (const order of orders) { if (!scoped(order)) continue; try { await reconcileOrder(order.userId, order.id); } catch { /* Remains durable/visible for the next authorized invocation. */ } }

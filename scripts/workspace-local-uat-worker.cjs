@@ -7,6 +7,7 @@ process.on('SIGTERM', () => { stopping = true; });
 
 async function main() {
   if (process.env.WORKSPACE_LOCAL_UAT_FINANCIAL_WORKER_ENABLED !== 'true') throw Error('uat_worker_disabled');
+  if (process.env.WORKSPACE_LOCAL_UAT_PAYMENTS_ONLY !== undefined && !['true','false'].includes(process.env.WORKSPACE_LOCAL_UAT_PAYMENTS_ONLY)) throw Error('uat_worker_mode_invalid');
   const base = createLoader({ 'server-only': {} });
   if (base('@/lib/local-uat-otp').localUatOtpMode() !== 'local') throw Error('uat_worker_environment_refused');
   const phones = base('@/lib/local-uat-otp').LOCAL_UAT_PHONES;
@@ -24,15 +25,19 @@ async function main() {
     const schema = base('@/lib/db/schema'), db = req('drizzle-orm/postgres-js').drizzle(client, { schema });
     const load = createLoader({ 'server-only': {}, '@/lib/db': { db } });
     const finance = load('@/lib/workspace/payments/repository').createPostgresFinanceStore(db);
-    const refunds = load('@/lib/workspace/refunds/repository').createPostgresRefundStore(db);
+    const paymentOnly = process.env.WORKSPACE_LOCAL_UAT_PAYMENTS_ONLY === 'true';
+    if (paymentOnly && ['WORKSPACE_REFUND_ENABLED','WORKSPACE_RAZORPAY_REFUND_RECONCILIATION_ENABLED','WORKSPACE_EMAIL_VERIFICATION_ENABLED','WORKSPACE_NOTICE_DELIVERY_ENABLED'].some(key=>process.env[key]!=='false')) throw Error('uat_payment_only_isolation_required');
+    const refundEnabled = !!load('@/lib/workspace/payments/configuration').financialConfiguration('refund_reconciliation');
+    const refunds = refundEnabled ? load('@/lib/workspace/refunds/repository').createPostgresRefundStore(db) : null;
+    const eventTypes = [...load('@/lib/workspace/payments/model').PAYMENT_EVENTS, ...(refundEnabled ? load('@/lib/workspace/refunds/model').REFUND_EVENTS : [])];
     const activationStore = load('@/lib/workspace/activation/repository').createPostgresActivationStore(db);
     console.log('Local UAT worker ready: only the three demo students and matching Test account/orders.');
     let nextRecoveryAt = 0, nextNoticeAt = 0;
     while (!stopping) {
       const signal = AbortSignal.timeout(30_000);
       const provider = load('@/lib/workspace/payments/provider').createRazorpayAdapter(process.env, fetch, signal);
-      const refundService = load('@/lib/workspace/refunds/service').createRefundService(refunds, provider);
-      const refundEvents = load('@/lib/workspace/refunds/events').createRefundEventProcessor(provider, finance, refunds, refundService);
+      const refundService = refunds ? load('@/lib/workspace/refunds/service').createRefundService(refunds, provider) : null;
+      const refundEvents = refundService ? load('@/lib/workspace/refunds/events').createRefundEventProcessor(provider, finance, refunds, refundService) : undefined;
       const payments = load('@/lib/workspace/payments/service').createWorkspacePaymentService(finance, provider, undefined, undefined, refundEvents);
       const activation = load('@/lib/workspace/activation/service').createWorkspaceActivationService(activationStore, 'development', () => new Date(), provider.context);
       try {
@@ -42,6 +47,7 @@ async function main() {
           join users u on u.id=o.user_id where u.phone in ${client(phones)} and u.role='student'
           and o.provider_mode='test' and o.provider_account_id=${configuration.accountId}
           and e.provider_mode=o.provider_mode and e.provider_account_id=o.provider_account_id
+          and e.event_type in ${client(eventTypes)}
           and e.processing_state in ('pending','retry','processing') and (e.next_attempt_at is null or e.next_attempt_at<=clock_timestamp())
           order by e.received_at,e.id limit 3`;
         for (const event of events) { if (stopping || signal.aborted) break; await payments.processEvent(event.id); }
@@ -55,6 +61,7 @@ async function main() {
           await payments.reconcileOrder(order.user_id, order.id);
           await activation.fulfill(order.user_id, order.id);
         }
+        if (!paymentOnly) {
         const notices = load('@/lib/workspace/refund-notifications/repository').createPostgresNoticeStore(db);
         const candidates = async limit => (await client`select n.id from workspace_refund_notices n
           join workspace_membership_orders o on o.id=n.membership_order_id join users u on u.id=o.user_id
@@ -68,6 +75,7 @@ async function main() {
           nextNoticeAt = Date.now() + 15_000;
           const noticeProvider = load('@/lib/workspace/refund-notifications/provider').createNoticeMailercloudAdapter(process.env, fetch, signal);
           await load('@/lib/workspace/refund-notifications/service').createRefundNoticeDeliveryService({ ...notices, candidates }, noticeProvider, noticeConfig).run(signal, 3);
+        }
         }
         if (events.length || orders.length) console.log(`Local UAT worker visited ${events.length} demo events and ${orders.length} demo orders; normal guards determine fulfillment.`);
       } catch { console.warn('Local UAT worker cycle needs retry; no financial state was forced.'); }

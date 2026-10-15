@@ -33,10 +33,10 @@ export function parseProviderPayment(raw: unknown, context: ProviderContext): Pr
   // created_at, callback time or a non-contract captured_at field into paidAt.
   return { accountId: context.accountId, mode: context.mode, id: raw.id, orderId: raw.order_id, amountPaise: Number(raw.amount), currency: raw.currency, state: raw.status === 'refunded' ? 'captured' : raw.status as ProviderPayment['state'], providerCreatedAt: unixDate(raw.created_at)!, capturedAt: null, captureTimeSource: null, refundedPaise: Number(raw.amount_refunded), refundStatus: (raw.refund_status || null) as ProviderPayment['refundStatus'] };
 }
-function createAdapter(config: ProviderConfiguration, http: typeof fetch, allowed: (operation: 'read' | 'checkout' | 'refund') => void, signal?: AbortSignal): WorkspaceProvider & RefundProvider {
+function createAdapter(config: ProviderConfiguration, http: typeof fetch, allowed: (operation: 'read' | 'refund_read' | 'checkout' | 'refund') => void, signal?: AbortSignal): WorkspaceProvider & RefundProvider {
   if (!config.keyId.startsWith(config.mode === 'live' ? 'rzp_live_' : 'rzp_test_')) throw new PaymentError('disabled');
   async function request(path: string, body?: unknown, idempotencyKey?: string) {
-    allowed(body ? path.endsWith('/refund') ? 'refund' : 'checkout' : 'read');
+    allowed(body ? path.endsWith('/refund') ? 'refund' : 'checkout' : path.includes('/refunds?') ? 'refund_read' : 'read');
     try {
       const response = await http(`https://api.razorpay.com/v1/${path}`, { method: body ? 'POST' : 'GET', headers: { ...(idempotencyKey ? { 'X-Refund-Idempotency': idempotencyKey } : {}), Authorization: `Basic ${Buffer.from(`${config.keyId}:${config.keySecret}`).toString('base64')}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10_000)]) : AbortSignal.timeout(10_000), redirect: 'error' });
       // Bound even authenticated provider responses; never log provider bodies/credentials.
@@ -94,7 +94,7 @@ export function createRazorpayAdapter(env: Record<string, string | undefined> = 
   const config = get('checkout') || get('refund') || get('reconciliation') || get('webhook');
   if (!config) throw new PaymentError('disabled');
   return createAdapter(config, http, operation => {
-    const current = operation === 'read' ? get('reconciliation') || get('refund') || get('checkout') : get(operation);
+    const current = operation === 'read' ? get('reconciliation') || get('refund') || get('checkout') : operation === 'refund_read' ? get('refund_reconciliation') || get('refund') : get(operation);
     if (!current || current.accountId !== config.accountId || current.mode !== config.mode || current.keyId !== config.keyId || current.keySecret !== config.keySecret) throw new PaymentError('disabled');
   }, signal);
 }
@@ -102,7 +102,7 @@ export function createRazorpayAdapter(env: Record<string, string | undefined> = 
 export function createRazorpayTestAdapter(config: ProviderConfiguration, http: typeof fetch = fetch) {
   if (config.mode !== 'test' || !config.keyId.startsWith('rzp_test_')) throw new PaymentError('disabled');
   return createAdapter(config, http, operation => {
-    const cap = operation === 'read' ? 'reconciliation' : operation;
+    const cap = operation === 'read' ? 'reconciliation' : operation === 'refund_read' ? 'refund_reconciliation' : operation;
     const authorized = requireFinancialConfiguration(cap);
     if (authorized.mode !== 'test' || authorized.accountId !== config.accountId || authorized.keyId !== config.keyId || authorized.keySecret !== config.keySecret) throw new PaymentError('disabled');
   });

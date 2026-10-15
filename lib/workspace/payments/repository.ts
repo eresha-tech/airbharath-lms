@@ -1,7 +1,7 @@
 import type { RefundPolicyIdentity } from '../refund-policy/document';
 import type { RefundPolicyAcceptance } from '../refund-policy/model';
 import { workspaceRefundPolicyVersions as refundVersions, workspaceRefundPolicyAcceptances as refundAcceptances } from '@/lib/db/schema';
-import { and, count, desc, eq, inArray, lte, or, sql } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, notInArray, lte, or, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { users, workspaceCoupons as coupons, workspaceMembershipPlans as plans, workspaceEligibilitySettings as settings, workspacePolicyVersions as policies, workspaceMembershipOrders as orders, workspaceCouponRedemptions as redemptions, workspacePaymentAttempts as payments, workspacePaymentEvents as events, workspaceRefundCompletions as refunds } from '@/lib/db/schema';
 import { readMembershipQuote, type MembershipQuoteContext } from '../membership/service';
@@ -46,7 +46,7 @@ export interface FinanceStore {
   claimEvent(id: string, now: Date, context: ProviderContext): Promise<InboxEvent | undefined>;
   retryEvent(id: string, now: Date): Promise<void>;
   finishUnmatchedEvent(id: string, now: Date, state: 'ignored' | 'needs_review', reason?: string): Promise<void>;
-  pendingEvents(now: Date, limit: number, context: ProviderContext): Promise<InboxEvent[]>;
+  pendingEvents(now: Date, limit: number, context: ProviderContext, excludedTypes?: string[]): Promise<InboxEvent[]>;
   recoveryOrders(limit: number, context: ProviderContext): Promise<Order[]>;
 }
 const dbCode = (error: unknown) => (error as { code?: string; cause?: { code?: string } })?.code || (error as { cause?: { code?: string } })?.cause?.code;
@@ -130,7 +130,7 @@ export function createPostgresFinanceStore(db: typeof import('@/lib/db').db) : F
   },
   async retryEvent(id, now) { await db.update(events).set({ processingState: 'retry', processedAt: null, leaseUntil: null, nextAttemptAt: new Date(now.getTime() + 60_000), lastErrorCode: 'reconciliation_retry' }).where(and(eq(events.id, id), eq(events.processingState, 'processing'), sql`${events.anomalyHash} IS NULL`)); },
   async finishUnmatchedEvent(id, now, state, reason) { await db.update(events).set({ processingState: state, processedAt: now, leaseUntil: null, lastErrorCode: reason || null }).where(and(eq(events.id, id), eq(events.processingState, 'processing'), sql`${events.anomalyHash} IS NULL`)); },
-  pendingEvents: (now, limit, context) => db.query.workspacePaymentEvents.findMany({ where: and(eq(events.providerAccountId, context.accountId), eq(events.providerMode, context.mode), inArray(events.processingState, ['pending', 'retry', 'processing']), or(sql`${events.nextAttemptAt} IS NULL`, lte(events.nextAttemptAt, now)), or(sql`${events.leaseUntil} IS NULL`, lte(events.leaseUntil, now))), orderBy: [events.receivedAt], limit }),
+  pendingEvents: (now, limit, context, excludedTypes = []) => db.query.workspacePaymentEvents.findMany({ where: and(eq(events.providerAccountId, context.accountId), eq(events.providerMode, context.mode), inArray(events.processingState, ['pending', 'retry', 'processing']), excludedTypes.length ? notInArray(events.eventType, excludedTypes) : undefined, or(sql`${events.nextAttemptAt} IS NULL`, lte(events.nextAttemptAt, now)), or(sql`${events.leaseUntil} IS NULL`, lte(events.leaseUntil, now))), orderBy: [events.receivedAt], limit }),
   recoveryOrders: (limit, context) => db.query.workspaceMembershipOrders.findMany({ where: and(eq(orders.providerAccountId, context.accountId), eq(orders.providerMode, context.mode), inArray(orders.providerSetupState, ['creating', 'recovery_required', 'ready'])), orderBy: [sql`${orders.providerRecoveryCheckedAt} ASC NULLS FIRST`, orders.createdAt], limit }),
 }; }
 export const postgresFinanceStore = createPostgresFinanceStore(db);

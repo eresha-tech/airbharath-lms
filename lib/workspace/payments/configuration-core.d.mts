@@ -13,6 +13,7 @@ export interface FinancialReadiness extends NoticeReadiness {
   refundMutationReady: boolean;
   webhookReady: boolean;
   reconciliationReady: boolean;
+  refundReconciliationReady: boolean;
   noticesReady: false;
   reasons: string[];
 }
