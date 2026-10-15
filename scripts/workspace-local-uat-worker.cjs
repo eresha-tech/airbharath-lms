@@ -31,7 +31,7 @@ async function main() {
     const refunds = refundEnabled ? load('@/lib/workspace/refunds/repository').createPostgresRefundStore(db) : null;
     const eventTypes = [...load('@/lib/workspace/payments/model').PAYMENT_EVENTS, ...(refundEnabled ? load('@/lib/workspace/refunds/model').REFUND_EVENTS : [])];
     const activationStore = load('@/lib/workspace/activation/repository').createPostgresActivationStore(db);
-    console.log('Local UAT worker ready: only the three demo students and matching Test account/orders.');
+    console.log('Local UAT worker ready: only allowlisted demo students and matching Test account/orders.');
     let nextRecoveryAt = 0, nextNoticeAt = 0;
     while (!stopping) {
       const signal = AbortSignal.timeout(30_000);

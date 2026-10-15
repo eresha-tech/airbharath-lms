@@ -12,11 +12,11 @@ it('accepts only loopback requests and refuses cross-site or tunneled OTP reques
  expect(localUatRequestAllowed(new Request('http://localhost:3000/api/auth/send-otp'))).toBe(true);
  for(const request of [new Request('https://public.invalid/api/auth/send-otp'),new Request('http://localhost:3000/api/auth/send-otp',{headers:{origin:'https://public.invalid'}}),new Request('http://localhost:3000/api/auth/send-otp',{headers:{'x-forwarded-host':'tunnel.trycloudflare.com'}})]) expect(localUatRequestAllowed(request)).toBe(false);
 });
-it('uses exactly the final owner-approved demos and rejects all former demos',()=>{
- expect(LOCAL_UAT_PHONES).toEqual(['919876543222','919000900009','919696969696']);
+it('preserves existing demos and adds only four fresh local registration identities',()=>{
+ expect(LOCAL_UAT_PHONES).toEqual(['919876543222','919000900009','919696969696','919876543223','919876543224','919876543225','919876543226']);
  const store=createLocalUatOtpStore();for(const phone of ['919876543211','919000090000','919123456780']){expect(store.send(phone)).toBe(false);expect(store.verify(phone,'1234')).toBe(false);}
 });
-it('only verifies the three owner-approved numbers, after issue, once, and before expiry',()=>{
+it('only verifies allowlisted demo numbers, after issue, once, and before expiry',()=>{
  let time=1000;const store=createLocalUatOtpStore(()=>time);
  for(const phone of LOCAL_UAT_PHONES){expect(store.verify(phone,'1234')).toBe(false);expect(store.send(phone)).toBe(true);expect(store.verify(phone,'wrong')).toBe(false);expect(store.verify(phone,'1234')).toBe(true);expect(store.verify(phone,'1234')).toBe(false);store.send(phone);}
  time+=600_000;for(const phone of LOCAL_UAT_PHONES)expect(store.verify(phone,'1234')).toBe(false);

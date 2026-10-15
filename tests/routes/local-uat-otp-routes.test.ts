@@ -16,7 +16,7 @@ beforeEach(()=>{
 it.each(LOCAL_UAT_PHONES)('uses normal account creation and signed student-session issuance for %s, with no provider fetch',async phone=>{
  expect((await send(request('send-otp',{phone}))).status).toBe(200);const response=await verify(request('verify-otp',{phone,otp:'1234'}));expect(response.status).toBe(200);expect(mocks.values).toHaveBeenCalledWith(expect.objectContaining({phone,role:'student'}));expect(mocks.cookie).toHaveBeenCalledTimes(1);const session=await verifySessionToken(mocks.cookie.mock.calls[0][1]);expect(session?.role).toBe('student');expect(fetch).not.toHaveBeenCalled();
 });
-it('refuses fourth number, old Admin number, invalid Indian mobile and verify without issue',async()=>{
+it('refuses unlisted numbers, old Admin number, invalid Indian mobile and verify without issue',async()=>{
  for(const phone of ['9123456781','9876543210']){expect((await send(request('send-otp',{phone}))).status).toBe(503);expect((await verify(request('verify-otp',{phone,otp:'1234'}))).status).toBe(503);}
  expect((await send(request('send-otp',{phone:'1234567890'}))).status).toBe(400);expect((await verify(request('verify-otp',{phone:'1234567890',otp:'1234'}))).status).toBe(400);
  expect((await verify(request('verify-otp',{phone:'9876543222',otp:'1234'}))).status).toBe(400);expect(mocks.insertUser).not.toHaveBeenCalled();expect(mocks.cookie).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();
