@@ -14,7 +14,7 @@ export function HeroBanner({ featured }: {
     <h1>Knowledge into Skill.<br />
     <span>Skill into Possibility.</span>
     </h1>
-    <p className="public-copy">AirBharath combines industry-aligned aviation learning with AI-powered practice and immersive VR training innovation. Build career-ready skills, or use Creator Workspace to turn your aviation expertise into structured course drafts.</p>
+    <p className="public-copy">AirBharath combines industry-aligned <strong>aviation learning</strong> with <strong>AI-powered practice</strong> and immersive <strong>VR training</strong> innovation. Build career-ready skills, or use Creator Workspace to turn your aviation expertise into structured course drafts.</p>
     <div className="public-actions">
     <PublicAction href="/courses">Explore Courses</PublicAction>
     <PublicAction secondary href="/workspace/apply">Become a Creator</PublicAction>
