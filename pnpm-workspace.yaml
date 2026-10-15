@@ -1,4 +1,4 @@
-pmOnFail: error
+pmOnFail: warn
 verifyDepsBeforeRun: false
 
 # Next's Sharp 0.34.5 copy crashes on the local Linux runtime.
