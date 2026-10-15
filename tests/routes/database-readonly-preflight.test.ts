@@ -166,6 +166,48 @@ it('contains no migration CLI, arbitrary SQL, provider calls or executable DDL/D
 
 it('refuses ignored limits instead of proceeding without bounded database statements',async()=>{ const h=harness();h.data.identity=[{database:'airbharath_lms',oid:'98765',role:'inspection_readonly',authenticated_role:'inspection_readonly',search_path:'pg_catalog',read_only:'on',statement_timeout_ms:0,lock_timeout_ms:0,idle_transaction_timeout_ms:0}];await expect(h.run()).rejects.toThrow('preflight_limits_unverified');expect(h.client.end).toHaveBeenCalled(); });
 
+it('accepts the same sole pg_catalog schema when PostgreSQL preserves identifier quotes',async()=>{
+  const h=harness();h.data.identity=[{...(h.data.identity as Record<string,unknown>[])[0],search_path:'"pg_catalog"'}];
+  expect((await h.run()).migrationAuthorized).toBe(false);
+});
+it('reports only per-setting booleans when session settings cannot be verified',async()=>{
+  const h=harness();h.data.identity=[{...(h.data.identity as Record<string,unknown>[])[0],lock_timeout_ms:0}];
+  await expect(h.run()).rejects.toMatchObject({diagnostic:{code:'preflight_limits_unverified',sessionSettingChecks:{searchPath:true,statementTimeout:true,lockTimeout:false,idleTransactionTimeout:true}}});
+  expect(h.unsafe.mock.calls.map(c=>c[0])).not.toContain(queries.ledgerPresence);
+});
+it.each(['public','pg_catalog, public','"pg_catalog", public','"PG_CATALOG"','$user, pg_catalog','pg_catalog; select private_synthetic',undefined,null,5000])('keeps unsafe or unverifiable search paths blocked: %s',async path=>{
+  const h=harness();h.data.identity=[{...(h.data.identity as Record<string,unknown>[])[0],search_path:path}];
+  try {await h.run();throw Error('Expected refusal');}
+  catch(error) {
+    expect(error).toBeInstanceOf(PreflightError);
+    const diagnostic=preflightFailure(error,'inspection');
+    expect(diagnostic).toMatchObject({stage:'session_limits_verification',sessionSettingChecks:{searchPath:false,statementTimeout:true,lockTimeout:true,idleTransactionTimeout:true}});
+    expect(JSON.stringify(diagnostic)).not.toContain('private_synthetic');
+  }
+  expect(h.unsafe.mock.calls.map(c=>c[0])).not.toContain(queries.ledgerPresence);
+});
+it.each([
+  ['statement_timeout_ms','statementTimeout'],['lock_timeout_ms','lockTimeout'],['idle_transaction_timeout_ms','idleTransactionTimeout'],
+])('preserves exact integer-millisecond verification for %s',async(field,flag)=>{
+  for(const value of [0,-1,6000,'5000','5s',null,undefined]) {
+    const h=harness();h.data.identity=[{...(h.data.identity as Record<string,unknown>[])[0],[field]:value}];
+    await expect(h.run()).rejects.toMatchObject({diagnostic:{sessionSettingChecks:{[flag]:false}}});
+    expect(h.unsafe.mock.calls.map(c=>c[0])).not.toContain(queries.ledgerPresence);
+  }
+});
+it('serializes only four safe setting booleans through the CLI failure path',async()=>{
+  const h=harness();h.data.identity=[{...(h.data.identity as Record<string,unknown>[])[0],search_path:'private-synthetic-secret',statement_timeout_ms:0}];
+  providerMock.factory.mockReturnValueOnce(h.client);
+  const stderr=vi.spyOn(process.stderr,'write').mockImplementation(()=>true);
+  try {
+    expect(await main(environment())).toBe(1);
+    const text=String(stderr.mock.calls[0][0]), output=JSON.parse(text);
+    expect(output).toMatchObject({decision:'BLOCKED',category:'session_safety_check_failed',stage:'session_limits_verification',sqlstate:null,sessionSettingChecks:{searchPath:false,statementTimeout:false,lockTimeout:true,idleTransactionTimeout:true}});
+    expect(text).not.toContain('private-synthetic-secret');expect(text).not.toContain('synthetic-only');
+    expect(Object.values(output.sessionSettingChecks).every(v=>typeof v==='boolean')).toBe(true);
+  } finally {stderr.mockRestore();}
+});
+
 it('never prints server/driver error messages that resemble validator codes',async()=>{providerMock.factory.mockImplementationOnce(()=>{throw Error('preflight_private_synthetic_secret')});const stderr=vi.spyOn(process.stderr,'write').mockImplementation(()=>true);try{expect(await main(environment())).toBe(1);expect(stderr).toHaveBeenCalledWith(expect.stringContaining('preflight_inspection_failed'));expect(JSON.stringify(stderr.mock.calls)).not.toContain('private_synthetic_secret');}finally{stderr.mockRestore();}});
 
 it('reuses retained F6 function evidence offline to check migration-body parsing',()=>{

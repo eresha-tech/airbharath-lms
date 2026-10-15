@@ -201,7 +201,19 @@ export async function inspectDatabase({ env, connect, source = /** @type {Return
       if (!identity || identity.database!==configuration.target.database || identity.role!==configuration.target.role || identity.authenticated_role!==configuration.target.role
         || identity.read_only!=='on' || (configuration.target.expectedOid && identity.oid!==configuration.target.expectedOid)) fail('preflight_identity_mismatch');
       stage = 'session_limits_verification';
-      if (identity.search_path!=='pg_catalog' || identity.statement_timeout_ms!==5000 || identity.lock_timeout_ms!==1000 || identity.idle_transaction_timeout_ms!==5000) fail('preflight_limits_unverified');
+      // PostgreSQL preserves identifier quotes in search_path; both exact forms
+      // name only pg_catalog. Do not accept other schemas, lists or expressions.
+      // The fixed SELECT casts pg_settings.setting to int in native ms, avoiding
+      // current_setting() display normalization such as 5000ms -> 5s.
+      const sessionSettingChecks = {
+        searchPath: ['pg_catalog', '"pg_catalog"'].includes(identity.search_path),
+        statementTimeout: identity.statement_timeout_ms===5000,
+        lockTimeout: identity.lock_timeout_ms===1000,
+        idleTransactionTimeout: identity.idle_transaction_timeout_ms===5000,
+      };
+      if (!Object.values(sessionSettingChecks).every(Boolean)) throw new PreflightError('preflight_limits_unverified', {
+        ...safeDiagnostic(null, stage, 'preflight_limits_unverified'), sessionSettingChecks,
+      });
       stage = 'tls_verification';
       if (!tls?.ssl || !['TLSv1.2','TLSv1.3'].includes(tls.version)) fail('preflight_tls_unverified');
       stage = 'privilege_verification';
