@@ -14,9 +14,7 @@ export function HeroBanner({ featured }: {
     <h1>Knowledge into Skill.<br />
     <span>Skill into Possibility.</span>
     </h1>
-    <p className="public-copy">AirBharath is a professional aviation learning platform where aspiring aviation professionals build career-ready skills and industry experts transform their experience into structured learning experiences.</p>
-    <dl className="public-hero-audiences"><div><dt>For Learners</dt><dd>Develop practical aviation skills through structured courses and career-focused learning.</dd></div><div><dt>For Creators</dt><dd>Bring your aviation expertise into a structured learning experience with AirBharath Creator Workspace.</dd></div></dl>
-    <p className="public-hero-scope">Creator Early Access supports private course preparation. Publication and creator-course sales are not yet available.</p>
+    <p className="public-copy">Build aviation skills through career-focused courses, or turn your industry experience into course drafts with Creator Workspace.</p>
     <div className="public-actions">
     <PublicAction href="/courses">Explore Courses</PublicAction>
     <PublicAction secondary href="/workspace/apply">Become a Creator</PublicAction>

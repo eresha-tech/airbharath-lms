@@ -6,11 +6,12 @@ vi.mock('next/link', () => ({ default: ({ children, ...props }: React.PropsWithC
 vi.mock('next/image', () => ({ default: ({ priority: _priority, ...props }: { priority?: boolean }) => React.createElement('img', props) }));
 import { HeroBanner } from '@/components/landing/HeroBanner';
 import { PublicBrand } from '@/components/public/PublicUI';
-it('renders the approved learner/Creator hierarchy and exact Sanskrit motto', () => {
+it('renders concise hero copy and preserves the motto and CTA destinations', () => {
   const html = renderToStaticMarkup(React.createElement(HeroBanner));
   expect(html).toContain('Professional Aviation Learning'); expect(html).toContain('lang="sa" translate="no">ज्ञानं कर्मसु कौशलम्');
   expect(html).toContain('Knowledge into Skill.'); expect(html).toContain('Skill into Possibility.');
-  expect(html).toContain('For Learners'); expect(html).toContain('For Creators'); expect(html).toContain('Publication and creator-course sales are not yet available.');
+  expect(html).toContain('Build aviation skills through career-focused courses, or turn your industry experience into course drafts with Creator Workspace.');
+  expect(html).not.toMatch(/For Learners|For Creators|Creator Early Access supports private course preparation|Publication and creator-course sales are not yet available/);
   expect(html).toContain('href="/courses"'); expect(html).toContain('href="/workspace/apply"');
 });
 it('renders plain AirBharath branding without the removed logo subtitle', () => {
