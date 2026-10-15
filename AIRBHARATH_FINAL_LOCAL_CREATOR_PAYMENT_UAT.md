@@ -2,11 +2,11 @@
 
 ## Current status
 
-**LOCAL RAZORPAY TEST PAYMENT ENABLED — AWAITING FOUNDER PAYMENT AND ACCEPTANCE.**
+**GENUINE LOCAL TEST PURCHASE VERIFIED — REFUND TEST AWAITS SEPARATE AUTHORIZATION.**
 
 The founder confirmed registration and eligibility, authorized payment testing, then explicitly approved the minimal payment-only worker/refund-reconciliation isolation correction. This resolves the blocker recorded at `89a8155`. Starting branch `codex/workspace-1.8-launch`, HEAD `89a8155`, clean worktree.
 
-This is temporary local Test enablement, not production/public payment authorization, a completed payment UAT, or founder acceptance of the complete journey.
+This is temporary local Test enablement, not production/public payment authorization or founder acceptance of the complete journey. The actual discounted purchase is verified below; the planned no-coupon pricing scenario remains untested.
 
 ## Founder next step
 
@@ -62,11 +62,24 @@ The founder personally confirmed registration and eligibility. Existing real loc
 
 Regression coverage demonstrates refund GET/POST rejection before HTTP, permitted payment reads, runtime kill-switch enforcement, unclaimed refund events without payment starvation, optional refund worker omission, and launcher rejection of production/staging/remote/mixed modes. A live smoke expectation was corrected from 401 to the application’s existing 403 signature status; product signature handling was unchanged.
 
-## Pending founder payment evidence
+## Actual founder payment evidence
 
-**NOT YET VERIFIED in this task:** genuine Test order/payment association, actual Razorpay account authentication, HMAC-verified payment event, authoritative paidAt, exact paidAt + 72-hour deadline, one fulfilled membership, correct launch-based dates, Creator Profile/Dashboard access, duplicate genuine delivery and final founder acceptance. These must be checked after the founder completes payment. No UAT PASS is claimed now.
+The founder reported a successful payment. Read-only verification against the exact authorized local DB confirmed:
 
-The prior refund HTTP 400 and genuine Test refund/signed-refund-webhook verification remain separate mandatory release gates; this purchase enablement does not resolve them. Production NeonDB inspection/migration, deployment and Live charging remain unauthorized.
+- Primary demo ending 3222 remains `role=student`; Test account matches configured Workspace account.
+- Quarterly plan, INR, base **499915 paise**, coupon discount **140000 paise**, taxable **359915 paise**, GST **64785 paise**, actual paid total **424700 paise (₹4,247.00)**.
+- This is **not** the planned ₹5,899 no-coupon scenario. No amount, coupon, receipt or payment evidence was changed to match the plan.
+- Financial state **captured**, activation **fulfilled**. Genuine `payment.captured` and `order.paid` events are processed. Normal webhook intake verifies HMAC before persistence; the matching captured event supplies the stored versioned capture-time evidence.
+- Capture source: `razorpay_payment_captured_event_v1`; `paidAt=2026-10-15T07:00:31.000Z` (15 October, 12:30:31 IST).
+- `refundEligibleUntil=2026-10-18T07:00:31.000Z` (18 October, 12:30:31 IST), exactly **259200000 milliseconds / 72 hours** after paidAt. The request window was open at inspection.
+- Exactly **one** winning captured payment, **one** membership and **one** enabled Creator Profile; provider amount remains unrefunded.
+- Paid term: **9 November 2026, 00:00 IST → 9 February 2027, 00:00 IST**. Current resolver state **early_access**, `hasCreatorAccess=true`, `hasPaidEntitlement=true`, `canEditWorkspace=true`; source **paid**, independent grant state **none**.
+- Application logs show browser confirmation **200** and authenticated `/workspace/dashboard` **200** after normal worker fulfillment. This supports actual dashboard access but is not a substitute for explicit founder acceptance.
+- No LMS order or enrollment was created for this identity. No refund request or completed refund exists for this new order at inspection.
+
+The refund must target **₹4,247**, not a catalog price or a previous Test payment. A separately authorized genuine Test refund/signature/access-revocation test is the recommended next step; refund execution/reconciliation remain OFF pending that authorization. Never revoke paid access merely because a request is submitted, approved internally, pending, failed or uncertain. Preserve immutable financial/course history, authorized historical read access and any independent valid access grant.
+
+The earlier refund HTTP 400 belongs to separate retained evidence; this purchase does not prove that problem fixed. Genuine refund-webhook verification, explicit final founder acceptance and the original no-coupon scenario remain outstanding. No production migration/deployment/Live charging is authorized.
 
 ## Changed files and cleanup
 
