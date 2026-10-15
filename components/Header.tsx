@@ -19,6 +19,7 @@ export default function Header() {
     const workspace = pathname.startsWith('/workspace');
     const [user, setUser] = useState<ClientUser | null>(null);
     const [open, setOpen] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false), [logoutError, setLogoutError] = useState('');
     const logoutPending = useRef(false);
     async function logout() {
@@ -42,6 +43,12 @@ export default function Header() {
     }, []);
     useEffect(() => { setOpen(false); }, [pathname]);
     useEffect(() => {
+        const updateScrolled = () => setScrolled(window.scrollY > 16);
+        updateScrolled();
+        window.addEventListener('scroll', updateScrolled, { passive: true });
+        return () => window.removeEventListener('scroll', updateScrolled);
+    }, []);
+    useEffect(() => {
         const mq = matchMedia('(min-width: 1200px)');
         const close = () => { if (mq.matches)
             setOpen(false); };
@@ -49,7 +56,7 @@ export default function Header() {
         return () => mq.removeEventListener('change', close);
     }, []);
     const active = (href: string) => href === '/workspace' ? workspace : pathname === href || (href === '/courses' && pathname.startsWith('/courses/'));
-    return <header className="public-ui public-header">
+    return <header className="public-ui public-header" data-scrolled={scrolled}>
     <a href="#public-content" className="public-skip">Skip to content</a>
     <div className="public-container public-header-row">
       <PublicBrand />

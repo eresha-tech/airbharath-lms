@@ -6,7 +6,7 @@ export function HeroBanner({ featured }: {
     featured?: PublicCourse;
 }) {
     const href = featured ? `/courses/${encodeURIComponent(featured.slug)}` : '/courses';
-    return <section className="public-hero">
+    return <section className="public-hero public-hero-motion">
     <div className="public-container public-hero-grid">
     <div>
     <p className="public-eyebrow">Professional Aviation Learning</p>

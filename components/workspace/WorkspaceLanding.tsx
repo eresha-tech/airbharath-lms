@@ -10,7 +10,7 @@ export function WorkspaceLanding({ info = { eligibility: null, plans: null } }: 
 }) {
     return <div className="public-ui ph-no-capture">
     <WorkspacePageView />
-    <section className="public-hero">
+    <section className="public-hero public-hero-motion">
     <div className="public-container public-hero-grid">
     <div>
     <p className="public-eyebrow">AirBharath Workspace · For aviation professionals</p>
