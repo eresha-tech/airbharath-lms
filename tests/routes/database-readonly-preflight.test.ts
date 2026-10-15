@@ -2,7 +2,7 @@ import { expect, it, vi } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { loadReviewedSource, preflightConfiguration, reconcileLedger, assessCatalog, inspectDatabase } from '../../scripts/database-readonly-preflight-core.mjs';
+import { loadReviewedSource, preflightConfiguration, reconcileLedger, assessCatalog, inspectDatabase, PreflightError, preflightFailure } from '../../scripts/database-readonly-preflight-core.mjs';
 import { main } from '../../scripts/database-readonly-preflight.mjs';
 const providerMock = vi.hoisted(()=>({factory:vi.fn()}));
 vi.mock('postgres',()=>({default:providerMock.factory}));
@@ -228,4 +228,127 @@ it('PUBLIC TEMP never overrides actual READ ONLY verification',async()=>{
   h.data.identity=[{...(h.data.identity as Record<string,unknown>[])[0],read_only:'off'}];
   await expect(h.run()).rejects.toThrow('preflight_identity_mismatch');
   expect(h.unsafe.mock.calls.map(c=>c[0])).not.toContain(queries.ledger);
+});
+
+it.each([
+  ['28P01','authentication_failed','28P01'],
+  ['28000','authentication_failed','28000'],
+  ['ERR_TLS_CERT_ALTNAME_INVALID','tls_verification_failed',null],
+  ['UNABLE_TO_VERIFY_LEAF_SIGNATURE','tls_verification_failed',null],
+  ['ECONNREFUSED','connection_failed',null],
+  ['ENOTFOUND','connection_failed',null],
+  ['08006','connection_failed','08006'],
+  ['CONNECT_TIMEOUT','inspection_timeout',null],
+  ['57014','inspection_timeout','57014'],
+  ['42501','insufficient_privileges','42501'],
+  ['42601','query_failed','42601'],
+  ['private-synthetic-code','inspection_failed',null],
+])('classifies transaction establishment failure %s without exporting driver details',async(driverCode,category,sqlstate)=>{
+  const h=harness();
+  h.client.begin.mockRejectedValueOnce(Object.assign(new Error('postgresql://private.invalid/private-synthetic-password'),{code:driverCode,detail:'private-synthetic-detail',query:'private-synthetic-query',stack:'private-synthetic-stack'}));
+  providerMock.factory.mockReturnValueOnce(h.client);
+  const stderr=vi.spyOn(process.stderr,'write').mockImplementation(()=>true);
+  try {
+    expect(await main(environment())).toBe(1);
+    const output=JSON.parse(String(stderr.mock.calls[0][0]));
+    expect(output).toMatchObject({decision:'BLOCKED',code:'preflight_inspection_failed',category,stage:'transaction_begin',sqlstate,migrationAuthorized:false});
+    expect(JSON.stringify(output)).not.toMatch(/private-synthetic|private\.invalid|postgresql:/);
+    expect(h.unsafe).not.toHaveBeenCalled();
+    expect(h.client.end).toHaveBeenCalledWith({timeout:2});
+  } finally {stderr.mockRestore();}
+});
+
+it('records missing ledger permissions and unavailable catalog metadata as diagnosed UNKNOWN results',async()=>{
+  const h=harness();
+  h.data.ledger=Object.assign(new Error('private-synthetic-ledger'),{code:'42501'});
+  h.data.columns=Object.assign(new Error('private-synthetic-catalog'),{code:'42P01'});
+  const r=await h.run();
+  expect(r.ledger.state).toBe('UNKNOWN');expect(r.compatibility.state).toBe('UNKNOWN');
+  expect(r.queryFailures).toEqual(expect.arrayContaining([
+    {stage:'ledger',category:'insufficient_privileges',sqlstate:'42501'},
+    {stage:'columns',category:'query_failed',sqlstate:'42P01'},
+  ]));
+  expect(r.migrationAuthorized).toBe(false);expect(JSON.stringify(r)).not.toContain('private-synthetic');
+});
+
+it('reports an optional query timeout and unexpected error without inventing metadata',async()=>{
+  const h=harness();
+  h.data.indexes=Object.assign(new Error('private-synthetic-timeout'),{code:'57014'});
+  h.data.functions=Object.assign(new Error('private-synthetic-unexpected'),{code:'ABCDE'});
+  const r=await h.run();
+  expect(r.catalog.indexes).toBeNull();expect(r.catalog.functions).toBeNull();
+  expect(r.queryFailures).toEqual(expect.arrayContaining([
+    {stage:'indexes',category:'inspection_timeout',sqlstate:'57014'},
+    {stage:'functions',category:'query_failed',sqlstate:null},
+  ]));
+  expect(JSON.stringify(r)).not.toMatch(/private-synthetic|ABCDE/);
+});
+
+it('preserves the underlying critical-query category while still refusing before ledger reads',async()=>{
+  const h=harness();h.data.roles=Object.assign(new Error('private-synthetic-roles'),{code:'42501'});
+  await expect(h.run()).rejects.toMatchObject({code:'preflight_readonly_role_required',diagnostic:{stage:'roles',category:'insufficient_privileges',sqlstate:'42501'}});
+  expect(h.unsafe.mock.calls.map(c=>c[0])).not.toContain(queries.ledger);
+});
+
+it('does not let connection cleanup replace the primary authentication failure',async()=>{
+  const h=harness();
+  h.client.begin.mockRejectedValueOnce(Object.assign(new Error('private-synthetic-auth'),{code:'28P01'}));
+  h.client.end.mockRejectedValueOnce(Object.assign(new Error('private-synthetic-cleanup'),{code:'ECONNRESET'}));
+  await expect(h.run()).rejects.toMatchObject({diagnostic:{stage:'transaction_begin',category:'authentication_failed',sqlstate:'28P01'}});
+});
+
+it('labels constructor and cleanup failures independently and keeps both non-successful',async()=>{
+  const stderr=vi.spyOn(process.stderr,'write').mockImplementation(()=>true);
+  try {
+    providerMock.factory.mockImplementationOnce(()=>{throw Object.assign(new Error('private-synthetic-constructor'),{code:'unknown'});});
+    expect(await main(environment())).toBe(1);
+    expect(JSON.parse(String(stderr.mock.calls[0][0]))).toMatchObject({stage:'client_initialization',category:'inspection_failed',sqlstate:null});
+    stderr.mockClear();
+    const h=harness();h.client.end.mockRejectedValueOnce(Object.assign(new Error('private-synthetic-close'),{code:'ECONNRESET'}));
+    providerMock.factory.mockReturnValueOnce(h.client);
+    expect(await main(environment())).toBe(1);
+    expect(JSON.parse(String(stderr.mock.calls[0][0]))).toMatchObject({stage:'connection_close',category:'connection_failed',migrationAuthorized:false});
+    expect(JSON.stringify(stderr.mock.calls)).not.toContain('private-synthetic');
+  } finally {stderr.mockRestore();}
+});
+
+it('labels source-integrity failures and suppresses arbitrary SQLSTATE-shaped strings and stages',()=>{
+  const root=mkdtempSync(join(tmpdir(),'preflight-diagnostic-source-'));
+  try {
+    mkdirSync(join(root,'drizzle/meta'),{recursive:true});writeFileSync(join(root,'drizzle/meta/_journal.json'),JSON.stringify({entries:[]}));
+    try {loadReviewedSource(root);throw Error('Expected source refusal');}
+    catch(error) {expect(preflightFailure(error,'source_integrity')).toMatchObject({code:'preflight_source_unreviewed',category:'source_integrity_failure',stage:'source_integrity',sqlstate:null});}
+    expect(preflightFailure(Object.assign(new Error('private-synthetic'),{code:'ABCDE'}),'private-synthetic-stage')).toEqual({code:'preflight_inspection_failed',category:'inspection_failed',stage:'inspection',sqlstate:null});
+    expect(JSON.stringify(preflightFailure(new PreflightError('preflight_private_synthetic'),'configuration'))).not.toContain('private_synthetic');
+    expect(preflightFailure(Object.assign(new Error('private-synthetic-path'),{code:'ENOENT'}),'source_integrity').category).toBe('source_integrity_failure');
+  } finally {rmSync(root,{recursive:true});}
+});
+
+it('keeps explicit identity, role, TLS and session-limit refusals distinct',async()=>{
+  for (const [query,patch,stage,category] of [
+    ['identity',{database:'wrong'},'identity_verification','target_identity_mismatch'],
+    ['identity',{statement_timeout_ms:0},'session_limits_verification','session_safety_check_failed'],
+    ['tls',{ssl:false},'tls_verification','tls_verification_failed'],
+    ['roles',{nonpublic_temp:true},'privilege_verification','role_verification_failed'],
+  ] as const) {
+    const h=harness();h.data[query]=[{...(h.data[query] as Record<string,unknown>[])[0],...patch}];
+    await expect(h.run()).rejects.toMatchObject({diagnostic:{stage,category,sqlstate:null}});
+    expect(h.unsafe.mock.calls.map(c=>c[0])).not.toContain(queries.ledger);
+  }
+});
+
+it('labels the overall deadline without allowing shutdown errors to mask it',async()=>{
+  vi.useFakeTimers();
+  try {
+    const h=harness();
+    h.client.begin.mockImplementationOnce(async()=>{
+      await new Promise(resolve=>setTimeout(resolve,31_000));
+      throw Object.assign(new Error('private-synthetic-disconnect'),{code:'CONNECTION_CLOSED'});
+    });
+    const result=h.run().catch(error=>error);
+    await vi.advanceTimersByTimeAsync(31_000);
+    expect(await result).toMatchObject({code:'preflight_deadline_exceeded',diagnostic:{stage:'transaction_begin',category:'inspection_timeout',sqlstate:null}});
+    expect(h.client.end).toHaveBeenCalledWith({timeout:1});
+    expect(h.client.end).toHaveBeenCalledWith({timeout:2});
+  } finally {vi.useRealTimers();}
 });

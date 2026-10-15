@@ -27,9 +27,9 @@ const clients = new Set();
 let started = false, port, certificate;
 const childEnv = Object.fromEntries(['PATH', 'HOME', 'USER', 'LANG'].filter(k => process.env[k]).map(k => [k, process.env[k]]));
 function command(executable, args) { return execFileSync(executable, args, { env: childEnv, stdio: 'pipe' }); }
-function client(user, database, readOnly = true, sslOverrides = {}) {
+function client(user, database, readOnly = true, sslOverrides = {}, passwordOverride) {
   const sql = postgres({ host: '127.0.0.1', port, database, user,
-    password: () => user === adminRole ? ownerPassword : auditPassword,
+    password: () => passwordOverride ?? (user === adminRole ? ownerPassword : auditPassword),
     ssl: { ca: certificate, rejectUnauthorized: true, servername: 'localhost', ...sslOverrides },
     max: 1, prepare: false, fetch_types: false, debug: false, connect_timeout: 5, idle_timeout: 2,
     connection: { application_name: 'airbharath_isolated_preflight_test', search_path: 'pg_catalog',
@@ -168,13 +168,31 @@ try {
   await assert.rejects(() => readOnly.begin('read only', tx => tx.unsafe('CREATE TEMP TABLE forbidden_temporary(id integer)')), { code: '25006' });
   results.checks.push({ name: 'PostgreSQL itself rejects CREATE TEMP in READ ONLY', outcome: '25006' });
   await readOnly.end(); clients.delete(readOnly);
-  const wrongHost = client(auditRole, db, true, { servername: 'wrong.invalid' });
-  await assert.rejects(() => wrongHost`select 1`, { code: 'ERR_TLS_CERT_ALTNAME_INVALID' }); await wrongHost.end(); clients.delete(wrongHost);
-  results.checks.push({ name: 'local TLS hostname mismatch rejected', outcome: 'ERR_TLS_CERT_ALTNAME_INVALID' });
-  const untrusted = client(auditRole, db, true, { ca: [] });
-  await assert.rejects(() => untrusted`select 1`, error => ['DEPTH_ZERO_SELF_SIGNED_CERT', 'SELF_SIGNED_CERT_IN_CHAIN', 'UNABLE_TO_VERIFY_LEAF_SIGNATURE'].includes(error.code));
-  await untrusted.end(); clients.delete(untrusted);
-  results.checks.push({ name: 'untrusted local TLS certificate rejected', outcome: 'certificate_rejected' });
+  async function diagnosticRejection(name, sql, category, sqlstate) {
+    await assert.rejects(() => inspectDatabase({ env:environment(db, auditRole), connect:() => sql, source }), error => {
+      assert.equal(error.diagnostic.category, category);
+      assert.equal(error.diagnostic.stage, 'transaction_begin');
+      assert.equal(error.diagnostic.sqlstate, sqlstate);
+      assert(!JSON.stringify(error).includes(auditPassword));
+      return true;
+    });
+    clients.delete(sql);
+    results.checks.push({ name, category, sqlstate, stage:'transaction_begin' });
+  }
+  await diagnosticRejection('local TLS hostname mismatch diagnosed', client(auditRole, db, true, { servername:'wrong.invalid' }), 'tls_verification_failed', null);
+  await diagnosticRejection('untrusted local TLS certificate diagnosed', client(auditRole, db, true, { ca:[] }), 'tls_verification_failed', null);
+  await diagnosticRejection('wrong isolated audit password diagnosed', client(auditRole, db, true, {}, randomBytes(24).toString('hex')), 'authentication_failed', '28P01');
+  await fixtures.unsafe('CREATE SCHEMA drizzle');
+  await fixtures.unsafe('CREATE TABLE drizzle.__drizzle_migrations(id integer, hash text, created_at bigint)');
+  await fixtures.unsafe('CREATE TABLE public.users(id integer)');
+  await fixtures.unsafe(`GRANT USAGE ON SCHEMA drizzle TO ${auditRole}`);
+  const restricted = client(auditRole, db);
+  const diagnosed = await inspectDatabase({ env:environment(db, auditRole), connect:() => restricted, source }); clients.delete(restricted);
+  assert.equal(diagnosed.ledger.state, 'UNKNOWN');
+  assert.equal(diagnosed.migrationAuthorized, false);
+  assert(diagnosed.queryFailures.some(f => f.stage==='ledger' && f.category==='insufficient_privileges' && f.sqlstate==='42501'));
+  assert(diagnosed.queryFailures.some(f => f.stage==='populated' && f.category==='insufficient_privileges' && f.sqlstate==='42501'));
+  results.checks.push({ name:'real missing ledger/user permissions remain UNKNOWN', category:'insufficient_privileges', sqlstate:'42501' });
   const [unchanged] = await fixtures`select count(*)::int as n, min(id) as id from public.preflight_fixture_table`;
   assert.deepEqual({ n: unchanged.n, id: unchanged.id }, { n: 1, id: 1 });
   results.checks.push({ name: 'synthetic permanent table unchanged', outcome: 'one original row intact' });

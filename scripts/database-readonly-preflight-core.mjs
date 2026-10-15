@@ -2,14 +2,21 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { queries } from './database-readonly-queries.mjs';
+import { safeDiagnostic } from './database-readonly-diagnostics.mjs';
 
 const sha = value => createHash('sha256').update(value).digest('hex');
 // Reviewed additive 0031: old SQL hashes unchanged; exact 32-entry chain remains pinned.
 const pinnedManifest = 'e9494753700c4df15ce57261e7431ba8d0451c1e41d46db485a7d55886f6eaf8';
 const identifier = value => typeof value === 'string' && /^[A-Za-z_][A-Za-z0-9_$]{0,62}$/.test(value);
 export class PreflightError extends Error {
-  constructor(code) { super(code); this.name = 'PreflightError'; this.code = code; }
+  constructor(code, diagnostic = null) { super(code); this.name = 'PreflightError'; this.code = code; this.diagnostic = diagnostic; }
 }
+export const preflightFailure = (error, stage) => error instanceof PreflightError && error.diagnostic
+  ? error.diagnostic : safeDiagnostic(error, stage, error instanceof PreflightError ? error.code : null);
+const diagnosed = (error, stage) => {
+  const diagnostic = preflightFailure(error, stage);
+  return new PreflightError(diagnostic.code, diagnostic);
+};
 const fail = code => { throw new PreflightError(code); };
 const bodyHash = value => sha(value.replaceAll('\r\n', '\n').trim());
 
@@ -154,27 +161,44 @@ function safeMetadata(value) {
   return value;
 }
 
-export async function inspectDatabase({ env, connect, source = loadReviewedSource() }) {
-  const configuration = preflightConfiguration(env); // Before any driver construction.
-  const client = connect(configuration.options);
-  let expired = false;
-  const deadline = setTimeout(() => { expired = true; void client.end({ timeout: 1 }).catch(() => {}); }, 30_000);
+export async function inspectDatabase({ env, connect, source = /** @type {ReturnType<typeof loadReviewedSource> | null} */ (null) }) {
+  let stage = 'configuration', client, deadline, primaryFailure, expired = false;
   try {
+    const configuration = preflightConfiguration(env); // Before any driver construction.
+    stage = 'source_integrity';
+    source ??= loadReviewedSource();
+    stage = 'client_initialization';
+    client = connect(configuration.options);
+    const connectedClient = client;
+    deadline = setTimeout(() => { expired = true; void connectedClient.end({ timeout: 1 }).catch(() => {}); }, 30_000);
+    stage = 'transaction_begin';
     return await client.begin('isolation level repeatable read read only', async tx => {
-      const limitations = [];
+      const limitations = [], queryFailures = [];
       async function read(name, parameters=[]) {
+        stage = name;
         if (expired) fail('preflight_deadline_exceeded');
         try {
           const rows = await tx.savepoint(sp => sp.unsafe(queries[name],parameters));
           if (rows.length>({objects:2000,columns:10000,constraints:2000,indexes:2000,functions:1000,triggers:1000,ledger:32}[name] ?? 100)) { limitations.push(name+':catalog_limit_exceeded'); return null; }
           return Array.from(rows);
-        } catch { limitations.push(name+':unavailable'); return null; }
+        } catch (error) {
+          const diagnostic = safeDiagnostic(error, name);
+          const critical = { identity:'preflight_identity_mismatch', tls:'preflight_tls_unverified', roles:'preflight_readonly_role_required' }[name];
+          if (critical) throw new PreflightError(critical, { ...diagnostic, code:critical });
+          const { category, stage:failedStage, sqlstate } = diagnostic;
+          queryFailures.push({ category, stage:failedStage, sqlstate });
+          limitations.push(name+':unavailable'); return null;
+        }
       }
       const identity = (await read('identity'))?.[0], tls = (await read('tls'))?.[0], roles = (await read('roles',[configuration.target.migrationRole]))?.[0];
+      stage = 'identity_verification';
       if (!identity || identity.database!==configuration.target.database || identity.role!==configuration.target.role || identity.authenticated_role!==configuration.target.role
         || identity.read_only!=='on' || (configuration.target.expectedOid && identity.oid!==configuration.target.expectedOid)) fail('preflight_identity_mismatch');
+      stage = 'session_limits_verification';
       if (identity.search_path!=='pg_catalog' || identity.statement_timeout_ms!==5000 || identity.lock_timeout_ms!==1000 || identity.idle_transaction_timeout_ms!==5000) fail('preflight_limits_unverified');
+      stage = 'tls_verification';
       if (!tls?.ssl || !['TLSv1.2','TLSv1.3'].includes(tls.version)) fail('preflight_tls_unverified');
+      stage = 'privilege_verification';
       // PUBLIC-only TEMP is an explicit inspection exception, not an absent privilege.
       // Unknown/contradictory ACL provenance or any role-specific TEMP grant still refuses.
       const tempEvidenceValid = typeof roles?.temporary_objects==='boolean'
@@ -189,8 +213,11 @@ export async function inspectDatabase({ env, connect, source = loadReviewedSourc
       const ordinary = name => catalog.objects?.some(o=>o.schema==='public' && o.name===name && ['r','p'].includes(o.kind) && !o.rls);
       const populated = ordinary('users') ? (await read('populated'))?.[0]?.populated : null;
       const rows = presence===true ? await read('ledger') : null;
+      stage = 'ledger_reconciliation';
       const ledger = presence===undefined ? { state:'UNKNOWN',installed:null,pending:null,problems:['ledger_presence_unavailable'] } : reconcileLedger(rows,source,presence, populated);
+      stage = 'catalog_assessment';
       const compatibility = assessCatalog(catalog,ledger,source);
+      stage = 'prerequisite_assessment';
       const prerequisites = {};
       for (const [prefix,query,table] of [['0019','terms','workspace_creator_terms_versions'],['0026','pricing','workspace_membership_plans'],['0027','emailPrerequisite','users']]) {
         if (!ledger.pending) prerequisites[prefix] = 'UNKNOWN';
@@ -202,12 +229,24 @@ export async function inspectDatabase({ env, connect, source = loadReviewedSourc
       if (activity?.some(row=>row.state===null)) limitations.push('activity_visibility_limited');
       if (!roles.migration_role_exists) limitations.push('migration_role_not_confirmed');
       if (expired) fail('preflight_deadline_exceeded');
-      return safeMetadata({ decision: 'BLOCKED_PENDING_REHEARSAL_AND_OWNER_LOCAL_UAT', migrationAuthorized: false,
+      stage = 'report_serialization';
+      const report = safeMetadata({ decision: 'BLOCKED_PENDING_REHEARSAL_AND_OWNER_LOCAL_UAT', migrationAuthorized: false,
         publicTempExceptionAccepted: roles.temporary_objects,
         expectedTarget: configuration.target, identity, tls: { ...tls, clientVerification:'verify-full' }, roles, ledger, ledgerEvidence:{present:presence ?? null,populatedSchema:populated,rows}, catalog, compatibility, prerequisites,
-        capacity, activity, serverIdentifier, limitations, sourceManifestSha256:pinnedManifest,
+        capacity, activity, serverIdentifier, limitations, queryFailures, sourceManifestSha256:pinnedManifest,
         requiredGates:['separately_authorized_production_inspection','complete_catalog_and_definition_review','neon_direct_pooled_tls_and_capacity_proof','isolated_neon_branch_restore_and_pending_chain_rehearsal','founder_led_local_phase18_e2e_explicit_UAT_acceptance','separate_production_migration_and_deployment_authorizations'],
         ownerProvisionalPrefix: { last:'0006_great_kate_bishop', entries:7, pending:25, evidence:'OWNER_PROVISIONAL_NOT_LEDGER_PROOF' } });
+      stage = 'transaction_finish';
+      return report;
     });
-  } finally { clearTimeout(deadline); await client.end({ timeout: 2 }); }
+  } catch (error) {
+    primaryFailure = diagnosed(expired ? new PreflightError('preflight_deadline_exceeded') : error, stage);
+    throw primaryFailure;
+  } finally {
+    clearTimeout(deadline);
+    if (client) {
+      try { await client.end({ timeout: 2 }); }
+      catch (error) { if (!primaryFailure) throw diagnosed(error, 'connection_close'); }
+    }
+  }
 }
