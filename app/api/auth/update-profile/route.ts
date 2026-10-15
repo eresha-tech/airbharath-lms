@@ -3,6 +3,7 @@ import { getSession, setSessionCookie } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { normalizeEmail } from '@/lib/workspace/email/model';
 
 export async function POST(req: Request) {
   try {
@@ -12,23 +13,25 @@ export async function POST(req: Request) {
     }
 
     const { fullName, email } = await req.json();
-    if (!fullName || !fullName.trim()) {
+    if (typeof fullName !== 'string' || !fullName.trim()) {
       return NextResponse.json({ error: 'Full name is required' }, { status: 400 });
     }
-    if (!email || !email.trim()) {
-      return NextResponse.json({ error: 'Email address is required' }, { status: 400 });
+    const contactEmail = normalizeEmail(email);
+    if (!contactEmail) {
+      return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 });
     }
 
     const [updatedUser] = await db
       .update(users)
       .set({
-        fullName,
-        email: email || session.email,
+        fullName: fullName.trim(),
+        email: contactEmail,
       })
       .where(eq(users.id, session.id))
       .returning();
 
-    // Refresh session cookie with updated name
+    if (!updatedUser) return NextResponse.json({ error: 'Account unavailable' }, { status: 401 });
+    // Updating contact details does not establish email ownership.
     await setSessionCookie({
       ...session,
       fullName: updatedUser.fullName,
@@ -36,7 +39,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true, user: updatedUser });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to update profile' }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
   }
 }

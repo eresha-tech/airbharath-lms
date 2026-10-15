@@ -1,0 +1,339 @@
+{
+  "identity": {
+    "database": "airbharath_lms",
+    "oid": "16384",
+    "system": "7680462735222304705",
+    "port": "5433",
+    "read_only": "on"
+  },
+  "ledgerEntries": 31,
+  "ledgerRange": "0000–0030",
+  "sourceHashesMatch": true,
+  "tables": 64,
+  "rows": 6872,
+  "allOriginalRowsUnchanged": true,
+  "ledgerUnchanged": true,
+  "tableResults": [
+    {
+      "table": "drizzle.__drizzle_migrations",
+      "count": 31,
+      "unchanged": true
+    },
+    {
+      "table": "public.certificates",
+      "count": 0,
+      "unchanged": true
+    },
+    {
+      "table": "public.coupons",
+      "count": 2,
+      "unchanged": true
+    },
+    {
+      "table": "public.course_authors",
+      "count": 2,
+      "unchanged": true
+    },
+    {
+      "table": "public.course_bundle_items",
+      "count": 4,
+      "unchanged": true
+    },
+    {
+      "table": "public.course_sections",
+      "count": 4,
+      "unchanged": true
+    },
+    {
+      "table": "public.courses",
+      "count": 6,
+      "unchanged": true
+    },
+    {
+      "table": "public.enrollments",
+      "count": 8,
+      "unchanged": true
+    },
+    {
+      "table": "public.feed_posts",
+      "count": 2,
+      "unchanged": true
+    },
+    {
+      "table": "public.invoices",
+      "count": 1,
+      "unchanged": true
+    },
+    {
+      "table": "public.jobs",
+      "count": 4,
+      "unchanged": true
+    },
+    {
+      "table": "public.lesson_comments",
+      "count": 0,
+      "unchanged": true
+    },
+    {
+      "table": "public.lesson_materials",
+      "count": 0,
+      "unchanged": true
+    },
+    {
+      "table": "public.lessons",
+      "count": 25,
+      "unchanged": true
+    },
+    {
+      "table": "public.modules",
+      "count": 15,
+      "unchanged": true
+    },
+    {
+      "table": "public.orders",
+      "count": 1,
+      "unchanged": true
+    },
+    {
+      "table": "public.otps",
+      "count": 6,
+      "unchanged": true
+    },
+    {
+      "table": "public.playback_sessions",
+      "count": 15,
+      "unchanged": true
+    },
+    {
+      "table": "public.progress",
+      "count": 2,
+      "unchanged": true
+    },
+    {
+      "table": "public.users",
+      "count": 780,
+      "unchanged": true
+    },
+    {
+      "table": "public.video_captions",
+      "count": 0,
+      "unchanged": true
+    },
+    {
+      "table": "public.videos",
+      "count": 5,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_access_grant_events",
+      "count": 57,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_access_grants",
+      "count": 52,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_applications",
+      "count": 3,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_audit_events",
+      "count": 169,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_coupon_plans",
+      "count": 193,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_coupon_redemptions",
+      "count": 130,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_coupons",
+      "count": 133,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_course_drafts",
+      "count": 180,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_course_lessons",
+      "count": 514,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_course_modules",
+      "count": 78,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_course_projects",
+      "count": 27,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_course_review_events",
+      "count": 163,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_course_submissions",
+      "count": 101,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_creator_profile_details",
+      "count": 32,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_creator_profiles",
+      "count": 271,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_creator_terms_acceptances",
+      "count": 312,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_creator_terms_versions",
+      "count": 2,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_eligibility_attempts",
+      "count": 671,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_eligibility_settings",
+      "count": 9,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_email_challenges",
+      "count": 179,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_email_notice_bindings",
+      "count": 18,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_email_rate_limits",
+      "count": 553,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_influencer_history",
+      "count": 97,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_influencers",
+      "count": 84,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_membership_orders",
+      "count": 443,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_membership_plans",
+      "count": 9,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_memberships",
+      "count": 224,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_payment_attempts",
+      "count": 308,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_payment_events",
+      "count": 46,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_policy_versions",
+      "count": 4,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_refund_attempts",
+      "count": 31,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_refund_completions",
+      "count": 23,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_refund_notice_deliveries",
+      "count": 99,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_refund_notice_delivery_attempts",
+      "count": 100,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_refund_notices",
+      "count": 133,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_refund_observations",
+      "count": 72,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_refund_policy_acceptances",
+      "count": 256,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_refund_policy_versions",
+      "count": 1,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_refund_requests",
+      "count": 87,
+      "unchanged": true
+    },
+    {
+      "table": "public.workspace_verified_emails",
+      "count": 66,
+      "unchanged": true
+    },
+    {
+      "table": "wsd1_clock_682c6438a13747e59257533f1a55773d.workspace_refund_notice_deliveries",
+      "count": 10,
+      "unchanged": true
+    },
+    {
+      "table": "wsd1_clock_682c6438a13747e59257533f1a55773d.workspace_refund_notice_delivery_attempts",
+      "count": 19,
+      "unchanged": true
+    }
+  ],
+  "method": "Repeatable-read read-only multiset fingerprints including all columns; identical before/after; no fixtures or mutations"
+}

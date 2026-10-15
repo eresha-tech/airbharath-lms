@@ -1,0 +1,17 @@
+import { beforeEach, expect, it, vi } from 'vitest';
+const m = vi.hoisted(() => ({ user: vi.fn(), session: vi.fn(), cookie: vi.fn(), save: vi.fn() }));
+vi.mock('@/lib/auth', () => ({ getSession: m.session, setSessionCookie: m.cookie }));
+vi.mock('@/lib/workspace/eligibility/service', () => ({ getWorkspaceUser: m.user }));
+vi.mock('@/lib/workspace/email/contact', () => ({ saveContactEmail: m.save }));
+import { POST } from '@/app/api/workspace/contact/route';
+import { EmailVerificationError } from '@/lib/workspace/email/model';
+const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const request = (input: unknown, origin = 'http://localhost:3000') => new Request(origin + '/api/workspace/contact', { method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json' }, body: JSON.stringify(input) });
+beforeEach(() => { vi.resetAllMocks(); process.env.NEXT_PUBLIC_BASE_URL = 'http://localhost:3000'; m.session.mockResolvedValue({ id, role: 'student' }); m.user.mockResolvedValue({ id, role: 'student', fullName: 'Synthetic' }); m.save.mockResolvedValue('synthetic@example.invalid'); });
+it('saves only the session owner contact and refreshes a private session without ownership proof', async () => { const r = await POST(request({ email: 'synthetic@example.invalid' })); expect(r.status).toBe(200); expect(r.headers.get('cache-control')).toBe('no-store'); expect(m.save).toHaveBeenCalledWith(id, { email: 'synthetic@example.invalid' }); expect(m.cookie).toHaveBeenCalledWith({ id, role: 'student', fullName: 'Synthetic', email: 'synthetic@example.invalid' }); expect(await r.json()).toEqual({ email: 'synthetic@example.invalid' }); });
+it.each([null, { id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' }])('denies absent or mismatched persisted identity', async user => { m.user.mockResolvedValue(user); expect((await POST(request({ email: 'x@example.invalid' }))).status).toBe(401); expect(m.save).not.toHaveBeenCalled(); });
+it('rejects a missing phone-auth session', async () => { m.session.mockResolvedValue(null); expect((await POST(request({}))).status).toBe(401); expect(m.save).not.toHaveBeenCalled(); });
+it('rejects cross-origin mutation before reading identity', async () => { expect((await POST(request({}, 'https://untrusted.example'))).status).toBe(403); expect(m.user).not.toHaveBeenCalled(); });
+it('rejects oversized input without saving', async () => { expect((await POST(request({ email: 'x'.repeat(1100) }))).status).toBe(400); expect(m.save).not.toHaveBeenCalled(); });
+it('returns contact-specific validation with no OTP prompt', async () => { m.save.mockRejectedValue(new EmailVerificationError('validation')); const r = await POST(request({ email: 'invalid' })); expect(r.status).toBe(400); expect(await r.text()).not.toMatch(/OTP|six-digit|verification code/); expect(m.cookie).not.toHaveBeenCalled(); });
+it('redacts database failures', async () => { m.save.mockRejectedValue(Error('private database value')); const r = await POST(request({ email: 'x@example.invalid' })); expect(r.status).toBe(503); expect(await r.text()).not.toContain('private database'); expect(m.cookie).not.toHaveBeenCalled(); });

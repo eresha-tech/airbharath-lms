@@ -1,0 +1,4 @@
+import {notFound,redirect} from 'next/navigation';
+import {getAuthorizedAdminSession} from '@/lib/admin-authorization';
+import {operationDetail} from '@/lib/workspace/admin/details';
+export default async function Page({params}:{params:Promise<{id:string}>}){const a=await getAuthorizedAdminSession();if(!a)redirect('/login');const {id}=await params,r=await operationDetail(a.id,'events',id);if(!r)notFound();return <div className="space-y-5"><h1 className="text-3xl">Operational evidence</h1><p className="text-sm text-muted-foreground">Read-only persisted state. Worker execution and genuine provider operations require separate authorization.</p><dl className="grid gap-5 rounded-xl border p-5 sm:grid-cols-2">{Object.entries(r).filter(([k])=>k!=='id').map(([k,v])=><div key={k}><dt className="text-sm text-muted-foreground">{k}</dt><dd className="mt-1 break-words">{v instanceof Date?v.toISOString():String(v??'—')}</dd></div>)}</dl></div>;}

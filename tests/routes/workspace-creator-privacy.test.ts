@@ -1,0 +1,9 @@
+import { expect, it } from 'vitest';
+import type { CaptureResult } from 'posthog-js';
+import { workspaceAnalyticsPath, sanitizeWorkspaceAnalytics } from '@/lib/workspace/analytics-privacy';
+import { draftId, owner } from './workspace-creator-fixtures';
+it.each(['/workspace/dashboard', '/workspace/profile', '/workspace/courses', '/workspace/courses/new', `/workspace/courses/${draftId}`, '/admin/workspace/course-drafts', `/admin/workspace/course-drafts/${draftId}`])('creator path %s removes private properties and dynamic identifiers', pathname => {
+  const event = { uuid: 'event', event: '$pageview', timestamp: new Date('2026-10-08'), properties: { $current_url: `https://example.test${pathname}?bio=private&title=private#private`, pathname, $device_id: 'synthetic_device_01', distinct_id: owner, userId: owner, draftId, title: 'Private title', description: 'Private description', outline: 'Private outline', tentativePricePaise: 2000, shortBio: 'Private bio', professionalProfileUrl: 'https://private.test/profile', $set: { email: 'private' } } } as CaptureResult;
+  const sanitized = sanitizeWorkspaceAnalytics(event)!; expect(sanitized.properties.$current_url).toBe(`https://example.test${workspaceAnalyticsPath(pathname)}`); expect(sanitized.properties.distinct_id).toBe('workspace-device:synthetic_device_01'); for (const key of ['userId', 'draftId', 'title', 'description', 'outline', 'tentativePricePaise', 'shortBio', 'professionalProfileUrl', '$set']) expect(sanitized.properties).not.toHaveProperty(key); expect(JSON.stringify(sanitized)).not.toContain(draftId); expect(JSON.stringify(sanitized)).not.toContain(owner);
+  expect(sanitizeWorkspaceAnalytics({ ...event, event: '$autocapture' })).toBeNull(); expect(sanitizeWorkspaceAnalytics({ ...event, event: 'workspace_course_draft_saved' })).toBeNull();
+});

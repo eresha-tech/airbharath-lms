@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 export const metadata = {
-  title: "404 - Page Not Found | AirBharath LMS",
+  title: "404 - Page Not Found | AirBharath",
   description: "The page you are looking for does not exist or has been moved.",
 };
 
@@ -162,7 +162,7 @@ export default function NotFound() {
 
       {/* Minimal Footer */}
       <footer className="border-t border-border/40 py-6 text-center text-xs text-muted-foreground">
-        <p>© {new Date().getFullYear()} AirBharath LMS. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} AirBharath. All rights reserved.</p>
       </footer>
     </div>
   );

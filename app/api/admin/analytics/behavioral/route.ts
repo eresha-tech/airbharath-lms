@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthorizedAdminSession } from "@/lib/admin-authorization";
 import { queryPostHogBehavioralMetrics } from "@/lib/posthog-query";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
-    const session = await getSession();
-    if (!session || session.role !== "admin") {
+    const session = await getAuthorizedAdminSession();
+    if (!session) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

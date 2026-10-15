@@ -1,0 +1,435 @@
+{
+  "finding": "F6-01 retained-history TRUNCATE guard gap",
+  "evidenceType": "Catalog and reviewed PostgreSQL semantics; no destructive command executed",
+  "leafHistoryTables": [
+    {
+      "table": "workspace_audit_events",
+      "triggerNames": [
+        "workspace_audit_events_immutable"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_coupon_plans",
+      "triggerNames": [
+        "workspace_coupon_plans_immutable"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_coupon_redemptions",
+      "triggerNames": [
+        "workspace_coupon_paid_evidence_guard",
+        "workspace_financial_redemption_complete",
+        "workspace_financial_redemptions_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_course_review_events",
+      "triggerNames": [
+        "workspace_review_events_consistent",
+        "workspace_review_events_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_memberships",
+      "triggerNames": [
+        "workspace_membership_complete",
+        "workspace_membership_refund_insert_guard",
+        "workspace_memberships_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_payment_attempts",
+      "triggerNames": [
+        "workspace_capture_event_time_guard",
+        "workspace_financial_payment_complete",
+        "workspace_financial_payments_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_payment_events",
+      "triggerNames": [
+        "workspace_financial_events_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    }
+  ],
+  "allWorkspaceCoverage": [
+    {
+      "table": "workspace_access_grant_events",
+      "triggerNames": [
+        "workspace_grant_event_complete",
+        "workspace_grant_events_guard",
+        "workspace_grant_events_no_truncate"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_access_grants",
+      "triggerNames": [
+        "workspace_grant_complete",
+        "workspace_grants_guard",
+        "workspace_grants_no_truncate"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 1
+    },
+    {
+      "table": "workspace_applications",
+      "triggerNames": [],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_audit_events",
+      "triggerNames": [
+        "workspace_audit_events_immutable"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_coupon_plans",
+      "triggerNames": [
+        "workspace_coupon_plans_immutable"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_coupon_redemptions",
+      "triggerNames": [
+        "workspace_coupon_paid_evidence_guard",
+        "workspace_financial_redemption_complete",
+        "workspace_financial_redemptions_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_coupons",
+      "triggerNames": [
+        "workspace_coupon_influencer_guard",
+        "workspace_coupons_complete",
+        "workspace_coupons_immutable"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 4
+    },
+    {
+      "table": "workspace_course_drafts",
+      "triggerNames": [
+        "workspace_drafts_content_guard",
+        "workspace_drafts_review_lock"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 1
+    },
+    {
+      "table": "workspace_course_lessons",
+      "triggerNames": [
+        "workspace_build_lesson_guard",
+        "workspace_build_lesson_positions"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_course_modules",
+      "triggerNames": [
+        "workspace_build_module_guard",
+        "workspace_build_module_positions"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 1
+    },
+    {
+      "table": "workspace_course_projects",
+      "triggerNames": [
+        "workspace_build_project_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 1
+    },
+    {
+      "table": "workspace_course_review_events",
+      "triggerNames": [
+        "workspace_review_events_consistent",
+        "workspace_review_events_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_course_submissions",
+      "triggerNames": [
+        "workspace_submissions_consistent",
+        "workspace_submissions_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 2
+    },
+    {
+      "table": "workspace_creator_profile_details",
+      "triggerNames": [
+        "workspace_profile_details_content_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_creator_profiles",
+      "triggerNames": [
+        "workspace_creator_profile_complete",
+        "workspace_creator_profiles_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 5
+    },
+    {
+      "table": "workspace_creator_terms_acceptances",
+      "triggerNames": [
+        "workspace_terms_acceptance_history_guard",
+        "workspace_terms_acceptance_insert_guard",
+        "workspace_terms_acceptance_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 1
+    },
+    {
+      "table": "workspace_creator_terms_versions",
+      "triggerNames": [
+        "workspace_terms_document_guard",
+        "workspace_terms_versions_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 2
+    },
+    {
+      "table": "workspace_eligibility_attempts",
+      "triggerNames": [
+        "workspace_eligibility_attempts_immutable"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 2
+    },
+    {
+      "table": "workspace_eligibility_settings",
+      "triggerNames": [
+        "workspace_eligibility_settings_immutable"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 4
+    },
+    {
+      "table": "workspace_email_challenges",
+      "triggerNames": [
+        "workspace_email_challenge_guard",
+        "workspace_email_challenge_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 1
+    },
+    {
+      "table": "workspace_email_notice_bindings",
+      "triggerNames": [
+        "workspace_email_binding_immutable",
+        "workspace_email_notice_binding_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_email_rate_limits",
+      "triggerNames": [],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_influencer_history",
+      "triggerNames": [
+        "workspace_influencer_history_guard",
+        "workspace_influencer_history_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_influencers",
+      "triggerNames": [
+        "workspace_influencer_guard",
+        "workspace_influencer_history_append",
+        "workspace_influencers_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 2
+    },
+    {
+      "table": "workspace_membership_orders",
+      "triggerNames": [
+        "workspace_email_order_required",
+        "workspace_financial_order_complete",
+        "workspace_financial_orders_guard",
+        "workspace_new_order_refund_policy_guard",
+        "workspace_new_order_terms_guard",
+        "workspace_order_activation_complete"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 8
+    },
+    {
+      "table": "workspace_membership_plans",
+      "triggerNames": [
+        "workspace_membership_plans_immutable"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 2
+    },
+    {
+      "table": "workspace_memberships",
+      "triggerNames": [
+        "workspace_membership_complete",
+        "workspace_membership_refund_insert_guard",
+        "workspace_memberships_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_payment_attempts",
+      "triggerNames": [
+        "workspace_capture_event_time_guard",
+        "workspace_financial_payment_complete",
+        "workspace_financial_payments_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_payment_events",
+      "triggerNames": [
+        "workspace_financial_events_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_policy_versions",
+      "triggerNames": [
+        "workspace_policy_versions_immutable"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 2
+    },
+    {
+      "table": "workspace_refund_attempts",
+      "triggerNames": [
+        "workspace_refund_attempt_guard",
+        "workspace_refund_attempts_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_refund_completions",
+      "triggerNames": [
+        "workspace_refund_completion_history_guard",
+        "workspace_refund_completion_insert_guard",
+        "workspace_refund_completions_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_refund_notice_deliveries",
+      "triggerNames": [
+        "workspace_refund_delivery_guard",
+        "workspace_refund_delivery_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 1
+    },
+    {
+      "table": "workspace_refund_notice_delivery_attempts",
+      "triggerNames": [
+        "workspace_refund_delivery_attempt_guard",
+        "workspace_refund_delivery_attempt_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_refund_notices",
+      "triggerNames": [
+        "workspace_email_notice_bind",
+        "workspace_refund_notice_history_guard",
+        "workspace_refund_notice_insert_guard",
+        "workspace_refund_notices_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 3
+    },
+    {
+      "table": "workspace_refund_observations",
+      "triggerNames": [
+        "workspace_refund_observation_history_guard",
+        "workspace_refund_observations_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 0
+    },
+    {
+      "table": "workspace_refund_policy_acceptances",
+      "triggerNames": [
+        "workspace_refund_policy_acceptance_history_guard",
+        "workspace_refund_policy_acceptance_insert_guard",
+        "workspace_refund_policy_acceptance_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 1
+    },
+    {
+      "table": "workspace_refund_policy_versions",
+      "triggerNames": [
+        "workspace_refund_policy_document_guard",
+        "workspace_refund_policy_versions_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 1
+    },
+    {
+      "table": "workspace_refund_requests",
+      "triggerNames": [
+        "workspace_refund_approval_complete",
+        "workspace_refund_request_guard",
+        "workspace_refund_requests_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 1
+    },
+    {
+      "table": "workspace_verified_emails",
+      "triggerNames": [
+        "workspace_email_proof_guard",
+        "workspace_email_proof_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 1
+    }
+  ],
+  "auditStoppedForCorrectiveProposal": true,
+  "noDataLossDemonstrated": true
+}

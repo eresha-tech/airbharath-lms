@@ -1,0 +1,13 @@
+.workspace-page .workspace-grid {
+  background-image: linear-gradient(hsl(var(--border) / .5) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / .5) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+.workspace-page .workspace-heading { font-family: var(--font-outfit), sans-serif; letter-spacing: -.045em; }
+.workspace-page .workspace-copy { font-family: var(--font-jakarta), sans-serif; }
+.workspace-page .workspace-section { scroll-margin-top: 100px; }
+.workspace-page :is(h1, h2, h3) { text-wrap: balance; scroll-margin-top: 100px; }
+.workspace-page :is(input, textarea, select) { scroll-margin-top: 100px; }
+.workspace-page :is(button, a, input[type='checkbox']) { touch-action: manipulation; }
+.workspace-page .workspace-animate { animation: workspace-arrive .7s ease-out both; }
+@keyframes workspace-arrive { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .workspace-page .workspace-animate { animation: none; } }

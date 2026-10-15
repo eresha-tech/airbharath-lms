@@ -1,0 +1,2 @@
+/* Admin Workspace inherits the shared AirBharath theme. */
+.workspace-admin :is(h1,h2,h3,p,dd) { overflow-wrap: anywhere; }

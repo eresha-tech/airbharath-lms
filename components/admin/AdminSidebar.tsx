@@ -92,11 +92,15 @@ export const adminNavGroups: AdminNavGroup[] = [
         icon: CreditCard,
       },
       {
-        title: "Coupons & Discounts",
+        title: "LMS Course Coupons",
         href: "/admin/coupons",
         icon: Tag,
       },
     ],
+  },
+  {
+    groupTitle: "Workspace",
+    items: [{ title: "Workspace administration", href: "/admin/workspace", icon: Users }],
   },
   {
     groupTitle: "Placement & Community",

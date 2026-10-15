@@ -1,0 +1,796 @@
+{
+  "workspaceTableCount": 40,
+  "addedGuardCount": 21,
+  "existingGuardCount": 18,
+  "excludedOperationalCount": 1,
+  "rows": [
+    {
+      "table": "workspace_access_grant_events",
+      "triggerNames": [
+        "workspace_grant_event_complete",
+        "workspace_grant_events_guard",
+        "workspace_grant_events_no_truncate"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 0,
+      "classification": "immutable audit",
+      "decision": "existing_guard",
+      "rationale": "Complimentary grant creation and closure audit. Existing unconditional BEFORE TRUNCATE statement guard (workspace_grant_guard); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_access_grants",
+      "triggerNames": [
+        "workspace_grant_complete",
+        "workspace_grants_guard",
+        "workspace_grants_no_truncate"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 1,
+      "classification": "retained entitlement state",
+      "decision": "existing_guard",
+      "rationale": "Admin-authorized complimentary access, controlled expiry/revocation and historical ownership. Existing unconditional BEFORE TRUNCATE statement guard (workspace_grant_guard); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_applications",
+      "triggerNames": [],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0,
+      "classification": "mutable retained application",
+      "decision": "add_guard",
+      "rationale": "Manual applications retain declarations, consent and review/contact context; no documented bulk cleanup.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_audit_events",
+      "triggerNames": [
+        "workspace_audit_events_immutable"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0,
+      "classification": "immutable audit",
+      "decision": "add_guard",
+      "rationale": "Append-only decisions and administrative financial context.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_coupon_plans",
+      "triggerNames": [
+        "workspace_coupon_plans_immutable"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0,
+      "classification": "immutable attribution",
+      "decision": "add_guard",
+      "rationale": "Versioned coupon-to-plan eligibility evidence.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_coupon_redemptions",
+      "triggerNames": [
+        "workspace_coupon_paid_evidence_guard",
+        "workspace_financial_redemption_complete",
+        "workspace_financial_redemptions_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0,
+      "classification": "retained financial state",
+      "decision": "add_guard",
+      "rationale": "Reserved/redeemed/released coupon capacity and paid evidence.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_coupons",
+      "triggerNames": [
+        "workspace_coupon_influencer_guard",
+        "workspace_coupons_complete",
+        "workspace_coupons_immutable"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 4,
+      "classification": "versioned retained catalog",
+      "decision": "add_guard",
+      "rationale": "Accepted coupon pricing and influencer attribution referenced by orders.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_course_drafts",
+      "triggerNames": [
+        "workspace_drafts_content_guard",
+        "workspace_drafts_review_lock"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 1,
+      "classification": "mutable retained creator work",
+      "decision": "add_guard",
+      "rationale": "Owned proposals, including locked submitted revisions; preserve normal draft edits.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_course_lessons",
+      "triggerNames": [
+        "workspace_build_lesson_guard",
+        "workspace_build_lesson_positions"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0,
+      "classification": "mutable retained creator work",
+      "decision": "add_guard",
+      "rationale": "Private lesson content; supported individual lesson deletion remains allowed.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_course_modules",
+      "triggerNames": [
+        "workspace_build_module_guard",
+        "workspace_build_module_positions"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 1,
+      "classification": "mutable retained creator work",
+      "decision": "add_guard",
+      "rationale": "Private curriculum structure; supported empty-module deletion remains allowed.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_course_projects",
+      "triggerNames": [
+        "workspace_build_project_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 1,
+      "classification": "mutable retained approved work",
+      "decision": "add_guard",
+      "rationale": "Approved submission ownership and private builder provenance.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_course_review_events",
+      "triggerNames": [
+        "workspace_review_events_consistent",
+        "workspace_review_events_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0,
+      "classification": "immutable review",
+      "decision": "add_guard",
+      "rationale": "Append-only administrator decisions and feedback.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_course_submissions",
+      "triggerNames": [
+        "workspace_submissions_consistent",
+        "workspace_submissions_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 2,
+      "classification": "retained review state",
+      "decision": "add_guard",
+      "rationale": "Immutable proposal snapshots with controlled review transitions.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_creator_profile_details",
+      "triggerNames": [
+        "workspace_profile_details_content_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0,
+      "classification": "mutable retained creator work",
+      "decision": "add_guard",
+      "rationale": "Persisted professional profile content; preserve ordinary versioned saves.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_creator_profiles",
+      "triggerNames": [
+        "workspace_creator_profile_complete",
+        "workspace_creator_profiles_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 5,
+      "classification": "retained creator identity",
+      "decision": "add_guard",
+      "rationale": "Stable creator ownership across paid fulfillment, grants and historical reads.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_creator_terms_acceptances",
+      "triggerNames": [
+        "workspace_terms_acceptance_history_guard",
+        "workspace_terms_acceptance_insert_guard",
+        "workspace_terms_acceptance_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 1,
+      "classification": "immutable legal receipt",
+      "decision": "existing_guard",
+      "rationale": "Creator Terms acceptance evidence. Existing unconditional BEFORE TRUNCATE statement guard (workspace_terms_history_guard); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_creator_terms_versions",
+      "triggerNames": [
+        "workspace_terms_document_guard",
+        "workspace_terms_versions_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 2,
+      "classification": "versioned immutable legal document",
+      "decision": "existing_guard",
+      "rationale": "Source-controlled legal content with current marker. Existing unconditional BEFORE TRUNCATE statement guard (workspace_terms_history_guard); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_eligibility_attempts",
+      "triggerNames": [
+        "workspace_eligibility_attempts_immutable"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 2,
+      "classification": "immutable eligibility",
+      "decision": "add_guard",
+      "rationale": "Persisted evaluation decisions and declarations referenced by activation.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_eligibility_settings",
+      "triggerNames": [
+        "workspace_eligibility_settings_immutable"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 4,
+      "classification": "versioned immutable policy",
+      "decision": "add_guard",
+      "rationale": "Historical evaluator settings; only current marker publication transitions allowed.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_email_challenges",
+      "triggerNames": [
+        "workspace_email_challenge_guard",
+        "workspace_email_challenge_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 1,
+      "classification": "retained security state",
+      "decision": "existing_guard",
+      "rationale": "Challenge hash, send/consume/expiry transitions and proof provenance. Existing unconditional BEFORE TRUNCATE statement guard (workspace_email_binding_immutable); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_email_notice_bindings",
+      "triggerNames": [
+        "workspace_email_binding_immutable",
+        "workspace_email_notice_binding_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 0,
+      "classification": "immutable recipient evidence",
+      "decision": "existing_guard",
+      "rationale": "Verified recipient identity bound to refund communication. Existing unconditional BEFORE TRUNCATE statement guard (workspace_email_binding_immutable); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_email_rate_limits",
+      "triggerNames": [],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0,
+      "classification": "mutable window counters",
+      "decision": "exclude_operational",
+      "rationale": "Pseudonymous abuse budgets, not authoritative proof or legal/financial history. No current TRUNCATE workflow; any future expiry cleanup needs separate policy review.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_influencer_history",
+      "triggerNames": [
+        "workspace_influencer_history_guard",
+        "workspace_influencer_history_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 0,
+      "classification": "immutable attribution audit",
+      "decision": "existing_guard",
+      "rationale": "Influencer creation and update snapshots. Existing unconditional BEFORE TRUNCATE statement guard (workspace_influencer_reject_truncate); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_influencers",
+      "triggerNames": [
+        "workspace_influencer_guard",
+        "workspace_influencer_history_append",
+        "workspace_influencers_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 2,
+      "classification": "retained attribution state",
+      "decision": "existing_guard",
+      "rationale": "Stable influencer identity and administrative changes. Existing unconditional BEFORE TRUNCATE statement guard (workspace_influencer_reject_truncate); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_membership_orders",
+      "triggerNames": [
+        "workspace_email_order_required",
+        "workspace_financial_order_complete",
+        "workspace_financial_orders_guard",
+        "workspace_new_order_refund_policy_guard",
+        "workspace_new_order_terms_guard",
+        "workspace_order_activation_complete"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 8,
+      "classification": "retained financial state",
+      "decision": "add_guard",
+      "rationale": "Frozen accepted prices, legal receipts, capture and activation history.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_membership_plans",
+      "triggerNames": [
+        "workspace_membership_plans_immutable"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 2,
+      "classification": "versioned immutable catalog",
+      "decision": "add_guard",
+      "rationale": "Historical plan terms referenced by accepted orders.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_memberships",
+      "triggerNames": [
+        "workspace_membership_complete",
+        "workspace_membership_refund_insert_guard",
+        "workspace_memberships_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0,
+      "classification": "immutable entitlement",
+      "decision": "add_guard",
+      "rationale": "Originating-order entitlement and membership term history.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_payment_attempts",
+      "triggerNames": [
+        "workspace_capture_event_time_guard",
+        "workspace_financial_payment_complete",
+        "workspace_financial_payments_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0,
+      "classification": "retained financial evidence",
+      "decision": "add_guard",
+      "rationale": "Capture winner, authoritative timing and provider observation history.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_payment_events",
+      "triggerNames": [
+        "workspace_financial_events_guard"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 0,
+      "classification": "retained financial evidence",
+      "decision": "add_guard",
+      "rationale": "Durable webhook identities/evidence and processing state.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_policy_versions",
+      "triggerNames": [
+        "workspace_policy_versions_immutable"
+      ],
+      "hasTruncateTrigger": false,
+      "incomingForeignKeyCount": 2,
+      "classification": "versioned immutable policy",
+      "decision": "add_guard",
+      "rationale": "Historical eligibility policy identifiers and receipts.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_refund_attempts",
+      "triggerNames": [
+        "workspace_refund_attempt_guard",
+        "workspace_refund_attempts_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 0,
+      "classification": "retained financial intent",
+      "decision": "existing_guard",
+      "rationale": "Durable submission/recovery intent for provider refunds. Existing unconditional BEFORE TRUNCATE statement guard (workspace_refund_history_guard); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_refund_completions",
+      "triggerNames": [
+        "workspace_refund_completion_history_guard",
+        "workspace_refund_completion_insert_guard",
+        "workspace_refund_completions_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 0,
+      "classification": "immutable financial evidence",
+      "decision": "existing_guard",
+      "rationale": "Verified full refund and entitlement consequence. Existing unconditional BEFORE TRUNCATE statement guard (workspace_refund_history_guard); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_refund_notice_deliveries",
+      "triggerNames": [
+        "workspace_refund_delivery_guard",
+        "workspace_refund_delivery_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 1,
+      "classification": "retained communication state",
+      "decision": "existing_guard",
+      "rationale": "Recipient delivery intent, scheduling and controlled retry state. Existing unconditional BEFORE TRUNCATE statement guard (workspace_refund_history_guard); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_refund_notice_delivery_attempts",
+      "triggerNames": [
+        "workspace_refund_delivery_attempt_guard",
+        "workspace_refund_delivery_attempt_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 0,
+      "classification": "immutable communication evidence",
+      "decision": "existing_guard",
+      "rationale": "Provider delivery attempt and ambiguity evidence. Existing unconditional BEFORE TRUNCATE statement guard (workspace_refund_history_guard); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_refund_notices",
+      "triggerNames": [
+        "workspace_email_notice_bind",
+        "workspace_refund_notice_history_guard",
+        "workspace_refund_notice_insert_guard",
+        "workspace_refund_notices_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 3,
+      "classification": "immutable communication evidence",
+      "decision": "existing_guard",
+      "rationale": "Required creator refund notice body and decision context. Existing unconditional BEFORE TRUNCATE statement guard (workspace_refund_history_guard); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_refund_observations",
+      "triggerNames": [
+        "workspace_refund_observation_history_guard",
+        "workspace_refund_observations_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 0,
+      "classification": "immutable provider evidence",
+      "decision": "existing_guard",
+      "rationale": "Append-only provider refund observations. Existing unconditional BEFORE TRUNCATE statement guard (workspace_refund_history_guard); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": false,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_refund_policy_acceptances",
+      "triggerNames": [
+        "workspace_refund_policy_acceptance_history_guard",
+        "workspace_refund_policy_acceptance_insert_guard",
+        "workspace_refund_policy_acceptance_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 1,
+      "classification": "immutable legal receipt",
+      "decision": "existing_guard",
+      "rationale": "Exact refund policy receipt accepted before order creation. Existing unconditional BEFORE TRUNCATE statement guard (workspace_refund_policy_history_guard); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_refund_policy_versions",
+      "triggerNames": [
+        "workspace_refund_policy_document_guard",
+        "workspace_refund_policy_versions_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 1,
+      "classification": "versioned immutable legal document",
+      "decision": "existing_guard",
+      "rationale": "Source-controlled refund policy document versions. Existing unconditional BEFORE TRUNCATE statement guard (workspace_refund_policy_history_guard); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_refund_requests",
+      "triggerNames": [
+        "workspace_refund_approval_complete",
+        "workspace_refund_request_guard",
+        "workspace_refund_requests_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 1,
+      "classification": "retained financial workflow",
+      "decision": "existing_guard",
+      "rationale": "Timely refund submission and controlled admin decision/processing states. Existing unconditional BEFORE TRUNCATE statement guard (workspace_refund_history_guard); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    },
+    {
+      "table": "workspace_verified_emails",
+      "triggerNames": [
+        "workspace_email_proof_guard",
+        "workspace_email_proof_truncate_guard"
+      ],
+      "hasTruncateTrigger": true,
+      "incomingForeignKeyCount": 1,
+      "classification": "retained ownership evidence",
+      "decision": "existing_guard",
+      "rationale": "Verified email proof, supersession and revocation history. Existing unconditional BEFORE TRUNCATE statement guard (workspace_email_binding_immutable); preserve without duplication.",
+      "incomingFkOnlyBlocksRestrict": true,
+      "localRuntimeRole": "postgres (owner/superuser; separate privilege risk)",
+      "runtimeNeedsTruncate": false,
+      "documentedTruncateCleanup": false
+    }
+  ],
+  "priorMigrationHashes": [
+    {
+      "tag": "0000_regular_silk_fever",
+      "sha256": "244506bff67e0e4e102593d277f4959d7b6762345ea6d475764700f55bb8fb47"
+    },
+    {
+      "tag": "0001_careful_warhawk",
+      "sha256": "24c2bbabe9a8d16a6f027d09a13004dddea01c21113990a5939a642b0237c232"
+    },
+    {
+      "tag": "0002_silky_living_tribunal",
+      "sha256": "24033fb008c9e085cd515ff9c6321e518a8bb5e8995ef7ce22c19b9a98b7c2ad"
+    },
+    {
+      "tag": "0003_lowly_justice",
+      "sha256": "5e2ada1b77d981fe1e27d321272f7f08fb2c7243067634b57c8213a0e785cc98"
+    },
+    {
+      "tag": "0004_dear_shocker",
+      "sha256": "0bf51a3afa92ba842b517fdf2c85af9fd73bc2827c7c374853cbe3a9199bea82"
+    },
+    {
+      "tag": "0005_sharp_grey_gargoyle",
+      "sha256": "588509617acbb775563f379101f8d5b34534bfbfbe536110682bbb22707f81f8"
+    },
+    {
+      "tag": "0006_great_kate_bishop",
+      "sha256": "0d6b625cca0a51c04d313a53c9a66ccd647927e9efda2959252cc11b2d95a9eb"
+    },
+    {
+      "tag": "0007_lucky_wild_pack",
+      "sha256": "f0312d81ee36aed56aa48ece4bd09cdf218a375e39879d55623ef9ec819f11aa"
+    },
+    {
+      "tag": "0008_eager_energizer",
+      "sha256": "ae6c3b89c04374d642a03f0097e3bc52a3b7c3e1ce6b8f752d7f9625135732ac"
+    },
+    {
+      "tag": "0009_normal_baron_zemo",
+      "sha256": "6dc0436b50fa865ad5410dd2f95d48be569cd176f812abd47c144ad57ea359e5"
+    },
+    {
+      "tag": "0010_illegal_toxin",
+      "sha256": "d806715b9b519bb50eaa3f6f60c9be1b02ea98ebed248a856a91ecd56f30c92e"
+    },
+    {
+      "tag": "0011_workspace_coupon_audit_freshness",
+      "sha256": "92d9e796e3b2136e86f144c4a2ff099d81e6e26c12541999dd95a52e34485ec9"
+    },
+    {
+      "tag": "0012_useful_warhawk",
+      "sha256": "4e59a99a11347779b12c793df406727148ba7b6ef3f42764952f57f733274d97"
+    },
+    {
+      "tag": "0013_peaceful_spiral",
+      "sha256": "42b4fcf2ae41c84e5129f68fee5791283b293a8f576c5d694ac2f25825d39d05"
+    },
+    {
+      "tag": "0014_outgoing_freak",
+      "sha256": "286e94347d50db660ce6bcae06c1e1b6eb0baed316b2f3d9d8aedd9af04d6598"
+    },
+    {
+      "tag": "0015_warm_sprite",
+      "sha256": "06fa5c3d985fc53978c87d84b4f4fb2bb3c4200bee73547a76d8508e49d49586"
+    },
+    {
+      "tag": "0016_tired_prowler",
+      "sha256": "fbdad83667fe5785b54d86ade9487cf42d71eca2d84382d44b52196dad232e35"
+    },
+    {
+      "tag": "0017_marvelous_captain_midlands",
+      "sha256": "ef7c2ef68287770bc7942fdec9b3b286907aa0e27c6d7d842a596cc0aee740f3"
+    },
+    {
+      "tag": "0018_ambiguous_khan",
+      "sha256": "f96d3fba6b4234717d40f7325e4d1dea0e4c530175278dd7bfe27979c491ec53"
+    },
+    {
+      "tag": "0019_workspace_creator_terms_v2",
+      "sha256": "d7bee0d65cf2606a4ce72c5cf67f60bcddb61309097d1c894888d012764b7ff8"
+    },
+    {
+      "tag": "0020_gigantic_mordo",
+      "sha256": "1a37339ad50039807da846f63ce07c749d14037a1cb592ff75cbd257a775c3fb"
+    },
+    {
+      "tag": "0021_workspace_live_financial_modes",
+      "sha256": "761f5926b78ed41293c8d58139df69a752ad322b8905191280f1e29ad6542421"
+    },
+    {
+      "tag": "0022_lethal_barracuda",
+      "sha256": "050382a0cacd25693074ef5eeead51cf24c6ca20624fed1266f220d198e4226b"
+    },
+    {
+      "tag": "0023_chubby_jimmy_woo",
+      "sha256": "eb52bf03f803cf181d155483794f853e9d08c00240e29dd0ba3ace5cd1e7f910"
+    },
+    {
+      "tag": "0024_workspace_influencer_history_truncate_guard",
+      "sha256": "a43c81bc2dbe9cae06883946221e6487c51fd85d05ad2a49db38690250627f8e"
+    },
+    {
+      "tag": "0025_workspace_held_capture_coupon_consistency",
+      "sha256": "b96fa25f789a333d31e2a4ce439281bf6c938460bdcae76b04797b36d88d7b03"
+    },
+    {
+      "tag": "0026_workspace_membership_pricing_v2",
+      "sha256": "5af885540dc1927ed3a7ed9fe54fb94a83f7658b2d2f7e49c09a02a37c3c66b8"
+    },
+    {
+      "tag": "0027_workspace_verified_creator_email",
+      "sha256": "6d187548a5c33a1a11d7b5a15506ed5c606b439a9f58850480a5c059d3fbbf59"
+    },
+    {
+      "tag": "0028_workspace_creator_access_grants",
+      "sha256": "3442d66cf351d68a71ec466234ddf57da3d0e45ba8db567fef55a2d128263400"
+    },
+    {
+      "tag": "0029_workspace_grant_completion_record_fix",
+      "sha256": "1bf64230f790c4ed99906b25416766ad7f6d3789e0e6bd0760aad205e6051a91"
+    }
+  ],
+  "proposedSqlSha256": "f34c190f4e7877d5b0f3fab03c89874b825ef0f2cfebca520c1dc40adfbd5bd2",
+  "documentedLegacySeedTruncate": {
+    "file": "scripts/seed.mjs:44",
+    "reviewedPublicFkClosure": [
+      "certificates",
+      "course_authors",
+      "course_bundle_items",
+      "course_sections",
+      "courses",
+      "enrollments",
+      "invoices",
+      "lesson_comments",
+      "lesson_materials",
+      "lessons",
+      "modules",
+      "orders",
+      "playback_sessions",
+      "progress",
+      "video_captions",
+      "videos"
+    ],
+    "workspaceOverlap": [],
+    "executed": false
+  }
+}

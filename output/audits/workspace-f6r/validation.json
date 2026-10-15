@@ -1,0 +1,44 @@
+{
+  "pnpmValidate": {
+    "exitCode": 0,
+    "vitestTests": 1092,
+    "vitestFiles": 90,
+    "pureNodeChecks": 5,
+    "typeScript": "PASS",
+    "lint": "PASS"
+  },
+  "focusedSourceTests": {
+    "exitCode": 0,
+    "tests": 4
+  },
+  "noDrift": {
+    "exitCode": 0,
+    "message": "No schema changes, nothing to migrate",
+    "pendingSourceJournalEntries": 31,
+    "appliedRetainedLedgerEntries": 30
+  },
+  "productionBuild": {
+    "run": false,
+    "reason": "Only custom migration, metadata, tests and audit/report artifacts changed. No application source or bundling change; F.6R requests a build if source changes justify it."
+  },
+  "publicPaymentFlags": {
+    "WORKSPACE_PAYMENT_ENABLED": false,
+    "WORKSPACE_RAZORPAY_TEST_AUTHORIZED": false
+  },
+  "providerHttpCalls": 0,
+  "harnessCorrections": [
+    {
+      "attempt": 1,
+      "failure": "Test snapshot needed read-only access to the disposable migration metadata; added USAGE and SELECT only for test introspection.",
+      "disposableCleanupPassed": true
+    },
+    {
+      "attempt": 2,
+      "failure": "Unpaid draft read correctly returns restricted; corrected expectation and added cross-owner check using another entitled creator.",
+      "disposableCleanupPassed": true
+    }
+  ],
+  "finalDisposableChecks": 70,
+  "refusedStatements": 56,
+  "productCorrections": "Only proposed 0030; no financial, access or course service changes."
+}

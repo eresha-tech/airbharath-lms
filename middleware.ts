@@ -31,6 +31,12 @@ export async function middleware(request: NextRequest) {
 
   const isPublic =
     pathname === '/' ||
+    pathname === '/robots.txt' ||
+    pathname === '/sitemap.xml' ||
+    pathname === '/workspace' ||
+    pathname === '/workspace/creator-terms' ||
+    pathname === '/workspace/refund-policy' ||
+    pathname === '/workspace/manual-application' ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/auth') ||
     pathname.startsWith('/about') ||
@@ -49,6 +55,10 @@ export async function middleware(request: NextRequest) {
     if (!isPublic) {
       const url = request.nextUrl.clone();
       url.pathname = '/login';
+      if (pathname.startsWith('/workspace/')) {
+        url.search = '';
+        url.searchParams.set('callbackUrl', '/workspace/apply');
+      }
       const redirectRes = NextResponse.redirect(url);
       redirectRes.cookies.delete('ab_session');
       return redirectRes;
@@ -57,12 +67,6 @@ export async function middleware(request: NextRequest) {
   }
 
   const role = sessionUser.role || 'student';
-
-  if (role === 'admin' && pathname.startsWith('/dashboard')) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/admin';
-    return NextResponse.redirect(url);
-  }
 
   if (role !== 'admin' && pathname.startsWith('/admin')) {
     const url = request.nextUrl.clone();

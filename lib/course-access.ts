@@ -33,9 +33,15 @@ export async function hasCourseAccess(
     return { hasAccess: false, accessType: null, isExpired: false };
   }
 
-  // 1. Admin superuser privilege
+  // 1. Admin superuser privilege must come from current persisted state.
   if (userRole === 'admin') {
-    return { hasAccess: true, accessType: 'admin', isExpired: false };
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+      columns: { role: true },
+    });
+    if (user?.role === 'admin') {
+      return { hasAccess: true, accessType: 'admin', isExpired: false };
+    }
   }
 
   // If userRole not provided, check user's actual role in DB

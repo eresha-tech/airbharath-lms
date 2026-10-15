@@ -5,14 +5,20 @@ import { usePathname, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 import { getClientUser } from "@/lib/user-session-client";
 import { identifyUser } from "@/lib/analytics";
+import { getPostHogConfig } from "@/lib/posthog-config";
+import { workspaceAnalyticsPath, workspaceLoginUrl } from "@/lib/workspace/analytics-privacy";
 
 function PostHogIdentityTracker() {
+  const pathname = usePathname();
+  const identified = useRef(false);
   useEffect(() => {
+    if (identified.current || !getPostHogConfig() || (pathname && workspaceAnalyticsPath(pathname)) || (typeof window !== "undefined" && workspaceLoginUrl(new URL(window.location.href)))) return;
     let isMounted = true;
 
     getClientUser()
       .then((user) => {
         if (isMounted && user?.id) {
+          identified.current = true;
           identifyUser(user.id, {
             email: user.email,
             name: user.fullName,
@@ -25,7 +31,7 @@ function PostHogIdentityTracker() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [pathname]);
 
   return null;
 }
@@ -45,8 +51,7 @@ function PostHogPageViewTracker() {
     if (lastTrackedUrl.current === fullUrl) return;
     lastTrackedUrl.current = fullUrl;
 
-    const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-    if (posthogKey && posthogKey !== "your-posthog-key" && posthogKey !== "your_posthog_project_api_key") {
+    if (getPostHogConfig()) {
       try {
         posthog.capture("$pageview", {
           $current_url: typeof window !== "undefined" ? window.location.href : fullUrl,
@@ -55,8 +60,6 @@ function PostHogPageViewTracker() {
       } catch {
         // Safe no-op on adblocker/network block
       }
-    } else if (process.env.NODE_ENV === "development") {
-      console.debug(`[Analytics Dev] Pageview: ${fullUrl}`);
     }
   }, [pathname, searchParams]);
 

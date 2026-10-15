@@ -6,9 +6,9 @@ import { PricingView, type PricingCourseItem } from "@/components/pricing/Pricin
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Pricing & Plans | AirBharath LMS",
+  title: "Pricing & Plans | AirBharath",
   description:
-    "Transparent pricing for AirBharath LMS professional certificate courses. Complete 18% GST compliance, verifiable credentials, and instant invoice generation.",
+    "Transparent pricing for AirBharath professional certificate courses. Complete 18% GST compliance, verifiable credentials, and instant invoice generation.",
 };
 
 const FEATURED_FALLBACK_COURSES: PricingCourseItem[] = [

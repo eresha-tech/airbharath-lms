@@ -1,4 +1,5 @@
 import { getSession } from "@/lib/auth";
+import { hasPersistedAdminRole } from "@/lib/admin-authorization";
 import { getStudentDashboardData } from "@/lib/dashboard-data";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -19,7 +20,7 @@ export default async function StudentDashboard() {
     redirect("/login");
   }
 
-  if (session.role === "admin") {
+  if (await hasPersistedAdminRole(session)) {
     redirect("/admin");
   }
 

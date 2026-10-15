@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Phone,
@@ -24,31 +24,31 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { track, identifyUser } from '@/lib/analytics';
+import { safeCallbackPath } from '@/lib/auth-navigation';
+import { getClientUser, setClientUser } from '@/lib/user-session-client';
+import { completeLoginNavigation } from './actions';
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const rawCallbackUrl =
     searchParams.get('callbackUrl') ||
     searchParams.get('returnTo') ||
     searchParams.get('redirect');
 
-  // Sanitize callback URL (must be internal relative path to prevent open redirect vulnerabilities)
-  const sanitizeCallbackUrl = (url: string | null): string | null => {
-    if (!url) return null;
-    const trimmed = url.trim();
-    // Must start with single '/' and not '//' or '/\' or contain '\'
-    if (!trimmed.startsWith('/') || trimmed.startsWith('//') || trimmed.startsWith('/\\') || trimmed.includes('\\')) {
-      return null;
+  const callbackUrl = safeCallbackPath(rawCallbackUrl);
+  const inFlight = useRef(false);
+  const [navigating, setNavigating] = useState(false);
+  const [navigationError, setNavigationError] = useState('');
+  const navigate = useCallback(async () => {
+    setNavigating(true); setNavigationError('');
+    try {
+      const result = await completeLoginNavigation(callbackUrl);
+      if (result?.error) throw new Error(result.error);
+    } catch {
+      setCheckingAuth(false); setNavigating(false);
+      setNavigationError('Your sign-in is saved, but we could not open your destination. Please try again.');
     }
-    // Reject explicit protocol schemes (e.g. /http: or /javascript:)
-    if (/^\/[a-z0-9+.-]+:/i.test(trimmed)) {
-      return null;
-    }
-    return trimmed;
-  };
-
-  const callbackUrl = sanitizeCallbackUrl(rawCallbackUrl);
+  }, [callbackUrl]);
 
   const [step, setStep] = useState<'phone' | 'otp' | 'profile'>('phone');
   const [phone, setPhone] = useState('');
@@ -65,24 +65,20 @@ function LoginForm() {
   // Check if user is already authenticated
   useEffect(() => {
     let isMounted = true;
-    fetch('/api/auth/me')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (isMounted && data?.user) {
-          const dest = callbackUrl || (data.user.role === 'admin' ? '/admin' : '/dashboard');
-          router.replace(dest);
-        } else if (isMounted) {
-          setCheckingAuth(false);
-        }
+    getClientUser(true)
+      .then((user) => {
+        if (!isMounted) return;
+        if (user) {
+          if (user.fullName?.trim()) void navigate();
+          else { setStep('profile'); setCheckingAuth(false); }
+        } else setCheckingAuth(false);
       })
-      .catch(() => {
-        if (isMounted) setCheckingAuth(false);
-      });
+      .catch(() => { if (isMounted) setCheckingAuth(false); });
 
     return () => {
       isMounted = false;
     };
-  }, [router, callbackUrl]);
+  }, [navigate]);
 
   // 30s Countdown timer for OTP Resend
   useEffect(() => {
@@ -98,13 +94,15 @@ function LoginForm() {
   // Step 1: Send OTP
   const handleSendOTP = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (inFlight.current || navigating) return;
     const cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.length !== 10) {
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
       setMessage('Please enter a valid 10-digit Indian mobile number');
       setIsSuccess(false);
       return;
     }
 
+    inFlight.current = true;
     setLoading(true);
     setMessage('');
     try {
@@ -118,12 +116,13 @@ function LoginForm() {
 
       setStep('otp');
       setResendTimer(30);
-      setMessage('A 4-digit verification OTP has been sent to your mobile.');
+      setMessage(data.message === 'Local UAT verification ready' ? 'Local UAT verification is ready. No SMS was sent.' : 'A 4-digit verification OTP has been sent to your mobile.');
       setIsSuccess(true);
     } catch (err: any) {
       setMessage(err.message || 'Failed to send OTP. Please try again.');
       setIsSuccess(false);
     } finally {
+      inFlight.current = false;
       setLoading(false);
     }
   };
@@ -144,7 +143,7 @@ function LoginForm() {
       if (!res.ok) throw new Error(data.error || 'Failed to resend OTP');
 
       setResendTimer(30);
-      setMessage('A fresh 4-digit OTP has been resent to your mobile number.');
+      setMessage(data.message === 'Local UAT verification ready' ? 'Local UAT verification is ready. No SMS was sent.' : 'A fresh 4-digit OTP has been resent to your mobile number.');
       setIsSuccess(true);
     } catch (err: any) {
       setMessage(err.message || 'Failed to resend OTP');
@@ -157,6 +156,7 @@ function LoginForm() {
   // Step 2: Verify OTP
   const handleVerifyOTP = async (e?: React.FormEvent, customOtp?: string) => {
     if (e) e.preventDefault();
+    if (inFlight.current || navigating) return;
     const otpToVerify = customOtp || otp;
     if (!otpToVerify || otpToVerify.length < 4) {
       setMessage('Please enter the complete 4-digit OTP code');
@@ -164,6 +164,7 @@ function LoginForm() {
       return;
     }
 
+    inFlight.current = true;
     setLoading(true);
     setMessage('');
     try {
@@ -175,12 +176,13 @@ function LoginForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Verification failed');
 
+      setClientUser(data.user);
       if (data.isNewUser || !data.user?.fullName) {
         setStep('profile');
         setMessage('Mobile verified! Please tell us your name to set up your learning profile.');
         setIsSuccess(true);
       } else {
-        if (data.user?.id) {
+        if (data.user?.id && !callbackUrl?.startsWith('/workspace')) {
           identifyUser(data.user.id, {
             email: data.user.email,
             name: data.user.fullName,
@@ -190,16 +192,13 @@ function LoginForm() {
         }
         setIsSuccess(true);
         setMessage('Login successful! Redirecting to your destination...');
-        const dest = callbackUrl || (data.user?.role === 'admin' ? '/admin' : '/dashboard');
-        setTimeout(() => {
-          router.push(dest);
-          router.refresh();
-        }, 400);
+        await navigate();
       }
     } catch (err: any) {
       setMessage(err.message || 'Invalid or expired OTP');
       setIsSuccess(false);
     } finally {
+      inFlight.current = false;
       setLoading(false);
     }
   };
@@ -207,6 +206,7 @@ function LoginForm() {
   // Step 3: Complete Profile
   const handleCompleteProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (inFlight.current || navigating) return;
     if (!fullName.trim()) {
       setMessage('Please enter your full name');
       setIsSuccess(false);
@@ -218,6 +218,7 @@ function LoginForm() {
       return;
     }
 
+    inFlight.current = true;
     setLoading(true);
     setMessage('');
     try {
@@ -229,7 +230,7 @@ function LoginForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update profile');
 
-      if (data.user?.id) {
+      if (data.user?.id && !callbackUrl?.startsWith('/workspace')) {
         identifyUser(data.user.id, {
           email: data.user.email,
           name: data.user.fullName,
@@ -240,25 +241,24 @@ function LoginForm() {
 
       setIsSuccess(true);
       setMessage('Profile setup complete! Redirecting to your dashboard...');
-      const dest = callbackUrl || (data.user?.role === 'admin' ? '/admin' : '/dashboard');
-      setTimeout(() => {
-        router.push(dest);
-        router.refresh();
-      }, 400);
+      setClientUser(data.user);
+      await navigate();
     } catch (err: any) {
       setMessage(err.message || 'Failed to update profile');
       setIsSuccess(false);
     } finally {
+      inFlight.current = false;
       setLoading(false);
     }
   };
 
-  if (checkingAuth) {
+  if (checkingAuth || navigating || navigationError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-xs font-semibold text-muted-foreground">Checking authentication...</p>
+          {!navigationError && <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden />}
+          <p role={navigationError ? 'alert' : 'status'} className="max-w-sm px-5 text-center text-sm text-muted-foreground">{navigationError || (navigating ? 'Opening your destination…' : 'Checking authentication…')}</p>
+          {navigationError && <Button onClick={() => void navigate()}>Try opening your destination again</Button>}
         </div>
       </div>
     );
@@ -273,7 +273,7 @@ function LoginForm() {
           className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary transition-colors py-1.5 px-3 rounded-full hover:bg-muted"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to AirBharath LMS</span>
+          <span>Back to AirBharath</span>
         </Link>
       </div>
 
@@ -282,9 +282,9 @@ function LoginForm() {
         <div className="w-full max-w-5xl bg-card rounded-3xl shadow-xl border border-border overflow-hidden flex flex-col lg:flex-row transition-all duration-300">
 
           {/* Left Branding & Highlights Panel (Desktop / Tablet Large) */}
-          <div className="hidden lg:flex lg:w-5/12 bg-slate-950 dark:bg-card text-white dark:text-foreground p-8 xl:p-10 flex-col justify-between relative overflow-hidden border-r border-border/40">
+          <div className="hidden lg:flex lg:w-5/12 bg-primary-foreground dark:bg-card text-accent-light dark:text-foreground p-8 xl:p-10 flex-col justify-between relative overflow-hidden border-r border-border/40">
             {/* Background Aesthetic Layers */}
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 dark:from-card dark:via-card dark:to-card pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-br from-primary-foreground via-primary-foreground to-primary-foreground dark:from-card dark:via-card dark:to-card pointer-events-none" />
             <div className="absolute -top-24 -left-24 w-72 h-72 bg-primary/15 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -292,15 +292,12 @@ function LoginForm() {
             <div className="relative z-10 flex items-center gap-3">
               <img
                 src="https://assets.airbharath.in/eresha-logo.webp"
-                alt="AirBharath LMS"
+                alt="AirBharath"
                 className="h-10 w-auto bg-white/10 p-1.5 rounded-xl border border-white/20 shadow-xs"
               />
               <div>
                 <span className="text-xl font-bold font-outfit tracking-tight text-white dark:text-foreground block">
-                  AirBharath <span className="text-primary font-semibold text-lg">LMS</span>
-                </span>
-                <span className="text-[10px] text-accent-light uppercase tracking-widest font-extrabold">
-                  Aviation &amp; Technical Learning
+                  AirBharath
                 </span>
               </div>
             </div>
@@ -309,14 +306,14 @@ function LoginForm() {
             <div className="relative z-10 my-8 space-y-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 border border-primary/25 text-accent-light text-xs font-bold uppercase tracking-wider backdrop-blur-md">
                 <Sparkles className="w-3.5 h-3.5 text-primary" />
-                <span>Future-Ready Skill Upgrades</span>
+                <span>Professional Aviation Learning</span>
               </div>
 
               <div className="space-y-2.5">
                 <h1 className="text-2xl xl:text-3xl font-bold font-outfit leading-tight text-white dark:text-foreground">
                   Learn, Certify &amp; Elevate Your Career.
                 </h1>
-                <p className="text-xs xl:text-sm text-slate-300 dark:text-muted-foreground leading-relaxed font-normal">
+                <p className="text-xs xl:text-sm text-accent-light/90 dark:text-muted-foreground leading-relaxed font-normal">
                   Self-paced certificate programs in AI tools, digital marketing, entrepreneurship, and workplace productivity. Taught by IIM alumni and industry practitioners.
                 </p>
               </div>
@@ -329,7 +326,7 @@ function LoginForm() {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-white dark:text-foreground">Instant 4-Digit Mobile OTP</h4>
-                    <p className="text-[11px] text-slate-400 dark:text-muted-foreground">Fast, passwordless login with your mobile number.</p>
+                    <p className="text-[11px] text-accent-light/80 dark:text-muted-foreground">Fast, passwordless login with your mobile number.</p>
                   </div>
                 </div>
 
@@ -339,7 +336,7 @@ function LoginForm() {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-white dark:text-foreground">QR-Verifiable Credentials</h4>
-                    <p className="text-[11px] text-slate-400 dark:text-muted-foreground">Earn official certificates upon 100% completion.</p>
+                    <p className="text-[11px] text-accent-light/80 dark:text-muted-foreground">Earn official certificates upon 100% completion.</p>
                   </div>
                 </div>
 
@@ -349,14 +346,14 @@ function LoginForm() {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-white dark:text-foreground">100% Self-Paced Access</h4>
-                    <p className="text-[11px] text-slate-400 dark:text-muted-foreground">Access HD videos, notes, and doubt Q&amp;A anytime.</p>
+                    <p className="text-[11px] text-accent-light/80 dark:text-muted-foreground">Access HD videos, notes, and doubt Q&amp;A anytime.</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Bottom Note */}
-            <div className="relative z-10 pt-4 border-t border-white/10 dark:border-border text-[11px] text-slate-400 dark:text-muted-foreground flex items-center justify-between">
+            <div className="relative z-10 pt-4 border-t border-white/10 dark:border-border text-[11px] text-accent-light/80 dark:text-muted-foreground flex items-center justify-between">
               <span>Secure 256-Bit SSL Gateway</span>
               <span>ISO &amp; GST Compliant</span>
             </div>
@@ -370,11 +367,11 @@ function LoginForm() {
               <div className="lg:hidden text-center space-y-2 pb-2">
                 <img
                   src="https://assets.airbharath.in/eresha-logo.webp"
-                  alt="AirBharath LMS"
+                  alt="AirBharath"
                   className="h-9 w-auto mx-auto object-contain"
                 />
                 <h2 className="text-sm font-bold uppercase tracking-wider text-primary font-outfit">
-                  AirBharath LMS
+                  AirBharath
                 </h2>
               </div>
 
@@ -587,7 +584,7 @@ function LoginForm() {
                       Complete Your Profile
                     </h2>
                     <p className="text-xs sm:text-sm text-muted-foreground font-normal">
-                      Welcome to AirBharath LMS! Please enter your details as they should appear on your completion certificates.
+                      Welcome to AirBharath! Please enter your details as they should appear on your completion certificates.
                     </p>
                   </div>
 
@@ -678,7 +675,7 @@ function LoginForm() {
               {/* Footer Legal Agreement */}
               <div className="pt-2 border-t border-border text-center text-[11px] text-muted-foreground">
                 <p>
-                  By continuing, you agree to AirBharath LMS{' '}
+                  By continuing, you agree to AirBharath{' '}
                   <Link href="/terms" className="text-primary font-semibold hover:underline">
                     Terms &amp; Conditions
                   </Link>{' '}
@@ -697,7 +694,7 @@ function LoginForm() {
 
       {/* Page Footer */}
       <footer className="w-full px-6 py-4 text-center text-xs text-muted-foreground font-medium border-t border-border bg-card/50 backdrop-blur-xs">
-        <p>&copy; {new Date().getFullYear()} AirBharath LMS. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} AirBharath. All rights reserved.</p>
       </footer>
     </div>
   );
@@ -707,10 +704,10 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="min-h-screen flex items-center justify-center bg-background">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-xs font-semibold text-muted-foreground">Loading AirBharath LMS...</p>
+            <p className="text-xs font-semibold text-muted-foreground">Loading AirBharath...</p>
           </div>
         </div>
       }

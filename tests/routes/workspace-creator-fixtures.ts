@@ -1,0 +1,11 @@
+import type { AccessEvidence } from '@/lib/workspace/activation/model';
+import type { DraftContent, ProfileContent } from '@/lib/workspace/creator/model';
+export const owner = '11111111-1111-4111-8111-111111111111';
+export const other = '22222222-2222-4222-8222-222222222222';
+export const key = '33333333-3333-4333-8333-333333333333';
+export const draftId = '44444444-4444-4444-8444-444444444444';
+export const profileId = '55555555-5555-4555-8555-555555555555';
+export const now = new Date('2026-10-08T10:00:00Z');
+export const evidence: AccessEvidence = { profileStatus: 'enabled', providerMode: 'test', commercialPolicyVersion: 'workspace-test-noncommercial-v1', activationState: 'fulfilled', membership: { startsAt: new Date('2026-11-08T18:30:00Z'), endsAt: new Date('2027-02-08T18:30:00Z'), fulfilledAt: new Date('2026-10-01T10:00:00Z'), accessGrantedAt: new Date('2026-10-01T10:00:00Z') } };
+export const content: DraftContent = { title: 'Cabin safety foundations', category: 'cabin_crew', description: 'Learn the foundations of cabin safety and practical passenger handling through carefully structured aviation examples.', targetLearner: 'Aspiring cabin crew', learningOutcomes: ['Understand safety responsibilities'], outline: [{ title: 'Safety foundations', description: 'Introduction', ordering: 0 }], tentativePricePaise: 250_000 };
+export const profile: ProfileContent = { displayName: 'Test Creator', professionalHeadline: 'Cabin Crew Trainer', shortBio: 'Aviation teaching experience.', primaryAviationCategory: 'cabin_crew', professionalProfileUrl: 'https://www.linkedin.com/in/workspace-synthetic' };

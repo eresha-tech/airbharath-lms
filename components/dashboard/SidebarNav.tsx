@@ -123,7 +123,7 @@ export function SidebarNav() {
             "flex items-center gap-2.5 overflow-hidden transition-opacity hover:opacity-90",
             isCollapsed && "justify-center w-full"
           )}
-          aria-label="Airbharath LMS Home"
+          aria-label="AirBharath Home"
         >
           <img
             src="https://assets.airbharath.in/eresha-logo.webp"
@@ -251,7 +251,7 @@ export function SidebarNav() {
               Complete your enrolled modules to unlock verified placement drives.
             </p>
             <div className="pt-1 flex items-center justify-between text-[10px] text-muted-foreground/60 font-mono">
-              <span>AirBharath LMS</span>
+              <span>AirBharath</span>
               <span>v{APP_VERSION}</span>
             </div>
           </div>
@@ -264,7 +264,7 @@ export function SidebarNav() {
                 </div>
               </TooltipTrigger>
               <TooltipContent side="right" className="text-xs">
-                AirBharath LMS v{APP_VERSION}
+                AirBharath v{APP_VERSION}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

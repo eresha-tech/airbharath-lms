@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthorizedAdminSession } from "@/lib/admin-authorization";
 import { db } from "@/lib/db";
 import { videos, lessons } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -7,8 +7,8 @@ import { getS3UploadPresignedUrl } from "@/lib/aws-video";
 
 export async function POST(req: Request) {
   try {
-    const session = await getSession();
-    if (!session || session.role !== "admin") {
+    const session = await getAuthorizedAdminSession();
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

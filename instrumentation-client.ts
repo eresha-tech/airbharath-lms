@@ -1,19 +1,13 @@
 import posthog from "posthog-js";
+import { getPostHogConfig, POSTHOG_PROXY_PATH } from "@/lib/posthog-config";
+import { sanitizeWorkspaceAnalytics } from "@/lib/workspace/analytics-privacy";
 
-const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
+const config = getPostHogConfig();
 
-if (!posthogKey || posthogKey === "your-posthog-key") {
-  if (process.env.NODE_ENV === "development") {
-    console.warn("[PostHog] NEXT_PUBLIC_POSTHOG_KEY is not configured. Analytics is in development mode.");
-  }
-} else if (!posthogHost) {
-  if (process.env.NODE_ENV === "development") {
-    console.warn("[PostHog] NEXT_PUBLIC_POSTHOG_HOST is not configured.");
-  }
-} else {
-  posthog.init(posthogKey, {
-    api_host: posthogHost,
+if (config) {
+  posthog.init(config.key, {
+    api_host: POSTHOG_PROXY_PATH,
+    ui_host: config.uiHost,
     defaults: "2026-01-30",
     capture_pageview: false, // Handled with route change detection in PostHogProvider
     capture_pageleave: true,
@@ -28,6 +22,6 @@ if (!posthogKey || posthogKey === "your-posthog-key") {
     cross_subdomain_cookie: false,
     tracing_headers: typeof window !== "undefined" ? [window.location.hostname] : [],
     debug: false,
+    before_send: sanitizeWorkspaceAnalytics,
   });
 }
-

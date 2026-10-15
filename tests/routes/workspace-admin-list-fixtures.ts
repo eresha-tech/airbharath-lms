@@ -1,0 +1,2 @@
+import {listParams} from '@/lib/workspace/admin/pagination';
+export function adminListFixture(name='Synthetic Creator',detail='1 modules · 1 lessons'){return{title:'Private Workspace records',statuses:['submitted','approved'],rows:[{id:'00000000-0000-4000-8000-000000000001',user_id:null,name,status:'submitted',detail,time:'2026-10-13T12:00:00.000Z',href:'/admin/workspace/course-reviews/00000000-0000-4000-8000-000000000001'}],total:1,hasNext:false,cursorBased:false,nextCursor:null,params:listParams({})};}

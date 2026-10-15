@@ -1,0 +1,533 @@
+{
+  "database": "workspace_f6r_disposable_0c74a40f7698abce",
+  "system": "7680462735222304705",
+  "checks": [
+    {
+      "name": "strict_disposable_identity_no_retained_connection",
+      "oid": "32169"
+    },
+    {
+      "name": "reviewed_0000_through_0029_applied_only_to_new_database"
+    },
+    {
+      "name": "original_leaf_truncate_gap_reproduced_with_synthetic_row_and_rolled_back"
+    },
+    {
+      "name": "missing_target_fails_and_rolls_back_function_and_prior_attachments"
+    },
+    {
+      "name": "0030_installed_21_before_truncate_statement_guards_and_runner_second_run_noop"
+    },
+    {
+      "name": "raw_duplicate_installation_fails_safely"
+    },
+    {
+      "name": "normal_complimentary_grant_and_paired_audit_without_payment"
+    },
+    {
+      "name": "deferred_grant_audit_constraint_still_rejects_missing_event"
+    },
+    {
+      "name": "normal_verified_email_legal_coupon_reservation_capture_event_fulfillment"
+    },
+    {
+      "name": "paid_and_grant_profile_proposal_review_builder_insert_update_delete_and_owner_isolation"
+    },
+    {
+      "name": "normal_refund_completion_and_normal_grant_revocation_preserve_history"
+    },
+    {
+      "name": "lms_financial_and_enrollment_isolation"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_payment_events",
+      "sqlstate": "42501"
+    },
+    {
+      "name": "non_owner_cannot_disable_triggers"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_applications",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_audit_events",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_coupon_plans",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_coupon_redemptions",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_coupons",
+      "sqlstate": "0A000"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_coupons CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_course_drafts",
+      "sqlstate": "0A000"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_course_drafts CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_course_lessons",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_course_modules",
+      "sqlstate": "0A000"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_course_modules CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_course_projects",
+      "sqlstate": "0A000"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_course_projects CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_course_review_events",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_course_submissions",
+      "sqlstate": "0A000"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_course_submissions CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_creator_profile_details",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_creator_profiles",
+      "sqlstate": "0A000"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_creator_profiles CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_eligibility_attempts",
+      "sqlstate": "0A000"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_eligibility_attempts CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_eligibility_settings",
+      "sqlstate": "0A000"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_eligibility_settings CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_membership_orders",
+      "sqlstate": "0A000"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_membership_orders CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_membership_plans",
+      "sqlstate": "0A000"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_membership_plans CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_memberships",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_payment_attempts",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_payment_events",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_policy_versions",
+      "sqlstate": "0A000"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_policy_versions CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_access_grant_events CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_access_grants CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_creator_terms_acceptances CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_creator_terms_versions CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_email_challenges CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_email_notice_bindings CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_influencer_history CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_influencers CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_refund_attempts CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_refund_completions CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_refund_notice_deliveries CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_refund_notice_delivery_attempts CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_refund_notices CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_refund_observations CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_refund_policy_acceptances CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_refund_policy_versions CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_refund_requests CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_verified_emails CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_email_rate_limits, public.workspace_payment_events",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_course_projects CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_course_drafts CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_membership_orders CASCADE",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "refused_statement_preserves_all_rows",
+      "statement": "TRUNCATE public.workspace_coupon_plans, public.workspace_audit_events",
+      "sqlstate": "23514"
+    },
+    {
+      "name": "all_synthetic_history_preserved_after_denied_operations_no_provider_calls"
+    }
+  ],
+  "externalCalls": 0,
+  "cleanup": {
+    "database": true,
+    "role": true
+  },
+  "oid": "32169",
+  "installed": [
+    {
+      "table": "workspace_applications",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_audit_events",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_coupon_plans",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_coupon_redemptions",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_coupons",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_course_drafts",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_course_lessons",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_course_modules",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_course_projects",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_course_review_events",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_course_submissions",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_creator_profile_details",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_creator_profiles",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_eligibility_attempts",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_eligibility_settings",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_membership_orders",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_membership_plans",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_memberships",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_payment_attempts",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_payment_events",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    },
+    {
+      "table": "workspace_policy_versions",
+      "tgtype": 34,
+      "tgenabled": "O",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ]
+    }
+  ],
+  "temporaryRuntimePrivileges": {
+    "role": "workspace_f6r_runtime_0c74a40f7698abce",
+    "truncate": false,
+    "insert": true,
+    "schema_create": false
+  },
+  "complete": true
+}

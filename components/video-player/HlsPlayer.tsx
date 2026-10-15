@@ -94,7 +94,7 @@ export function HlsPlayer({
   lessonIndex,
   captionAvailable,
   captionUrl,
-  watermarkText = "Airbharath LMS",
+  watermarkText = "AirBharath",
   watermarkEmail,
   watermarkPhone,
   className = "",

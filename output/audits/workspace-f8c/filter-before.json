@@ -1,0 +1,7 @@
+{
+  "stage": "pre-correction",
+  "URLpage": "2",
+  "rows": 3,
+  "visibleStatus": "revoked",
+  "expectedStatus": "all"
+}

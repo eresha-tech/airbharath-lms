@@ -1,0 +1,99 @@
+# Historical AirBharath phase reports
+
+This index contains exactly **60 founder-approved historical reports**, archived from the repository root at source commit `93d05a1`. Filenames are preserved. Each original root path below is repository-relative.
+
+These documents record implementation, decisions and verification **at the time they were written**. Their timestamps, results, prices, policies and conclusions do not necessarily describe current product or production behavior. Archival does not establish production readiness, migration approval or payment enablement.
+
+Current guidance remains in place: [README](../../README.md), [deployment and rollback runbook](../../AIRBHARATH_DEPLOYMENT_RUNBOOK.md), [Neon inspection/migration and recovery runbook](../../AIRBHARATH_NEON_MIGRATION_RUNBOOK.md), and [production readiness report](../../AIRBHARATH_PRODUCTION_READINESS_REPORT.md).
+
+Only affected hyperlinks and file-location references were repaired. Historical command examples and retained screenshot/audit evidence were preserved. Original paths remain searchable here for references in immutable evidence.
+
+## Baseline audits and Workspace foundation — Phases 1–1.1
+
+| Original filename / archived report | Original root path | Historical phase or subject | Brief description |
+|---|---|---|---|
+| [LMS_CURRENT_STATE_AUDIT.md](phase-reports/LMS_CURRENT_STATE_AUDIT.md) | `LMS_CURRENT_STATE_AUDIT.md` | Baseline audits and Workspace foundation — Phases 1–1.1 | Historical record: LMS Current-State Audit — AirBharath LMS. |
+| [WORKSPACE_COUPON_AUDIT.md](phase-reports/WORKSPACE_COUPON_AUDIT.md) | `WORKSPACE_COUPON_AUDIT.md` | Baseline audits and Workspace foundation — Phases 1–1.1 | Historical record: Workspace Phase 1.1 — LMS Coupon Audit. |
+| [WORKSPACE_PHASE11_IMPLEMENTATION.md](phase-reports/WORKSPACE_PHASE11_IMPLEMENTATION.md) | `WORKSPACE_PHASE11_IMPLEMENTATION.md` | Baseline audits and Workspace foundation — Phases 1–1.1 | Historical record: Workspace Phase 1.1 — Approval Communication and Coupon Audit. |
+| [WORKSPACE_PHASE1_IMPLEMENTATION.md](phase-reports/WORKSPACE_PHASE1_IMPLEMENTATION.md) | `WORKSPACE_PHASE1_IMPLEMENTATION.md` | Baseline audits and Workspace foundation — Phases 1–1.1 | Historical record: AirBharath Workspace — Phase 1 Implementation. |
+| [WORKSPACE_WEBHOOK_VERIFICATION.md](phase-reports/WORKSPACE_WEBHOOK_VERIFICATION.md) | `WORKSPACE_WEBHOOK_VERIFICATION.md` | Baseline audits and Workspace foundation — Phases 1–1.1 | Historical record: Workspace webhook verification — 8 October 2026. |
+
+## Creator Workspace, course review and private builder — Phases 1.6–1.8
+
+| Original filename / archived report | Original root path | Historical phase or subject | Brief description |
+|---|---|---|---|
+| [WORKSPACE_PHASE16V_VERIFICATION.md](phase-reports/WORKSPACE_PHASE16V_VERIFICATION.md) | `WORKSPACE_PHASE16V_VERIFICATION.md` | Creator Workspace, course review and private builder — Phases 1.6–1.8 | Historical record: Workspace Phase 1.6V verification. |
+| [WORKSPACE_PHASE16_IMPLEMENTATION.md](phase-reports/WORKSPACE_PHASE16_IMPLEMENTATION.md) | `WORKSPACE_PHASE16_IMPLEMENTATION.md` | Creator Workspace, course review and private builder — Phases 1.6–1.8 | Historical record: Workspace Phase 1.6 implementation. |
+| [WORKSPACE_PHASE17V_VERIFICATION.md](phase-reports/WORKSPACE_PHASE17V_VERIFICATION.md) | `WORKSPACE_PHASE17V_VERIFICATION.md` | Creator Workspace, course review and private builder — Phases 1.6–1.8 | Historical record: Workspace Phase 1.7V — real PostgreSQL verification. |
+| [WORKSPACE_PHASE17_IMPLEMENTATION.md](phase-reports/WORKSPACE_PHASE17_IMPLEMENTATION.md) | `WORKSPACE_PHASE17_IMPLEMENTATION.md` | Creator Workspace, course review and private builder — Phases 1.6–1.8 | Historical record: Workspace Phase 1.7 implementation. |
+| [WORKSPACE_PHASE18V_VERIFICATION.md](phase-reports/WORKSPACE_PHASE18V_VERIFICATION.md) | `WORKSPACE_PHASE18V_VERIFICATION.md` | Creator Workspace, course review and private builder — Phases 1.6–1.8 | Historical record: Workspace Phase 1.8V — Real PostgreSQL Course Builder Verification. |
+| [WORKSPACE_PHASE18_IMPLEMENTATION.md](phase-reports/WORKSPACE_PHASE18_IMPLEMENTATION.md) | `WORKSPACE_PHASE18_IMPLEMENTATION.md` | Creator Workspace, course review and private builder — Phases 1.6–1.8 | Historical record: Workspace Phase 1.8 Implementation. |
+
+## Eligibility, pricing, payment and membership — Phases 1.3–1.5
+
+| Original filename / archived report | Original root path | Historical phase or subject | Brief description |
+|---|---|---|---|
+| [WORKSPACE_PHASE13V_VERIFICATION.md](phase-reports/WORKSPACE_PHASE13V_VERIFICATION.md) | `WORKSPACE_PHASE13V_VERIFICATION.md` | Eligibility, pricing, payment and membership — Phases 1.3–1.5 | Historical record: Workspace Phase 1.3V — real local PostgreSQL verification. |
+| [WORKSPACE_PHASE13_IMPLEMENTATION.md](phase-reports/WORKSPACE_PHASE13_IMPLEMENTATION.md) | `WORKSPACE_PHASE13_IMPLEMENTATION.md` | Eligibility, pricing, payment and membership — Phases 1.3–1.5 | Historical record: AirBharath Workspace — Phase 1.3 implementation. |
+| [WORKSPACE_PHASE14V_VERIFICATION.md](phase-reports/WORKSPACE_PHASE14V_VERIFICATION.md) | `WORKSPACE_PHASE14V_VERIFICATION.md` | Eligibility, pricing, payment and membership — Phases 1.3–1.5 | Historical record: Workspace Phase 1.4V — real local PostgreSQL verification. |
+| [WORKSPACE_PHASE14_IMPLEMENTATION.md](phase-reports/WORKSPACE_PHASE14_IMPLEMENTATION.md) | `WORKSPACE_PHASE14_IMPLEMENTATION.md` | Eligibility, pricing, payment and membership — Phases 1.3–1.5 | Historical record: Workspace Phase 1.4 — membership plans, pricing and advisory coupons. |
+| [WORKSPACE_PHASE15AV_DB_VERIFICATION.md](phase-reports/WORKSPACE_PHASE15AV_DB_VERIFICATION.md) | `WORKSPACE_PHASE15AV_DB_VERIFICATION.md` | Eligibility, pricing, payment and membership — Phases 1.3–1.5 | Historical record: Workspace Phase 1.5AV-DB verification. |
+| [WORKSPACE_PHASE15AV_R2_VERIFICATION.md](phase-reports/WORKSPACE_PHASE15AV_R2_VERIFICATION.md) | `WORKSPACE_PHASE15AV_R2_VERIFICATION.md` | Eligibility, pricing, payment and membership — Phases 1.3–1.5 | Historical record: Workspace Phase 1.5AV-R2 verification. |
+| [WORKSPACE_PHASE15AV_RAZORPAY_VERIFICATION.md](phase-reports/WORKSPACE_PHASE15AV_RAZORPAY_VERIFICATION.md) | `WORKSPACE_PHASE15AV_RAZORPAY_VERIFICATION.md` | Eligibility, pricing, payment and membership — Phases 1.3–1.5 | Historical record: Workspace Phase 1.5AV-Razorpay verification. |
+| [WORKSPACE_PHASE15A_IMPLEMENTATION.md](phase-reports/WORKSPACE_PHASE15A_IMPLEMENTATION.md) | `WORKSPACE_PHASE15A_IMPLEMENTATION.md` | Eligibility, pricing, payment and membership — Phases 1.3–1.5 | Historical record: Workspace Phase 1.5A implementation. |
+| [WORKSPACE_PHASE15BV_VERIFICATION.md](phase-reports/WORKSPACE_PHASE15BV_VERIFICATION.md) | `WORKSPACE_PHASE15BV_VERIFICATION.md` | Eligibility, pricing, payment and membership — Phases 1.3–1.5 | Historical record: Workspace Phase 1.5BV verification. |
+| [WORKSPACE_PHASE15B_IMPLEMENTATION.md](phase-reports/WORKSPACE_PHASE15B_IMPLEMENTATION.md) | `WORKSPACE_PHASE15B_IMPLEMENTATION.md` | Eligibility, pricing, payment and membership — Phases 1.3–1.5 | Historical record: Workspace Phase 1.5B implementation. |
+
+## Launch integration and UX — Phases F.1–F.8
+
+| Original filename / archived report | Original root path | Historical phase or subject | Brief description |
+|---|---|---|---|
+| [WORKSPACE_LAUNCH_F1_MEMBERSHIP_PRICING_VERIFICATION.md](phase-reports/WORKSPACE_LAUNCH_F1_MEMBERSHIP_PRICING_VERIFICATION.md) | `WORKSPACE_LAUNCH_F1_MEMBERSHIP_PRICING_VERIFICATION.md` | Launch integration and UX — Phases F.1–F.8 | Historical record: Workspace F.1 membership pricing verification. |
+| [WORKSPACE_LAUNCH_F1_PRICING_REAL_DB_COMPLETION.md](phase-reports/WORKSPACE_LAUNCH_F1_PRICING_REAL_DB_COMPLETION.md) | `WORKSPACE_LAUNCH_F1_PRICING_REAL_DB_COMPLETION.md` | Launch integration and UX — Phases F.1–F.8 | Historical record: Workspace F.1 revised pricing — real database completion. |
+| [WORKSPACE_LAUNCH_F2_VERIFIED_EMAIL_ACTIVATION.md](phase-reports/WORKSPACE_LAUNCH_F2_VERIFIED_EMAIL_ACTIVATION.md) | `WORKSPACE_LAUNCH_F2_VERIFIED_EMAIL_ACTIVATION.md` | Launch integration and UX — Phases F.1–F.8 | Historical record: Workspace launch F.2 — verified creator email and activation. |
+| [WORKSPACE_LAUNCH_F3_CREATOR_DASHBOARD_UX.md](phase-reports/WORKSPACE_LAUNCH_F3_CREATOR_DASHBOARD_UX.md) | `WORKSPACE_LAUNCH_F3_CREATOR_DASHBOARD_UX.md` | Launch integration and UX — Phases F.1–F.8 | Historical record: Workspace launch F.3 — Creator Dashboard UX. |
+| [WORKSPACE_LAUNCH_F4_ADMIN_COMPLETION.md](phase-reports/WORKSPACE_LAUNCH_F4_ADMIN_COMPLETION.md) | `WORKSPACE_LAUNCH_F4_ADMIN_COMPLETION.md` | Launch integration and UX — Phases F.1–F.8 | Historical record: Workspace F.4 corrective completion. |
+| [WORKSPACE_LAUNCH_F4_ADMIN_WORKSPACE_ACCESS_GRANTS.md](phase-reports/WORKSPACE_LAUNCH_F4_ADMIN_WORKSPACE_ACCESS_GRANTS.md) | `WORKSPACE_LAUNCH_F4_ADMIN_WORKSPACE_ACCESS_GRANTS.md` | Launch integration and UX — Phases F.1–F.8 | Historical record: Workspace F.4 — Admin restructuring, pagination and access grants. |
+| [WORKSPACE_LAUNCH_F5_UI_CONSISTENCY_AUDIT_AND_FIXES.md](phase-reports/WORKSPACE_LAUNCH_F5_UI_CONSISTENCY_AUDIT_AND_FIXES.md) | `WORKSPACE_LAUNCH_F5_UI_CONSISTENCY_AUDIT_AND_FIXES.md` | Launch integration and UX — Phases F.1–F.8 | Historical record: Workspace F.5 UI consistency audit and fixes. |
+| [WORKSPACE_LAUNCH_F6_DATABASE_AUDIT.md](phase-reports/WORKSPACE_LAUNCH_F6_DATABASE_AUDIT.md) | `WORKSPACE_LAUNCH_F6_DATABASE_AUDIT.md` | Launch integration and UX — Phases F.1–F.8 | Historical record: Workspace F.6 database audit — read-only blocked checkpoint. |
+| [WORKSPACE_LAUNCH_F6_DATABASE_AUDIT_COMPLETION.md](phase-reports/WORKSPACE_LAUNCH_F6_DATABASE_AUDIT_COMPLETION.md) | `WORKSPACE_LAUNCH_F6_DATABASE_AUDIT_COMPLETION.md` | Launch integration and UX — Phases F.1–F.8 | Historical record: Workspace F.6 database audit completion — local hardening. |
+| [WORKSPACE_LAUNCH_F6_TRUNCATE_GUARD_PROPOSAL.md](phase-reports/WORKSPACE_LAUNCH_F6_TRUNCATE_GUARD_PROPOSAL.md) | `WORKSPACE_LAUNCH_F6_TRUNCATE_GUARD_PROPOSAL.md` | Launch integration and UX — Phases F.1–F.8 | Historical record: Workspace F.6R — retained-history TRUNCATE guard proposal. |
+| [WORKSPACE_LAUNCH_F7A_LANDING_PAGE_AUDIT.md](phase-reports/WORKSPACE_LAUNCH_F7A_LANDING_PAGE_AUDIT.md) | `WORKSPACE_LAUNCH_F7A_LANDING_PAGE_AUDIT.md` | Launch integration and UX — Phases F.1–F.8 | Historical record: AirBharath Workspace — F.7A landing-page audit. |
+| [WORKSPACE_LAUNCH_F7B_LMS_FIRST_LANDING_REFRESH.md](phase-reports/WORKSPACE_LAUNCH_F7B_LMS_FIRST_LANDING_REFRESH.md) | `WORKSPACE_LAUNCH_F7B_LMS_FIRST_LANDING_REFRESH.md` | Launch integration and UX — Phases F.1–F.8 | Historical record: AirBharath — F.7B LMS-first landing refresh. |
+| [WORKSPACE_LAUNCH_F8_FINAL_13_REQUIREMENT_VERIFICATION.md](phase-reports/WORKSPACE_LAUNCH_F8_FINAL_13_REQUIREMENT_VERIFICATION.md) | `WORKSPACE_LAUNCH_F8_FINAL_13_REQUIREMENT_VERIFICATION.md` | Launch integration and UX — Phases F.1–F.8 | Historical record: Workspace F.8 — final 13-requirement integration verification. |
+| [WORKSPACE_LAUNCH_F8_INTEGRATION_CORRECTIVE_COMPLETION.md](phase-reports/WORKSPACE_LAUNCH_F8_INTEGRATION_CORRECTIVE_COMPLETION.md) | `WORKSPACE_LAUNCH_F8_INTEGRATION_CORRECTIVE_COMPLETION.md` | Launch integration and UX — Phases F.1–F.8 | Historical record: Workspace F.8C — integration corrections and reverification. |
+
+## Legal, financial, provider and influencer-coupon launch evidence
+
+| Original filename / archived report | Original root path | Historical phase or subject | Brief description |
+|---|---|---|---|
+| [WORKSPACE_LAUNCH_CREATOR_TERMS_FINALIZATION.md](phase-reports/WORKSPACE_LAUNCH_CREATOR_TERMS_FINALIZATION.md) | `WORKSPACE_LAUNCH_CREATOR_TERMS_FINALIZATION.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace Launch Blocker A.1 — Creator Terms content finalization. |
+| [WORKSPACE_LAUNCH_CREATOR_TERMS_IMPLEMENTATION.md](phase-reports/WORKSPACE_LAUNCH_CREATOR_TERMS_IMPLEMENTATION.md) | `WORKSPACE_LAUNCH_CREATOR_TERMS_IMPLEMENTATION.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace Launch Blocker A — Creator Terms implementation. |
+| [WORKSPACE_LAUNCH_CREATOR_TERMS_VERIFICATION.md](phase-reports/WORKSPACE_LAUNCH_CREATOR_TERMS_VERIFICATION.md) | `WORKSPACE_LAUNCH_CREATOR_TERMS_VERIFICATION.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace Launch Blocker A.2 — Creator Terms real PostgreSQL verification. |
+| [WORKSPACE_LAUNCH_E1_COURSE_SUBMISSION_DIAGNOSTIC.md](phase-reports/WORKSPACE_LAUNCH_E1_COURSE_SUBMISSION_DIAGNOSTIC.md) | `WORKSPACE_LAUNCH_E1_COURSE_SUBMISSION_DIAGNOSTIC.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace E.1 course-submission preservation diagnostic. |
+| [WORKSPACE_LAUNCH_INFLUENCER_COUPONS_E1_COMPLETION.md](phase-reports/WORKSPACE_LAUNCH_INFLUENCER_COUPONS_E1_COMPLETION.md) | `WORKSPACE_LAUNCH_INFLUENCER_COUPONS_E1_COMPLETION.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace E.1 completion. |
+| [WORKSPACE_LAUNCH_INFLUENCER_COUPONS_E1_CONTINUATION.md](phase-reports/WORKSPACE_LAUNCH_INFLUENCER_COUPONS_E1_CONTINUATION.md) | `WORKSPACE_LAUNCH_INFLUENCER_COUPONS_E1_CONTINUATION.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace E.1 continuation — migration 0024 and preservation gate. |
+| [WORKSPACE_LAUNCH_INFLUENCER_COUPONS_FINAL_VERIFICATION.md](phase-reports/WORKSPACE_LAUNCH_INFLUENCER_COUPONS_FINAL_VERIFICATION.md) | `WORKSPACE_LAUNCH_INFLUENCER_COUPONS_FINAL_VERIFICATION.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace E.1 final continuation — real financial verification. |
+| [WORKSPACE_LAUNCH_INFLUENCER_COUPONS_IMPLEMENTATION.md](phase-reports/WORKSPACE_LAUNCH_INFLUENCER_COUPONS_IMPLEMENTATION.md) | `WORKSPACE_LAUNCH_INFLUENCER_COUPONS_IMPLEMENTATION.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace Major Launch Phase E — implementation. |
+| [WORKSPACE_LAUNCH_INFLUENCER_COUPONS_REAL_DB_VERIFICATION.md](phase-reports/WORKSPACE_LAUNCH_INFLUENCER_COUPONS_REAL_DB_VERIFICATION.md) | `WORKSPACE_LAUNCH_INFLUENCER_COUPONS_REAL_DB_VERIFICATION.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace Major Launch Phase E.1 — real PostgreSQL verification. |
+| [WORKSPACE_LAUNCH_NOTICE_DELIVERY_IMPLEMENTATION.md](phase-reports/WORKSPACE_LAUNCH_NOTICE_DELIVERY_IMPLEMENTATION.md) | `WORKSPACE_LAUNCH_NOTICE_DELIVERY_IMPLEMENTATION.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace Launch Blocker D — durable refund notification delivery. |
+| [WORKSPACE_LAUNCH_NOTICE_DELIVERY_REAL_DB_VERIFICATION.md](phase-reports/WORKSPACE_LAUNCH_NOTICE_DELIVERY_REAL_DB_VERIFICATION.md) | `WORKSPACE_LAUNCH_NOTICE_DELIVERY_REAL_DB_VERIFICATION.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace Launch Blocker D.1 — real PostgreSQL notice verification. |
+| [WORKSPACE_LAUNCH_RAZORPAY_LIVE_READINESS.md](phase-reports/WORKSPACE_LAUNCH_RAZORPAY_LIVE_READINESS.md) | `WORKSPACE_LAUNCH_RAZORPAY_LIVE_READINESS.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace Launch Blocker C — Razorpay Live readiness. |
+| [WORKSPACE_LAUNCH_RAZORPAY_LIVE_REAL_DB_VERIFICATION.md](phase-reports/WORKSPACE_LAUNCH_RAZORPAY_LIVE_REAL_DB_VERIFICATION.md) | `WORKSPACE_LAUNCH_RAZORPAY_LIVE_REAL_DB_VERIFICATION.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace Launch Blocker C.1 — real PostgreSQL and financial worker verification. |
+| [WORKSPACE_LAUNCH_REFUND_POLICY_IMPLEMENTATION.md](phase-reports/WORKSPACE_LAUNCH_REFUND_POLICY_IMPLEMENTATION.md) | `WORKSPACE_LAUNCH_REFUND_POLICY_IMPLEMENTATION.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace Launch Blocker B — Refund Policy and refund workflow. |
+| [WORKSPACE_LAUNCH_REFUND_POLICY_TIMESTAMP_CORRECTION.md](phase-reports/WORKSPACE_LAUNCH_REFUND_POLICY_TIMESTAMP_CORRECTION.md) | `WORKSPACE_LAUNCH_REFUND_POLICY_TIMESTAMP_CORRECTION.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace Launch Blocker B.1 — Refund Policy timestamp correction. |
+| [WORKSPACE_LAUNCH_REFUND_POLICY_VERIFICATION.md](phase-reports/WORKSPACE_LAUNCH_REFUND_POLICY_VERIFICATION.md) | `WORKSPACE_LAUNCH_REFUND_POLICY_VERIFICATION.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace Launch Blocker B.2 verification. |
+| [WORKSPACE_LAUNCH_REFUND_WEBHOOK_VERIFICATION.md](phase-reports/WORKSPACE_LAUNCH_REFUND_WEBHOOK_VERIFICATION.md) | `WORKSPACE_LAUNCH_REFUND_WEBHOOK_VERIFICATION.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace Launch Blocker B.2R — genuine refund webhook verification. |
+| [WORKSPACE_PAYMENT_E2E_CLOUDFLARE_VERIFICATION.md](phase-reports/WORKSPACE_PAYMENT_E2E_CLOUDFLARE_VERIFICATION.md) | `WORKSPACE_PAYMENT_E2E_CLOUDFLARE_VERIFICATION.md` | Legal, financial, provider and influencer-coupon launch evidence | Historical record: Workspace payment E2E — Cloudflare verification. |
+
+## Post-UAT, onboarding, branding and founder test reports
+
+| Original filename / archived report | Original root path | Historical phase or subject | Brief description |
+|---|---|---|---|
+| [AIRBHARATH_CREATOR_ACTIVATION_FINAL_UX_FIXES.md](phase-reports/AIRBHARATH_CREATOR_ACTIVATION_FINAL_UX_FIXES.md) | `AIRBHARATH_CREATOR_ACTIVATION_FINAL_UX_FIXES.md` | Post-UAT, onboarding, branding and founder test reports | Historical record: Creator activation settings and UX corrections. |
+| [AIRBHARATH_FINAL_BRAND_THEME_AND_HERO_FIX.md](phase-reports/AIRBHARATH_FINAL_BRAND_THEME_AND_HERO_FIX.md) | `AIRBHARATH_FINAL_BRAND_THEME_AND_HERO_FIX.md` | Post-UAT, onboarding, branding and founder test reports | Historical record: AirBharath original theme and static hero. |
+| [AIRBHARATH_FINAL_HOMEPAGE_AND_ACCOUNT_NAVIGATION.md](phase-reports/AIRBHARATH_FINAL_HOMEPAGE_AND_ACCOUNT_NAVIGATION.md) | `AIRBHARATH_FINAL_HOMEPAGE_AND_ACCOUNT_NAVIGATION.md` | Post-UAT, onboarding, branding and founder test reports | Historical record: Final homepage, branding and account navigation. |
+| [AIRBHARATH_FINAL_LOCAL_CREATOR_PAYMENT_UAT.md](phase-reports/AIRBHARATH_FINAL_LOCAL_CREATOR_PAYMENT_UAT.md) | `AIRBHARATH_FINAL_LOCAL_CREATOR_PAYMENT_UAT.md` | Post-UAT, onboarding, branding and founder test reports | Historical record: Final local Creator payment UAT. |
+| [AIRBHARATH_PHONE_ONLY_CREATOR_ONBOARDING_COMPLETION.md](phase-reports/AIRBHARATH_PHONE_ONLY_CREATOR_ONBOARDING_COMPLETION.md) | `AIRBHARATH_PHONE_ONLY_CREATOR_ONBOARDING_COMPLETION.md` | Post-UAT, onboarding, branding and founder test reports | Historical record: Phone-only Creator onboarding — local completion. |
+| [AIRBHARATH_POST_UAT_CORRECTIONS.md](phase-reports/AIRBHARATH_POST_UAT_CORRECTIONS.md) | `AIRBHARATH_POST_UAT_CORRECTIONS.md` | Post-UAT, onboarding, branding and founder test reports | Historical record: AirBharath post-UAT UI and onboarding corrections. |
+| [AIRBHARATH_POST_UAT_REFUND_ACCESS_FIX.md](phase-reports/AIRBHARATH_POST_UAT_REFUND_ACCESS_FIX.md) | `AIRBHARATH_POST_UAT_REFUND_ACCESS_FIX.md` | Post-UAT, onboarding, branding and founder test reports | Historical record: Post-UAT refund and course-access investigation. |

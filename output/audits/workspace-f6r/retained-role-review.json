@@ -1,0 +1,258 @@
+{
+  "identity": {
+    "database": "airbharath_lms",
+    "oid": "16384",
+    "system": "7680462735222304705",
+    "read_only": "on"
+  },
+  "role": {
+    "name": "postgres",
+    "superuser": true,
+    "create_database": true,
+    "create_role": true,
+    "login": true
+  },
+  "tables": [
+    {
+      "table": "workspace_access_grant_events",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_access_grants",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_applications",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_audit_events",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_coupon_plans",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_coupon_redemptions",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_coupons",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_course_drafts",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_course_lessons",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_course_modules",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_course_projects",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_course_review_events",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_course_submissions",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_creator_profile_details",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_creator_profiles",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_creator_terms_acceptances",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_creator_terms_versions",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_eligibility_attempts",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_eligibility_settings",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_email_challenges",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_email_notice_bindings",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_email_rate_limits",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_influencer_history",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_influencers",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_membership_orders",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_membership_plans",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_memberships",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_payment_attempts",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_payment_events",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_policy_versions",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_refund_attempts",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_refund_completions",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_refund_notice_deliveries",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_refund_notice_delivery_attempts",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_refund_notices",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_refund_observations",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_refund_policy_acceptances",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_refund_policy_versions",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_refund_requests",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    },
+    {
+      "table": "workspace_verified_emails",
+      "owned": true,
+      "truncate": true,
+      "insert": true
+    }
+  ],
+  "note": "Local current credential only; does not establish production-role permissions. No ACL changed."
+}

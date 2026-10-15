@@ -20,9 +20,9 @@ export default {
       },
       colors: {
         airbharath: {
-          DEFAULT: "#9089FF",
-          dark: "#7C73FF",
-          light: "#D2CEFF",
+          DEFAULT: "hsl(var(--primary) / <alpha-value>)",
+          dark: "hsl(var(--primary) / <alpha-value>)",
+          light: "hsl(var(--accent-light) / <alpha-value>)",
         },
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
@@ -79,6 +79,14 @@ export default {
           3: "hsl(var(--chart-3))",
           4: "hsl(var(--chart-4))",
           5: "hsl(var(--chart-5))",
+        },
+      },
+      // Approved charcoal on light surfaces; approved lavender on charcoal.
+      // Backgrounds, borders and focus rings still use the exact primary token.
+      textColor: {
+        primary: {
+          DEFAULT: "hsl(var(--brand-ink) / <alpha-value>)",
+          foreground: "hsl(var(--primary-foreground) / <alpha-value>)",
         },
       },
       borderRadius: {

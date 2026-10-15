@@ -1,0 +1,280 @@
+{
+  "method": "Computed solid-text/background samples; no certification claim",
+  "samples": 34,
+  "minimumRatio": 5.72,
+  "allPass": true,
+  "checks": [
+    {
+      "theme": "light",
+      "route": "/",
+      "selector": ".public-header-nav a",
+      "ratio": 16.47,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "route": "/",
+      "selector": ".public-account",
+      "ratio": 16.47,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "route": "/",
+      "selector": ".public-hero .public-button",
+      "ratio": 7.38,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "route": "/",
+      "selector": ".public-hero .public-button-secondary",
+      "ratio": 16.47,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "route": "/",
+      "selector": ".public-hero .public-copy",
+      "ratio": 5.72,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "route": "/",
+      "selector": ".public-footer li a",
+      "ratio": 5.72,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "route": "/",
+      "selector": ".public-closing .public-button",
+      "ratio": 10.84,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "route": "/",
+      "selector": ".public-closing .public-text-link",
+      "ratio": 12.4,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "route": "/workspace",
+      "selector": ".public-header-nav a",
+      "ratio": 16.47,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "route": "/workspace",
+      "selector": ".public-header-nav a[aria-current]",
+      "ratio": 6.65,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "route": "/workspace",
+      "selector": ".public-account",
+      "ratio": 16.47,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "route": "/workspace",
+      "selector": ".public-hero .public-button",
+      "ratio": 7.38,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "route": "/workspace",
+      "selector": ".public-hero .public-button-secondary",
+      "ratio": 16.47,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "route": "/workspace",
+      "selector": ".public-hero .public-copy",
+      "ratio": 5.72,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "route": "/workspace",
+      "selector": ".public-footer li a",
+      "ratio": 5.72,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "route": "/workspace",
+      "selector": ".public-closing .public-button",
+      "ratio": 10.84,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "route": "/workspace",
+      "selector": ".public-closing .public-text-link",
+      "ratio": 12.4,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "route": "/",
+      "selector": ".public-header-nav a",
+      "ratio": 16.67,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "route": "/",
+      "selector": ".public-account",
+      "ratio": 16.67,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "route": "/",
+      "selector": ".public-hero .public-button",
+      "ratio": 8.57,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "route": "/",
+      "selector": ".public-hero .public-button-secondary",
+      "ratio": 16.67,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "route": "/",
+      "selector": ".public-hero .public-copy",
+      "ratio": 8.82,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "route": "/",
+      "selector": ".public-footer li a",
+      "ratio": 8.82,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "route": "/",
+      "selector": ".public-closing .public-button",
+      "ratio": 10.84,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "route": "/",
+      "selector": ".public-closing .public-text-link",
+      "ratio": 12.4,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "route": "/workspace",
+      "selector": ".public-header-nav a",
+      "ratio": 16.67,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "route": "/workspace",
+      "selector": ".public-header-nav a[aria-current]",
+      "ratio": 8.67,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "route": "/workspace",
+      "selector": ".public-account",
+      "ratio": 16.67,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "route": "/workspace",
+      "selector": ".public-hero .public-button",
+      "ratio": 8.57,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "route": "/workspace",
+      "selector": ".public-hero .public-button-secondary",
+      "ratio": 16.67,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "route": "/workspace",
+      "selector": ".public-hero .public-copy",
+      "ratio": 8.82,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "route": "/workspace",
+      "selector": ".public-footer li a",
+      "ratio": 8.82,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "route": "/workspace",
+      "selector": ".public-closing .public-button",
+      "ratio": 10.84,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "route": "/workspace",
+      "selector": ".public-closing .public-text-link",
+      "ratio": 12.4,
+      "minimum": 4.5,
+      "pass": true
+    }
+  ]
+}

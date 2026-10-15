@@ -55,3 +55,6 @@ next-env.d.ts
 # sanity
 /dist
 fileing.md
+
+# local Codex runtime/configuration
+.codex/

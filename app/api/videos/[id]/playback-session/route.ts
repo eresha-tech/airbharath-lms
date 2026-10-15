@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { hasPersistedAdminRole } from "@/lib/admin-authorization";
 import { db } from "@/lib/db";
 import { videos, lessons, modules, enrollments, playbackSessions, videoCaptions } from "@/lib/db/schema";
 import { eq, and, or, inArray } from "drizzle-orm";
@@ -53,7 +54,7 @@ export async function POST(
       // Empty or non-JSON body is acceptable
     }
 
-    let isAuthorized = session.role === "admin";
+    let isAuthorized = await hasPersistedAdminRole(session);
 
     if (!isAuthorized) {
       const now = new Date();

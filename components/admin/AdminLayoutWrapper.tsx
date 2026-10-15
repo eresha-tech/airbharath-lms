@@ -1,5 +1,7 @@
 "use client";
 
+import { usePathname } from 'next/navigation';
+import { AdminWorkspaceShell, workspaceAdminRoute } from './WorkspaceShell';
 import { useSidebar } from "@/components/providers/sidebar-provider";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
@@ -8,6 +10,8 @@ import { cn } from "@/lib/utils";
 
 export function AdminLayoutWrapper({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
+  const path = usePathname();
+  if (workspaceAdminRoute(path)) return <AdminWorkspaceShell>{children}</AdminWorkspaceShell>;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

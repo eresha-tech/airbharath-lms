@@ -124,7 +124,7 @@ export default async function MyCoursesPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold font-outfit text-foreground">My Enrolled Courses</h1>
-            <p className="text-xs text-muted-foreground">Access your active learning programs on Airbharath LMS</p>
+            <p className="text-xs text-muted-foreground">Access your active learning programs on AirBharath</p>
           </div>
         </div>
 
@@ -132,7 +132,7 @@ export default async function MyCoursesPage() {
           <div className="text-center py-16 bg-card border border-border border-dashed rounded-3xl space-y-4">
             <h2 className="text-xl font-bold text-foreground">No enrolled courses yet</h2>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              Explore Airbharath LMS programs to start learning today.
+              Explore AirBharath programs to start learning today.
             </p>
             <Link
               href="/courses"

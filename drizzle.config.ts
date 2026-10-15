@@ -1,10 +1,10 @@
 import { defineConfig } from 'drizzle-kit';
 
+const databaseUrl = process.env.DATABASE_URL;
+
 export default defineConfig({
   schema: './lib/db/schema.ts',
   out: './drizzle',
   dialect: 'postgresql',
-  dbCredentials: {
-    url: process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/airbharath_lms',
-  },
+  ...(databaseUrl ? { dbCredentials: { url: databaseUrl } } : {}),
 });

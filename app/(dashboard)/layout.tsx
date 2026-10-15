@@ -3,8 +3,9 @@ import { SidebarProvider } from "@/components/providers/sidebar-provider";
 import { StudentLayoutWrapper } from "@/components/dashboard/StudentLayoutWrapper";
 
 export const metadata: Metadata = {
-  title: "Dashboard | AirBharath LMS",
+  title: "Dashboard | AirBharath",
   description: "Your aviation & technical learning dashboard",
+  robots: { index: false, follow: false },
 };
 
 export default function DashboardLayout({

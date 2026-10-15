@@ -1,0 +1,13 @@
+{
+  "result": "PASS",
+  "distinctBackendPids": [
+    356311,
+    356312
+  ],
+  "bothObservedWaitingOnRealLocks": true,
+  "oneSuccessfulGrant": true,
+  "oneDuplicateRefusal": true,
+  "paidOrdersCreated": 0,
+  "historyRetained": true,
+  "externalProviderCalls": 0
+}

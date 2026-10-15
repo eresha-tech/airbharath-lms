@@ -2,22 +2,27 @@
   "name": "airbharath-lms",
   "version": "0.1.0-beta",
   "private": true,
+  "packageManager": "pnpm@11.15.1",
+  "engines": {
+    "node": ">=22 <23"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:uat": "node scripts/workspace-local-uat.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:push": "drizzle-kit push",
-    "db:seed": "npx tsx scripts/seed.mjs",
-    "db:start": "/usr/lib/postgresql/16/bin/pg_ctl -D ./.postgres_data -o \"-p 5433 -k /tmp\" -l .postgres_log start"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "core-js",
-      "esbuild",
-      "sharp",
-      "unrs-resolver"
-    ]
+    "typecheck": "tsc --noEmit",
+    "test:pure": "node --test tests/*.test.mjs",
+    "test:routes": "vitest run",
+    "test": "pnpm run test:pure && pnpm run test:routes",
+    "test:security": "pnpm test",
+    "validate": "pnpm test && pnpm run typecheck && pnpm run lint",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node scripts/migrate.mjs",
+    "db:seed": "node scripts/seed.mjs",
+    "db:start": "/usr/lib/postgresql/16/bin/pg_ctl -D ./.postgres_data -o \"-p 5433 -k /tmp\" -l .postgres_log start",
+    "workspace:payments:readiness": "node scripts/workspace-payments-readiness.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-mediaconvert": "^3.1127.0",
@@ -81,6 +86,7 @@
     "eslint-config-next": "15.5.19",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^5.0.2"
   }
 }

@@ -5,10 +5,7 @@
 
 @layer base {
   :root {
-    --font-inter: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-outfit: var(--font-outfit), 'Outfit', sans-serif;
-    --font-instrument-serif: var(--font-outfit), 'Outfit', 'Plus Jakarta Sans', sans-serif;
-    --font-instrument-sans: var(--font-jakarta), 'Plus Jakarta Sans', sans-serif;
+    --brand-ink: var(--primary-foreground);
 
     /* Base Surfaces */
     --background: 0 0% 100%;
@@ -20,7 +17,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    /* Brand Primary (AirBharath Primary Lavender #9089FF) */
+    /* Primary Lavender */
     --primary: 243.6 100% 76.9%;
     --primary-foreground: 244.4 47.2% 17.1%;
 
@@ -30,7 +27,7 @@
     --muted: 240 25% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    /* Accent & Destructive */
+    /* Accent & Status */
     --accent: 243.6 100% 76.9%;
     --accent-foreground: 244.4 47.2% 17.1%;
     --accent-light: 244.9 100% 90.4%;
@@ -39,13 +36,13 @@
     --success: 146.8 69.4% 55.1%;
     --success-foreground: 244.4 47.2% 17.1%;
 
-    /* Borders, Inputs & Focus Rings */
+    /* Borders & Focus */
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
     --ring: 243.6 100% 76.9%;
     --radius: 0.5rem;
 
-    /* Dashboard Sidebar Tokens */
+    /* Dashboard Sidebar */
     --sidebar: 0 0% 98.5%;
     --sidebar-foreground: 222.2 47.4% 18%;
     --sidebar-primary: 243.6 100% 76.9%;
@@ -55,7 +52,7 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 243.6 100% 76.9%;
 
-    /* Chart Colors (Primary Lavender / Accent Light / Muted / Success / Amber) */
+    /* Charts */
     --chart-1: 243.6 100% 76.9%;
     --chart-2: 244.9 100% 90.4%;
     --chart-3: 217.2 16.2% 60.2%;
@@ -66,45 +63,48 @@
   }
 
   .dark {
-    /* Base Surfaces (Approved #0A0A0A) */
+    --brand-ink: var(--primary);
+    /* Background #0A0A0A */
     --background: 0 0% 3.9%;
-    /* Primary Text (Approved #EEF2F7) */
+
+    /* Text #EEF2F7 */
     --foreground: 213.3 42.9% 95.1%;
 
-    /* Panel Surfaces (Approved #131313) */
+    /* Cards #131313 */
     --card: 0 0% 7.5%;
     --card-foreground: 213.3 42.9% 95.1%;
     --popover: 0 0% 7.5%;
     --popover-foreground: 213.3 42.9% 95.1%;
 
-    /* Primary Accent (Approved #9089FF) & Text on Accent (#1A1740) */
+    /* Lavender #9089FF */
     --primary: 243.6 100% 76.9%;
     --primary-foreground: 244.4 47.2% 17.1%;
 
-    /* Panel secondary / nested surfaces (Approved #191919) */
+    /* Secondary #191919 */
     --secondary: 0 0% 9.8%;
     --secondary-foreground: 213.3 42.9% 95.1%;
     --muted: 0 0% 9.8%;
-    /* Muted Text (Approved #8B96A8) */
+
+    /* Muted text #8B96A8 */
     --muted-foreground: 217.2 16.2% 60.2%;
 
-    /* Accent Tokens */
+    /* Accents */
     --accent: 243.6 100% 76.9%;
     --accent-foreground: 244.4 47.2% 17.1%;
-    --accent-light: 244.9 100% 90.4%; /* #D2CEFF */
+    --accent-light: 244.9 100% 90.4%;
 
-    /* Destructive & Success (#3DDC84) */
+    /* Status */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --success: 146.8 69.4% 55.1%;
     --success-foreground: 244.4 47.2% 17.1%;
 
-    /* Border & Input (Approved #2A2A2A) */
+    /* Borders #2A2A2A */
     --border: 0 0% 16.5%;
     --input: 0 0% 16.5%;
     --ring: 243.6 100% 76.9%;
 
-    /* Sidebar Dark */
+    /* Sidebar */
     --sidebar: 0 0% 7.5%;
     --sidebar-foreground: 213.3 42.9% 95.1%;
     --sidebar-primary: 243.6 100% 76.9%;
@@ -114,11 +114,11 @@
     --sidebar-border: 0 0% 16.5%;
     --sidebar-ring: 243.6 100% 76.9%;
 
-    /* Chart Colors Dark */
-    --chart-1: 243.6 100% 76.9%; /* Primary series #9089FF */
-    --chart-2: 244.9 100% 90.4%; /* Accent Light #D2CEFF */
-    --chart-3: 217.2 16.2% 60.2%; /* Muted #8B96A8 */
-    --chart-4: 146.8 69.4% 55.1%; /* Success #3DDC84 */
+    /* Charts */
+    --chart-1: 243.6 100% 76.9%;
+    --chart-2: 244.9 100% 90.4%;
+    --chart-3: 217.2 16.2% 60.2%;
+    --chart-4: 146.8 69.4% 55.1%;
     --chart-5: 38 92% 50%;
 
     color-scheme: dark;
@@ -134,6 +134,9 @@
     scroll-padding-top: 4rem;
   }
   body {
+    /* next/font defines the source variables on this same element. */
+    --font-instrument-serif: var(--font-outfit);
+    --font-instrument-sans: var(--font-jakarta);
     @apply bg-background text-foreground;
     font-family: var(--font-inter);
   }
@@ -145,15 +148,15 @@ h1, h2, h3, .font-serif-heading, .font-instrument-serif {
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.85);
+  background: hsl(var(--card) / 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(144, 137, 255, 0.15);
+  border: 1px solid hsl(var(--primary) / 0.15);
 }
 
 .dark .glass-card {
-  background: rgba(19, 19, 19, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: hsl(var(--card) / 0.85);
+  border: 1px solid hsl(var(--primary) / 0.15);
 }
 
 /* Custom Scrollbar */
@@ -247,19 +250,6 @@ h1, h2, h3, .font-serif-heading, .font-instrument-serif {
   animation: floatSlow 3.5s ease-in-out infinite;
 }
 
-@keyframes progressFill {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-
-.animate-progress-fill {
-  transform-origin: left;
-  animation: progressFill 6000ms linear forwards;
-}
 
 .card-hover-lift {
   transition: transform var(--motion-normal) var(--ease-smooth),
@@ -289,8 +279,7 @@ h1, h2, h3, .font-serif-heading, .font-instrument-serif {
   .hover\:-translate-y-1\.5:hover,
   .group:hover .group-hover\:scale-105,
   .group:hover .group-hover\:scale-110,
-  .animate-float-slow,
-  .animate-progress-fill {
+  .animate-float-slow {
     transform: none !important;
     animation: none !important;
   }

@@ -1,0 +1,597 @@
+{
+  "fontMetrics": {
+    "body": "Inter, \"Inter Fallback\", sans-serif",
+    "h1": "Outfit, \"Outfit Fallback\", sans-serif",
+    "fontFaces": [
+      {
+        "family": "Inter",
+        "status": "loaded",
+        "weight": "100 900"
+      },
+      {
+        "family": "Inter Fallback",
+        "status": "error",
+        "weight": "normal"
+      },
+      {
+        "family": "Outfit",
+        "status": "loaded",
+        "weight": "100 900"
+      },
+      {
+        "family": "Outfit Fallback",
+        "status": "error",
+        "weight": "normal"
+      },
+      {
+        "family": "Plus Jakarta Sans",
+        "status": "unloaded",
+        "weight": "100 900"
+      },
+      {
+        "family": "Plus Jakarta Sans Fallback",
+        "status": "unloaded",
+        "weight": "normal"
+      },
+      {
+        "family": "KaTeX_AMS",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "KaTeX_Caligraphic",
+        "status": "unloaded",
+        "weight": "700"
+      },
+      {
+        "family": "KaTeX_Caligraphic",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "KaTeX_Fraktur",
+        "status": "unloaded",
+        "weight": "700"
+      },
+      {
+        "family": "KaTeX_Fraktur",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "KaTeX_Main",
+        "status": "unloaded",
+        "weight": "700"
+      },
+      {
+        "family": "KaTeX_Main",
+        "status": "unloaded",
+        "weight": "700"
+      },
+      {
+        "family": "KaTeX_Main",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "KaTeX_Main",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "KaTeX_Math",
+        "status": "unloaded",
+        "weight": "700"
+      },
+      {
+        "family": "KaTeX_Math",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "KaTeX_SansSerif",
+        "status": "unloaded",
+        "weight": "700"
+      },
+      {
+        "family": "KaTeX_SansSerif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "KaTeX_SansSerif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "KaTeX_Script",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "KaTeX_Size1",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "KaTeX_Size2",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "KaTeX_Size3",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "KaTeX_Size4",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "KaTeX_Typewriter",
+        "status": "unloaded",
+        "weight": "400"
+      }
+    ],
+    "interAvailable": true,
+    "outfitAvailable": true
+  },
+  "contrast": [
+    {
+      "name": "final Student Sign In",
+      "selector": "main section:last-of-type a[href=\"/login\"]",
+      "text": "Student Sign In",
+      "color": "rgb(255, 255, 255)",
+      "fontSize": "14px",
+      "fontWeight": "700",
+      "backgrounds": [
+        {
+          "color": "rgb(255, 255, 255)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        },
+        {
+          "color": "rgb(144, 137, 255)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        },
+        {
+          "color": "rgb(255, 255, 255)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        },
+        {
+          "color": "rgb(255, 255, 255)",
+          "image": "none"
+        },
+        {
+          "color": "rgb(255, 255, 255)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        }
+      ],
+      "computedRatio": 1.0,
+      "solidBackgroundOnly": true,
+      "requiredNormalTextRatio": 4.5
+    },
+    {
+      "name": "final Explore All Courses",
+      "selector": "main section:last-of-type a[href=\"/courses\"]",
+      "text": "Explore All Courses",
+      "color": "rgb(144, 137, 255)",
+      "fontSize": "14px",
+      "fontWeight": "700",
+      "backgrounds": [
+        {
+          "color": "rgb(255, 255, 255)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        },
+        {
+          "color": "rgb(144, 137, 255)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        },
+        {
+          "color": "rgb(255, 255, 255)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        },
+        {
+          "color": "rgb(255, 255, 255)",
+          "image": "none"
+        },
+        {
+          "color": "rgb(255, 255, 255)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        }
+      ],
+      "computedRatio": 2.913380004556123,
+      "solidBackgroundOnly": true,
+      "requiredNormalTextRatio": 4.5
+    },
+    {
+      "name": "hero course code",
+      "selector": "[aria-label^=\"Course \"] span.bg-primary.text-white",
+      "text": "★ ALL-IN-ONE MASTERCLASS BUNDLE",
+      "color": "rgb(255, 255, 255)",
+      "fontSize": "11px",
+      "fontWeight": "800",
+      "backgrounds": [
+        {
+          "color": "rgb(144, 137, 255)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "linear-gradient(to right bottom, rgba(144, 137, 255, 0.05), rgb(255, 255, 255), rgba(249, 249, 251, 0.3))"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        },
+        {
+          "color": "rgb(255, 255, 255)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        },
+        {
+          "color": "rgb(255, 255, 255)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        },
+        {
+          "color": "rgb(255, 255, 255)",
+          "image": "none"
+        },
+        {
+          "color": "rgb(255, 255, 255)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        }
+      ],
+      "computedRatio": 2.913380004556123,
+      "solidBackgroundOnly": false,
+      "requiredNormalTextRatio": 4.5
+    },
+    {
+      "name": "desktop Explore Courses navigation",
+      "selector": "header nav a[href=\"/courses\"]",
+      "text": "Explore Courses",
+      "color": "rgb(144, 137, 255)",
+      "fontSize": "12px",
+      "fontWeight": "700",
+      "backgrounds": [
+        {
+          "color": "rgba(144, 137, 255, 0.1)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(255, 255, 255, 0.8)",
+          "image": "none"
+        },
+        {
+          "color": "rgb(255, 255, 255)",
+          "image": "none"
+        },
+        {
+          "color": "rgb(255, 255, 255)",
+          "image": "none"
+        },
+        {
+          "color": "rgba(0, 0, 0, 0)",
+          "image": "none"
+        }
+      ],
+      "computedRatio": 2.654121694089473,
+      "solidBackgroundOnly": true,
+      "requiredNormalTextRatio": 4.5
+    }
+  ],
+  "keyboard": [
+    {
+      "tag": "A",
+      "label": "AirBharath LMS",
+      "insideHidden": false,
+      "x": 96,
+      "y": 14,
+      "width": 171,
+      "height": 36
+    },
+    {
+      "tag": "A",
+      "label": "Workspace",
+      "insideHidden": false,
+      "x": 299,
+      "y": 18,
+      "width": 90,
+      "height": 28
+    },
+    {
+      "tag": "A",
+      "label": "Explore Courses",
+      "insideHidden": false,
+      "x": 393,
+      "y": 17,
+      "width": 142,
+      "height": 30
+    },
+    {
+      "tag": "A",
+      "label": "Pricing",
+      "insideHidden": false,
+      "x": 539,
+      "y": 18,
+      "width": 65,
+      "height": 28
+    },
+    {
+      "tag": "A",
+      "label": "FAQ",
+      "insideHidden": false,
+      "x": 608,
+      "y": 18,
+      "width": 48,
+      "height": 28
+    },
+    {
+      "tag": "A",
+      "label": "About",
+      "insideHidden": false,
+      "x": 659,
+      "y": 18,
+      "width": 59,
+      "height": 28
+    },
+    {
+      "tag": "A",
+      "label": "Contact",
+      "insideHidden": false,
+      "x": 722,
+      "y": 18,
+      "width": 70,
+      "height": 28
+    },
+    {
+      "tag": "INPUT",
+      "label": "",
+      "insideHidden": false,
+      "x": 857,
+      "y": 14,
+      "width": 224,
+      "height": 36
+    },
+    {
+      "tag": "BUTTON",
+      "label": "Toggle theme",
+      "insideHidden": false,
+      "x": 1093,
+      "y": 14,
+      "width": 36,
+      "height": 36
+    },
+    {
+      "tag": "A",
+      "label": "Sign In",
+      "insideHidden": false,
+      "x": 1141,
+      "y": 14,
+      "width": 72,
+      "height": 36
+    },
+    {
+      "tag": "A",
+      "label": "Get Started",
+      "insideHidden": false,
+      "x": 1221,
+      "y": 14,
+      "width": 123,
+      "height": 36
+    },
+    {
+      "tag": "A",
+      "label": "Practice Lab|Explore Hands-on Practice (Preview)",
+      "insideHidden": false,
+      "x": 327,
+      "y": 128,
+      "width": 390,
+      "height": 30
+    },
+    {
+      "tag": "A",
+      "label": "Explore All Courses",
+      "insideHidden": false,
+      "x": 523,
+      "y": 442,
+      "width": 214,
+      "height": 48
+    },
+    {
+      "tag": "A",
+      "label": "Student Login",
+      "insideHidden": false,
+      "x": 748,
+      "y": 442,
+      "width": 169,
+      "height": 48
+    },
+    {
+      "tag": "A",
+      "label": "Explore Program",
+      "insideHidden": false,
+      "x": 193,
+      "y": 888,
+      "width": 185,
+      "height": 44
+    },
+    {
+      "tag": "A",
+      "label": "View All Programs",
+      "insideHidden": false,
+      "x": 390,
+      "y": 888,
+      "width": 166,
+      "height": 44
+    },
+    {
+      "tag": "A",
+      "label": "Explore Program",
+      "insideHidden": true,
+      "x": 627,
+      "y": 888,
+      "width": 185,
+      "height": 44
+    }
+  ],
+  "robots": [
+    {
+      "path": "/robots.txt",
+      "initialStatus": 307,
+      "location": "/login",
+      "finalUrl": "/login",
+      "finalStatus": 200,
+      "finalContentType": "text/html; charset=utf-8"
+    },
+    {
+      "path": "/sitemap.xml",
+      "initialStatus": 307,
+      "location": "/login",
+      "finalUrl": "/login",
+      "finalStatus": 200,
+      "finalContentType": "text/html; charset=utf-8"
+    }
+  ],
+  "legal": [
+    {
+      "path": "/workspace/creator-terms",
+      "status": 200,
+      "h1": [
+        "AirBharath Workspace Creator Terms"
+      ],
+      "paymentDisabledNotice": 1
+    },
+    {
+      "path": "/workspace/refund-policy",
+      "status": 200,
+      "h1": [
+        "AirBharath Workspace Refund Policy"
+      ],
+      "paymentDisabledNotice": 1
+    }
+  ],
+  "carousel": {
+    "before": "Course 1 of 5: All-in-One Masterclass Combo Pass (All 4 Courses)",
+    "after": "Course 2 of 5: AI Tools & Practical AI Skills Masterclass",
+    "focusRemainedHidden": true,
+    "pauseButtonCount": 0
+  },
+  "header320": [
+    {
+      "label": "AirBharath LMS",
+      "x": 16,
+      "y": 16,
+      "width": 39.984375,
+      "height": 32
+    },
+    {
+      "label": "Toggle theme",
+      "x": 40,
+      "y": 14,
+      "width": 36,
+      "height": 36
+    },
+    {
+      "label": "Sign In",
+      "x": 84,
+      "y": 14,
+      "width": 63.84375,
+      "height": 36
+    },
+    {
+      "label": "Get Started",
+      "x": 155.84375,
+      "y": 14,
+      "width": 118.78125,
+      "height": 36
+    },
+    {
+      "label": "Open menu",
+      "x": 282.625,
+      "y": 14,
+      "width": 36,
+      "height": 36
+    }
+  ],
+  "header320Overlap": {
+    "logoRight": 55.984375,
+    "themeLeft": 40,
+    "horizontalOverlap": 15.984375
+  }
+}

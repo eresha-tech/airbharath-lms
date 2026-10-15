@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getAuthorizedAdminSession } from "@/lib/admin-authorization";
 import { db } from "@/lib/db";
 import { lessonMaterials } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -16,9 +16,9 @@ const ALLOWED_TYPES: Record<string, string> = {
 const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
 
 export async function POST(req: NextRequest) {
-  const session = await getSession();
+  const session = await getAuthorizedAdminSession();
 
-  if (!session || session.role !== "admin") {
+  if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -56,9 +56,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const session = await getSession();
+  const session = await getAuthorizedAdminSession();
 
-  if (!session || session.role !== "admin") {
+  if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

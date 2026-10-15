@@ -1,0 +1,24 @@
+// Opt-in read-only supplemental F.1 SQL economic/uniqueness and payment-disabled assertions.
+if(process.env.WORKSPACE_PRICING_PG_VERIFY!=='true')process.exit(0);
+const fs=require('node:fs'),assert=require('node:assert/strict'),postgres=require('postgres'),{createHash}=require('node:crypto');assert.equal(process.env.DATABASE_ENV,'development');const u=new URL(process.env.DATABASE_URL);assert.equal(u.hostname,'localhost');assert.equal(u.port,'5433');assert.equal(u.pathname,'/airbharath_lms');
+const data=JSON.parse(fs.readFileSync('/tmp/wsf1r-financial.json')),s=postgres(process.env.DATABASE_URL,{max:1,prepare:false,onnotice:()=>{}}),rows=[
+ [499900,0,89982,589882],[499900,50000,80982,530882],
+ [499915,0,89985,589900],[847373,0,152527,999900],[1499915,0,269985,1769900],
+ [499915,50000,80985,530900],[847373,50000,143527,940900],[1499915,50000,260985,1710900],
+ [499915,49992,80986,530909],[847373,84737,137274,899910],[1499915,149992,242986,1592909]],sum=i=>rows.reduce((n,r)=>n+r[i],0),refund=589882+530882+589900+530900;
+(async()=>{try{
+const out=await s.begin('isolation level repeatable read read only',async tx=>{
+ const [actual]=await tx`select count(*)::int as paid,coalesce(sum(base_price_paise),0)::text as base,coalesce(sum(discount_paise),0)::text as discount,coalesce(sum(taxable_amount_paise),0)::text as taxable,coalesce(sum(gst_amount_paise),0)::text as gst,coalesce(sum(total_paise),0)::text as gross from workspace_membership_orders where provider_account_id=${data.facts.orders[0].accountId} and paid_at is not null and financial_state='captured'`;
+ const expected={paid:11,base:String(sum(0)),discount:String(sum(1)),taxable:String(sum(0)-sum(1)),gst:String(sum(2)),gross:String(sum(3))};assert.deepEqual(actual,expected);
+ const [completed]=await tx`select count(*)::int as count,sum(f.amount_paise)::text as amount from workspace_refund_completions f join workspace_membership_orders o on o.id=f.membership_order_id where o.provider_account_id=${data.facts.orders[0].accountId}`;assert.deepEqual(completed,{count:4,amount:String(refund)});
+ const [counts]=await tx`select count(*)::int as orders,count(*) filter(where financial_state='captured')::int as captured,count(*) filter(where paid_at is null and activation_state='held_for_review')::int as held from workspace_membership_orders where provider_account_id=${data.facts.orders[0].accountId}`;assert.deepEqual(counts,{orders:27,captured:12,held:1});
+ const [members]=await tx`select count(*)::int as n from workspace_memberships m join workspace_membership_orders o on o.id=m.membership_order_id where o.provider_account_id=${data.facts.orders[0].accountId}`;assert.equal(members.n,11);
+ const duplicates=await tx`select o.id,count(p.id)::int as winners from workspace_membership_orders o join workspace_payment_attempts p on p.membership_order_id=o.id and p.winner where o.provider_account_id=${data.facts.orders[0].accountId} group by o.id having count(p.id)<>1`;assert.equal(duplicates.length,0);
+ const [isolated]=await tx`select count(*)::int as n from orders o where user_id in (select id from users where full_name like ${'SYNTHETIC WSF1R_'+data.run+'_%'})`;assert.equal(isolated.n,0);
+ const current=await tx`select code,version,duration_months,base_price_paise,tax_rate_bps,currency,is_current from workspace_membership_plans where is_current order by duration_months`;assert.deepEqual(JSON.parse(JSON.stringify(current)).map(p=>[p.code,p.version,p.duration_months,p.base_price_paise,p.tax_rate_bps,p.currency]),[['quarterly',5,3,499915,1800,'INR'],['half_yearly',2,6,847373,1800,'INR'],['yearly',2,12,1499915,1800,'INR']]);
+ const ledger=await tx`select id,hash,created_at::text as created_at from drizzle.__drizzle_migrations order by created_at,id`;assert.equal(ledger.length,27);const journal=JSON.parse(fs.readFileSync('drizzle/meta/_journal.json')).entries;ledger.forEach((r,i)=>{assert.equal(r.hash,createHash('sha256').update(fs.readFileSync('drizzle/'+journal[i].tag+'.sql')).digest('hex'));assert.equal(r.created_at,String(journal[i].when))});
+ const [definitions]=await tx`select count(*)::int as constraints from pg_constraint where conrelid in ('workspace_membership_plans'::regclass,'workspace_membership_orders'::regclass,'workspace_coupon_plans'::regclass)`;assert(definitions.constraints>0);
+ return{confirmedEconomics:expected,refundCount:4,refundedPaise:String(refund),netPaise:String(sum(3)-refund),counts,memberships:11,netRetainedMemberships:7,financialWinnersUnique:true,lmsOrdersForFixtures:0,currentCatalog:current,ledger:ledger,installedConstraintCount:definitions.constraints};
+});
+fs.writeFileSync('/tmp/wsf1r-final-db.json',JSON.stringify(out,null,2));console.log(JSON.stringify({...out,ledger:undefined}));
+}finally{await s.end()}})().catch(e=>{console.error(JSON.stringify({code:e.code||e.name,message:e.name==='AssertionError'?e.message:'Read-only F.1 final SQL check failed'}));process.exitCode=1});

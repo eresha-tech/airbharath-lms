@@ -1,0 +1,318 @@
+{
+  "checks": [
+    {
+      "name": "grant_page1_page2_filter_Back_Forward_reload_controls_URL_and_rows",
+      "page1": 25,
+      "page2": 3,
+      "backStatus": "all",
+      "forwardStatus": "revoked"
+    },
+    {
+      "name": "reset_search_sort_size_status_empty_and_reload_synchronize",
+      "boundedMaximum": 50
+    },
+    {
+      "name": "second_shared_course_drafts_list_Back_Forward_reload",
+      "initialRows": 25
+    },
+    {
+      "name": "invalid_URL_filters_keep_existing_safe_handling"
+    },
+    {
+      "name": "admin_private_mobile_shell_focus_Escape_and_no_overflow"
+    },
+    {
+      "name": "anonymous_student_and_demoted_Admin_mutation_denial"
+    },
+    {
+      "name": "actual_legacy_and_Workspace_private_noindex_nofollow"
+    },
+    {
+      "name": "qualified_private_notice_and_unchanged_contractual_membership_dates"
+    },
+    {
+      "name": "owned_proposal_approved_private_builder_navigation_and_future_controls_absent"
+    },
+    {
+      "name": "cross_user_private_builder_denied_no_store"
+    },
+    {
+      "name": "normal_private_profile_save_and_reload"
+    },
+    {
+      "name": "Creator_390_320_mobile_navigation_private_shell_and_copy"
+    },
+    {
+      "name": "activation_qualified_copy_owned_email_independent_consent_and_payments_OFF"
+    },
+    {
+      "name": "public_six_widths_qualified_copy_CTA_catalog_pricing_and_shell"
+    },
+    {
+      "name": "actual_active_pricing_catalog_and_course_details_no_blanket_duration_promise"
+    },
+    {
+      "name": "public_robots_sitemap_formats_and_private_exclusion"
+    },
+    {
+      "name": "actual_invoice_401_403_404_private_no_store_no_original_generation"
+    },
+    {
+      "name": "native_image_delivery_hydration_and_provider_calls_blocked",
+      "nativeResponses": 49,
+      "blockedProviderRequests": 1
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "blockedProviderRequests": 1,
+  "nativeImageResponses": [
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "48"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "48"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "640"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "48"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "48"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "640"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "48"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "48"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "640"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "48"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "48"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "768"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "48"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "48"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "640"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "48"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "48"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "640"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "384"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "48"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "48"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "48"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "640"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "640"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "640"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "48"
+    },
+    {
+      "status": 200,
+      "contentType": "image/avif",
+      "width": "640"
+    }
+  ],
+  "imageInterception": false,
+  "complete": true
+}

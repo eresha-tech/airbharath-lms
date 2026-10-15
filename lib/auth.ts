@@ -1,8 +1,15 @@
+import { localUatOtpMode } from './local-uat-otp';
+import { localUatOtpProvider } from './local-uat-otp-provider';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import {
+  hasConfiguredValue,
+  isOtpVerificationSuccessful,
+  newUserValues,
+} from '@/lib/auth-policy';
 
 function getJwtSecret(): Uint8Array {
   const secret = process.env.JWT_SECRET;
@@ -80,69 +87,52 @@ export function formatPhoneNumber(phone: string): string {
   return cleaned;
 }
 
-function checkVerificationSuccess(data: any): boolean {
-  if (!data) return false;
-  if (data.status) {
-    const statusStr = String(data.status).toLowerCase();
-    if (statusStr === 'success') return true;
-  }
-  if (typeof data.verified === 'boolean') {
-    return data.verified;
-  }
-  if (data.type === 'success') {
-    return true;
-  }
-  if (data.message) {
-    const msg = String(data.message).toLowerCase();
-    const successMessages = ['otp verified', 'verification successful', 'success'];
-    if (successMessages.some(s => msg.includes(s))) return true;
-  }
-  return false;
-}
-
 /**
  * Sends OTP via MSG91 API
  */
 export async function sendOTP(phone: string): Promise<{ success: boolean; message: string }> {
   const formattedPhone = formatPhoneNumber(phone);
+  if (localUatOtpMode() !== 'off') {
+    const provider = await localUatOtpProvider(formattedPhone);
+    return provider?.send(formattedPhone) ? { success:true, message:'Local UAT verification ready' } : { success:false, message:'OTP service is unavailable' };
+  }
   const authKey = process.env.OTP_PROVIDER_AUTHKEY || process.env.MSG91_AUTH_KEY;
-  const templateId = process.env.MSG91_TEMPLATE_ID || '682b2260d6fc0574074a8cc6';
+  const templateId = process.env.MSG91_TEMPLATE_ID;
   const otpServiceUrl = process.env.OTP_PROVIDER_URL || 'https://control.msg91.com';
 
-  if (authKey && templateId) {
-    try {
-      const params = new URLSearchParams({
-        otp_expiry: '10',
-        template_id: templateId,
-        mobile: formattedPhone,
-        authkey: authKey,
-      });
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-      const res = await fetch(`${otpServiceUrl}/api/v5/otp?${params.toString()}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      const data = await res.json().catch(() => ({}));
-      if (res.status !== 200 || data.type === 'error') {
-        console.error(`MSG91 OTP send failed for ${formattedPhone}: ${res.status}`, data);
-      } else {
-        console.log(`MSG91 OTP sent successfully to ${formattedPhone}`);
-      }
-    } catch (err: any) {
-      const reason = err.name === 'AbortError' ? 'Timeout (10s)' : (err?.cause?.code || err.message);
-      console.warn(`[MSG91 Warning] Network issue (${reason}) for ${formattedPhone}.`);
-    }
-  } else {
-    console.log(`[DEVELOPMENT] MSG91 mock OTP sent for ${formattedPhone}`);
+  if (!hasConfiguredValue(authKey) || !hasConfiguredValue(templateId)) {
+    return { success: false, message: 'OTP service is unavailable' };
   }
 
-  return { success: true, message: 'OTP sent successfully' };
+  try {
+    const params = new URLSearchParams({
+      otp_expiry: '10',
+      template_id: templateId,
+      mobile: formattedPhone,
+      authkey: authKey,
+    });
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    const res = await fetch(`${otpServiceUrl}/api/v5/otp?${params.toString()}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    const data = await res.json().catch(() => ({}));
+    if (res.status !== 200 || data.type === 'error') {
+      console.error('MSG91_OTP_SEND_FAILED');
+      return { success: false, message: 'Failed to send OTP' };
+    }
+
+    return { success: true, message: 'OTP sent successfully' };
+  } catch {
+    console.error('MSG91_OTP_SEND_FAILED');
+    return { success: false, message: 'Failed to send OTP' };
+  }
 }
 
 /**
@@ -150,66 +140,74 @@ export async function sendOTP(phone: string): Promise<{ success: boolean; messag
  */
 export async function resendOTP(phone: string, retryType: 'text' | 'voice' = 'text'): Promise<{ success: boolean; message: string }> {
   const formattedPhone = formatPhoneNumber(phone);
+  if (localUatOtpMode() !== 'off') {
+    const { consumeOtpRateLimit } = await import('./otp-rate-limit');
+    const limit = await consumeOtpRateLimit('send',formattedPhone);
+    if (limit.status !== 'allowed') return { success:false, message:'Please wait before requesting another OTP' };
+    const provider = await localUatOtpProvider(formattedPhone);
+    return provider?.send(formattedPhone) ? { success:true, message:'Local UAT verification ready' } : { success:false, message:'OTP service is unavailable' };
+  }
   const authKey = process.env.OTP_PROVIDER_AUTHKEY || process.env.MSG91_AUTH_KEY;
   const otpServiceUrl = process.env.OTP_PROVIDER_URL || 'https://control.msg91.com';
 
-  if (authKey) {
-    try {
-      const params = new URLSearchParams({
-        authkey: authKey,
-        retrytype: retryType,
-        mobile: formattedPhone,
-      });
-
-      const res = await fetch(`${otpServiceUrl}/api/v5/otp/retry?${params.toString()}`);
-      const data = await res.json().catch(() => ({}));
-      if (res.status === 200) {
-        return { success: true, message: 'OTP resent successfully' };
-      }
-      console.error(`MSG91 OTP resend failed: ${res.status}`, data);
-    } catch (err: any) {
-      console.error('MSG91 OTP Resend Error:', err);
-    }
+  if (!hasConfiguredValue(authKey)) {
+    return { success: false, message: 'OTP service is unavailable' };
   }
 
-  return sendOTP(phone);
+  try {
+    const params = new URLSearchParams({
+      authkey: authKey,
+      retrytype: retryType,
+      mobile: formattedPhone,
+    });
+
+    const res = await fetch(`${otpServiceUrl}/api/v5/otp/retry?${params.toString()}`);
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 200 && data.type !== 'error') {
+      return { success: true, message: 'OTP resent successfully' };
+    }
+  } catch {
+    // Return the same fail-closed response for provider and network failures.
+  }
+
+  console.error('MSG91_OTP_RESEND_FAILED');
+  return { success: false, message: 'Failed to resend OTP' };
 }
 
 /**
- * Verifies OTP via Test Credentials / MSG91 API
+ * Verifies OTP via MSG91 API
  */
 export async function verifyOTP(phone: string, otp: string): Promise<{ success: boolean; user?: any; isNewUser?: boolean; message?: string }> {
   const formattedPhone = formatPhoneNumber(phone);
+  if (localUatOtpMode() !== 'off') {
+    const provider = await localUatOtpProvider(formattedPhone);
+    if (!provider?.verify(formattedPhone,otp)) return { success:false, message:'Invalid or expired OTP' };
+  } else {
   const authKey = process.env.OTP_PROVIDER_AUTHKEY || process.env.MSG91_AUTH_KEY;
   const otpServiceUrl = process.env.OTP_PROVIDER_URL || 'https://control.msg91.com';
 
-  let isVerified = false;
-
-  // 1. Check Test Credentials & Master OTPs (1234 or 123456) ONLY in non-production environments
-  const isTestOtp =
-    process.env.NODE_ENV !== 'production' && (otp === '1234' || otp === '123456');
-  if (isTestOtp) {
-    isVerified = true;
+  if (!hasConfiguredValue(authKey)) {
+    return { success: false, message: 'OTP service is unavailable' };
   }
 
-  // 2. Verify via MSG91 API if not verified by test OTP
-  if (!isVerified && authKey) {
-    try {
-      const params = new URLSearchParams({ otp, mobile: formattedPhone });
-      const res = await fetch(`${otpServiceUrl}/api/v5/otp/verify?${params.toString()}`, {
-        headers: { authkey: authKey },
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.status === 200 && checkVerificationSuccess(data)) {
-        isVerified = true;
-      }
-    } catch (err: any) {
-      console.error('MSG91 verify API error:', err);
+  let isVerified = false;
+  try {
+    const params = new URLSearchParams({ otp, mobile: formattedPhone });
+    const res = await fetch(`${otpServiceUrl}/api/v5/otp/verify?${params.toString()}`, {
+      headers: { authkey: authKey },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 200 && isOtpVerificationSuccessful(data)) {
+      isVerified = true;
     }
+  } catch {
+    console.error('MSG91_OTP_VERIFY_FAILED');
   }
 
   if (!isVerified) {
     return { success: false, message: 'Invalid or expired OTP' };
+  }
+
   }
 
   let user = await db.query.users.findFirst({
@@ -219,14 +217,10 @@ export async function verifyOTP(phone: string, otp: string): Promise<{ success: 
   let isNewUser = false;
   if (!user) {
     isNewUser = true;
-    const isAdminAccount = formattedPhone === '919876543210';
-    const [inserted] = await db.insert(users).values({
-      phone: formattedPhone,
-      fullName: isAdminAccount ? 'Captain Vikram Singh (Admin)' : (formattedPhone === '911234567890' ? 'Rahul Sharma' : ''),
-      role: isAdminAccount ? 'admin' : 'student',
-    }).returning();
+    const [inserted] = await db.insert(users).values(newUserValues(formattedPhone)).returning();
     user = inserted;
   }
 
+  if (localUatOtpMode() !== 'off' && user.role !== 'student') return { success:false, message:'OTP service is unavailable' };
   return { success: true, user, isNewUser };
 }

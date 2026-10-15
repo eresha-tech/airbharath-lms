@@ -1,0 +1,103 @@
+{
+  "complete": true,
+  "checks": [
+    {
+      "name": "normal_admin_revoke_restored_refund_grant_preserves_independent_refund_history"
+    },
+    {
+      "name": "anonymous_ineligible_unpaid_and_admin_creator_boundaries"
+    },
+    {
+      "name": "desktop_private_shell_owner_aggregate_counts_and_secondary_membership"
+    },
+    {
+      "name": "every_desktop_sidebar_link_and_billing_refund_navigation"
+    },
+    {
+      "name": "real_review_states_and_approved_builder_entry"
+    },
+    {
+      "name": "cross_user_private_page_api_and_lesson_do_not_leak"
+    },
+    {
+      "name": "refunded_creator_retained_readonly_dashboard_and_builder"
+    },
+    {
+      "name": "profile_pending_failure_retry_and_durable_reload"
+    },
+    {
+      "name": "normal_hydrated_proposal_save_submit_and_review_lock"
+    },
+    {
+      "name": "persisted_admin_ui_approval_and_authorized_private_builder_navigation"
+    },
+    {
+      "name": "private_module_lesson_save_reload_and_no_commerce_controls"
+    },
+    {
+      "name": "mobile_drawer_focus_trap_escape_restore_and_link_closes"
+    },
+    {
+      "name": "390_and_320_responsive_dashboard_profile_and_private_editor"
+    },
+    {
+      "name": "normal_admin_revoke_restored_refund_grant_preserves_independent_refund_history"
+    },
+    {
+      "name": "anonymous_ineligible_unpaid_and_admin_creator_boundaries"
+    },
+    {
+      "name": "desktop_private_shell_owner_aggregate_counts_and_secondary_membership"
+    },
+    {
+      "name": "every_desktop_sidebar_link_and_billing_refund_navigation"
+    },
+    {
+      "name": "real_review_states_and_approved_builder_entry"
+    },
+    {
+      "name": "cross_user_private_page_api_and_lesson_do_not_leak"
+    },
+    {
+      "name": "refunded_creator_retained_readonly_dashboard_and_builder"
+    },
+    {
+      "name": "resumed_persisted_admin_approval_and_created_private_builder"
+    },
+    {
+      "name": "private_module_lesson_save_reload_and_no_commerce_controls"
+    },
+    {
+      "name": "mobile_drawer_focus_trap_escape_restore_and_link_closes"
+    },
+    {
+      "name": "390_and_320_responsive_dashboard_profile_and_private_editor"
+    },
+    {
+      "name": "hydration_console_privacy_and_disabled_provider_payments"
+    }
+  ],
+  "uniqueChecks": 15,
+  "pageErrors": [],
+  "consoleErrors": [],
+  "providerRequests": 0,
+  "analyticsRequests": 0,
+  "findings": [
+    {
+      "requirement": 7,
+      "status": "BLOCKED",
+      "finding": "Private dashboard gives an unqualified full-release promise",
+      "renderedCopy": "Full AirBharath Workspace launches 9 November 2026."
+    }
+  ],
+  "screenshots": [
+    "dashboard-desktop.png",
+    "drawer-mobile.png",
+    "profile-mobile.png",
+    "dashboard-mobile.png",
+    "dashboard-narrow.png",
+    "builder-mobile.png"
+  ],
+  "journey": "normal authenticated synthetic profile/proposal/Admin review/private builder routes; synthetic sessions do not verify genuine SMS",
+  "resume": "Completed functional journey retained; corrected analytics matcher excludes local static chunks"
+}

@@ -1,0 +1,1007 @@
+{
+  "checkResults": [
+    {
+      "schema": "public",
+      "table": "workspace_access_grant_events",
+      "constraint": "workspace_grant_event_context_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grants",
+      "constraint": "workspace_grant_context_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grants",
+      "constraint": "workspace_grant_status_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_access_grants",
+      "constraint": "workspace_grant_term_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_audit_events",
+      "constraint": "workspace_audit_events_action_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupon_plans",
+      "constraint": "workspace_coupon_plans_code_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupon_redemptions",
+      "constraint": "workspace_redemptions_state_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_coupons",
+      "constraint": "workspace_coupons_definition_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_drafts",
+      "constraint": "workspace_drafts_category_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_drafts",
+      "constraint": "workspace_drafts_json_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_drafts",
+      "constraint": "workspace_drafts_price_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_drafts",
+      "constraint": "workspace_drafts_status_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_drafts",
+      "constraint": "workspace_drafts_text_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_drafts",
+      "constraint": "workspace_drafts_version_time_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_lessons",
+      "constraint": "workspace_lessons_content_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_lessons",
+      "constraint": "workspace_lessons_version_time_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_modules",
+      "constraint": "workspace_modules_content_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_modules",
+      "constraint": "workspace_modules_version_time_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_projects",
+      "constraint": "workspace_projects_state_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_review_events",
+      "constraint": "workspace_review_events_hash_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_review_events",
+      "constraint": "workspace_review_events_plain_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_review_events",
+      "constraint": "workspace_review_events_transition_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_submissions",
+      "constraint": "workspace_submissions_category_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_submissions",
+      "constraint": "workspace_submissions_content_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_submissions",
+      "constraint": "workspace_submissions_identity_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_submissions",
+      "constraint": "workspace_submissions_json_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_course_submissions",
+      "constraint": "workspace_submissions_lifecycle_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_profile_details",
+      "constraint": "workspace_profile_details_category_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_profile_details",
+      "constraint": "workspace_profile_details_content_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_profile_details",
+      "constraint": "workspace_profile_details_time_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_profile_details",
+      "constraint": "workspace_profile_details_version_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_profiles",
+      "constraint": "workspace_creator_profiles_activation_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_profiles",
+      "constraint": "workspace_creator_profiles_status_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_terms_acceptances",
+      "constraint": "workspace_terms_acceptance_time_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_creator_terms_versions",
+      "constraint": "workspace_terms_content_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_eligibility_attempts",
+      "constraint": "workspace_eligibility_attempts_dates_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_eligibility_attempts",
+      "constraint": "workspace_eligibility_attempts_declarations_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_eligibility_attempts",
+      "constraint": "workspace_eligibility_attempts_experience_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_eligibility_attempts",
+      "constraint": "workspace_eligibility_attempts_source_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_eligibility_attempts",
+      "constraint": "workspace_eligibility_attempts_text_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_eligibility_settings",
+      "constraint": "workspace_eligibility_settings_bounds_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_eligibility_settings",
+      "constraint": "workspace_eligibility_settings_version_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_email_challenges",
+      "constraint": "workspace_email_challenge_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_email_rate_limits",
+      "constraint": "workspace_email_rate_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_influencers",
+      "constraint": "workspace_influencer_definition_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "constraint": "workspace_orders_context_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "constraint": "workspace_orders_economics_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "constraint": "workspace_orders_fulfillment_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "constraint": "workspace_orders_refund_policy_snapshot_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "constraint": "workspace_orders_state_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_orders",
+      "constraint": "workspace_orders_terms_snapshot_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_membership_plans",
+      "constraint": "workspace_plans_definition_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_memberships",
+      "constraint": "workspace_memberships_term_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_payment_attempts",
+      "constraint": "workspace_payments_definition_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_payment_events",
+      "constraint": "workspace_events_definition_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_policy_versions",
+      "constraint": "workspace_policy_versions_kind_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_attempts",
+      "constraint": "workspace_refund_attempt_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_completions",
+      "constraint": "workspace_refund_completion_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_notice_deliveries",
+      "constraint": "workspace_refund_delivery_state_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_notice_delivery_attempts",
+      "constraint": "workspace_refund_delivery_attempt_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_notices",
+      "constraint": "workspace_refund_notice_kind_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_observations",
+      "constraint": "workspace_refund_observation_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_policy_acceptances",
+      "constraint": "workspace_refund_policy_acceptance_time_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_policy_versions",
+      "constraint": "workspace_refund_policy_content_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_refund_requests",
+      "constraint": "workspace_refund_request_check",
+      "violations": 0
+    },
+    {
+      "schema": "public",
+      "table": "workspace_verified_emails",
+      "constraint": "workspace_verified_email_check",
+      "violations": 0
+    },
+    {
+      "schema": "wsd1_clock_682c6438a13747e59257533f1a55773d",
+      "table": "workspace_refund_notice_deliveries",
+      "constraint": "workspace_refund_delivery_state_check",
+      "violations": 0
+    },
+    {
+      "schema": "wsd1_clock_682c6438a13747e59257533f1a55773d",
+      "table": "workspace_refund_notice_delivery_attempts",
+      "constraint": "workspace_refund_delivery_attempt_check",
+      "violations": 0
+    }
+  ],
+  "integrity": [
+    {
+      "name": "membership_order_fulfillment",
+      "violations": 0
+    },
+    {
+      "name": "membership_creator_owner",
+      "violations": 0
+    },
+    {
+      "name": "course_build_source_approval",
+      "violations": 0
+    },
+    {
+      "name": "grant_granted_event",
+      "violations": 0
+    },
+    {
+      "name": "grant_closed_event",
+      "violations": 0
+    },
+    {
+      "name": "winner_per_captured_order",
+      "violations": 0
+    },
+    {
+      "name": "refund_completion_owner_and_amount",
+      "violations": 0
+    },
+    {
+      "name": "refund_exact_72h",
+      "violations": 0
+    },
+    {
+      "name": "held_unverified_capture_safe",
+      "violations": 0
+    },
+    {
+      "name": "email_proof_consumed_matching_challenge",
+      "violations": 0
+    },
+    {
+      "name": "unconstrained_lms_comment_parent",
+      "violations": 0
+    },
+    {
+      "name": "unconstrained_lms_module_section_owner",
+      "violations": 0
+    },
+    {
+      "name": "unconstrained_lms_video_lesson_owner",
+      "violations": 0
+    }
+  ],
+  "plans": [
+    {
+      "name": "creator_owned_drafts",
+      "source": "lib/workspace/creator/repository.ts",
+      "kind": "EXPLAIN only; no execution/ANALYZE",
+      "query": "select id from workspace_course_drafts where user_id='00000000-0000-0000-0000-000000000000'::uuid order by updated_at desc,id desc limit 26",
+      "plan": [
+        {
+          "Plan": {
+            "Node Type": "Limit",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 0.27,
+            "Total Cost": 8.29,
+            "Plan Rows": 1,
+            "Plan Width": 24,
+            "Plans": [
+              {
+                "Node Type": "Index Only Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Scan Direction": "Backward",
+                "Index Name": "workspace_drafts_owner_updated_idx",
+                "Relation Name": "workspace_course_drafts",
+                "Alias": "workspace_course_drafts",
+                "Startup Cost": 0.27,
+                "Total Cost": 8.29,
+                "Plan Rows": 1,
+                "Plan Width": 24,
+                "Index Cond": "(user_id = '00000000-0000-0000-0000-000000000000'::uuid)"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "latest_eligibility",
+      "source": "lib/workspace/eligibility/service.ts",
+      "kind": "EXPLAIN only; no execution/ANALYZE",
+      "query": "select id from workspace_eligibility_attempts where user_id='00000000-0000-0000-0000-000000000000'::uuid order by decided_at desc,id desc limit 1",
+      "plan": [
+        {
+          "Plan": {
+            "Node Type": "Limit",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 8.3,
+            "Total Cost": 8.32,
+            "Plan Rows": 1,
+            "Plan Width": 24,
+            "Plans": [
+              {
+                "Node Type": "Incremental Sort",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 8.3,
+                "Total Cost": 8.35,
+                "Plan Rows": 2,
+                "Plan Width": 24,
+                "Sort Key": [
+                  "decided_at DESC",
+                  "id DESC"
+                ],
+                "Presorted Key": [
+                  "decided_at"
+                ],
+                "Plans": [
+                  {
+                    "Node Type": "Index Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Scan Direction": "Backward",
+                    "Index Name": "workspace_eligibility_attempts_user_decided_idx",
+                    "Relation Name": "workspace_eligibility_attempts",
+                    "Alias": "workspace_eligibility_attempts",
+                    "Startup Cost": 0.28,
+                    "Total Cost": 8.29,
+                    "Plan Rows": 1,
+                    "Plan Width": 24,
+                    "Index Cond": "(user_id = '00000000-0000-0000-0000-000000000000'::uuid)"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "grant_resolver",
+      "source": "lib/workspace/access/repository.ts",
+      "kind": "EXPLAIN only; no execution/ANALYZE",
+      "query": "select id from workspace_access_grants where user_id='00000000-0000-0000-0000-000000000000'::uuid and environment='development' order by created_at desc,id desc limit 1",
+      "plan": [
+        {
+          "Plan": {
+            "Node Type": "Limit",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 5.94,
+            "Total Cost": 5.94,
+            "Plan Rows": 1,
+            "Plan Width": 24,
+            "Plans": [
+              {
+                "Node Type": "Sort",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 5.94,
+                "Total Cost": 5.94,
+                "Plan Rows": 1,
+                "Plan Width": 24,
+                "Sort Key": [
+                  "created_at DESC",
+                  "id DESC"
+                ],
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Relation Name": "workspace_access_grants",
+                    "Alias": "workspace_access_grants",
+                    "Startup Cost": 0,
+                    "Total Cost": 5.93,
+                    "Plan Rows": 1,
+                    "Plan Width": 24,
+                    "Filter": "((user_id = '00000000-0000-0000-0000-000000000000'::uuid) AND (environment = 'development'::text))"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "email_latest_challenge",
+      "source": "lib/workspace/email/repository.ts",
+      "kind": "EXPLAIN only; no execution/ANALYZE",
+      "query": "select id from workspace_email_challenges where user_id='00000000-0000-0000-0000-000000000000'::uuid order by created_at desc limit 1",
+      "plan": [
+        {
+          "Plan": {
+            "Node Type": "Limit",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 0.14,
+            "Total Cost": 8.16,
+            "Plan Rows": 1,
+            "Plan Width": 24,
+            "Plans": [
+              {
+                "Node Type": "Index Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Scan Direction": "Backward",
+                "Index Name": "workspace_email_challenge_user_created_idx",
+                "Relation Name": "workspace_email_challenges",
+                "Alias": "workspace_email_challenges",
+                "Startup Cost": 0.14,
+                "Total Cost": 8.16,
+                "Plan Rows": 1,
+                "Plan Width": 24,
+                "Index Cond": "(user_id = '00000000-0000-0000-0000-000000000000'::uuid)"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "legacy_module_lessons",
+      "source": "app/(dashboard)/dashboard/courses/[courseId]/page.tsx",
+      "kind": "EXPLAIN only; no execution/ANALYZE",
+      "query": "select id from lessons where module_id='00000000-0000-0000-0000-000000000000'::uuid order by order_index limit 26",
+      "plan": [
+        {
+          "Plan": {
+            "Node Type": "Limit",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 2.63,
+            "Total Cost": 2.64,
+            "Plan Rows": 1,
+            "Plan Width": 20,
+            "Plans": [
+              {
+                "Node Type": "Sort",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 2.63,
+                "Total Cost": 2.64,
+                "Plan Rows": 1,
+                "Plan Width": 20,
+                "Sort Key": [
+                  "order_index"
+                ],
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Relation Name": "lessons",
+                    "Alias": "lessons",
+                    "Startup Cost": 0,
+                    "Total Cost": 2.62,
+                    "Plan Rows": 1,
+                    "Plan Width": 20,
+                    "Filter": "(module_id = '00000000-0000-0000-0000-000000000000'::uuid)"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "payment_event_queue",
+      "source": "lib/workspace/payments/repository.ts",
+      "kind": "EXPLAIN only; no execution/ANALYZE",
+      "query": "select id from workspace_payment_events where provider_mode='test' and provider_account_id='acc_SYNTHETIC_PLAN_ONLY' and processing_state in ('pending','retry','processing') order by received_at,id limit 25",
+      "plan": [
+        {
+          "Plan": {
+            "Node Type": "Limit",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 3.87,
+            "Total Cost": 3.88,
+            "Plan Rows": 1,
+            "Plan Width": 24,
+            "Plans": [
+              {
+                "Node Type": "Sort",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 3.87,
+                "Total Cost": 3.88,
+                "Plan Rows": 1,
+                "Plan Width": 24,
+                "Sort Key": [
+                  "received_at",
+                  "id"
+                ],
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Relation Name": "workspace_payment_events",
+                    "Alias": "workspace_payment_events",
+                    "Startup Cost": 0,
+                    "Total Cost": 3.86,
+                    "Plan Rows": 1,
+                    "Plan Width": 24,
+                    "Filter": "((provider_mode = 'test'::text) AND (provider_account_id = 'acc_SYNTHETIC_PLAN_ONLY'::text) AND (processing_state = ANY ('{pending,retry,processing}'::text[])))"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "notification_queue",
+      "source": "lib/workspace/refund-notifications/repository.ts",
+      "kind": "EXPLAIN only; no execution/ANALYZE",
+      "query": "select n.id from workspace_refund_notices n left join workspace_refund_notice_deliveries d on d.notice_id=n.id where d.id is null or d.state in ('pending','retryable_failure','claimed','submitted') order by n.created_at,n.id limit 25",
+      "plan": [
+        {
+          "Plan": {
+            "Node Type": "Limit",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 8.59,
+            "Total Cost": 8.6,
+            "Plan Rows": 1,
+            "Plan Width": 24,
+            "Plans": [
+              {
+                "Node Type": "Sort",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 8.59,
+                "Total Cost": 8.6,
+                "Plan Rows": 1,
+                "Plan Width": 24,
+                "Sort Key": [
+                  "n.created_at",
+                  "n.id"
+                ],
+                "Plans": [
+                  {
+                    "Node Type": "Hash Join",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Join Type": "Left",
+                    "Startup Cost": 5.12,
+                    "Total Cost": 8.58,
+                    "Plan Rows": 1,
+                    "Plan Width": 24,
+                    "Inner Unique": true,
+                    "Hash Cond": "(n.id = d.notice_id)",
+                    "Filter": "((d.id IS NULL) OR (d.state = ANY ('{pending,retryable_failure,claimed,submitted}'::text[])))",
+                    "Plans": [
+                      {
+                        "Node Type": "Seq Scan",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Relation Name": "workspace_refund_notices",
+                        "Alias": "n",
+                        "Startup Cost": 0,
+                        "Total Cost": 3.15,
+                        "Plan Rows": 115,
+                        "Plan Width": 24
+                      },
+                      {
+                        "Node Type": "Hash",
+                        "Parent Relationship": "Inner",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Startup Cost": 3.94,
+                        "Total Cost": 3.94,
+                        "Plan Rows": 94,
+                        "Plan Width": 40,
+                        "Plans": [
+                          {
+                            "Node Type": "Seq Scan",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Relation Name": "workspace_refund_notice_deliveries",
+                            "Alias": "d",
+                            "Startup Cost": 0,
+                            "Total Cost": 3.94,
+                            "Plan Rows": 94,
+                            "Plan Width": 40
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "admin_order_cursor_projection",
+      "source": "lib/workspace/admin/lists.ts",
+      "kind": "EXPLAIN only; no execution/ANALYZE",
+      "query": "with records as (select id,user_id,date_trunc('milliseconds',created_at) as time from workspace_membership_orders where provider_mode='test') select id from records where time<='2026-10-14T00:00:00Z'::timestamptz order by time desc,id desc limit 26",
+      "plan": [
+        {
+          "Plan": {
+            "Node Type": "Limit",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 89.26,
+            "Total Cost": 89.32,
+            "Plan Rows": 26,
+            "Plan Width": 24,
+            "Plans": [
+              {
+                "Node Type": "Sort",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 89.26,
+                "Total Cost": 89.62,
+                "Plan Rows": 147,
+                "Plan Width": 24,
+                "Sort Key": [
+                  "(date_trunc('milliseconds'::text, workspace_membership_orders.created_at)) DESC",
+                  "workspace_membership_orders.id DESC"
+                ],
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Relation Name": "workspace_membership_orders",
+                    "Alias": "workspace_membership_orders",
+                    "Startup Cost": 0,
+                    "Total Cost": 85.07,
+                    "Plan Rows": 147,
+                    "Plan Width": 24,
+                    "Filter": "((provider_mode = 'test'::text) AND (date_trunc('milliseconds'::text, created_at) <= '2026-10-14 05:30:00+05:30'::timestamp with time zone))"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "roles": [
+    {
+      "name": "postgres",
+      "superuser": true,
+      "login": true,
+      "bypass_rls": true,
+      "connection_limit": -1
+    }
+  ],
+  "session": {
+    "search_path": "\"$user\", public",
+    "default_read_only": "on"
+  },
+  "sequences": [
+    {
+      "schema": "drizzle",
+      "name": "__drizzle_migrations_id_seq",
+      "data_type": "integer",
+      "start_value": "1",
+      "min_value": "1",
+      "max_value": "2147483647",
+      "increment_by": "1",
+      "cycle": false,
+      "cache_size": "1",
+      "last_value": "30"
+    }
+  ],
+  "currentRows": {
+    "workspace_eligibility_settings": 1,
+    "workspace_policy_versions": 1,
+    "workspace_creator_terms_versions": 1,
+    "workspace_refund_policy_versions": 1
+  },
+  "operational": {
+    "emailChallenges": [
+      {
+        "state": "accepted",
+        "count": 83
+      },
+      {
+        "state": "consumed",
+        "count": 66
+      },
+      {
+        "state": "exhausted",
+        "count": 3
+      },
+      {
+        "state": "expired",
+        "count": 3
+      },
+      {
+        "state": "superseded",
+        "count": 24
+      }
+    ],
+    "emailExpired": [
+      {
+        "count": 179
+      }
+    ],
+    "oldRateWindows": [
+      {
+        "count": 0
+      }
+    ],
+    "events": [
+      {
+        "processing_state": "ignored",
+        "count": 9
+      },
+      {
+        "processing_state": "needs_review",
+        "count": 12
+      },
+      {
+        "processing_state": "pending",
+        "count": 2
+      },
+      {
+        "processing_state": "processed",
+        "count": 19
+      },
+      {
+        "processing_state": "retry",
+        "count": 4
+      }
+    ],
+    "notices": [
+      {
+        "state": "accepted",
+        "count": 12
+      },
+      {
+        "state": "blocked",
+        "count": 80
+      },
+      {
+        "state": "uncertain",
+        "count": 7
+      }
+    ],
+    "reservations": [
+      {
+        "status": "redeemed",
+        "count": 36
+      },
+      {
+        "status": "released",
+        "count": 22
+      },
+      {
+        "status": "reserved",
+        "count": 72
+      }
+    ],
+    "expiredLegacyOtps": [
+      {
+        "count": 6
+      }
+    ]
+  },
+  "explainAnalyzeUsed": false,
+  "mutations": 0
+}

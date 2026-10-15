@@ -1,0 +1,24 @@
+{
+  "result": "PASS",
+  "allCorrectedProductFilesMatchBuildCopy": true,
+  "productFiles": [
+    "app/(admin)/layout.tsx",
+    "app/(dashboard)/layout.tsx",
+    "app/(user)/courses/[slugOrId]/page.tsx",
+    "app/(user)/workspace/activate/page.tsx",
+    "app/(workspace)/workspace/(creator)/dashboard/page.tsx",
+    "app/api/invoices/download/[orderId]/route.ts",
+    "components/CourseCard.tsx",
+    "components/admin/WorkspaceList.tsx",
+    "components/landing/LearningSections.tsx",
+    "components/pricing/PricingView.tsx",
+    "components/workspace/WorkspaceLanding.tsx",
+    "components/workspace/ui/WorkspaceUI.tsx",
+    "components/admin/WorkspaceListFilters.tsx",
+    "lib/workspace/launch-copy.ts"
+  ],
+  "temporaryFixtureAbsentFromProductAndBuild": true,
+  "originalF8ReportSHA256": "b22f0e6ddda87ddd5ff0a15aa3c9b9331afa9f61a161dd983c98ec80c244e699",
+  "dependenciesChanged": false,
+  "migrationSourceChanged": false
+}

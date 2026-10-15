@@ -19,7 +19,7 @@ const COMPARISONS = [
   },
   {
     today: "Struggling to balance upskilling with demanding work schedules or flight rosters",
-    future: "100% self-paced learning on desktop and mobile with lifetime course access",
+    future: "100% self-paced learning on desktop and mobile with access according to your enrollment terms",
   },
 ];
 

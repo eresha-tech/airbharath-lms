@@ -7,7 +7,7 @@ import packageJson from "@/package.json";
  * ponytail: Directly references package.json version with safe helper functions.
  */
 export const APP_VERSION = packageJson.version;
-export const APP_NAME = "AirBharath LMS";
+export const APP_NAME = "AirBharath";
 
 export function getAppVersion(): string {
   return APP_VERSION;

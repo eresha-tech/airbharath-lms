@@ -49,7 +49,7 @@ const FAQ_DATA: FAQItem[] = [
     category: "Learning & Schedule",
     question: "I want to learn while working or flying. Do I need to quit my current job?",
     answer:
-      "No. All AirBharath LMS courses are 100% self-paced. You have full flexibility to access lectures, complete hands-on assignments, and earn your certificate around your flying or work schedule.",
+      "No. All AirBharath courses are 100% self-paced. You have full flexibility to access lectures, complete hands-on assignments, and earn your certificate around your flying or work schedule.",
   },
   {
     id: "faq-4",
@@ -77,12 +77,12 @@ const FAQ_DATA: FAQItem[] = [
     category: "Certificates & Verification",
     question: "Will I receive an official certificate upon course completion?",
     answer:
-      "Yes. Once you complete all video modules and lesson requirements in your enrolled course, you receive an official AirBharath LMS certificate equipped with a tamper-proof QR code and unique credential ID.",
+      "Yes. Once you complete all video modules and lesson requirements in your enrolled course, you receive an official AirBharath certificate equipped with a tamper-proof QR code and unique credential ID.",
   },
   {
     id: "faq-8",
     category: "Certificates & Verification",
-    question: "How can employers verify my AirBharath LMS certificate?",
+    question: "How can employers verify my AirBharath certificate?",
     answer:
       "Anyone can verify the authenticity of an issued certificate by scanning its QR code or by entering the Credential ID directly into our public verification portal at lms.airbharath.in/verify-certificate.",
   },
@@ -105,7 +105,7 @@ const FAQ_DATA: FAQItem[] = [
     category: "Pricing & Payments",
     question: "Are course prices inclusive of taxes (GST)?",
     answer:
-      "Yes. All prices listed on AirBharath LMS are inclusive of 18% GST. Upon successful payment via Razorpay, an official GST tax invoice is automatically generated and downloadable from your student account.",
+      "Yes. All prices listed on AirBharath are inclusive of 18% GST. Upon successful payment via Razorpay, an official GST tax invoice is automatically generated and downloadable from your student account.",
   },
   {
     id: "faq-12",

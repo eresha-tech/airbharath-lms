@@ -1,0 +1,15 @@
+/* Workspace controls inherit the shared AirBharath theme. */
+.workspace-ui :where(h1,h2,h3,p,dd,summary) { overflow-wrap: anywhere; }
+.workspace-ui :where(button,input,select,textarea) { max-width: 100%; }
+.workspace-ui :where(button,select,input:not([type=checkbox]):not([type=radio])) { min-height: 44px; }
+.workspace-ui :where(input,select,textarea) { min-width: 0; }
+.workspace-ui :where(button,a,input,select,textarea,summary):focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 3px; }
+.workspace-ui :where(button:disabled,input:disabled,select:disabled,textarea:disabled) { cursor: not-allowed; }
+.workspace-checkbox { width: 20px; height: 20px; flex-shrink: 0; margin-top: 2px; accent-color: hsl(var(--primary)); }
+.workspace-checkbox:disabled { opacity: .55; }
+.workspace-check-label { display: flex; min-height: 44px; align-items: flex-start; gap: 12px; padding: 8px; border-radius: 8px; cursor: pointer; }
+.workspace-check-label:focus-within { outline: 2px solid hsl(var(--ring)); outline-offset: 3px; }
+.workspace-dialog > button { min-width: 44px; min-height: 44px; }
+
+.workspace-ui :where(button,a,input,select,textarea,summary) { touch-action: manipulation; }
+.workspace-ui[role=dialog] { overscroll-behavior: contain; }

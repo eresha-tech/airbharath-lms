@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { hasPersistedAdminRole } from "@/lib/admin-authorization";
 import { db } from "@/lib/db";
 import { lessonComments, users } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
@@ -89,7 +90,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.role === "admin") {
+    if (await hasPersistedAdminRole(session)) {
       await db.delete(lessonComments).where(eq(lessonComments.id, commentId));
     } else {
       await db.delete(lessonComments).where(and(eq(lessonComments.id, commentId), eq(lessonComments.userId, session.id)));

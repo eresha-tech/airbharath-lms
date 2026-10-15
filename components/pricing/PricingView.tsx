@@ -81,7 +81,7 @@ export function PricingView({ courses }: PricingViewProps) {
                   Individual Course
                 </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Enroll in any single certificate program of your choice with lifetime access to all course modules.
+                  Enroll in any single certificate program of your choice. Check the course details for its learner access duration.
                 </p>
               </div>
 

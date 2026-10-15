@@ -1,0 +1,166 @@
+{
+  "/": [
+    {
+      "order": 1,
+      "title": "Learn practical skills. Share aviation expertise.",
+      "takeaway": "Choose the learner or Creator path quickly",
+      "suggested_copy": "Explore self-paced certificate programs. Aviation professionals can prepare courses in AirBharath Workspace.",
+      "visual": "Existing typography and restrained dual-path text; static product visual",
+      "cta": "Explore courses → /courses; Discover Workspace → /workspace",
+      "reuse_or_new": "Reuse learner promise; new accurate Workspace bridge",
+      "essential_for_paid_launch": true
+    },
+    {
+      "order": 2,
+      "title": "Certificate programs for practical work",
+      "takeaway": "Compare real learning offerings",
+      "suggested_copy": "Browse existing programs with current total prices and accurate access duration.",
+      "visual": "Compact existing catalog; authoritative data",
+      "cta": "View programs → /courses",
+      "reuse_or_new": "Reuse existing records, resolve offer/access conflicts",
+      "essential_for_paid_launch": true
+    },
+    {
+      "order": 3,
+      "title": "Aviation professionals: prepare your next course",
+      "takeaway": "Workspace is a distinct creator product",
+      "suggested_copy": "Build your profile, propose a course and prepare approved private text lessons during authorized Early Access.",
+      "visual": "Existing Workspace concept illustration with private/preparation labels",
+      "cta": "Check creator eligibility → /workspace/apply; details → /workspace",
+      "reuse_or_new": "Reuse Workspace visual; new current-scope summary",
+      "essential_for_paid_launch": true
+    },
+    {
+      "order": 4,
+      "title": "How learning works",
+      "takeaway": "Know the learner next step",
+      "suggested_copy": "Choose a program, learn at your own pace and complete the course requirements.",
+      "visual": "Three concise existing steps",
+      "cta": "Explore programs → /courses",
+      "reuse_or_new": "Reuse CareerTransitionJourney",
+      "essential_for_paid_launch": true
+    },
+    {
+      "order": 5,
+      "title": "Practical learning, verifiable completion",
+      "takeaway": "Understand benefits without repetition",
+      "suggested_copy": "Structured lessons and QR-verifiable completion certificates support your learning.",
+      "visual": "Merge benefits with existing certificate example",
+      "cta": "Verify a certificate → /verify-certificate",
+      "reuse_or_new": "Consolidate feature/certificate sections; preserve qualifications",
+      "essential_for_paid_launch": true
+    },
+    {
+      "order": 6,
+      "title": "People and experience behind AirBharath",
+      "takeaway": "Assess genuine credibility",
+      "suggested_copy": "Meet the practitioners behind the programs.",
+      "visual": "Owner-verified bios and concise heritage facts; no endorsement logos",
+      "cta": "About AirBharath → /about",
+      "reuse_or_new": "Reuse substantiated material; new proof only with owner evidence",
+      "essential_for_paid_launch": true
+    },
+    {
+      "order": 7,
+      "title": "Questions before you begin",
+      "takeaway": "Clarify both routes",
+      "suggested_copy": "Understand course access, Workspace eligibility and current release boundaries.",
+      "visual": "Short separated Learner/Creator FAQ groups",
+      "cta": "Workspace details → /workspace; support → /contact",
+      "reuse_or_new": "Reuse LMS FAQ, add accurate Creator orientation",
+      "essential_for_paid_launch": true
+    },
+    {
+      "order": 8,
+      "title": "Choose your next step",
+      "takeaway": "End with useful audience-specific actions",
+      "suggested_copy": "Start learning, or explore preparing an aviation course.",
+      "visual": "Accessible two-choice CTA and relevant footer links",
+      "cta": "Explore courses → /courses; Explore Workspace → /workspace",
+      "reuse_or_new": "Refine existing closing CTA and shell",
+      "essential_for_paid_launch": true
+    }
+  ],
+  "/workspace": [
+    {
+      "order": 1,
+      "title": "Prepare your aviation course in AirBharath Workspace",
+      "takeaway": "Understand current private creator scope",
+      "suggested_copy": "Prepare your profile, submit a course proposal for review, and build approved private text lessons. Applications are open; payments await launch verification.",
+      "visual": "Existing aviation concept card, current-state labels",
+      "cta": "Check eligibility → /workspace/apply",
+      "reuse_or_new": "Reuse brand/illustration; rewrite current-scope hierarchy",
+      "essential_for_paid_launch": true
+    },
+    {
+      "order": 2,
+      "title": "Early Access now. Full Workspace targeted for 9 November 2026.",
+      "takeaway": "Separate preparation from future launch",
+      "suggested_copy": "Early Access supports private preparation. Media uploads, publication and selling are planned for the full release, subject to readiness.",
+      "visual": "Two clear Now/Planned panels, no active unavailable controls",
+      "cta": "See the preparation workflow → section anchor",
+      "reuse_or_new": "Reorganize existing dates/disclosures",
+      "essential_for_paid_launch": true
+    },
+    {
+      "order": 3,
+      "title": "Is Workspace right for you?",
+      "takeaway": "Self-assess against actual published criteria",
+      "suggested_copy": "Bring aviation expertise, a professional profile and a course idea. Review the current eligibility requirements before applying.",
+      "visual": "Compact real domains and authoritative criteria summary",
+      "cta": "Check eligibility → /workspace/apply",
+      "reuse_or_new": "Reuse categories; current policy-derived summary",
+      "essential_for_paid_launch": true
+    },
+    {
+      "order": 4,
+      "title": "From proposal to approved private course",
+      "takeaway": "Understand current actual workflow",
+      "suggested_copy": "Complete eligibility, follow the applicable access steps, prepare a proposal, respond to review and build private lessons after approval.",
+      "visual": "Five concise stages; paid and owner-issued grant distinctions",
+      "cta": "Start eligibility → /workspace/apply",
+      "reuse_or_new": "New concise explanation from existing guarded workflow",
+      "essential_for_paid_launch": true
+    },
+    {
+      "order": 5,
+      "title": "Membership, GST and your paid term",
+      "takeaway": "Understand cost before committing",
+      "suggested_copy": "3 months ₹5,899; 6 months ₹9,999; 12 months ₹17,699, inclusive of 18% GST. For pre-launch memberships, authorized Early Access precedes the paid term starting 9 November. No payment is required to apply.",
+      "visual": "Current catalog read-only cards, no Checkout button",
+      "cta": "Check eligibility → /workspace/apply; policy links",
+      "reuse_or_new": "Existing authoritative catalog; new public summary",
+      "essential_for_paid_launch": true
+    },
+    {
+      "order": 6,
+      "title": "Clear terms, refunds and support",
+      "takeaway": "Find rights before activation",
+      "suggested_copy": "Read Creator Terms and Refund Policy. Refund requests follow the existing 72-hour window from verified payment time; canonical policy controls eligibility.",
+      "visual": "Plain linked legal/support panel",
+      "cta": "/workspace/creator-terms; /workspace/refund-policy; /contact",
+      "reuse_or_new": "Reuse canonical legal routes, owner-reviewed summary only",
+      "essential_for_paid_launch": true
+    },
+    {
+      "order": 7,
+      "title": "Creator questions, answered",
+      "takeaway": "Avoid false publishing/access expectations",
+      "suggested_copy": "Understand verification, proposal review, complimentary grants, private tools and the planned full release.",
+      "visual": "Concise accessible FAQ",
+      "cta": "Support → /contact",
+      "reuse_or_new": "New factual FAQ; no business-rule changes",
+      "essential_for_paid_launch": true
+    },
+    {
+      "order": 8,
+      "title": "Ready to share your aviation expertise?",
+      "takeaway": "Take the existing next step",
+      "suggested_copy": "Use your normal AirBharath account to check eligibility. Applying does not create membership or approve a course.",
+      "visual": "Clear application CTA, secondary optional manual path",
+      "cta": "Check eligibility → /workspace/apply; optional /workspace/manual-application",
+      "reuse_or_new": "Reuse existing routes/qualification statements",
+      "essential_for_paid_launch": true
+    }
+  ]
+}

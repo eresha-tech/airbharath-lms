@@ -1,6 +1,7 @@
 "use client";
 
 import posthog from "posthog-js";
+import { getPostHogConfig } from "@/lib/posthog-config";
 
 /**
  * Client-side event tracking utility
@@ -9,13 +10,7 @@ export function track(eventName: string, properties?: Record<string, any>): void
   if (typeof window === "undefined") return;
 
   try {
-    const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-    if (!posthogKey || posthogKey === "your-posthog-key" || posthogKey === "your_posthog_project_api_key") {
-      if (process.env.NODE_ENV === "development") {
-        console.debug(`[Analytics Dev] Track: ${eventName}`, properties);
-      }
-      return;
-    }
+    if (!getPostHogConfig()) return;
 
     posthog.capture(eventName, sanitizeProperties(properties));
   } catch (err) {
@@ -31,13 +26,7 @@ export function identifyUser(userId: string, properties?: Record<string, any>): 
   if (typeof window === "undefined" || !userId) return;
 
   try {
-    const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-    if (!posthogKey || posthogKey === "your-posthog-key" || posthogKey === "your_posthog_project_api_key") {
-      if (process.env.NODE_ENV === "development") {
-        console.debug(`[Analytics Dev] Identify: ${userId}`, properties);
-      }
-      return;
-    }
+    if (!getPostHogConfig()) return;
 
     posthog.identify(userId, sanitizeProperties(properties));
   } catch (err) {
@@ -49,7 +38,7 @@ export function identifyUser(userId: string, properties?: Record<string, any>): 
  * Reset user identity on logout
  */
 export function resetUser(): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !getPostHogConfig()) return;
 
   try {
     posthog.reset();

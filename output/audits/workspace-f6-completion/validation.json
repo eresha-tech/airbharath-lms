@@ -1,0 +1,33 @@
+{
+  "pnpmValidate": {
+    "exitCode": 0,
+    "vitestTests": 1095,
+    "vitestFiles": 91,
+    "pureNodeChecks": 5,
+    "typeScript": "PASS",
+    "lint": "PASS"
+  },
+  "newPreservationRegressions": 3,
+  "harnessSyntax": "PASS",
+  "migrationNoDrift": {
+    "exitCode": 0,
+    "sourceJournalEntries": 31,
+    "installedLedgerEntries": 31,
+    "pending": 0,
+    "result": "No schema changes, nothing to migrate"
+  },
+  "productionBuild": {
+    "exitCode": 0,
+    "isolatedCopy": true,
+    "realCredentials": false,
+    "database": "unreachable synthetic target",
+    "publicPaymentsEnabled": false,
+    "nodeEnvironment": "production",
+    "fontResponses": "cached local font mocks; no remote font download",
+    "logSha256": "2d2cdc3d741542e05ef5d0a5dd6e497be5588901544dd8198fe6b36c00f438c8"
+  },
+  "gitDiffCheck": "PASS",
+  "genuineProviderCalls": 0,
+  "retainedFixtureMutations": 0,
+  "migrationAuthorizationPersisted": false
+}

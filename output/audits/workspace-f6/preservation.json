@@ -1,0 +1,11 @@
+{
+  "beforeBaselineSha256": "49127060609b2e8117a45752ed05c3b4ab0b04351a36fcf13a29e86edcb207e2",
+  "afterFingerprintSha256": "49127060609b2e8117a45752ed05c3b4ab0b04351a36fcf13a29e86edcb207e2",
+  "differences": {
+    "identity": false,
+    "structure": false,
+    "counts": false,
+    "fingerprintTables": []
+  },
+  "normalization": "Postgres.js Result arrays normalized to JSON arrays before strict comparison; original baseline never replaced."
+}

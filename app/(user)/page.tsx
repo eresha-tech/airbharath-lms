@@ -1,44 +1,22 @@
-import { HeroBanner } from "@/components/landing/HeroBanner";
-import { TrustStrip } from "@/components/landing/TrustStrip";
-import { CoursesSection } from "@/components/landing/CoursesSection";
-import { SolutionSection } from "@/components/landing/SolutionSection";
-import { CareerTransitionJourney } from "@/components/landing/CareerTransitionJourney";
-import { CertificateShowcase } from "@/components/landing/CertificateShowcase";
-import { HeadlineSection } from "@/components/landing/HeadlineSection";
-import { TransformationMatrix } from "@/components/landing/TransformationMatrix";
-import { ExpertGuidanceSection } from "@/components/landing/ExpertGuidanceSection";
-import { LandingFAQ } from "@/components/landing/LandingFAQ";
-import { FinalCTA } from "@/components/landing/FinalCTA";
-import { db } from "@/lib/db";
-import { courses } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-
-export const dynamic = "force-dynamic";
-
+import { HeroBanner } from '@/components/landing/HeroBanner';
+import { CoursesSection } from '@/components/landing/CoursesSection';
+import { WorkspaceIntroduction, LearningJourney, LearningBenefits, LearningTrust, LearnerFAQ } from '@/components/landing/LearningSections';
+import { FinalCTA } from '@/components/landing/FinalCTA';
+import { readPublicCatalog } from '@/lib/public/catalog';
+import { publicMetadata } from '@/lib/public/metadata';
+export const dynamic = 'force-dynamic';
+export const metadata = publicMetadata('/', 'AirBharath — Practical Skills for Your Next Step', 'Explore self-paced AirBharath courses, build practical skills and discover Creator Workspace for aviation professionals.');
 export default async function Home() {
-  let publishedCourses: any[] = [];
-  try {
-    publishedCourses = await db.query.courses.findMany({
-      where: eq(courses.isPublished, true),
-    });
-  } catch (err) {
-    console.error("DB connection error on landing page:", err);
-  }
-
-  return (
-    <>
-      <HeroBanner />
-      <TrustStrip />
-      <CoursesSection dbCourses={publishedCourses} />
-      <SolutionSection />
-      <CareerTransitionJourney />
-      <CertificateShowcase />
-      <HeadlineSection />
-      <TransformationMatrix />
-      <ExpertGuidanceSection />
-      <LandingFAQ />
-      <FinalCTA />
-    </>
-  );
+    const catalog = await readPublicCatalog();
+    const featured = catalog.courses.find(course => course.isBundle);
+    return <div className="public-ui">
+    <HeroBanner featured={featured}/>
+    <CoursesSection catalog={catalog}/>
+    <WorkspaceIntroduction />
+    <LearningJourney />
+    <LearningBenefits />
+    <LearningTrust />
+    <LearnerFAQ />
+    <FinalCTA />
+    </div>;
 }
-

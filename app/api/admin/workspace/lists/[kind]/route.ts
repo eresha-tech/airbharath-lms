@@ -1,0 +1,5 @@
+import {getAuthorizedAdminSession} from '@/lib/admin-authorization';
+import {privateJson} from '@/lib/workspace/http';
+import {adminList,listDefinition,type ListKind} from '@/lib/workspace/admin/lists';
+import {AdminListError} from '@/lib/workspace/admin/pagination';
+export async function GET(request:Request,{params}:{params:Promise<{kind:string}>}){const actor=await getAuthorizedAdminSession();if(!actor)return privateJson({error:'Forbidden'},403);try{const {kind}=await params;listDefinition(kind);const url=new URL(request.url);if([...url.searchParams.keys()].some(k=>url.searchParams.getAll(k).length>1))throw new AdminListError('validation');return privateJson(await adminList(actor.id,kind as ListKind,Object.fromEntries(url.searchParams)));}catch(e){const code=e instanceof AdminListError?e.code:'unavailable';return privateJson({code,error:code==='validation'?'Invalid list filters.':code==='forbidden'?'Forbidden':'Records unavailable. Try again.'},code==='validation'?400:code==='forbidden'?403:503);}}

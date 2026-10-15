@@ -50,6 +50,181 @@
       "when": 1790236152530,
       "tag": "0006_great_kate_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790924690885,
+      "tag": "0007_lucky_wild_pack",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790935874838,
+      "tag": "0008_eager_energizer",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791274423029,
+      "tag": "0009_normal_baron_zemo",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791281066952,
+      "tag": "0010_illegal_toxin",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791284353170,
+      "tag": "0011_workspace_coupon_audit_freshness",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791286852175,
+      "tag": "0012_useful_warhawk",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791368221505,
+      "tag": "0013_peaceful_spiral",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791436807652,
+      "tag": "0014_outgoing_freak",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1791527685957,
+      "tag": "0015_warm_sprite",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791632016797,
+      "tag": "0016_tired_prowler",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791649837299,
+      "tag": "0017_marvelous_captain_midlands",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791784683791,
+      "tag": "0018_ambiguous_khan",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791788010129,
+      "tag": "0019_workspace_creator_terms_v2",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791794762975,
+      "tag": "0020_gigantic_mordo",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791816179271,
+      "tag": "0021_workspace_live_financial_modes",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791830175876,
+      "tag": "0022_lethal_barracuda",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791863010586,
+      "tag": "0023_chubby_jimmy_woo",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791864738426,
+      "tag": "0024_workspace_influencer_history_truncate_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791874707763,
+      "tag": "0025_workspace_held_capture_coupon_consistency",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791879822188,
+      "tag": "0026_workspace_membership_pricing_v2",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791889784066,
+      "tag": "0027_workspace_verified_creator_email",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791910203969,
+      "tag": "0028_workspace_creator_access_grants",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791911309962,
+      "tag": "0029_workspace_grant_completion_record_fix",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1791948748716,
+      "tag": "0030_workspace_retained_history_truncate_guards",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792014286931,
+      "tag": "0031_workspace_phone_only_onboarding",
+      "breakpoints": true
     }
   ]
 }

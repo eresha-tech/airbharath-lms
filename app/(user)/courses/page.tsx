@@ -16,9 +16,9 @@ import {
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "All Certificate Courses | Airbharath LMS",
+  title: "All Certificate Courses | AirBharath",
   description:
-    "Explore Airbharath LMS professional certificate courses in AI Skills, Digital Marketing, Entrepreneurship, and Technical Essentials.",
+    "Explore AirBharath professional certificate courses in AI Skills, Digital Marketing, Entrepreneurship, and Technical Essentials.",
 };
 
 export default async function CoursesPage() {

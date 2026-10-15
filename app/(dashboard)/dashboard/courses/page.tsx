@@ -71,8 +71,10 @@ export default async function MyCoursesDashboardPage() {
     }
     const courseModules = (course.modules as any[]) || [];
 
-    // Direct enrollment record, if any
-    const directEnrollment = userEnrollments.find((e: any) => e.courseId === course.id);
+    // An ended direct purchase must not shadow an independently active bundle.
+    const directEnrollment = accessSummary.directCourseIds.includes(course.id)
+      ? userEnrollments.find((e: any) => e.courseId === course.id)
+      : undefined;
     const bundleInfo = accessSummary.courseToBundleMap[course.id];
 
     let isExpired = false;
@@ -110,7 +112,7 @@ export default async function MyCoursesDashboardPage() {
     const resumeLesson = nextIncompleteLesson || allLessons[0] || null;
 
     // Direct order, or fallback to parent bundle order
-    let matchingOrder = userOrders.find((o: any) => o.courseId === course.id);
+    let matchingOrder = directEnrollment ? userOrders.find((o: any) => o.courseId === course.id) : undefined;
     if (!matchingOrder && bundleInfo) {
       matchingOrder = userOrders.find((o: any) => o.courseId === bundleInfo.bundleId);
     }

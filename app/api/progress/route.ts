@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
+import { hasPersistedAdminRole } from '@/lib/admin-authorization';
+import { hasCourseAccess } from '@/lib/course-access';
 import { db } from '@/lib/db';
 import { progress, lessons } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -46,11 +48,26 @@ export async function POST(request: Request) {
     // Server-side check: Disallow completing unreleased scheduled lessons
     const targetLesson = await db.query.lessons.findFirst({
       where: eq(lessons.id, lessonId),
+      with: { module: { columns: { courseId: true } } },
     });
 
+    if (!targetLesson?.module) {
+      return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
+    }
+    const actualCourseId = targetLesson.module.courseId;
+    if (courseId !== undefined && courseId !== actualCourseId) {
+      return NextResponse.json({ error: "Lesson does not belong to this course" }, { status: 400 });
+    }
+    const isAdmin = await hasPersistedAdminRole(session);
+    if (!isAdmin && !targetLesson.isFreePreview) {
+      const access = await hasCourseAccess(session.id, actualCourseId, session.role);
+      if (!access.hasAccess) {
+        return NextResponse.json({ error: "Course access required" }, { status: 403 });
+      }
+    }
     if (
       targetLesson &&
-      session.role !== "admin" &&
+      !isAdmin &&
       targetLesson.deliveryType === "recorded" &&
       targetLesson.releaseAt &&
       new Date(targetLesson.releaseAt) > new Date()
@@ -81,11 +98,11 @@ export async function POST(request: Request) {
       });
     }
 
-    // Evaluate derived progress & certificate eligibility if courseId provided
+    // Derive eligibility from persisted lesson ownership, never a client-selected course.
     let eligibilityInfo: any = null;
-    if (courseId) {
+    if (actualCourseId) {
       try {
-        eligibilityInfo = await getCertificateEligibility(session.id, courseId);
+        eligibilityInfo = await getCertificateEligibility(session.id, actualCourseId);
       } catch (err) {
         console.warn("Progress eligibility calc notice:", err);
       }

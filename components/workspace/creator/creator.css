@@ -1,0 +1,2 @@
+/* Creator Workspace inherits the shared AirBharath theme. */
+.creator-workspace :is(h1,h2,h3,dd,p) { overflow-wrap: anywhere; }

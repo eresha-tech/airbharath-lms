@@ -1,0 +1,6 @@
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { getWorkspaceUser } from '@/lib/workspace/eligibility/service';
+export const dynamic='force-dynamic';
+export const metadata={title:'Workspace Billing & Support — AirBharath',robots:{index:false,follow:false}};
+export default async function BillingSupport(){if(!await getWorkspaceUser())redirect('/login?callbackUrl=%2Fworkspace%2Fmember%2Fbilling');return <div className="ph-no-capture mx-auto max-w-3xl space-y-6 py-2"><Link href="/workspace/member" className="underline">← Membership</Link><h1 className="font-outfit text-3xl">Billing &amp; Support</h1><p>Review your original payment amounts, payment status and refund request deadline.</p><p>The 72-hour refund request window starts at the actual verified payment time, even when your paid term starts at the November launch. Review your deadline promptly.</p><Link href="/workspace/refunds" className="inline-block min-h-11 rounded-xl bg-primary px-5 py-3 text-primary-foreground">Payments and refund requests</Link><p><Link href="/workspace/refund-policy" className="underline">Read the Refund Policy</Link> · <a href="mailto:academy@airbharath.in" className="underline">Contact support</a></p></div>}
