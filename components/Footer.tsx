@@ -12,7 +12,7 @@ export function Footer() {
     <div className="public-footer-grid">
       <div className="public-footer-brand">
     <PublicBrand />
-    <p className="public-footer-description">Practical learning for your next step.<br />Aviation expertise for the next generation.</p>
+    <p className="public-footer-description">Professional Aviation Learning<br />Practical skills for learners. Private course preparation for aviation creators.</p>
     <address>Eresha Technology Innovators Pvt. Ltd.<br />West Patel Nagar, New Delhi 110008, India<br />
     <a href="mailto:academy@airbharath.in">academy@airbharath.in</a>
     </address>

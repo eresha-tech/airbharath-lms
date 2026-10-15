@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Phone,
@@ -24,31 +24,31 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { track, identifyUser } from '@/lib/analytics';
+import { safeCallbackPath } from '@/lib/auth-navigation';
+import { getClientUser, setClientUser } from '@/lib/user-session-client';
+import { completeLoginNavigation } from './actions';
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const rawCallbackUrl =
     searchParams.get('callbackUrl') ||
     searchParams.get('returnTo') ||
     searchParams.get('redirect');
 
-  // Sanitize callback URL (must be internal relative path to prevent open redirect vulnerabilities)
-  const sanitizeCallbackUrl = (url: string | null): string | null => {
-    if (!url) return null;
-    const trimmed = url.trim();
-    // Must start with single '/' and not '//' or '/\' or contain '\'
-    if (!trimmed.startsWith('/') || trimmed.startsWith('//') || trimmed.startsWith('/\\') || trimmed.includes('\\')) {
-      return null;
+  const callbackUrl = safeCallbackPath(rawCallbackUrl);
+  const inFlight = useRef(false);
+  const [navigating, setNavigating] = useState(false);
+  const [navigationError, setNavigationError] = useState('');
+  const navigate = useCallback(async () => {
+    setNavigating(true); setNavigationError('');
+    try {
+      const result = await completeLoginNavigation(callbackUrl);
+      if (result?.error) throw new Error(result.error);
+    } catch {
+      setCheckingAuth(false); setNavigating(false);
+      setNavigationError('Your sign-in is saved, but we could not open your destination. Please try again.');
     }
-    // Reject explicit protocol schemes (e.g. /http: or /javascript:)
-    if (/^\/[a-z0-9+.-]+:/i.test(trimmed)) {
-      return null;
-    }
-    return trimmed;
-  };
-
-  const callbackUrl = sanitizeCallbackUrl(rawCallbackUrl);
+  }, [callbackUrl]);
 
   const [step, setStep] = useState<'phone' | 'otp' | 'profile'>('phone');
   const [phone, setPhone] = useState('');
@@ -65,24 +65,20 @@ function LoginForm() {
   // Check if user is already authenticated
   useEffect(() => {
     let isMounted = true;
-    fetch('/api/auth/me')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (isMounted && data?.user) {
-          const dest = callbackUrl || (data.user.role === 'admin' ? '/admin' : '/dashboard');
-          router.replace(dest);
-        } else if (isMounted) {
-          setCheckingAuth(false);
-        }
+    getClientUser(true)
+      .then((user) => {
+        if (!isMounted) return;
+        if (user) {
+          if (user.fullName?.trim()) void navigate();
+          else { setStep('profile'); setCheckingAuth(false); }
+        } else setCheckingAuth(false);
       })
-      .catch(() => {
-        if (isMounted) setCheckingAuth(false);
-      });
+      .catch(() => { if (isMounted) setCheckingAuth(false); });
 
     return () => {
       isMounted = false;
     };
-  }, [router, callbackUrl]);
+  }, [navigate]);
 
   // 30s Countdown timer for OTP Resend
   useEffect(() => {
@@ -98,6 +94,7 @@ function LoginForm() {
   // Step 1: Send OTP
   const handleSendOTP = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (inFlight.current || navigating) return;
     const cleanPhone = phone.replace(/\D/g, '');
     if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
       setMessage('Please enter a valid 10-digit Indian mobile number');
@@ -105,6 +102,7 @@ function LoginForm() {
       return;
     }
 
+    inFlight.current = true;
     setLoading(true);
     setMessage('');
     try {
@@ -124,6 +122,7 @@ function LoginForm() {
       setMessage(err.message || 'Failed to send OTP. Please try again.');
       setIsSuccess(false);
     } finally {
+      inFlight.current = false;
       setLoading(false);
     }
   };
@@ -157,6 +156,7 @@ function LoginForm() {
   // Step 2: Verify OTP
   const handleVerifyOTP = async (e?: React.FormEvent, customOtp?: string) => {
     if (e) e.preventDefault();
+    if (inFlight.current || navigating) return;
     const otpToVerify = customOtp || otp;
     if (!otpToVerify || otpToVerify.length < 4) {
       setMessage('Please enter the complete 4-digit OTP code');
@@ -164,6 +164,7 @@ function LoginForm() {
       return;
     }
 
+    inFlight.current = true;
     setLoading(true);
     setMessage('');
     try {
@@ -175,6 +176,7 @@ function LoginForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Verification failed');
 
+      setClientUser(data.user);
       if (data.isNewUser || !data.user?.fullName) {
         setStep('profile');
         setMessage('Mobile verified! Please tell us your name to set up your learning profile.');
@@ -190,16 +192,13 @@ function LoginForm() {
         }
         setIsSuccess(true);
         setMessage('Login successful! Redirecting to your destination...');
-        const dest = callbackUrl || (data.user?.role === 'admin' ? '/admin' : '/dashboard');
-        setTimeout(() => {
-          router.push(dest);
-          router.refresh();
-        }, 400);
+        await navigate();
       }
     } catch (err: any) {
       setMessage(err.message || 'Invalid or expired OTP');
       setIsSuccess(false);
     } finally {
+      inFlight.current = false;
       setLoading(false);
     }
   };
@@ -207,6 +206,7 @@ function LoginForm() {
   // Step 3: Complete Profile
   const handleCompleteProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (inFlight.current || navigating) return;
     if (!fullName.trim()) {
       setMessage('Please enter your full name');
       setIsSuccess(false);
@@ -218,6 +218,7 @@ function LoginForm() {
       return;
     }
 
+    inFlight.current = true;
     setLoading(true);
     setMessage('');
     try {
@@ -240,25 +241,24 @@ function LoginForm() {
 
       setIsSuccess(true);
       setMessage('Profile setup complete! Redirecting to your dashboard...');
-      const dest = callbackUrl || (data.user?.role === 'admin' ? '/admin' : '/dashboard');
-      setTimeout(() => {
-        router.push(dest);
-        router.refresh();
-      }, 400);
+      setClientUser(data.user);
+      await navigate();
     } catch (err: any) {
       setMessage(err.message || 'Failed to update profile');
       setIsSuccess(false);
     } finally {
+      inFlight.current = false;
       setLoading(false);
     }
   };
 
-  if (checkingAuth) {
+  if (checkingAuth || navigating || navigationError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-xs font-semibold text-muted-foreground">Checking authentication...</p>
+          {!navigationError && <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden />}
+          <p role={navigationError ? 'alert' : 'status'} className="max-w-sm px-5 text-center text-sm text-muted-foreground">{navigationError || (navigating ? 'Opening your destination…' : 'Checking authentication…')}</p>
+          {navigationError && <Button onClick={() => void navigate()}>Try opening your destination again</Button>}
         </div>
       </div>
     );
@@ -297,10 +297,7 @@ function LoginForm() {
               />
               <div>
                 <span className="text-xl font-bold font-outfit tracking-tight text-white dark:text-foreground block">
-                  AirBharath <span className="text-primary font-semibold text-lg">LMS</span>
-                </span>
-                <span className="text-[10px] text-accent-light uppercase tracking-widest font-extrabold">
-                  Aviation &amp; Technical Learning
+                  AirBharath
                 </span>
               </div>
             </div>
@@ -309,7 +306,7 @@ function LoginForm() {
             <div className="relative z-10 my-8 space-y-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 border border-primary/25 text-accent-light text-xs font-bold uppercase tracking-wider backdrop-blur-md">
                 <Sparkles className="w-3.5 h-3.5 text-primary" />
-                <span>Future-Ready Skill Upgrades</span>
+                <span>Professional Aviation Learning</span>
               </div>
 
               <div className="space-y-2.5">

@@ -69,7 +69,7 @@ it('distinguishes catalog-unavailable from genuine-empty results, without fictio
 it('keeps hero course-first with linked published courses and the approved secondary destination', () => {
     const result = html(React.createElement(HeroBanner, { featured: course }));
     expect(result.indexOf('Explore Courses')).toBeLessThan(result.indexOf('Become a Creator'));
-    expect(result).toContain('href="/workspace"');
+    expect(result).toContain('href="/workspace/apply"');
     expect(result).toContain('href="/courses"');
     expect(result).not.toMatch(/₹|aria-hidden="true"[^>]*>.*Explore Program/);
     expect(readFileSync('components/landing/HeroBanner.tsx', 'utf8')).not.toMatch(/setInterval|useEffect|HERO_SLIDES/);

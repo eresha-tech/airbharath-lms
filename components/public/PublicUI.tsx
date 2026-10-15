@@ -4,8 +4,7 @@ import { ArrowUpRight } from 'lucide-react';
 export function PublicBrand() {
     return <Link href="/" className="public-brand" aria-label="AirBharath homepage">
     <Image src="https://assets.airbharath.in/eresha-logo.webp" alt="" width={40} height={32} sizes="40px"/>
-    <span>AirBharath<span className="public-brand-caption">LEARN · CREATE</span>
-    </span>
+    <span>AirBharath</span>
     </Link>;
 }
 export function PublicAction({ href, children, secondary = false }: {

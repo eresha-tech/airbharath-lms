@@ -1,6 +1,7 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { expect, it, vi } from 'vitest';
+vi.mock('@/app/(user)/workspace/apply/actions', () => ({ continueAfterEligibility: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }) }));
 vi.mock('next/link', () => ({ default: ({ children, ...props }: React.PropsWithChildren<{ href: string; className?: string }>) => React.createElement('a', props, children) }));
 vi.mock('@/lib/workspace/eligibility/analytics', () => ({ trackEligibilityStarted: vi.fn() }));
