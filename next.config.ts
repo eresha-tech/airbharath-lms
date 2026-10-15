@@ -3,6 +3,15 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
+  outputFileTracingExcludes: {
+    "/*": [
+      "./{tests,scripts,drizzle,supabase,docs,output}/**/*",
+      "./{.agents,.claude,.codex,.aws,.vscode,.postgres_data}/**/*",
+      "./.env*",
+      "./.postgres_log",
+      "./*.md",
+    ],
+  },
   images: {
     // Serve modern AVIF & WebP formats for ~50% size reduction
     formats: ["image/avif", "image/webp"],
