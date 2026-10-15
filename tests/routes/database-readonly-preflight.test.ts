@@ -45,9 +45,9 @@ function catalog(count=7) {
 }
 function harness(count=7) {
   const data: Record<string, unknown[] | Error> = { ...catalog(count),
-    identity:[{database:'airbharath_lms',oid:'98765',role:'inspection_readonly',authenticated_role:'inspection_readonly',version:'16.15',server_address:'192.0.2.1',port:5432,search_path:'pg_catalog',read_only:'on',statement_timeout_ms:5000,lock_timeout_ms:1000,idle_transaction_timeout_ms:5000}],
+    identity:[{database:'airbharath_lms',oid:'98765',role:'inspection_readonly',authenticated_role:'inspection_readonly',version:'16.15',server_address:'192.0.2.1',port:5432,search_path:'pg_catalog',read_only:'on',no_temp_namespace:true,statement_timeout_ms:5000,lock_timeout_ms:1000,idle_transaction_timeout_ms:5000}],
     tls:[{ssl:true,version:'TLSv1.3',cipher:'TLS_AES_256_GCM_SHA384',bits:256}],
-    roles:[{ elevated:false,owns_objects:false,owns_routines:false,schema_create:false,table_write:false,sequence_write:false,database_create:false,temporary_objects:false,migration_role_accessible:false,migration_role_exists:true }],
+    roles:[{ elevated:false,owns_objects:false,owns_routines:false,schema_create:false,table_write:false,sequence_write:false,database_create:false,temporary_objects:false,public_temp:false,nonpublic_temp:false,migration_role_accessible:false,migration_role_exists:true }],
     ledgerPresence:[{present:true}],populated:[{populated:true}],ledger:ledger(count),
     terms:[{ready:true}],pricing:[{ready:true}],emailPrerequisite:[{ready:true}],capacity:[{name:'max_connections',setting:'100'}],activity:[{state:'active',connections:1}],serverIdentifier:new Error('permission denied synthetic') };
   const unsafe = vi.fn(async (statement:string) => {
@@ -104,6 +104,7 @@ it('collects only fixed SELECT metadata inside a read-only transaction and close
   expect(h.client.begin).toHaveBeenCalledWith('isolation level repeatable read read only',expect.any(Function)); expect(h.client.end).toHaveBeenCalledWith({timeout:2});
   expect(report.ledger.pending).toHaveLength(25); expect(report.ledgerEvidence.rows).toEqual(ledger()); expect(report.migrationAuthorized).toBe(false); expect(report.requiredGates).toContain('founder_led_local_phase18_e2e_explicit_UAT_acceptance');
   expect(report.compatibility.state).toBe('STRUCTURAL_MATCH_REVIEW_REQUIRED'); expect(report.prerequisites['0019']).toBe('UNKNOWN_UNTIL_EARLIER_PENDING_MIGRATIONS_REHEARSED');
+  expect(report.publicTempExceptionAccepted).toBe(false);
   expect(report.limitations).toContain('serverIdentifier:unavailable');
   for(const [query] of h.unsafe.mock.calls) expect(query.trim()).toMatch(/^(select|with)\b/i);
 });
@@ -173,4 +174,58 @@ it('refuses altered SQL, journal metadata and snapshots after the reviewed 0031 
       expect(()=>loadReviewedSource(root)).toThrow('preflight_source_unreviewed');writeFileSync(join(root,path),original);
     }
   } finally {rmSync(root,{recursive:true});}
+});
+
+// Mocks verify the collector gate; isolated PostgreSQL tests verify ACL semantics.
+it('accepts proven PUBLIC-only TEMP without pretending it was revoked or permitting temp objects',async()=>{
+  const h=harness(); h.data.roles=[{...(h.data.roles as Record<string,boolean>[])[0],temporary_objects:true,public_temp:true,nonpublic_temp:false}];
+  const result=await h.run();
+  expect(result.roles.temporary_objects).toBe(true);
+  expect(result.publicTempExceptionAccepted).toBe(true);
+  expect(result.limitations).toContain('public_temp_present_unused_by_inspector');
+  expect(result.migrationAuthorized).toBe(false);
+  expect(h.client.begin).toHaveBeenCalledWith('isolation level repeatable read read only',expect.any(Function));
+  expect(h.client.end).toHaveBeenCalledWith({timeout:2});
+  for(const [query] of h.unsafe.mock.calls) expect(Object.values(queries)).toContain(query);
+});
+it.each([
+  {temporary_objects:true,public_temp:false,nonpublic_temp:true},
+  {temporary_objects:true,public_temp:true,nonpublic_temp:true},
+  {temporary_objects:true,public_temp:false,nonpublic_temp:false},
+  {temporary_objects:false,public_temp:true,nonpublic_temp:false},
+  {temporary_objects:true,public_temp:undefined,nonpublic_temp:false},
+  {temporary_objects:true,public_temp:true,nonpublic_temp:undefined},
+  {temporary_objects:undefined,public_temp:false,nonpublic_temp:false},
+  {temporary_objects:null,public_temp:false,nonpublic_temp:false},
+  {temporary_objects:true,public_temp:null,nonpublic_temp:false},
+  {temporary_objects:true,public_temp:true,nonpublic_temp:null},
+  {temporary_objects:true,public_temp:'true',nonpublic_temp:false},
+])('refuses extra/unknown/contradictory TEMP evidence before ledger reads: %j',async patch=>{
+  const h=harness();h.data.roles=[{...(h.data.roles as Record<string,boolean>[])[0],...patch}];
+  await expect(h.run()).rejects.toThrow('preflight_readonly_role_required');
+  expect(h.unsafe.mock.calls.map(c=>c[0])).not.toContain(queries.ledger);
+  expect(h.client.end).toHaveBeenCalledWith({timeout:2});
+});
+it.each([false,null,undefined])('refuses PUBLIC TEMP if fresh temp namespace proof is %s',async value=>{
+  const h=harness();h.data.roles=[{...(h.data.roles as Record<string,boolean>[])[0],temporary_objects:true,public_temp:true,nonpublic_temp:false}];
+  h.data.identity=[{...(h.data.identity as Record<string,unknown>[])[0],no_temp_namespace:value}];
+  await expect(h.run()).rejects.toThrow('preflight_readonly_role_required');
+  expect(h.unsafe.mock.calls.map(c=>c[0])).not.toContain(queries.ledger);
+});
+it.each([false,null,undefined])('refuses temporary namespaces even without effective TEMP when proof is %s',async value=>{
+  const h=harness();
+  h.data.identity=[{...(h.data.identity as Record<string,unknown>[])[0],no_temp_namespace:value}];
+  await expect(h.run()).rejects.toThrow('preflight_readonly_role_required');
+  expect(h.unsafe.mock.calls.map(c=>c[0])).not.toContain(queries.ledger);
+});
+it.each(['elevated','owns_objects','owns_routines','schema_create','table_write','sequence_write','database_create','migration_role_accessible'])('PUBLIC TEMP never overrides the retained deny check %s',async key=>{
+  const h=harness();h.data.roles=[{...(h.data.roles as Record<string,boolean>[])[0],temporary_objects:true,public_temp:true,nonpublic_temp:false,[key]:true}];
+  await expect(h.run()).rejects.toThrow('preflight_readonly_role_required');
+  expect(h.unsafe.mock.calls.map(c=>c[0])).not.toContain(queries.ledger);
+});
+it('PUBLIC TEMP never overrides actual READ ONLY verification',async()=>{
+  const h=harness();h.data.roles=[{...(h.data.roles as Record<string,boolean>[])[0],temporary_objects:true,public_temp:true,nonpublic_temp:false}];
+  h.data.identity=[{...(h.data.identity as Record<string,unknown>[])[0],read_only:'off'}];
+  await expect(h.run()).rejects.toThrow('preflight_identity_mismatch');
+  expect(h.unsafe.mock.calls.map(c=>c[0])).not.toContain(queries.ledger);
 });

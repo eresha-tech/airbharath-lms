@@ -175,7 +175,14 @@ export async function inspectDatabase({ env, connect, source = loadReviewedSourc
         || identity.read_only!=='on' || (configuration.target.expectedOid && identity.oid!==configuration.target.expectedOid)) fail('preflight_identity_mismatch');
       if (identity.search_path!=='pg_catalog' || identity.statement_timeout_ms!==5000 || identity.lock_timeout_ms!==1000 || identity.idle_transaction_timeout_ms!==5000) fail('preflight_limits_unverified');
       if (!tls?.ssl || !['TLSv1.2','TLSv1.3'].includes(tls.version)) fail('preflight_tls_unverified');
-      if (!roles || ['elevated','owns_objects','owns_routines','schema_create','table_write','sequence_write','database_create','migration_role_accessible','temporary_objects'].some(key=>roles[key]!==false)) fail('preflight_readonly_role_required');
+      // PUBLIC-only TEMP is an explicit inspection exception, not an absent privilege.
+      // Unknown/contradictory ACL provenance or any role-specific TEMP grant still refuses.
+      const tempEvidenceValid = typeof roles?.temporary_objects==='boolean'
+        && typeof roles?.public_temp==='boolean' && roles?.nonpublic_temp===false
+        && roles.temporary_objects===roles.public_temp;
+      if (!roles || ['elevated','owns_objects','owns_routines','schema_create','table_write','sequence_write','database_create','migration_role_accessible'].some(key=>roles[key]!==false)
+        || !tempEvidenceValid || identity.no_temp_namespace!==true) fail('preflight_readonly_role_required');
+      if (roles.temporary_objects) limitations.push('public_temp_present_unused_by_inspector');
       const catalog = {};
       for (const name of ['schemas','objects','columns','constraints','indexes','functions','triggers','enums']) catalog[name] = await read(name);
       const presence = (await read('ledgerPresence'))?.[0]?.present;
@@ -196,6 +203,7 @@ export async function inspectDatabase({ env, connect, source = loadReviewedSourc
       if (!roles.migration_role_exists) limitations.push('migration_role_not_confirmed');
       if (expired) fail('preflight_deadline_exceeded');
       return safeMetadata({ decision: 'BLOCKED_PENDING_REHEARSAL_AND_OWNER_LOCAL_UAT', migrationAuthorized: false,
+        publicTempExceptionAccepted: roles.temporary_objects,
         expectedTarget: configuration.target, identity, tls: { ...tls, clientVerification:'verify-full' }, roles, ledger, ledgerEvidence:{present:presence ?? null,populatedSchema:populated,rows}, catalog, compatibility, prerequisites,
         capacity, activity, serverIdentifier, limitations, sourceManifestSha256:pinnedManifest,
         requiredGates:['separately_authorized_production_inspection','complete_catalog_and_definition_review','neon_direct_pooled_tls_and_capacity_proof','isolated_neon_branch_restore_and_pending_chain_rehearsal','founder_led_local_phase18_e2e_explicit_UAT_acceptance','separate_production_migration_and_deployment_authorizations'],

@@ -4,11 +4,18 @@ export const queries = Object.freeze({
     current_user as role, session_user as authenticated_role, current_setting('server_version') as version,
     pg_catalog.host(pg_catalog.inet_server_addr()) as server_address, pg_catalog.inet_server_port() as port,
     current_setting('search_path') as search_path, current_setting('transaction_read_only') as read_only, pg_catalog.pg_is_in_recovery() as recovery,
+    pg_catalog.pg_my_temp_schema() = 0 as no_temp_namespace,
     (select setting::int from pg_catalog.pg_settings where name='statement_timeout') as statement_timeout_ms,
     (select setting::int from pg_catalog.pg_settings where name='lock_timeout') as lock_timeout_ms,
     (select setting::int from pg_catalog.pg_settings where name='idle_in_transaction_session_timeout') as idle_transaction_timeout_ms`,
   tls: `select ssl,version,cipher,bits from pg_catalog.pg_stat_ssl where pid=pg_catalog.pg_backend_pid()`,
-  roles: `with accessible as (select * from pg_catalog.pg_roles where rolname=current_user or pg_catalog.pg_has_role(current_user,oid,'MEMBER'))
+  roles: `with accessible as (select * from pg_catalog.pg_roles where rolname=current_user or pg_catalog.pg_has_role(current_user,oid,'MEMBER')),
+    database_acl as (
+      select acl.grantee, acl.privilege_type
+      from pg_catalog.pg_database d
+      cross join lateral pg_catalog.aclexplode(coalesce(d.datacl, pg_catalog.acldefault('d',d.datdba))) acl
+      where d.datname=current_database()
+    )
     select (select bool_or(rolsuper or rolcreatedb or rolcreaterole or rolreplication or rolbypassrls) from accessible) as elevated,
     exists(select 1 from accessible r join pg_catalog.pg_class c on c.relowner=r.oid join pg_catalog.pg_namespace n on n.oid=c.relnamespace where n.nspname !~ '^pg_' and n.nspname<>'information_schema') as owns_objects,
     exists(select 1 from accessible r join pg_catalog.pg_proc p on p.proowner=r.oid join pg_catalog.pg_namespace n on n.oid=p.pronamespace where n.nspname !~ '^pg_' and n.nspname<>'information_schema') as owns_routines,
@@ -17,6 +24,8 @@ export const queries = Object.freeze({
     exists(select 1 from accessible r cross join pg_catalog.pg_class c join pg_catalog.pg_namespace n on n.oid=c.relnamespace where n.nspname !~ '^pg_' and n.nspname<>'information_schema' and c.relkind='S' and pg_catalog.has_sequence_privilege(r.oid,c.oid,'USAGE,UPDATE')) as sequence_write,
     exists(select 1 from accessible r where pg_catalog.has_database_privilege(r.oid,current_database(),'CREATE')) as database_create,
     pg_catalog.has_database_privilege(current_user,current_database(),'TEMP') as temporary_objects,
+    exists(select 1 from database_acl where grantee=0 and privilege_type='TEMPORARY') as public_temp,
+    exists(select 1 from database_acl acl join accessible r on r.oid=acl.grantee where acl.privilege_type='TEMPORARY') as nonpublic_temp,
     exists(select 1 from pg_catalog.pg_roles where rolname=$1) as migration_role_exists,
     exists(select 1 from accessible where rolname=$1) as migration_role_accessible`,
   schemas: `select nspname as name,pg_catalog.pg_get_userbyid(nspowner) as owner from pg_catalog.pg_namespace where nspname !~ '^pg_' and nspname<>'information_schema' order by 1 limit 101`,
