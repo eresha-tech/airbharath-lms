@@ -12,14 +12,16 @@ it('adds exactly the Phase 1.3 tables and enum without changing existing table s
   expect(Object.keys(after.enums).filter(name => !before.enums[name])).toEqual(['public.workspace_eligibility_result']);
   const journal = JSON.parse(read('meta/_journal.json')); expect(journal.entries[9].tag).toBe('0009_normal_baron_zemo'); expect(journal.entries[8].tag).toBe('0008_eager_energizer');
 });
-it('SQL contains immutable-history triggers, unique current pointers and exact approved static defaults', () => {
+it('SQL contains immutable-history triggers, unique current pointers and the original approved migration defaults', () => {
   const sql = read('0009_normal_baron_zemo.sql');
   expect(sql).not.toMatch(/DROP TABLE|TRUNCATE|DELETE FROM|UPDATE "(?:users|workspace_applications)"/i);
   expect(sql.match(/CREATE TABLE/g)).toHaveLength(4);
   expect(sql).toContain('workspace_eligibility_attempts_user_key_idx');
   expect(sql).toContain('workspace_eligibility_settings_current_idx'); expect(sql).toContain('workspace_policy_versions_current_idx');
   for (const name of ['workspace_eligibility_attempts', 'workspace_audit_events', 'workspace_eligibility_settings', 'workspace_policy_versions']) expect(sql).toContain(`BEFORE UPDATE OR DELETE ON ${name}`);
-  for (const value of [DEFAULT_SETTINGS, DECLARATIONS]) expect(sql).toContain(createHash('sha256').update(JSON.stringify(value)).digest('hex'));
+  // Migration 0009 is immutable; current defaults change through audited settings publication.
+  const originalSettings = { ...DEFAULT_SETTINGS, minimumExperienceMonths: 24, eligibilityValidityDays: 30 };
+  for (const value of [originalSettings, DECLARATIONS]) expect(sql).toContain(createHash('sha256').update(JSON.stringify(value)).digest('hex'));
   expect(sql).toContain('2026-11-08T18:30:00.000Z'); expect(sql).toContain('Asia/Kolkata');
   expect(sql).toContain("to_jsonb(NEW) - 'is_current'"); expect(sql).toContain('IS NOT NULL');
 });

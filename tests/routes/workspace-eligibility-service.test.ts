@@ -33,7 +33,7 @@ beforeEach(() => {
         },
         update: () => ({ set: (patch: object) => ({ where: async () => { Object.assign(versions.find(v => v.isCurrent)!, patch); } }) }),
         insert: (table: unknown) => ({ values: (values: Record<string, unknown>) => {
-          const row = { id: `generated-${saved.length + versions.length + audits.length}`, ...(table === attempts || table === settings ? {} : { action: 'eligibility_settings_published' }), ...values };
+          const row = { id: `00000000-0000-4000-8000-${String(saved.length + versions.length + audits.length).padStart(12, '0')}`, ...(table === attempts || table === settings ? {} : { action: 'eligibility_settings_published' }), ...values };
           if (table === attempts) saved.push(row); else if (table === settings) versions.push(row as unknown as typeof setting); else audits.push(row);
           return { returning: async () => [row] };
         } }),
@@ -91,6 +91,21 @@ describe('eligibility persistence boundary', () => {
   });
 });
 describe('settings version publication', () => {
+  it('publishes 12 months / 24 elapsed hours prospectively without rewriting existing approvals', async () => {
+    const old = await submitEligibility(userId, normalized(), () => now);
+    const oldDeadline = old.attempt.eligibleUntil;
+    const config = { ...setting.config, minimumExperienceMonths: 12, eligibilityValidityDays: 1 };
+    const published = await publishSettings(userId, { expectedSettingsId: setting.id, requestKey: key, config }, () => now);
+    expect(old.attempt.eligibleUntil).toEqual(oldDeadline);
+    expect(new Date(String(oldDeadline)).getTime() - now.getTime()).toBe(30 * 86400000);
+    const fresh = normalized({ ...input, settingsId: published!.id, submissionKey: '55555555-5555-4555-8555-555555555555', experienceOption: 'one_year' });
+    const renewalTime = new Date(String(oldDeadline));
+    const renewal = await submitEligibility(userId, fresh, () => renewalTime);
+    expect(renewal.attempt).toMatchObject({ result: 'eligible', experienceMonths: 12, settingsId: published!.id });
+    expect(new Date(String(renewal.attempt.eligibleUntil)).getTime() - renewalTime.getTime()).toBe(86400000);
+    expect(versions[0].config).toEqual(setting.config); expect(audits).toHaveLength(1);
+  });
+
   it('concurrent publication from one version yields one successor, one current and one audit', async () => {
     const a = { expectedSettingsId: setting.id, requestKey: key, config: { ...setting.config, cooldownDays: 8 } };
     const b = { ...a, requestKey: '55555555-5555-4555-8555-555555555555' };

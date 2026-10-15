@@ -5,6 +5,21 @@ import { financialHarness, callbackSecret, financeNow } from './workspace-paymen
 const signature = (orderId: string, paymentId: string) => createHmac('sha256', callbackSecret).update(`${orderId}|${paymentId}`).digest('hex');
 
 describe('accepted orders and conservative coupon holds (transactional adapter, not real PostgreSQL)', () => {
+  it('denies a fresh order exactly at 24 hours and accepts renewed eligibility without provider HTTP', async () => {
+    const h = financialHarness(); h.eligibleUntil.value = new Date(financeNow.getTime() + 86400000);
+    const i = await h.input(undefined, false);
+    h.now.value = new Date(h.eligibleUntil.value.getTime() - 1);
+    const quote = await h.store.transaction({ userId: i.userId }, tx => tx.readQuote(i.userId, { planCode: i.request.planCode, planVersionId: i.request.planVersionId }, () => h.now.value));
+    expect(quote.quote.expiresAt).toBe(h.eligibleUntil.value.toISOString());
+    h.now.value = h.eligibleUntil.value;
+    await expect(h.service.acceptOrder(i.userId, i.request)).rejects.toMatchObject({ code: 'eligibility_required' });
+    expect(h.state.orders).toHaveLength(0);
+    h.eligibleUntil.value = new Date(h.now.value.getTime() + 86400000);
+    const renewed = await h.input(i.userId, false);
+    expect((await h.service.acceptOrder(renewed.userId, renewed.request)).eligibilityValidUntil).toEqual(h.eligibleUntil.value);
+    expect(h.provider.createOrder).not.toHaveBeenCalled();
+  });
+
   it('freezes accepted economics/attribution and reserves before provider HTTP', async () => {
     const h = financialHarness(), i = await h.input(); const o = await h.service.acceptOrder(i.userId, i.request);
     expect(o).toMatchObject({ totalPaise: 460082, financialState: 'unpaid', providerRequestCount: 0, commercialPolicyVersion: 'workspace-test-noncommercial-v1', activationState: 'pending_activation' });

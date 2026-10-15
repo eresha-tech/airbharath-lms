@@ -3,10 +3,10 @@ import { CATEGORIES, DEFAULT_SETTINGS, DECLARATIONS, EXPERIENCE_OPTIONS, evaluat
 import { input, now } from './workspace-eligibility-fixtures';
 function valid(value = input) { const result = validateSubmission(value); if (!result.success) throw new Error(JSON.stringify(result.errors)); return result.data; }
 describe('eligibility validation and pure decisions', () => {
-  it('uses normalized minimums and the exact 23/24 month boundary', () => {
+  it('uses normalized minimums and the exact 11/12/13 month boundary', () => {
     for (const [code, , months] of EXPERIENCE_OPTIONS) expect(valid({ ...input, experienceOption: code }).experienceMonths).toBe(months);
-    expect(evaluateEligibility({ ...valid(), experienceMonths: 23 }, DEFAULT_SETTINGS, now).result).toBe('ineligible');
-    expect(evaluateEligibility(valid(), DEFAULT_SETTINGS, now).result).toBe('eligible');
+    expect(evaluateEligibility({ ...valid(), experienceMonths: 11 }, DEFAULT_SETTINGS, now).result).toBe('ineligible');
+    for (const experienceMonths of [12, 13]) expect(evaluateEligibility({ ...valid(), experienceMonths }, DEFAULT_SETTINGS, now).result).toBe('eligible');
   });
   it.each(['eligible', 'experienceMonths', 'userId', 'result'])('rejects forged %s and cannot decide invalid input', field => {
     expect(validateSubmission({ ...input, [field]: true }).success).toBe(false);
@@ -51,15 +51,18 @@ describe('eligibility validation and pure decisions', () => {
   });
   it('stores exact elapsed deadlines; changing settings cannot change prior results', () => {
     const eligible = { id: 'a', ...evaluateEligibility(valid(), DEFAULT_SETTINGS, now) };
-    const failed = { id: 'b', ...evaluateEligibility({ ...valid(), experienceMonths: 12 }, DEFAULT_SETTINGS, now) };
-    expect(eligible.eligibleUntil!.getTime() - now.getTime()).toBe(30 * 86400000);
+    const failed = { id: 'b', ...evaluateEligibility({ ...valid(), experienceMonths: 11 }, DEFAULT_SETTINGS, now) };
+    expect(eligible.eligibleUntil!.getTime() - now.getTime()).toBe(86400000);
     expect(failed.reapplyAt!.getTime() - now.getTime()).toBe(7 * 86400000);
     expect(resolveJourney(true, eligible, new Date(eligible.eligibleUntil!.getTime() - 1)).state).toBe('eligibility_active');
     expect(resolveJourney(true, eligible, eligible.eligibleUntil!).state).toBe('eligibility_expired');
     expect(resolveJourney(true, failed, new Date(failed.reapplyAt!.getTime() - 1)).state).toBe('ineligible_cooldown');
     expect(resolveJourney(true, failed, failed.reapplyAt!).state).toBe('eligibility_available');
-    evaluateEligibility(valid(), { ...DEFAULT_SETTINGS, eligibilityValidityDays: 1 }, now);
-    expect(eligible.eligibleUntil!.getTime() - now.getTime()).toBe(30 * 86400000);
+    const historical = { id: 'old', ...evaluateEligibility(valid(), { ...DEFAULT_SETTINGS, minimumExperienceMonths: 24, eligibilityValidityDays: 30 }, now) };
+    evaluateEligibility(valid(), DEFAULT_SETTINGS, now);
+    expect(historical.eligibleUntil!.getTime() - now.getTime()).toBe(30 * 86400000);
+    expect(resolveJourney(true, historical, new Date(now.getTime() + 86400000)).state).toBe('eligibility_active');
+    expect(eligible.eligibleUntil!.getTime() - now.getTime()).toBe(86400000);
     expect(resolveJourney(false, eligible, now).state).toBe('authentication_required');
     expect(resolveJourney(true, null, now).state).toBe('eligibility_required');
     expect(resolveJourney(true, eligible, now)).toMatchObject({ hasCreatorAccess: false, hasPaidEntitlement: false, destination: '/workspace/activate' });

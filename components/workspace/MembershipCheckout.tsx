@@ -5,14 +5,15 @@ import { useRouter } from 'next/navigation';
 import type { MembershipQuote } from '@/lib/workspace/membership/service';
 import { formatPaise } from '@/lib/workspace/membership/model';
 import { waitForWorkspaceActivation } from '@/lib/workspace/payments/activation-watch';
+import { isCouponRejection } from '@/lib/workspace/membership/preview';
 
 type Receipt = { id: string; totalPaise: number; currency: string; financialState: string; activationState: string };
-type Reply = { order?: Receipt; checkout?: { keyId: string; providerOrderId: string }; error?: string };
+type Reply = { order?: Receipt; checkout?: { keyId: string; providerOrderId: string }; error?: string; code?: string };
 type Callback = { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string };
 type Checkout = { open(): void; on(event: 'payment.failed', handler: () => void): void };
 type RazorpayConstructor = new (options: { key: string; order_id: string; amount: number; currency: string; name: string; description: string; handler: (result: Callback) => void; modal: { ondismiss(): void } }) => Checkout;
 
-export function MembershipCheckout({ keyId, userId, quote, disabled }: { keyId: string; userId: string; quote: MembershipQuote | null; disabled: boolean }) {
+export function MembershipCheckout({ keyId, userId, quote, disabled, onQuoteRejected }: { keyId: string; userId: string; quote: MembershipQuote | null; disabled: boolean; onQuoteRejected?: () => void }) {
   const router = useRouter(), inFlight = useRef(false);
   const [ready, setReady] = useState(false), [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [checking, setChecking] = useState(false);
   const [awaitingActivation, setAwaitingActivation] = useState(false);
@@ -22,7 +23,15 @@ export function MembershipCheckout({ keyId, userId, quote, disabled }: { keyId: 
   async function json(path: string, body?: unknown): Promise<Reply> {
     const response = await fetch(path, { method: body ? 'POST' : 'GET', headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined, cache: 'no-store', signal: AbortSignal.timeout(20_000) });
     const data: Reply = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Payment processing is unavailable. Recover this request before starting another payment.');
+    if (!response.ok) {
+      // These acceptance rejections happen before an order exists. Uncertain failures
+      // and accepted-order recovery retain their original idempotency data.
+      if (path === '/api/workspace/membership/orders' && (data.code === 'quote_changed' || isCouponRejection(data.code))) {
+        sessionStorage.removeItem(storageKey);
+        onQuoteRejected?.();
+      }
+      throw new Error(data.error || 'Payment processing is unavailable. Recover this request before starting another payment.');
+    }
     return data;
   }
   const checkAccess = useCallback(async (confirmedPayment = false) => {

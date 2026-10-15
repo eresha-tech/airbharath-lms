@@ -43,8 +43,8 @@ export type SettingsConfig = {
   eligibilityValidityDays: number; cooldownDays: number; launchAt: string; timezone: typeof BUSINESS_TIMEZONE;
 };
 export const DEFAULT_SETTINGS: SettingsConfig = {
-  minimumExperienceMonths: 24, allowedCategories: CATEGORIES.map(([code]) => code), profileRequired: true,
-  eligibilityValidityDays: 30, cooldownDays: 7, launchAt: '2026-11-08T18:30:00.000Z', timezone: BUSINESS_TIMEZONE,
+  minimumExperienceMonths: 12, allowedCategories: CATEGORIES.map(([code]) => code), profileRequired: true,
+  eligibilityValidityDays: 1, cooldownDays: 7, launchAt: '2026-11-08T18:30:00.000Z', timezone: BUSINESS_TIMEZONE,
 };
 export const UUID = /^[a-f\d]{8}-[a-f\d]{4}-4[a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i;
 export const REASONS = ['insufficient_experience', 'category_not_onboarding', 'teaching_category_not_onboarding'] as const;
