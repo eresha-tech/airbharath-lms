@@ -83,6 +83,26 @@ it('refuses pooled/mismatched endpoints rather than rewriting hosts or stripping
 it('uses explicit encoded identity and certificate-verified bounded options, never ambient PG credentials',()=>{
   const c=preflightConfiguration({...environment(),PREFLIGHT_DATABASE_URL:environment().PREFLIGHT_DATABASE_URL.replace('synthetic-only','synthetic%3A%405433')});
   expect(c.options.password()).toBe('synthetic:@5433'); expect(c.options).toMatchObject({host:[environment().PREFLIGHT_EXPECTED_HOST],port:[5432],ssl:'verify-full',max:1,connect_timeout:5,prepare:false,debug:false,connection:{default_transaction_read_only:true,statement_timeout:5000,lock_timeout:1000}});
+  expect(c.options.target_session_attrs).toBeNull(); expect(c.options.fetch_types).toBe(false);
+});
+it.each(['', 'read-only', 'read-write', 'primary', 'standby', 'prefer-standby', 'malicious-synthetic'])('refuses ambient session selection before constructing a driver: %s',async value=>{
+  const h=harness();
+  await expect(h.run({...environment(),PGTARGETSESSIONATTRS:value})).rejects.toThrow('preflight_session_selection_unsupported');
+  expect(h.connect).not.toHaveBeenCalled();
+});
+it('also rejects the actual driver process environment when given a separate manifest',async()=>{
+  vi.stubEnv('PGTARGETSESSIONATTRS','read-write');
+  try { const h=harness();await expect(h.run()).rejects.toThrow('preflight_session_selection_unsupported');expect(h.connect).not.toHaveBeenCalled(); }
+  finally {vi.unstubAllEnvs();}
+});
+it('rejects URL session-selection overrides rather than forwarding them',()=>{
+  expect(()=>preflightConfiguration({...environment(),PREFLIGHT_DATABASE_URL:environment().PREFLIGHT_DATABASE_URL+'&target_session_attrs=read-only'})).toThrow('preflight_options_unsupported');
+});
+it.each(['CONNECTION_DESTROYED','ECONNRESET','CONNECT_TIMEOUT','ERR_TLS_CERT_ALTNAME_INVALID'])('retains only allowlisted startup code %s without raw driver details',async code=>{
+  const h=harness();h.client.begin.mockRejectedValueOnce(Object.assign(new Error('private-synthetic-message'),{code,detail:'private-synthetic-detail'}));
+  await expect(h.run()).rejects.toMatchObject({diagnostic:{stage:'transaction_begin',driverCode:code}});
+  expect(h.unsafe).not.toHaveBeenCalled();expect(h.client.end).toHaveBeenCalled();
+  expect(JSON.stringify(preflightFailure({code,message:'private-synthetic-message'},'transaction_begin'))).not.toContain('private-synthetic');
 });
 it.each([1,7,31,32])('reconciles the exact contiguous prefix of %i migrations',count=>{
   const r=reconcileLedger(ledger(count),source,true,true); expect(r.state).toBe('MATCHED_PREFIX'); expect(r.installed).toHaveLength(count); expect(r.pending).toHaveLength(32-count);

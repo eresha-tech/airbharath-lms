@@ -9,6 +9,7 @@ const guardCategories = Object.freeze({
   preflight_target_invalid: 'configuration_rejected',
   preflight_channel_binding_unsupported: 'configuration_rejected',
   preflight_options_unsupported: 'configuration_rejected',
+  preflight_session_selection_unsupported: 'configuration_rejected',
   preflight_verified_tls_required: 'tls_verification_failed',
   preflight_source_unreviewed: 'source_integrity_failure',
   preflight_snapshot_lineage_invalid: 'source_integrity_failure',
@@ -47,5 +48,7 @@ export function safeDiagnostic(error, stage, guardCode = null) {
   else if (connectionCodes.has(driverCode) || connectionSqlstates.has(driverCode)) category = 'connection_failed';
   else if (driverCode === '42501') category = 'insufficient_privileges';
   else if (querySqlstates.has(driverCode)) category = 'query_failed';
-  return { code, category, stage, sqlstate };
+  // Keep only known transport/startup codes, never arbitrary server strings.
+  const startupCode = tlsCodes.has(driverCode) || connectionCodes.has(driverCode) || timeoutCodes.has(driverCode) ? driverCode : null;
+  return { code, category, stage, sqlstate, ...(startupCode ? { driverCode: startupCode } : {}) };
 }

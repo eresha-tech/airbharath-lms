@@ -27,13 +27,13 @@ const clients = new Set();
 let started = false, port, certificate;
 const childEnv = Object.fromEntries(['PATH', 'HOME', 'USER', 'LANG'].filter(k => process.env[k]).map(k => [k, process.env[k]]));
 function command(executable, args) { return execFileSync(executable, args, { env: childEnv, stdio: 'pipe' }); }
-function client(user, database, readOnly = true, sslOverrides = {}, passwordOverride) {
+function client(user, database, readOnly = true, sslOverrides = {}, passwordOverride, sessionSelector = null) {
   const sql = postgres({ host: '127.0.0.1', port, database, user,
     password: () => passwordOverride ?? (user === adminRole ? ownerPassword : auditPassword),
     ssl: { ca: certificate, rejectUnauthorized: true, servername: 'localhost', ...sslOverrides },
-    max: 1, prepare: false, fetch_types: false, debug: false, connect_timeout: 5, idle_timeout: 2,
+    max: 1, prepare: false, fetch_types: false, debug: false, connect_timeout: 5, idle_timeout: 2, target_session_attrs: sessionSelector,
     connection: { application_name: 'airbharath_isolated_preflight_test', search_path: 'pg_catalog',
-      default_transaction_read_only: readOnly, statement_timeout: 5000, lock_timeout: 1000, idle_in_transaction_session_timeout: 5000 }, onnotice() {} });
+      ...(readOnly === null ? {} : { default_transaction_read_only: readOnly }), statement_timeout: 5000, lock_timeout: 1000, idle_in_transaction_session_timeout: 5000 }, onnotice() {} });
   clients.add(sql); return sql;
 }
 function environment(database, user) {
@@ -49,7 +49,8 @@ async function inspect(name, database, { user = auditRole, existing, readWrite =
     assert.deepEqual(options.host, ['ep-synthetic-preflight.us-east-2.aws.neon.tech']);
     assert.equal(options.ssl, 'verify-full'); assert.equal(options.max, 1);
     assert.equal(options.connection.default_transaction_read_only, true);
-    const sql = existing || client(user, database);
+    assert.equal(options.target_session_attrs, null);
+    const sql = existing || client(user, database, true, {}, undefined, options.target_session_attrs);
     return {
       begin: async (mode, callback) => {
         assert.equal(mode, 'isolation level repeatable read read only');
@@ -109,7 +110,15 @@ try {
   for (const database of ['preflight_temp_default', 'preflight_temp_explicit', 'preflight_temp_none']) await admin.unsafe(`CREATE DATABASE ${database}`);
   const [defaultAcl] = await admin`select datacl is null as defaults from pg_catalog.pg_database where datname='preflight_temp_default'`;
   assert.equal(defaultAcl.defaults, true);
+  // No startup override: observe the actual writable server/role default.
+  const writableSession = client(auditRole, 'preflight_temp_default', null);
+  const [serverDefault] = await writableSession`select current_setting('default_transaction_read_only') as read_only`;
+  assert.equal(serverDefault.read_only, 'off');
+  results.checks.push({ name:'isolated server has normal writable transaction default', readOnly:serverDefault.read_only });
   await inspect('default NULL database ACL uses acldefault: PUBLIC-only TEMP accepted', 'preflight_temp_default', { flags: { temporary_objects: true, public_temp: true, nonpublic_temp: false } });
+  // Simulate a server that does not honor the requested startup default. The
+  // production options still request it; explicit BEGIN READ ONLY is independent.
+  await inspect('writable session default still collects only inside explicit READ ONLY', 'preflight_temp_default', {existing:writableSession});
   const db = 'preflight_temp_explicit';
   await admin.unsafe(`REVOKE ALL ON DATABASE ${db} FROM PUBLIC`); await admin.unsafe(`GRANT CONNECT, TEMPORARY ON DATABASE ${db} TO PUBLIC`);
   await inspect('explicit PUBLIC TEMP ACL accepted', db, { flags: { temporary_objects: true, public_temp: true, nonpublic_temp: false } });

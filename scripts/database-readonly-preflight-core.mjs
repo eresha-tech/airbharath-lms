@@ -23,6 +23,9 @@ const bodyHash = value => sha(value.replaceAll('\r\n', '\n').trim());
 export function preflightConfiguration(env) {
   if (env.ALLOW_PRODUCTION_READONLY_PREFLIGHT !== 'true') fail('preflight_owner_authorization_required');
   if (env.DATABASE_ENV !== 'production' || env.PREFLIGHT_CONNECTION_MODE !== 'direct' || env.ALLOW_DATABASE_MIGRATION === 'true') fail('preflight_environment_invalid');
+  // Postgres.js falls back to process.env even when target_session_attrs is null.
+  // Refuse every ambient value (including empty/invalid values), never strip it.
+  if (env.PGTARGETSESSIONATTRS !== undefined || process.env.PGTARGETSESSIONATTRS !== undefined) fail('preflight_session_selection_unsupported');
   for (const key of ['PREFLIGHT_EXPECTED_DATABASE', 'PREFLIGHT_EXPECTED_ROLE', 'PREFLIGHT_MIGRATION_ROLE']) if (!identifier(env[key])) fail('preflight_manifest_required');
   for (const key of ['PREFLIGHT_NEON_PROJECT_ID', 'PREFLIGHT_NEON_BRANCH_ID']) if (!/^[a-z0-9-]{3,100}$/.test(env[key] ?? '')) fail('preflight_manifest_required');
   if (env.PREFLIGHT_EXPECTED_ROLE === env.PREFLIGHT_MIGRATION_ROLE) fail('preflight_role_separation_required');
@@ -47,7 +50,10 @@ export function preflightConfiguration(env) {
   return { target: { host, database, role: user, migrationRole: env.PREFLIGHT_MIGRATION_ROLE, expectedOid: expectedOid ?? null,
     declaredNeonProject: env.PREFLIGHT_NEON_PROJECT_ID, declaredNeonBranch: env.PREFLIGHT_NEON_BRANCH_ID, providerMapping: 'OWNER_ATTESTED_NOT_SQL_VERIFIED' },
     options: { host: [host], port: [5432], database, user, password: () => password, ssl: 'verify-full', sslnegotiation: null,
-      max: 1, prepare: false, debug: false, fetch_types: false, target_session_attrs: 'read-only', connect_timeout: 5, idle_timeout: 2, max_lifetime: 60, onnotice: () => {},
+      // A single exact direct endpoint needs no primary/standby session selection.
+      // That driver feature can reject writable defaults or issue hidden readiness
+      // queries before BEGIN. The transaction below independently enforces READ ONLY.
+      max: 1, prepare: false, debug: false, fetch_types: false, target_session_attrs: null, connect_timeout: 5, idle_timeout: 2, max_lifetime: 60, onnotice: () => {},
       connection: { application_name: 'airbharath_readonly_preflight', search_path: 'pg_catalog', default_transaction_read_only: true, statement_timeout: 5000, lock_timeout: 1000, idle_in_transaction_session_timeout: 5000 } } };
 }
 
