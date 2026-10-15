@@ -455,7 +455,7 @@ Audit evidence commit: `ee5797feaa6b2daf739a1d24546268704c209cfd`. This report i
 
 ## T. Remaining F.6 production-readiness risks
 
-Historical [WORKSPACE_LAUNCH_F6_DATABASE_AUDIT_COMPLETION.md](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/WORKSPACE_LAUNCH_F6_DATABASE_AUDIT_COMPLETION.md) remains unchanged. F6-01 retained-history guard correction passed locally. **F6-02** collation 2.39→2.43 requires approved backup/rebuild/validation; **F6-03** five legacy FK naming differences require compatibility review; **F6-04** shared DB connection parsing/pool/timeouts must be reviewed/corrected before production-sensitive workflows rely on it; **F6-05** query/index/count scaling concerns; **F6-06** retention policy/three REVIEW tables without deletion approval; **F6-07** invoice PDF base64 storage growth. None is waived or silently fixed here.
+Historical [WORKSPACE_LAUNCH_F6_DATABASE_AUDIT_COMPLETION.md](WORKSPACE_LAUNCH_F6_DATABASE_AUDIT_COMPLETION.md) remains unchanged. F6-01 retained-history guard correction passed locally. **F6-02** collation 2.39→2.43 requires approved backup/rebuild/validation; **F6-03** five legacy FK naming differences require compatibility review; **F6-04** shared DB connection parsing/pool/timeouts must be reviewed/corrected before production-sensitive workflows rely on it; **F6-05** query/index/count scaling concerns; **F6-06** retention policy/three REVIEW tables without deletion approval; **F6-07** invoice PDF base64 storage growth. None is waived or silently fixed here.
 
 ## U. Outstanding pre-launch requirements
 

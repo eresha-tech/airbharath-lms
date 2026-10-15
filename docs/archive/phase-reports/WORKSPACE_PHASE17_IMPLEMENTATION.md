@@ -100,7 +100,7 @@ No actual PostgreSQL trigger, two-connection race or authenticated live-browser/
 
 ## S. Files changed
 
-- [WORKSPACE_PHASE17_IMPLEMENTATION.md](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/WORKSPACE_PHASE17_IMPLEMENTATION.md)
+- [WORKSPACE_PHASE17_IMPLEMENTATION.md](WORKSPACE_PHASE17_IMPLEMENTATION.md)
 - [app/(admin)/admin/workspace/course-reviews/[id]/page.tsx](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/app/(admin)/admin/workspace/course-reviews/[id]/page.tsx)
 - [app/(admin)/admin/workspace/course-reviews/page.tsx](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/app/(admin)/admin/workspace/course-reviews/page.tsx)
 - [app/(user)/workspace/(creator)/courses/[id]/page.tsx](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/app/(user)/workspace/(creator)/courses/[id]/page.tsx)

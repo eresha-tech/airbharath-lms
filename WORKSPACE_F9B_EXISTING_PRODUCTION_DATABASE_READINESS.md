@@ -6,7 +6,7 @@
 
 ## 1. Evidence boundary and exact pending migrations
 
-Reused evidence: `WORKSPACE_LAUNCH_F6_DATABASE_AUDIT.md`, its corrective completion report, `WORKSPACE_LAUNCH_F8_INTEGRATION_CORRECTIVE_COMPLETION.md`, and `WORKSPACE_F9A_DATABASE_CONNECTION_SAFETY.md`. F.9A verified the **local** TCP/socket target, OID 16384, system identifier 7680462735222304705 and 31 matching ledger entries through `0030`. These identifiers, catalog counts, privileges and local connection limit are **not production evidence**.
+Reused evidence: `docs/archive/phase-reports/WORKSPACE_LAUNCH_F6_DATABASE_AUDIT.md`, its corrective completion report, `docs/archive/phase-reports/WORKSPACE_LAUNCH_F8_INTEGRATION_CORRECTIVE_COMPLETION.md`, and `WORKSPACE_F9A_DATABASE_CONNECTION_SAFETY.md`. F.9A verified the **local** TCP/socket target, OID 16384, system identifier 7680462735222304705 and 31 matching ledger entries through `0030`. These identifiers, catalog counts, privileges and local connection limit are **not production evidence**.
 
 **Exact production pending set: UNKNOWN.** No authorized production identity/catalog/ledger export exists in the reviewed evidence. Historical source commit `81623e2` contains seven migrations through `0006`, confirmed offline; that is not proof of production application. Do not assume `0007–0030` are pending, or that `0000–0006` are applied.
 

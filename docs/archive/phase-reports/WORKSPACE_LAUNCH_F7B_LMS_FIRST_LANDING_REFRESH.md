@@ -158,7 +158,7 @@ Temporary failures were corrected and rerun: test JSX in `.ts`/actual Admin layo
 
 Implementation: `c1de76a64e882b2439e5b11a66a29fc1f3543b48`. Evidence commit: `0ddf8af97b2cf235b66e5612158c81b0292319a6`. This report is committed separately; final report commit returned to owner. [changed-file-manifest.json](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/output/audits/workspace-f7b/changed-file-manifest.json) lists every changed file. No push/merge/rebase/deployment.
 
-- [WORKSPACE_LAUNCH_F7B_LMS_FIRST_LANDING_REFRESH.md](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/WORKSPACE_LAUNCH_F7B_LMS_FIRST_LANDING_REFRESH.md)
+- [WORKSPACE_LAUNCH_F7B_LMS_FIRST_LANDING_REFRESH.md](WORKSPACE_LAUNCH_F7B_LMS_FIRST_LANDING_REFRESH.md)
 - [app/(user)/layout.tsx](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/app/(user)/layout.tsx)
 - [app/(user)/loading.tsx](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/app/(user)/loading.tsx)
 - [app/(user)/page.tsx](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/app/(user)/page.tsx)

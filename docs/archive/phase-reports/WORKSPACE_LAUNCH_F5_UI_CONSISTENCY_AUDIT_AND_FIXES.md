@@ -247,16 +247,16 @@ The final review used the [Web Interface Guidelines](https://raw.githubuserconte
 
 Installed headless Google Chrome, existing Playwright runtime, isolated source copy on **localhost:4055**, real authorized local PostgreSQL and normal persisted synthetic permissions. The owner's port-3000 app was not changed. No dependency install occurred.
 
-**46 of 46 inventoried routes hydrated successfully; 43 unique browser check groups; 44 viewport combinations; 16 screenshots.** Repeated read-only groups are not counted as additional unique coverage. Route and check details are retained in [sanitized verification summary](output/playwright/workspace-f5/verification-summary.json).
+**46 of 46 inventoried routes hydrated successfully; 43 unique browser check groups; 44 viewport combinations; 16 screenshots.** Repeated read-only groups are not counted as additional unique coverage. Route and check details are retained in [sanitized verification summary](../../../output/playwright/workspace-f5/verification-summary.json).
 
 The normal creator journey saved a profile, created a proposal, submitted it, started Admin review, approved through the normal API, opened/started its private build and persisted a module/text lesson after a failed-save retry. Reload verified saved text. No SQL approval, creator shortcut, publication, media upload or real financial provider was used. The legacy manual flow submitted a normal application, retained a receipt, and saved an Admin review; preview was exercised without sending communication.
 
 Representative screenshots:
 
-- [Creator desktop](output/playwright/workspace-f5/creator-dashboard-desktop.png), [Creator mobile](output/playwright/workspace-f5/creator-dashboard-mobile.png), [dark mobile](output/playwright/workspace-f5/creator-dashboard-dark-mobile.png).
-- [Creator drawer](output/playwright/workspace-f5/creator-mobile-drawer.png), [Admin drawer](output/playwright/workspace-f5/admin-mobile-drawer.png), [320px preview](output/playwright/workspace-f5/approval-preview-320.png).
-- [Activation desktop](output/playwright/workspace-f5/activation-verified-desktop.png), [activation mobile](output/playwright/workspace-f5/activation-verified-mobile.png), [profile](output/playwright/workspace-f5/creator-profile-desktop.png), [private builder](output/playwright/workspace-f5/private-builder-desktop.png).
-- [Application skeleton](output/playwright/workspace-f5/admin-application-loading.png), [manual consent](output/playwright/workspace-f5/manual-consent-mobile.png), [financial report](output/playwright/workspace-f5/admin-financial-report-desktop.png).
+- [Creator desktop](../../../output/playwright/workspace-f5/creator-dashboard-desktop.png), [Creator mobile](../../../output/playwright/workspace-f5/creator-dashboard-mobile.png), [dark mobile](../../../output/playwright/workspace-f5/creator-dashboard-dark-mobile.png).
+- [Creator drawer](../../../output/playwright/workspace-f5/creator-mobile-drawer.png), [Admin drawer](../../../output/playwright/workspace-f5/admin-mobile-drawer.png), [320px preview](../../../output/playwright/workspace-f5/approval-preview-320.png).
+- [Activation desktop](../../../output/playwright/workspace-f5/activation-verified-desktop.png), [activation mobile](../../../output/playwright/workspace-f5/activation-verified-mobile.png), [profile](../../../output/playwright/workspace-f5/creator-profile-desktop.png), [private builder](../../../output/playwright/workspace-f5/private-builder-desktop.png).
+- [Application skeleton](../../../output/playwright/workspace-f5/admin-application-loading.png), [manual consent](../../../output/playwright/workspace-f5/manual-consent-mobile.png), [financial report](../../../output/playwright/workspace-f5/admin-financial-report-desktop.png).
 
 Corrected final runs have **zero page errors, persistent material console errors, provider requests and analytics requests**. The earlier invalid native coupon pattern error is retained as resolved finding F5-15, not hidden as a successful first run. Expected negative HTTP responses/aborted assets are intentional. A browser-only advanced clock tested code expiry separately from normal server verification. The obsolete circular React JSON assertion and old landing-copy assertion were corrected while retaining their safe-state expectations.
 

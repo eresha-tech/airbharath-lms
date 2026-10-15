@@ -123,7 +123,7 @@ Real migration execution, PostgreSQL trigger/concurrency verification, authentic
 
 Full repository-relative inventory (all paths are under `/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms`):
 
-- [WORKSPACE_PHASE14_IMPLEMENTATION.md](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/WORKSPACE_PHASE14_IMPLEMENTATION.md)
+- [WORKSPACE_PHASE14_IMPLEMENTATION.md](WORKSPACE_PHASE14_IMPLEMENTATION.md)
 - [app/(admin)/admin/workspace/coupons/page.tsx](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/app/(admin)/admin/workspace/coupons/page.tsx)
 - [app/(admin)/admin/workspace/settings/page.tsx](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/app/(admin)/admin/workspace/settings/page.tsx)
 - [app/(user)/workspace/activate/page.tsx](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/app/(user)/workspace/activate/page.tsx)

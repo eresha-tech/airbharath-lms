@@ -81,9 +81,9 @@ See [WORKSPACE_ANALYTICS.md](/home/rishisingh1034/Desktop/eresha-repo/airbharath
 | [tests/routes/workspace-admin.test.ts](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/tests/routes/workspace-admin.test.ts) | Review guard and post-response callback integration |
 | [tests/routes/workspace-validation.test.ts](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/tests/routes/workspace-validation.test.ts) | Updated versioned client event expectations |
 | [tests/admin-route-authorization-policy.test.mjs](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/tests/admin-route-authorization-policy.test.mjs) | Account for both new persisted-admin routes |
-| [WORKSPACE_COUPON_AUDIT.md](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/WORKSPACE_COUPON_AUDIT.md) | Current-code evidence and future-only recommendations |
+| [WORKSPACE_COUPON_AUDIT.md](WORKSPACE_COUPON_AUDIT.md) | Current-code evidence and future-only recommendations |
 | [WORKSPACE_ANALYTICS.md](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/WORKSPACE_ANALYTICS.md) | Configuration, event contract and dashboard definition |
-| [WORKSPACE_PHASE11_IMPLEMENTATION.md](/home/rishisingh1034/Desktop/eresha-repo/airbharath-lms/WORKSPACE_PHASE11_IMPLEMENTATION.md) | Implementation scope, migration, operation and validation report |
+| [WORKSPACE_PHASE11_IMPLEMENTATION.md](WORKSPACE_PHASE11_IMPLEMENTATION.md) | Implementation scope, migration, operation and validation report |
 
 Existing Phase 1 and PostHog changes were present at task start and preserved. No unrelated coupon implementation was modified.
 

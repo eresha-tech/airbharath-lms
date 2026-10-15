@@ -33,7 +33,7 @@ Ledger: **30 entries, 0000–0029**, matching every SQL SHA-256 and journal time
 
 Fresh measurement confirms the F.5 public count still matches; it was not assumed. Aggregate relation allocation is **9,519,104 bytes** across all tables, including indexes/TOAST; public allocation is **9,371,648 bytes**. This small, mostly synthetic database is not a production-size sample.
 
-Complete definitions, columns, owners, privileges, indexes, constraints, triggers, functions, enums, sequences and metrics are in [catalog before](output/audits/workspace-f6/catalog-before.json), [catalog after](output/audits/workspace-f6/catalog-after.json), [supplemental metadata/plans](output/audits/workspace-f6/integrity-and-plans.json) and [joined table inventory](output/audits/workspace-f6/table-inventory.json). These contain schema metadata/aggregates, not row payloads or private dumps. Row fingerprints are retained only in private /tmp files.
+Complete definitions, columns, owners, privileges, indexes, constraints, triggers, functions, enums, sequences and metrics are in [catalog before](../../../output/audits/workspace-f6/catalog-before.json), [catalog after](../../../output/audits/workspace-f6/catalog-after.json), [supplemental metadata/plans](../../../output/audits/workspace-f6/integrity-and-plans.json) and [joined table inventory](../../../output/audits/workspace-f6/table-inventory.json). These contain schema metadata/aggregates, not row payloads or private dumps. Row fingerprints are retained only in private /tmp files.
 
 ## C. Complete table-by-table classification
 
@@ -143,7 +143,7 @@ The latest Drizzle 0029 snapshot models **60 public tables**. Column sets/types/
 
 This is real naming drift, not missing referential enforcement. Its origin is not proven by the current repository. Matching migration-ledger hashes do not explain historical out-of-band DDL. A future generated constraint rename/drop may fail if it assumes the snapshot name. Inventory and reconcile under a separately authorized compatibility correction; do not alter ledger hashes or rename constraints in F.6.
 
-The extra public.otps table is unmodeled/unversioned in this repository. The two clock-test tables are explicit unversioned harness clones of 0022, not extra applied journal entries. All 54 public stored-function bodies match the last reviewed CREATE/REPLACE body in the migration chain. Complete comparison evidence: [schema comparison](output/audits/workspace-f6/schema-comparison.json), [function/index analysis](output/audits/workspace-f6/index-analysis.json).
+The extra public.otps table is unmodeled/unversioned in this repository. The two clock-test tables are explicit unversioned harness clones of 0022, not extra applied journal entries. All 54 public stored-function bodies match the last reviewed CREATE/REPLACE body in the migration chain. Complete comparison evidence: [schema comparison](../../../output/audits/workspace-f6/schema-comparison.json), [function/index analysis](../../../output/audits/workspace-f6/index-analysis.json).
 
 Per-table measured rows/allocation and provenance (sizes are heap/index/total KiB; total includes TOAST):
 
@@ -216,7 +216,7 @@ Per-table measured rows/allocation and provenance (sizes are heap/index/total Ki
 
 ## E. Source-code references and dependency mapping
 
-The scan covered **683 tracked code/SQL files**, searching physical names and corresponding Drizzle symbols across routes, services/repositories, Admin/Creator code, workers, scripts, tests and historical migrations. Schema declarations are separated from runtime references. The [source map](output/audits/workspace-f6/source-map.json) records file and line for every lexical candidate. Aliases/indirect calls and trigger paths were reviewed separately; broad words in UI copy are not independently treated as proof of database use.
+The scan covered **683 tracked code/SQL files**, searching physical names and corresponding Drizzle symbols across routes, services/repositories, Admin/Creator code, workers, scripts, tests and historical migrations. Schema declarations are separated from runtime references. The [source map](../../../output/audits/workspace-f6/source-map.json) records file and line for every lexical candidate. Aliases/indirect calls and trigger paths were reviewed separately; broad words in UI copy are not independently treated as proof of database use.
 
 Representative authoritative paths:
 
@@ -268,7 +268,7 @@ These seven required history leaf tables have installed row/state guards but **n
 - `public.workspace_payment_attempts` — `workspace_capture_event_time_guard`, `workspace_financial_payment_complete`, `workspace_financial_payments_guard`.
 - `public.workspace_payment_events` — `workspace_financial_events_guard`.
 
-Catalog evidence covers 20 Workspace tables with triggers but no TRUNCATE trigger in total; not every one is fully immutable. Two additional retained-work leaves are course_lessons and creator_profile_details. The complete40-table coverage matrix is in [retention-guard finding](output/audits/workspace-f6/retention-guard-finding.json).
+Catalog evidence covers 20 Workspace tables with triggers but no TRUNCATE trigger in total; not every one is fully immutable. Two additional retained-work leaves are course_lessons and creator_profile_details. The complete40-table coverage matrix is in [retention-guard finding](../../../output/audits/workspace-f6/retention-guard-finding.json).
 
 PostgreSQL documents that TRUNCATE does not invoke DELETE triggers, requires its own privilege, and rejects external referencing FKs unless those tables are included. Thus the leaf-table row guards do not protect history from an otherwise authorized bulk truncation. This is a catalog-backed inference about native semantics, **not a claim that a destructive command was tested or that data was lost**. The local owner/superuser setup cannot supply least-privilege protection; production permissions remain unknown. [PostgreSQL TRUNCATE documentation](https://www.postgresql.org/docs/16/sql-truncate.html).
 
@@ -391,7 +391,7 @@ Structural SHA-256:
 
 `d0e9dfba8259443cc07ccdbf2cbbcdda5338b022b6f3c4aa76dc4bc9af51c81c`
 
-The first strict JavaScript comparison rejected Postgres.js Result-array prototypes against parsed JSON arrays. Canonicalizing arrays produced the exact same before/after hash; the baseline was never replaced. The initial supplemental query used the wrong reservation-column assumption and was corrected to the catalog-confirmed coupon_redemptions.status, then rerun successfully inside READ ONLY. Failed tool runs are not counted as successful verification. [Preservation evidence](output/audits/workspace-f6/preservation.json).
+The first strict JavaScript comparison rejected Postgres.js Result-array prototypes against parsed JSON arrays. Canonicalizing arrays produced the exact same before/after hash; the baseline was never replaced. The initial supplemental query used the wrong reservation-column assumption and was corrected to the catalog-confirmed coupon_redemptions.status, then rerun successfully inside READ ONLY. Failed tool runs are not counted as successful verification. [Preservation evidence](../../../output/audits/workspace-f6/preservation.json).
 
 ## S. Checks/tests performed
 
