@@ -3,6 +3,8 @@ import { PaymentError, minimizeWebhook, verifyHmac } from '@/lib/workspace/payme
 import { readWebhookBody, paymentFailure } from '@/lib/workspace/payments/http';
 import { workspacePaymentRuntime } from '@/lib/workspace/payments/runtime';
 import { privateJson } from '@/lib/workspace/http';
+import { after } from 'next/server';
+export const maxDuration = 60;
 export async function POST(request: Request) {
   try {
     const runtime = workspacePaymentRuntime('webhook');
@@ -13,7 +15,15 @@ export async function POST(request: Request) {
     let raw: unknown; try { raw = JSON.parse(bytes.toString('utf8')); } catch { throw new PaymentError('validation'); }
     const parsed = minimizeWebhook(raw, runtime.config.accountId, runtime.config.mode); if (!parsed) throw new PaymentError('provider_mismatch');
     const received = await runtime.store.receiveEvent(runtime.config, { eventId, type: parsed.type, hash: createHash('sha256').update(bytes).digest('hex'), evidence: parsed.evidence }, new Date());
-    // Durable inbox receipt is committed. A separately deployed worker performs provider reconciliation.
+    // Durable inbox receipt is committed. Kick worker after responding to immediately reconcile and grant access.
+    if (!received.anomaly) {
+      after(async () => {
+        try {
+          const { runWorkspaceFinancialWorker } = await import('@/lib/workspace/payments/worker');
+          await runWorkspaceFinancialWorker();
+        } catch { /* Bounded worker error caught; background/daily cron will recover. */ }
+      });
+    }
     return privateJson({ received: true, state: received.anomaly ? 'needs_review' : received.event.processingState }, received.anomaly ? 409 : ['processed', 'ignored'].includes(received.event.processingState) ? 200 : 202);
   } catch (error) { return paymentFailure(error); }
 }
