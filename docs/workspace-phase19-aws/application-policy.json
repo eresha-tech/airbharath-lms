@@ -1,0 +1,84 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "InspectDedicatedTestBucket",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetBucketPublicAccessBlock",
+        "s3:GetBucketVersioning",
+        "s3:GetEncryptionConfiguration",
+        "s3:GetBucketCORS"
+      ],
+      "Resource": "arn:aws:s3:::airbharath-workspace-uat-dev01"
+    },
+    {
+      "Sid": "ListOnlyWorkspaceOutputs",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket"
+      ],
+      "Resource": "arn:aws:s3:::airbharath-workspace-uat-dev01",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": [
+            "workspace/*/processed/"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ReadPinnedWorkspaceSourcesAndOutputs",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:GetObjectVersion"
+      ],
+      "Resource": [
+        "arn:aws:s3:::airbharath-workspace-uat-dev01/workspace/*/source",
+        "arn:aws:s3:::airbharath-workspace-uat-dev01/workspace/*/processed/*"
+      ]
+    },
+    {
+      "Sid": "WriteOnlyWorkspaceSourcesAndJobInputs",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::airbharath-workspace-uat-dev01/workspace/*/source",
+        "arn:aws:s3:::airbharath-workspace-uat-dev01/workspace/*/jobs/*/input.mp4"
+      ]
+    },
+    {
+      "Sid": "SubmitOnlyDedicatedQueue",
+      "Effect": "Allow",
+      "Action": [
+        "mediaconvert:CreateJob",
+        "mediaconvert:GetQueue"
+      ],
+      "Resource": "arn:aws:mediaconvert:ap-south-1:137068239266:queues/Default"
+    },
+    {
+      "Sid": "InspectProcessingJobs",
+      "Effect": "Allow",
+      "Action": [
+        "mediaconvert:GetJob"
+      ],
+      "Resource": "arn:aws:mediaconvert:ap-south-1:137068239266:jobs/*"
+    },
+    {
+      "Sid": "PassOnlyDedicatedProcessingRole",
+      "Effect": "Allow",
+      "Action": [
+        "iam:PassRole"
+      ],
+      "Resource": "arn:aws:iam::137068239266:role/LMSMediaConvertTestRole",
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": "mediaconvert.amazonaws.com"
+        }
+      }
+    }
+  ]
+}

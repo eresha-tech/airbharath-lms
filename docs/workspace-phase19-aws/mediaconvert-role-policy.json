@@ -1,0 +1,22 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadOnlyWorkspaceJobInputs",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:GetObjectVersion"
+      ],
+      "Resource": "arn:aws:s3:::airbharath-workspace-uat-dev01/workspace/*/jobs/*/input.mp4"
+    },
+    {
+      "Sid": "WriteOnlyWorkspaceHlsOutputs",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject"
+      ],
+      "Resource": "arn:aws:s3:::airbharath-workspace-uat-dev01/workspace/*/processed/*"
+    }
+  ]
+}
