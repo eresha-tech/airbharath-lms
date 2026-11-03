@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 export interface MarkdownContentProps {
   content?: string | null;
   className?: string;
+  privateWorkspace?: boolean;
   variant?: "default" | "formula" | "compact";
 }
 
@@ -79,6 +80,7 @@ export function MarkdownContent({
   content,
   className,
   variant = "default",
+  privateWorkspace = false,
 }: MarkdownContentProps) {
   if (!content || !content.trim()) {
     return null;
@@ -103,6 +105,7 @@ export function MarkdownContent({
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
         components={{
+          ...(privateWorkspace ? { img: ({ alt }: { alt?: string }) => <span className="text-muted-foreground">[Image: {alt || 'omitted in private preview'}]</span> } : {}),
           h1: ({ children, ...props }) => (
             <h1
               className="text-xl sm:text-2xl font-bold font-outfit text-foreground tracking-tight mt-6 mb-3 first:mt-0"
@@ -252,6 +255,7 @@ export function MarkdownContent({
             </tr>
           ),
           a: ({ href, children, ...props }) => {
+            if (privateWorkspace) return <span className="underline decoration-dotted">{children}</span>;
             if (!href) return <span>{children}</span>;
             const isExternal =
               href.startsWith("http://") ||

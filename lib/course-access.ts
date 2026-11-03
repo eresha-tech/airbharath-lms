@@ -33,6 +33,9 @@ export async function hasCourseAccess(
     return { hasAccess: false, accessType: null, isExpired: false };
   }
 
+  const publicationCourse = await db.query.courses.findFirst({ where: eq(courses.id, courseId), columns: { workspaceState: true } });
+  if (publicationCourse?.workspaceState === 'suspended') return { hasAccess: false, accessType: null, isExpired: false };
+
   // 1. Admin superuser privilege must come from current persisted state.
   if (userRole === 'admin') {
     const user = await db.query.users.findFirst({

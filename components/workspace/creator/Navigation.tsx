@@ -9,9 +9,11 @@ export const creatorLinks = [
   { label: 'Membership', href: '/workspace/member', icon: BadgeCheck },
 ];
 export function creatorSection(pathname: string) {
-  if (pathname.endsWith('/build')) return 'Private Course Builder';
-  if (pathname === '/workspace/courses/new') return 'New Course Proposal';
-  if (pathname.startsWith('/workspace/courses/')) return 'Course Proposal';
+  if (pathname.endsWith('/build')) return 'Course Studio';
+  if(pathname.endsWith('/preview'))return 'Course preview';
+  if(pathname.endsWith('/publishing'))return 'Course approval & publishing';
+  if (pathname === '/workspace/courses/new') return 'New course idea';
+  if (pathname.startsWith('/workspace/courses/')) return 'Course idea';
   if (pathname === '/workspace/member/billing' || pathname === '/workspace/refunds') return 'Billing & Support';
   return creatorLinks.find(link => pathname === link.href)?.label || 'Creator Workspace';
 }

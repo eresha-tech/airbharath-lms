@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { courses, courseSections, modules, lessons, videos, lessonMaterials, courseAuthors } from "@/lib/db/schema";
 import { eq, inArray, asc } from "drizzle-orm";
 import CourseEditor from "@/components/admin/CourseEditor";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +35,8 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
   if (!courseObj) {
     notFound();
   }
+
+  if (courseObj.workspaceProjectId) redirect(`/admin/workspace/publishing/${courseObj.workspaceProjectId}`);
 
   let sectionsList: any[] = [];
   try {

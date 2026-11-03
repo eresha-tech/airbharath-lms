@@ -1,15 +1,17 @@
 interface Lesson {
   id: string;
+  workspaceRetired?: boolean;
 }
 
 interface Module {
+  workspaceRetired?: boolean;
   lessons?: Lesson[] | null;
 }
 
 export function calculateTotalLessons(modules: Module[] | null): number {
   if (!modules) return 0;
   return modules.reduce(
-    (acc, module) => acc + (module.lessons?.length || 0),
+    (acc, module) => acc + (module.workspaceRetired ? 0 : module.lessons?.filter(l => !l.workspaceRetired).length || 0),
     0
   );
 }
@@ -24,8 +26,9 @@ export function calculateCourseProgress(
 
   const courseLessonIds = new Set<string>();
   modules.forEach(mod => {
+    if (mod.workspaceRetired) return;
     mod.lessons?.forEach(les => {
-      courseLessonIds.add(les.id);
+      if (!les.workspaceRetired) courseLessonIds.add(les.id);
     });
   });
 

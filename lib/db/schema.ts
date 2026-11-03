@@ -1,5 +1,5 @@
 import { CATEGORIES } from '@/lib/workspace/eligibility/model';
-import { pgTable, pgEnum, uuid, text, numeric, boolean, integer, timestamp, uniqueIndex, unique, index, jsonb, check, primaryKey, foreignKey } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, bigint, uuid, text, numeric, boolean, integer, timestamp, uniqueIndex, unique, index, jsonb, check, primaryKey, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import type { SetupState, FinancialState, ActivationState, ReservationState, PaymentState, EventState, WebhookEvidence } from '@/lib/workspace/payments/model';
 import type { PlanCode, CouponStatus, CouponDefinition } from '@/lib/workspace/membership/model';
@@ -97,6 +97,8 @@ export const courses = pgTable('courses', {
   isPublished: boolean('is_published').default(false).notNull(),
   isBundle: boolean('is_bundle').default(false).notNull(),
   instructorId: uuid('instructor_id').references(() => users.id),
+  workspaceProjectId: uuid('workspace_project_id').references(() => workspaceCourseProjects.id, { onDelete: 'restrict' }).unique(),
+  workspaceState: text('workspace_state').$type<'live'|'unpublished'|'suspended'>(),
   certificateStatus: text('certificate_status').default('disabled').notNull(), // 'disabled' | 'active' | 'paused'
   certificateActivatedAt: timestamp('certificate_activated_at', { withTimezone: true }),
   certificateActivatedBy: uuid('certificate_activated_by').references(() => users.id),
@@ -132,6 +134,7 @@ export const modules = pgTable('modules', {
   sectionId: uuid('section_id').references(() => courseSections.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
   description: text('description'),
+  workspaceRetired: boolean('workspace_retired').default(false).notNull(),
   practicalTask: text('practical_task'),
   orderIndex: integer('order_index').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -159,6 +162,9 @@ export const lessons = pgTable('lessons', {
   summary: text('summary'),
   content: text('content'),
   formulas: text('formulas'),
+  workspaceRevisionId: uuid('workspace_revision_id').references(() => workspacePublicationRevisions.id, { onDelete: 'restrict' }),
+  workspaceRetired: boolean('workspace_retired').default(false).notNull(),
+  contentFormat: text('content_format').$type<'plain_text'|'markdown'>().default('markdown').notNull(),
   videoUrl: text('video_url'),
   isFreePreview: boolean('is_free_preview').default(false).notNull(),
   orderIndex: integer('order_index').notNull(),
@@ -833,6 +839,7 @@ export const workspaceCourseProjects = pgTable('workspace_course_projects', {
   status: text('status').$type<'building'>().default('building').notNull(), version: integer('version').default(1).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(), updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, t => [
+  uniqueIndex('workspace_projects_media_owner_idx').on(t.id, t.userId, t.creatorProfileId),
   uniqueIndex('workspace_projects_source_idx').on(t.approvedSubmissionId), uniqueIndex('workspace_projects_owner_idx').on(t.id, t.userId),
   index('workspace_projects_draft_idx').on(t.userId, t.draftId),
   foreignKey({ columns: [t.approvedSubmissionId, t.userId, t.creatorProfileId, t.draftId], foreignColumns: [workspaceCourseSubmissions.id, workspaceCourseSubmissions.userId, workspaceCourseSubmissions.creatorProfileId, workspaceCourseSubmissions.draftId], name: 'workspace_projects_approved_owner_fk' }).onDelete('restrict'),
@@ -852,12 +859,57 @@ export const workspaceCourseModules = pgTable('workspace_course_modules', {
 export const workspaceCourseLessons = pgTable('workspace_course_lessons', {
   id: uuid('id').defaultRandom().primaryKey(), projectId: uuid('project_id').notNull(), moduleId: uuid('module_id').notNull(), userId: uuid('user_id').notNull(),
   title: text('title').notNull(), summary: text('summary').default('').notNull(), content: text('content').default('').notNull(), position: integer('position').notNull(), version: integer('version').default(1).notNull(),
+  contentFormat: text('content_format').$type<import('@/lib/workspace/media/model').ContentFormat>().default('plain_text').notNull(),
+  mediaRevision: integer('media_revision').default(0).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(), updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, t => [
+  uniqueIndex('workspace_lessons_media_owner_idx').on(t.id, t.projectId, t.userId),
+  check('workspace_lessons_format_media_check', sql`${t.contentFormat} IN ('plain_text','markdown') AND ${t.mediaRevision} BETWEEN 0 AND 2147483646`),
   unique('workspace_lessons_position_unique').on(t.moduleId, t.position),
   foreignKey({ columns: [t.moduleId, t.projectId, t.userId], foreignColumns: [workspaceCourseModules.id, workspaceCourseModules.projectId, workspaceCourseModules.userId], name: 'workspace_lessons_module_owner_fk' }).onDelete('restrict'),
   check('workspace_lessons_content_check', sql`length(btrim(${t.title})) BETWEEN 2 AND 200 AND length(${t.summary}) <= 1000 AND length(${t.content}) <= 20000`),
   check('workspace_lessons_version_time_check', sql`${t.position} >= 0 AND ${t.version} > 0 AND ${t.updatedAt} >= ${t.createdAt}`),
+]);
+
+// Private authoring assets. No learner course/video/enrollment relationship.
+export const workspaceCourseAssets = pgTable('workspace_course_assets', {
+  id: uuid('id').defaultRandom().primaryKey(), userId: uuid('user_id').notNull(), creatorProfileId: uuid('creator_profile_id').notNull(),
+  projectId: uuid('project_id').notNull(), lessonId: uuid('lesson_id'),
+  assetKind: text('asset_kind').$type<import('@/lib/workspace/media/model').AssetKind>().notNull(),
+  status: text('status').$type<import('@/lib/workspace/media/model').AssetState>().default('pending_upload').notNull(),
+  filename: text('filename').notNull(), displayName: text('display_name').notNull(), mimeType: text('mime_type').notNull(), byteSize: bigint('byte_size', { mode: 'number' }).notNull(),
+  storageProvider: text('storage_provider').$type<'s3'>().notNull(), storageContainer: text('storage_container').notNull(), storageAccountId: text('storage_account_id').notNull(), storageKey: text('storage_key').notNull(),
+  objectVersionId: text('object_version_id'), checksum: text('checksum'), verificationPolicy: text('verification_policy'),
+  processingJobId: text('processing_job_id'), processingSourceVersion: text('processing_source_version'), processingPolicy: text('processing_policy'),
+  outputKey: text('output_key'), outputVersionId: text('output_version_id'),
+  replacesAssetId: uuid('replaces_asset_id'), replacementVersion: integer('replacement_version'),
+  captionVideoId: uuid('caption_video_id'), captionSourceVersion: text('caption_source_version'), language: text('language'),
+  isAttached: boolean('is_attached').default(false).notNull(), resourcePosition: integer('resource_position'),
+  requestKey: uuid('request_key').notNull(), contextHash: text('context_hash').notNull(), version: integer('version').default(1).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(), updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(), uploadedAt: timestamp('uploaded_at', { withTimezone: true }),
+  verifiedAt: timestamp('verified_at', { withTimezone: true }), readyAt: timestamp('ready_at', { withTimezone: true }), detachedAt: timestamp('detached_at', { withTimezone: true }),
+}, t => [
+  check('workspace_asset_cover_scope',sql`${t.lessonId} IS NOT NULL OR (${t.assetKind}='resource' AND ${t.mimeType} IN ('image/png','image/jpeg') AND NOT ${t.isAttached})`),
+  uniqueIndex('workspace_assets_owner_idx').on(t.id, t.lessonId, t.projectId, t.userId),
+  uniqueIndex('workspace_assets_request_idx').on(t.userId, t.requestKey),
+  uniqueIndex('workspace_assets_object_idx').on(t.storageProvider, t.storageContainer, t.storageKey),
+  uniqueIndex('workspace_assets_video_current_idx').on(t.lessonId).where(sql`${t.assetKind}='video' AND ${t.isAttached}`),
+  uniqueIndex('workspace_assets_video_pending_idx').on(t.lessonId).where(sql`${t.assetKind}='video' AND ${t.status} IN ('pending_upload','uploaded','verified','processing','ready') AND NOT ${t.isAttached}`),
+  uniqueIndex('workspace_assets_replacement_version_idx').on(t.lessonId, t.replacementVersion),
+  uniqueIndex('workspace_assets_caption_current_idx').on(t.captionVideoId, t.language).where(sql`${t.assetKind}='caption' AND ${t.isAttached}`),
+  unique('workspace_assets_resource_position_unique').on(t.lessonId, t.resourcePosition),
+  index('workspace_assets_lesson_idx').on(t.lessonId, t.createdAt, t.id),
+  foreignKey({ columns: [t.lessonId, t.projectId, t.userId], foreignColumns: [workspaceCourseLessons.id, workspaceCourseLessons.projectId, workspaceCourseLessons.userId], name: 'workspace_assets_lesson_owner_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [t.projectId, t.userId, t.creatorProfileId], foreignColumns: [workspaceCourseProjects.id, workspaceCourseProjects.userId, workspaceCourseProjects.creatorProfileId], name: 'workspace_assets_project_owner_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [t.replacesAssetId, t.lessonId, t.projectId, t.userId], foreignColumns: [t.id, t.lessonId, t.projectId, t.userId], name: 'workspace_assets_replaces_owner_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [t.captionVideoId, t.lessonId, t.projectId, t.userId], foreignColumns: [t.id, t.lessonId, t.projectId, t.userId], name: 'workspace_assets_caption_owner_fk' }).onDelete('restrict'),
+  check('workspace_assets_file_check', sql`length(btrim(${t.filename})) BETWEEN 1 AND 180 AND length(btrim(${t.displayName})) BETWEEN 1 AND 180 AND ((${t.assetKind}='video' AND ${t.mimeType}='video/mp4' AND ${t.byteSize} BETWEEN 1 AND 2147483648) OR (${t.assetKind}='resource' AND ${t.mimeType} IN ('application/pdf','image/png','image/jpeg') AND ${t.byteSize} BETWEEN 1 AND 20971520) OR (${t.assetKind}='caption' AND ${t.mimeType}='text/vtt' AND ${t.byteSize} BETWEEN 1 AND 1048576))`),
+  check('workspace_assets_storage_check', sql`${t.storageProvider}='s3' AND length(btrim(${t.storageContainer}))>0 AND ${t.storageAccountId} ~ '^[0-9]{12}$' AND ${t.storageKey}='workspace/'||${t.creatorProfileId}::text||'/'||${t.projectId}::text||'/'||${t.id}::text||'/source' AND ${t.contextHash} ~ '^[a-f0-9]{64}$'`),
+  check('workspace_assets_kind_check', sql`((${t.assetKind}='video' AND ${t.replacementVersion} IS NOT NULL AND ${t.replacementVersion}>0) OR (${t.assetKind}<>'video' AND ${t.replacementVersion} IS NULL AND ${t.replacesAssetId} IS NULL)) AND ((${t.assetKind}='caption' AND ${t.captionVideoId} IS NOT NULL AND ${t.captionSourceVersion} IS NOT NULL AND length(${t.captionSourceVersion})>0 AND ${t.language} IS NOT NULL AND ${t.language} ~ '^[a-z]{2,3}(-[A-Z]{2})?$') OR (${t.assetKind}<>'caption' AND ${t.captionVideoId} IS NULL AND ${t.captionSourceVersion} IS NULL AND ${t.language} IS NULL))`),
+  check('workspace_assets_state_check', sql`${t.status} IN ('pending_upload','uploaded','verified','processing','ready','failed','detached') AND (NOT ${t.isAttached} OR ${t.status}='ready') AND ((${t.assetKind}='resource' AND ${t.isAttached} AND ${t.resourcePosition} IS NOT NULL AND ${t.resourcePosition}>=0) OR (NOT (${t.assetKind}='resource' AND ${t.isAttached}) AND ${t.resourcePosition} IS NULL)) AND (${t.status}<>'processing' OR ${t.assetKind}='video')`),
+  check('workspace_assets_evidence_check', sql`(${t.status} NOT IN ('uploaded','verified','processing','ready') OR (${t.objectVersionId} IS NOT NULL AND length(${t.objectVersionId})>0 AND ${t.objectVersionId}<>'null' AND ${t.uploadedAt} IS NOT NULL)) AND (${t.status} NOT IN ('verified','processing','ready') OR (${t.verifiedAt} IS NOT NULL AND ${t.checksum} IS NOT NULL AND ${t.checksum} ~ '^[a-f0-9]{64}$' AND ${t.verificationPolicy} IS NOT NULL AND length(${t.verificationPolicy})>0)) AND (${t.status}<>'ready' OR ${t.readyAt} IS NOT NULL) AND (${t.status}<>'detached' OR (${t.detachedAt} IS NOT NULL AND NOT ${t.isAttached})) AND (${t.status}<>'processing' AND NOT (${t.assetKind}='video' AND ${t.status}='ready') OR (${t.processingJobId} IS NOT NULL AND length(${t.processingJobId})>0 AND ${t.processingSourceVersion} IS NOT NULL AND ${t.processingSourceVersion}=${t.objectVersionId} AND ${t.processingPolicy} IS NOT NULL AND length(${t.processingPolicy})>0)) AND (${t.assetKind}<>'video' OR ${t.status}<>'ready' OR (${t.outputKey} IS NOT NULL AND ${t.outputVersionId} IS NOT NULL AND length(${t.outputVersionId})>0))`),
+  check('workspace_assets_time_check', sql`${t.version} BETWEEN 1 AND 2147483646 AND ${t.updatedAt}>=${t.createdAt} AND ${t.expiresAt}>${t.createdAt} AND (${t.uploadedAt} IS NULL OR ${t.uploadedAt}>=${t.createdAt}) AND (${t.verifiedAt} IS NULL OR (${t.uploadedAt} IS NOT NULL AND ${t.verifiedAt}>=${t.uploadedAt})) AND (${t.readyAt} IS NULL OR (${t.verifiedAt} IS NOT NULL AND ${t.readyAt}>=${t.verifiedAt})) AND (${t.detachedAt} IS NULL OR ${t.detachedAt}>=${t.createdAt})`),
 ]);
 
 // Decisions, execution and financial completion are separate; no historical membership mutation.
@@ -936,3 +988,49 @@ export const workspaceAccessGrantEvents = pgTable('workspace_access_grant_events
 },t=>[uniqueIndex('workspace_grant_event_actor_key_idx').on(t.actorId,t.requestKey),uniqueIndex('workspace_grant_event_action_idx').on(t.grantId,t.action),index('workspace_grant_event_created_idx').on(t.createdAt,t.id),
   foreignKey({columns:[t.grantId,t.userId],foreignColumns:[workspaceAccessGrants.id,workspaceAccessGrants.userId],name:'workspace_grant_event_owner_fk'}).onDelete('restrict'),
   check('workspace_grant_event_context_check',sql`${t.action} IN ('granted','revoked','expired') AND length(btrim(${t.reason})) BETWEEN 10 AND 1000 AND ${t.payloadHash} ~ '^[a-f0-9]{64}$'`)]);
+
+// Durable private processing outbox. Never an LMS video/job identity.
+export const workspaceMediaJobs = pgTable('workspace_media_jobs', {
+  id: uuid('id').primaryKey(),
+  assetId: uuid('asset_id').notNull().references(() => workspaceCourseAssets.id, { onDelete: 'restrict' }).unique(),
+  state: text('state').$type<'queued' | 'dispatching' | 'submitted' | 'complete' | 'failed' | 'uncertain'>().notNull(),
+  sourceVersion: text('source_version').notNull(),
+  policy: text('policy').notNull(),
+  providerJobId: text('provider_job_id'),
+  dispatchedAt: timestamp('dispatched_at', { withTimezone: true }),
+  manifest: jsonb('manifest').$type<Record<string, { version: string; checksum: string; size: number }>>(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+}, t => [
+  check('workspace_media_jobs_state_check', sql`${t.state} IN ('queued','dispatching','submitted','complete','failed','uncertain') AND length(${t.sourceVersion})>0 AND ${t.sourceVersion}<>'null' AND length(${t.policy})>0 AND ${t.updatedAt}>=${t.createdAt} AND (${t.state}<>'complete' OR (${t.manifest} IS NOT NULL AND ${t.providerJobId} IS NOT NULL))`),
+  index('workspace_media_jobs_pending_idx').on(t.state, t.updatedAt),
+]);
+
+// Creator publishing is an adapter into the existing LMS, not a parallel LMS.
+export const workspaceTrustedCreators=pgTable('workspace_trusted_creators',{
+ creatorProfileId:uuid('creator_profile_id').primaryKey().references(()=>workspaceCreatorProfiles.id,{onDelete:'restrict'}),userId:uuid('user_id').notNull().references(()=>users.id,{onDelete:'restrict'}),trusted:boolean('trusted').default(false).notNull(),version:integer('version').notNull(),updatedAt:timestamp('updated_at',{withTimezone:true}).notNull(),
+},t=>[foreignKey({columns:[t.creatorProfileId,t.userId],foreignColumns:[workspaceCreatorProfiles.id,workspaceCreatorProfiles.userId],name:'workspace_trust_owner_fk'}).onDelete('restrict'),check('workspace_trust_version_check',sql`${t.version}>0`)]);
+export const workspacePublicationStates=pgTable('workspace_publication_states',{
+ projectId:uuid('project_id').primaryKey().references(()=>workspaceCourseProjects.id,{onDelete:'restrict'}),userId:uuid('user_id').notNull().references(()=>users.id,{onDelete:'restrict'}),version:integer('version').default(0).notNull(),metadata:jsonb('metadata').$type<import('@/lib/workspace/publishing/model').PublicationMetadata>().notNull(),status:text('status').$type<'draft'|'live'|'unpublished'|'suspended'>().default('draft').notNull(),courseId:uuid('course_id').references(()=>courses.id,{onDelete:'restrict'}).unique(),currentRevisionId:uuid('current_revision_id').references(()=>workspacePublicationRevisions.id,{onDelete:'restrict'}),currentPriceId:uuid('current_price_id').references(()=>workspacePublicationPrices.id,{onDelete:'restrict'}),updatedAt:timestamp('updated_at',{withTimezone:true}).notNull(),
+},t=>[foreignKey({columns:[t.projectId,t.userId],foreignColumns:[workspaceCourseProjects.id,workspaceCourseProjects.userId],name:'workspace_publication_owner_fk'}).onDelete('restrict'),check('workspace_publication_state_check',sql`${t.version}>=0 AND ${t.status} IN ('draft','live','unpublished','suspended') AND (${t.status}<>'live' OR (${t.courseId} IS NOT NULL AND ${t.currentRevisionId} IS NOT NULL AND ${t.currentPriceId} IS NOT NULL))`)]);
+export const workspacePublicationRevisions=pgTable('workspace_publication_revisions',{
+ id:uuid('id').defaultRandom().primaryKey(),projectId:uuid('project_id').notNull().references(()=>workspaceCourseProjects.id,{onDelete:'restrict'}),userId:uuid('user_id').notNull().references(()=>users.id,{onDelete:'restrict'}),number:integer('number').notNull(),snapshot:jsonb('snapshot').$type<import('@/lib/workspace/publishing/model').FrozenCourse>().notNull(),contentHash:text('content_hash').notNull(),status:text('status').$type<'submitted'|'under_review'|'changes_requested'|'approved'>().default('submitted').notNull(),feedback:text('feedback').default('').notNull(),decidedBy:uuid('decided_by').references(()=>users.id,{onDelete:'restrict'}),createdAt:timestamp('created_at',{withTimezone:true}).notNull(),updatedAt:timestamp('updated_at',{withTimezone:true}).notNull(),
+},t=>[unique('workspace_publication_revision_number').on(t.projectId,t.number),foreignKey({columns:[t.projectId,t.userId],foreignColumns:[workspaceCourseProjects.id,workspaceCourseProjects.userId],name:'workspace_revision_owner_fk'}).onDelete('restrict'),check('workspace_publication_revision_check',sql`${t.number}>0 AND ${t.contentHash} ~ '^[a-f0-9]{64}$' AND ${t.status} IN ('submitted','under_review','changes_requested','approved') AND (${t.decidedBy} IS NULL OR ${t.decidedBy}<>${t.userId}) AND (${t.status} NOT IN ('approved','changes_requested') OR ${t.decidedBy} IS NOT NULL)`)]);
+export const workspacePublicationPrices=pgTable('workspace_publication_prices',{
+ id:uuid('id').defaultRandom().primaryKey(),projectId:uuid('project_id').notNull().references(()=>workspaceCourseProjects.id,{onDelete:'restrict'}),userId:uuid('user_id').notNull().references(()=>users.id,{onDelete:'restrict'}),number:integer('number').notNull(),amountPaise:integer('amount_paise').notNull(),currency:text('currency').default('INR').notNull(),status:text('status').$type<'proposed'|'approved'|'rejected'>().default('proposed').notNull(),decidedBy:uuid('decided_by').references(()=>users.id,{onDelete:'restrict'}),note:text('note').default('').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).notNull(),decidedAt:timestamp('decided_at',{withTimezone:true}),
+},t=>[unique('workspace_publication_price_number').on(t.projectId,t.number),foreignKey({columns:[t.projectId,t.userId],foreignColumns:[workspaceCourseProjects.id,workspaceCourseProjects.userId],name:'workspace_price_owner_fk'}).onDelete('restrict'),check('workspace_publication_price_check',sql`${t.number}>0 AND ${t.amountPaise} BETWEEN 1 AND 100000000 AND ${t.currency}='INR' AND ${t.status} IN ('proposed','approved','rejected') AND (${t.decidedBy} IS NULL OR ${t.decidedBy}<>${t.userId}) AND ((${t.status}='proposed' AND ${t.decidedBy} IS NULL AND ${t.decidedAt} IS NULL) OR (${t.status}<>'proposed' AND ${t.decidedBy} IS NOT NULL AND ${t.decidedAt} IS NOT NULL))`)]);
+export const workspacePublicationModules=pgTable('workspace_publication_modules',{
+ projectId:uuid('project_id').notNull().references(()=>workspaceCourseProjects.id,{onDelete:'restrict'}),sourceId:uuid('source_id').notNull(),lmsId:uuid('lms_id').notNull().references(()=>modules.id,{onDelete:'restrict'}).unique(),
+},t=>[primaryKey({columns:[t.projectId,t.sourceId]})]);
+export const workspacePublicationLessons=pgTable('workspace_publication_lessons',{
+ projectId:uuid('project_id').notNull().references(()=>workspaceCourseProjects.id,{onDelete:'restrict'}),sourceId:uuid('source_id').notNull(),lmsId:uuid('lms_id').notNull().references(()=>lessons.id,{onDelete:'restrict'}).unique(),
+},t=>[primaryKey({columns:[t.projectId,t.sourceId]})]);
+export const workspacePublicationReleases=pgTable('workspace_publication_releases',{
+ id:uuid('id').defaultRandom().primaryKey(),projectId:uuid('project_id').notNull().references(()=>workspaceCourseProjects.id,{onDelete:'restrict'}),courseId:uuid('course_id').notNull().references(()=>courses.id,{onDelete:'restrict'}),revisionId:uuid('revision_id').notNull().references(()=>workspacePublicationRevisions.id,{onDelete:'restrict'}),priceId:uuid('price_id').notNull().references(()=>workspacePublicationPrices.id,{onDelete:'restrict'}),actorId:uuid('actor_id').notNull().references(()=>users.id,{onDelete:'restrict'}),number:integer('number').notNull(),authority:text('authority').$type<'admin_approved'|'trusted'>().notNull(),trustVersion:integer('trust_version'),createdAt:timestamp('created_at',{withTimezone:true}).notNull(),
+},t=>[unique('workspace_publication_release_number').on(t.projectId,t.number)]);
+export const workspacePublicationEvents=pgTable('workspace_publication_events',{
+ id:uuid('id').defaultRandom().primaryKey(),projectId:uuid('project_id').notNull().references(()=>workspaceCourseProjects.id,{onDelete:'restrict'}),actorId:uuid('actor_id').notNull().references(()=>users.id,{onDelete:'restrict'}),action:text('action').notNull(),requestKey:uuid('request_key').notNull(),commandHash:text('command_hash').notNull(),note:text('note').default('').notNull(),result:jsonb('result').$type<Record<string,unknown>>().notNull(),createdAt:timestamp('created_at',{withTimezone:true}).notNull(),
+},t=>[unique('workspace_publication_event_request').on(t.actorId,t.requestKey),index('workspace_publication_event_project').on(t.projectId,t.createdAt)]);
+export const workspaceTrustEvents=pgTable('workspace_trust_events',{
+ id:uuid('id').defaultRandom().primaryKey(),creatorProfileId:uuid('creator_profile_id').notNull().references(()=>workspaceCreatorProfiles.id,{onDelete:'restrict'}),actorId:uuid('actor_id').notNull().references(()=>users.id,{onDelete:'restrict'}),trusted:boolean('trusted').notNull(),version:integer('version').notNull(),reason:text('reason').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).notNull(),
+},t=>[unique('workspace_trust_event_version').on(t.creatorProfileId,t.version)]);

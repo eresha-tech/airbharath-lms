@@ -65,6 +65,9 @@ export async function generateMetadata({ params }: CoursePageProps) {
           where: eq(courses.id, slugOrId),
           columns: {
             title: true,
+            workspaceProjectId: true,
+            workspaceState: true,
+            isPublished: true,
             seoTitle: true,
             seoDescription: true,
             shortDescription: true,
@@ -75,13 +78,16 @@ export async function generateMetadata({ params }: CoursePageProps) {
           where: eq(courses.slug, slugOrId),
           columns: {
             title: true,
+            workspaceProjectId: true,
+            workspaceState: true,
+            isPublished: true,
             seoTitle: true,
             seoDescription: true,
             shortDescription: true,
             description: true,
           },
         });
-    if (course) {
+    if (course && (!course.workspaceProjectId || course.isPublished && course.workspaceState === "live")) {
       if (course.title) courseTitle = course.title;
       seoTitle = course.seoTitle;
       seoDescription = course.seoDescription;
@@ -156,7 +162,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
     console.error("Course fetch error:", err);
   }
 
-  if (!course) {
+  if (!course || (course.workspaceProjectId && (!course.isPublished || course.workspaceState !== "live"))) {
     return (
       <div className="container mx-auto px-4 pt-28 pb-16 text-center min-h-[60vh] flex flex-col items-center justify-center space-y-4">
         <div className="h-16 w-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
@@ -241,11 +247,11 @@ export default async function CoursePage({ params }: CoursePageProps) {
     .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
     .map((sec: any) => ({
       ...sec,
-      modules: (sec.modules || [])
+      modules: (sec.modules || []).filter((m: any) => !m.workspaceRetired)
         .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
         .map((mod: any) => ({
           ...mod,
-          lessons: (mod.lessons || [])
+          lessons: (mod.lessons || []).filter((l: any) => !l.workspaceRetired)
             .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
             .map((les: any) => ({
               ...les,
@@ -254,13 +260,13 @@ export default async function CoursePage({ params }: CoursePageProps) {
         })),
     }));
 
-  const rawCourseModules = (course.modules as any[]) || [];
+  const rawCourseModules = ((course.modules as any[]) || []).filter((m: any) => !m.workspaceRetired);
   // Ensure meetingUrl is never exposed to non-enrolled / unauthenticated visitors
   const sortedModules = rawCourseModules
     .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
     .map((mod: any) => ({
       ...mod,
-      lessons: (mod.lessons || []).map((les: any) => ({
+      lessons: (mod.lessons || []).filter((l: any) => !l.workspaceRetired).map((les: any) => ({
         ...les,
         meetingUrl: isEnrolled ? les.meetingUrl : null,
       })),

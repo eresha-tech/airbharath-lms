@@ -98,20 +98,20 @@ export default async function CourseLayout({
     .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
     .map((sec: any) => ({
       ...sec,
-      modules: (sec.modules || [])
+      modules: (sec.modules || []).filter((m: any) => !m.workspaceRetired)
         .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
         .map((mod: any) => ({
           ...mod,
-          lessons: (mod.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0)),
+          lessons: (mod.lessons || []).filter((l: any) => !l.workspaceRetired).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0)),
         })),
     }));
 
-  const courseModules = (courseObj.modules as any[]) || [];
+  const courseModules = ((courseObj.modules as any[]) || []).filter((m: any) => !m.workspaceRetired);
   const sortedModules = courseModules
     .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
     .map((mod: any) => ({
       ...mod,
-      lessons: (mod.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0)),
+      lessons: (mod.lessons || []).filter((l: any) => !l.workspaceRetired).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0)),
     }));
 
   const formattedCourse = {

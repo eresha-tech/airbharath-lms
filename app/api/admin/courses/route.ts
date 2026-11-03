@@ -88,6 +88,8 @@ export async function PUT(req: Request) {
       isPublished,
     } = await req.json();
 
+    if ((await db.query.courses.findFirst({ where: eq(courses.id, id) }))?.workspaceProjectId) return NextResponse.json({ error: "Use Creator publishing to manage this course." }, { status: 409 });
+
     const [updatedCourse] = await db
       .update(courses)
       .set({
@@ -132,6 +134,8 @@ export async function DELETE(req: Request) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+    if ((await db.query.courses.findFirst({ where: eq(courses.id, id) }))?.workspaceProjectId) return NextResponse.json({ error: "Creator publications retain learner history. Use unpublish or emergency suspension." }, { status: 409 });
 
     await db.delete(certificates).where(eq(certificates.courseId, id));
     await db.update(orders).set({ courseId: null }).where(eq(orders.courseId, id));

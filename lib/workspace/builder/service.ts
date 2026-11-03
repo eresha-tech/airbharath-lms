@@ -9,7 +9,7 @@ export type Lesson = typeof workspaceCourseLessons.$inferSelect;
 export type ApprovedSource = Submission & { approvalExists: boolean };
 export const projectReceipt = ({ id, draftId, approvedSubmissionId, status, version, createdAt, updatedAt }: Project) => ({ id, draftId, approvedSubmissionId, status, version, createdAt, updatedAt });
 export const moduleReceipt = ({ id, title, description, position, version, createdAt, updatedAt }: CourseModule) => ({ id, title, description, position, version, createdAt, updatedAt });
-export const lessonSummary = ({ id, moduleId, title, summary, position, version, createdAt, updatedAt }: Omit<Lesson, 'content'>) => ({ id, moduleId, title, summary, position, version, createdAt, updatedAt });
+export const lessonSummary = ({ id, moduleId, title, summary, position, version, contentFormat, mediaRevision, createdAt, updatedAt }: Omit<Lesson, 'content'>) => ({ id, moduleId, title, summary, position, version, contentFormat, mediaRevision, createdAt, updatedAt });
 export const lessonReceipt = (row: Lesson) => ({ ...lessonSummary(row), content: row.content });
 export const sourceReceipt = ({ id, submissionNumber, title, category, description, targetLearner, learningOutcomes, outline, tentativePricePaise, currency, reviewCompletedAt }: ApprovedSource) => ({ id, submissionNumber, title, category, description, targetLearner, learningOutcomes, outline, tentativePricePaise, currency, approvedAt: reviewCompletedAt });
 export type BuildTree = { project: ReturnType<typeof projectReceipt>; source: ReturnType<typeof sourceReceipt>; modules: ReturnType<typeof moduleReceipt>[]; lessons: ReturnType<typeof lessonSummary>[]; canEdit: boolean; inspection?: { creatorName: string | null; creatorStatus: string } };

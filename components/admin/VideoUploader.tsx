@@ -20,6 +20,7 @@ import {
   FolderOpen,
   Subtitles,
 } from "lucide-react";
+import { UploadStatus } from "@/components/media/UploadStatus";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -571,39 +572,9 @@ export function VideoUploader({
 
       {/* State 3: Uploading (Direct S3 multipart) */}
       {s.tag === "uploading" && (
-        <div className="space-y-4 bg-card border border-border/80 rounded-3xl p-5 shadow-xs">
-          <div className="flex items-center justify-between text-xs font-semibold text-foreground">
-            <div className="flex items-center gap-2.5 truncate">
-              <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
-              <span className="font-bold truncate font-outfit">Uploading {s.file.name}</span>
-            </div>
-            <span className="text-primary font-bold tabular-nums text-sm shrink-0 ml-2">
-              {s.progress}%
-            </span>
-          </div>
-
-          {/* Progress bar */}
-          <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
-            <div
-              className="bg-primary h-2.5 rounded-full transition-all duration-200"
-              style={{ width: `${s.progress}%` }}
-            />
-          </div>
-
-          <div className="flex justify-between items-center text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Server className="h-3 w-3 text-muted-foreground" />
-              <span>Direct multipart to AWS S3</span>
-            </span>
-            <button
-              type="button"
-              onClick={reset}
-              className="text-muted-foreground hover:text-destructive text-xs font-semibold underline cursor-pointer"
-            >
-              Cancel Upload
-            </button>
-          </div>
-        </div>
+        <UploadStatus stage="uploading" title={s.file.name} progress={s.progress} detail="Transferring file. Server processing follows the upload.">
+          <button type="button" onClick={reset} className="min-h-11 rounded-xl border border-border px-4 text-xs font-semibold">Cancel Upload</button>
+        </UploadStatus>
       )}
 
       {/* State 4: Processing (AWS MediaConvert Stepper) */}

@@ -33,6 +33,7 @@ import {
 
 interface HlsPlayerProps {
   videoId: string;
+  privateManifestUrl?: string;
   courseId?: string;
   lessonId?: string;
   lessonTitle?: string;
@@ -88,6 +89,7 @@ function formatTime(seconds: number): string {
 
 export function HlsPlayer({
   videoId,
+  privateManifestUrl,
   courseId,
   lessonId,
   lessonTitle,
@@ -191,6 +193,11 @@ export function HlsPlayer({
         setIsBuffering(true);
         setError(null);
 
+        if(privateManifestUrl){
+          const u=new URL(privateManifestUrl,window.location.origin);
+          if(u.origin!==window.location.origin||u.search||u.hash||!/^\/api\/(?:workspace\/(?:media|publishing)\/|admin\/workspace\/(?:course-builds|publishing)\/|courses\/)/.test(u.pathname))throw new Error('Private playback address is unavailable.');
+          if(isMounted)setPlaybackUrl(u.href);return;
+        }
         const res = await fetch(`/api/videos/${videoId}/playback-session`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -229,9 +236,9 @@ export function HlsPlayer({
 
     return () => {
       isMounted = false;
-      fetch(`/api/videos/${videoId}/playback-session`, { method: "DELETE" }).catch(() => {});
+      if(!privateManifestUrl)fetch(`/api/videos/${videoId}/playback-session`, { method: "DELETE" }).catch(() => {});
     };
-  }, [videoId, courseId, lessonId]);
+  }, [videoId, courseId, lessonId, privateManifestUrl]);
 
   // 2. Initialize Hls.js player with signed URL propagation and 720p initial resolution
   useEffect(() => {
@@ -273,6 +280,7 @@ export function HlsPlayer({
 
       const hls = new Hls({
         loader: SignedUrlLoader as any,
+        xhrSetup: xhr => { if(privateManifestUrl)xhr.withCredentials=true; },
         maxBufferLength: 10,
         maxMaxBufferLength: 20,
         maxBufferSize: 30 * 1000 * 1000,
@@ -360,7 +368,7 @@ export function HlsPlayer({
         hlsRef.current = null;
       }
     };
-  }, [playbackUrl]);
+  }, [playbackUrl,privateManifestUrl]);
 
   // 3. Autohide controls management
   const resetHideTimer = useCallback(() => {

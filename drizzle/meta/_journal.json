@@ -225,6 +225,34 @@
       "when": 1792014286931,
       "tag": "0031_workspace_phone_only_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793425385997,
+      "tag": "0032_workspace_course_media",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793428126930,
+      "tag": "0033_workspace_media_processing",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793687973535,
+      "tag": "0034_workspace_course_publishing",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793714956732,
+      "tag": "0035_workspace_project_artwork",
+      "breakpoints": true
     }
   ]
 }

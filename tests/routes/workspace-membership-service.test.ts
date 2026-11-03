@@ -78,10 +78,10 @@ describe('authoritative advisory quote', () => {
     await expect(getWorkspaceMembershipQuote(actorId, request, () => now)).rejects.toMatchObject({ code: 'wrong_plan' });
   });
   it('rejects deleted accounts, forged owners, unavailable catalogs and stale plan IDs', async () => {
-    mocks.user.mockResolvedValue(undefined); await expect(getWorkspaceMembershipQuote(actorId, input)).rejects.toMatchObject({ code: 'authentication' }); mocks.user.mockResolvedValue({ id: actorId });
-    await expect(getWorkspaceMembershipQuote(actorId, { ...input, planVersionId: requestKey })).rejects.toMatchObject({ code: 'stale_plan' });
-    mocks.plan.mockResolvedValue({ ...plans[0], available: false }); await expect(getWorkspaceMembershipQuote(actorId, input)).rejects.toMatchObject({ code: 'plan_unavailable' });
-    mocks.plan.mockResolvedValue(plans[0]); mocks.settings.mockResolvedValue(undefined); await expect(getWorkspaceMembershipQuote(actorId, input)).rejects.toMatchObject({ code: 'unavailable' });
+    mocks.user.mockResolvedValue(undefined); await expect(getWorkspaceMembershipQuote(actorId, input, () => now)).rejects.toMatchObject({ code: 'authentication' }); mocks.user.mockResolvedValue({ id: actorId });
+    await expect(getWorkspaceMembershipQuote(actorId, { ...input, planVersionId: requestKey }, () => now)).rejects.toMatchObject({ code: 'stale_plan' });
+    mocks.plan.mockResolvedValue({ ...plans[0], available: false }); await expect(getWorkspaceMembershipQuote(actorId, input, () => now)).rejects.toMatchObject({ code: 'plan_unavailable' });
+    mocks.plan.mockResolvedValue(plans[0]); mocks.settings.mockResolvedValue(undefined); await expect(getWorkspaceMembershipQuote(actorId, input, () => now)).rejects.toMatchObject({ code: 'unavailable' });
   });
   it.each([
     [null, '/workspace/apply'],

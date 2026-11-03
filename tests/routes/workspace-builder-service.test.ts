@@ -24,7 +24,7 @@ beforeEach(() => {
         modules: async p => copy(ms(p)), lessons: async p => copy(ls(p).map(({ content: _content, ...row }) => row)),
         module: async (p,id) => copy(ms(p).find(m => m.id === id) || null), lesson: async (p,m,id) => copy(ls(p).find(l => l.moduleId === m && l.id === id) || null),
         createModule: async (p,c,position,at) => { if (failBootstrap && position === 1) throw new Error('bootstrap failure'); const m = { ...c, id: randomUUID(), projectId: p.id, userId, position, version: 1, createdAt: at, updatedAt: at }; modules.push(m); return copy(m); },
-        createLesson: async (p,m,c,position,at) => { const l = { ...c, id: randomUUID(), projectId: p.id, moduleId: m.id, userId, position, version: 1, createdAt: at, updatedAt: at }; lessons.push(l); return copy(l); },
+        createLesson: async (p,m,c,position,at) => { const l = { ...c, contentFormat: c.contentFormat ?? 'plain_text', mediaRevision: 0, id: randomUUID(), projectId: p.id, moduleId: m.id, userId, position, version: 1, createdAt: at, updatedAt: at }; lessons.push(l); return copy(l); },
         updateModule: async (p,id,v,c,at) => { const m=ms(p).find(m => m.id===id && m.version===v); if(!m)return null; Object.assign(m,c,{version:v+1,updatedAt:at}); return copy(m); },
         updateLesson: async (p,m,id,v,c,at) => { const l=ls(p).find(l=>l.id===id&&l.moduleId===m&&l.version===v); if(!l)return null; Object.assign(l,c,{version:v+1,updatedAt:at}); return copy(l); },
         deleteModule: async (p,id,v) => { const m=ms(p).find(m=>m.id===id&&m.version===v); if(!m)return false; modules=modules.filter(row=>row!==m);return true; },

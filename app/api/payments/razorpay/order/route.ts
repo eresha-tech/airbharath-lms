@@ -22,6 +22,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
 
+    if (course.workspaceProjectId && (!course.isPublished || course.workspaceState !== 'live')) return NextResponse.json({ error: 'Course is not available for purchase' }, { status: 409 });
+
     let finalAmount = Number(course.price) || 0;
 
     if (couponCode) {

@@ -7,7 +7,7 @@ export class ReviewError extends Error {
   constructor(public code: 'authentication' | 'forbidden' | 'not_found' | 'stale_draft' | 'review_in_progress' | 'already_approved' | 'no_changes_to_resubmit' | 'conflict' | 'invalid_transition' | 'validation' | 'too_large' | 'unavailable') { super(code); }
 }
 export function permitsDraftEdit(status?: ReviewStatus | null) { return !status || status === 'changes_requested'; }
-export const reviewLabels: Record<ReviewStatus, string> = { submitted: 'Submitted for Review', under_review: 'AirBharath Review in Progress', changes_requested: 'Changes Requested', approved: 'AirBharath Course Review Approved' };
+export const reviewLabels: Record<ReviewStatus, string> = { submitted: 'Awaiting idea approval', under_review: 'Idea approval in progress', changes_requested: 'Idea changes requested', approved: 'Course idea approved' };
 function object(value: unknown) { if (!value || typeof value !== 'object' || Array.isArray(value)) throw new ReviewError('validation'); return value as Record<string, unknown>; }
 function exact(input: Record<string, unknown>, fields: string[]) { if (Object.keys(input).some(key => !fields.includes(key))) throw new ReviewError('validation'); }
 function requestKey(value: unknown) { if (typeof value !== 'string' || !UUID.test(value)) throw new ReviewError('validation'); return value; }

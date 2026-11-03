@@ -6,6 +6,7 @@ export function workspaceAnalyticsPath(pathname: string) {
   if (pathname === '/admin/workspace-refunds') return pathname;
   if (pathname.startsWith('/admin/workspace-refunds/')) return '/admin/workspace-refunds/[id]';
   if (pathname === '/workspace') return '/workspace';
+  if (/^\/workspace\/courses\/[^/]+\/preview\/?$/.test(pathname)) return '/workspace/courses/[id]/preview';
   if (/^\/workspace\/courses\/[^/]+\/build\/?$/.test(pathname)) return '/workspace/courses/[id]/build';
   if (pathname.startsWith('/admin/workspace/course-builds/')) return '/admin/workspace/course-builds/[id]';
   if (pathname.startsWith('/workspace/courses/') && pathname !== '/workspace/courses/new') return '/workspace/courses/[id]';
