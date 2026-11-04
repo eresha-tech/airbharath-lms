@@ -183,6 +183,7 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
         title: courseObj.title,
         slug: courseObj.slug || null,
         description: courseObj.description || "",
+        category: courseObj.category, difficulty: courseObj.difficulty,
         short_description: courseObj.shortDescription || "",
         about_course: courseObj.aboutCourse || "",
         what_you_will_learn: courseObj.whatYouWillLearn || "",

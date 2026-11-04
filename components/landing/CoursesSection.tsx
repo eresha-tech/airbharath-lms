@@ -18,6 +18,8 @@ export function PublicCourseCard({ course }: {
     <h3>
     <Link href={href}>{course.title}</Link>
     </h3>{course.description && <p className="public-course-description">{course.description}</p>}
+    {course.creatorName && <p className="text-sm text-muted-foreground">By {course.creatorName}</p>}
+    {course.reviewCount !== undefined && <p className="text-sm text-muted-foreground">{course.reviewCount ? `★ ${course.averageRating?.toFixed(1)} · ${course.reviewCount} reviews` : "New · No reviews yet"}</p>}
     <div className="public-course-bottom">
     <p className="public-price">{course.offerPrice !== null ? <><del>{rupees(course.price)}</del><strong>{rupees(course.offerPrice)}</strong></> : rupees(course.price)}</p>
     <p className="public-price-caption">Inclusive of 18% GST</p>{course.offerPrice !== null && <div className="public-offer">

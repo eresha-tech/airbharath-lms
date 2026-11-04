@@ -67,6 +67,11 @@ export const adminNavGroups: AdminNavGroup[] = [
         icon: BookOpen,
       },
       {
+        title: "Learner Reviews",
+        href: "/admin/learner-reviews",
+        icon: MessageSquare,
+      },
+      {
         title: "Video Library",
         href: "/admin/videos",
         icon: Film,

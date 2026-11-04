@@ -253,6 +253,13 @@
       "when": 1793714956732,
       "tag": "0035_workspace_project_artwork",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793771590465,
+      "tag": "0036_course_reviews_discovery_commerce",
+      "breakpoints": true
     }
   ]
 }

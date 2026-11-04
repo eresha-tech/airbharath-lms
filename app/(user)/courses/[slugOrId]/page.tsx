@@ -1,4 +1,6 @@
 import Image from "next/image";
+import { Suspense } from "react";
+import { ReviewSection } from "@/components/reviews/ReviewSection";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -87,7 +89,7 @@ export async function generateMetadata({ params }: CoursePageProps) {
             description: true,
           },
         });
-    if (course && (!course.workspaceProjectId || course.isPublished && course.workspaceState === "live")) {
+    if (course?.isPublished && (!course.workspaceProjectId || course.workspaceState === "live")) {
       if (course.title) courseTitle = course.title;
       seoTitle = course.seoTitle;
       seoDescription = course.seoDescription;
@@ -162,7 +164,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
     console.error("Course fetch error:", err);
   }
 
-  if (!course || (course.workspaceProjectId && (!course.isPublished || course.workspaceState !== "live"))) {
+  if (!course || !course.isPublished || (course.workspaceProjectId && (!course.isPublished || course.workspaceState !== "live"))) {
     return (
       <div className="container mx-auto px-4 pt-28 pb-16 text-center min-h-[60vh] flex flex-col items-center justify-center space-y-4">
         <div className="h-16 w-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
@@ -579,6 +581,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Main Left Content Area */}
           <div className="lg:col-span-8 space-y-12 sm:space-y-14">
+            <a href="#course-reviews" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary underline">Read learner reviews</a>
             {/* SECTION: Overview */}
             <section id="course-overview" className="scroll-mt-28 space-y-8">
               {/* About This Course */}
@@ -673,6 +676,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
             </section>
 
             {/* SECTION: Curriculum */}
+            <Suspense fallback={<p role="status">Loading learner reviews…</p>}><ReviewSection courseId={course.id} actor={session?.id??null}/></Suspense>
             <section id="course-curriculum" className="scroll-mt-28 space-y-6">
               <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xs">
                 <div className="flex items-center justify-between">

@@ -96,6 +96,8 @@ export const courses = pgTable('courses', {
   accessDays: integer('access_days'), // null means lifetime access
   isPublished: boolean('is_published').default(false).notNull(),
   isBundle: boolean('is_bundle').default(false).notNull(),
+  category: text('category').default('general').notNull(),
+  difficulty: text('difficulty').default('all_levels').notNull(),
   instructorId: uuid('instructor_id').references(() => users.id),
   workspaceProjectId: uuid('workspace_project_id').references(() => workspaceCourseProjects.id, { onDelete: 'restrict' }).unique(),
   workspaceState: text('workspace_state').$type<'live'|'unpublished'|'suspended'>(),
@@ -219,6 +221,9 @@ export const orders = pgTable('orders', {
   razorpayPaymentId: text('razorpay_payment_id'),
   amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
   status: text('status').default('pending').notNull(), // 'pending' | 'paid' | 'failed'
+  purchaseEvidence: jsonb('purchase_evidence').$type<import('@/lib/commerce/model').PurchaseEvidence>(),
+  creatorId: uuid('creator_id').references(() => users.id, { onDelete: 'restrict' }),
+  workspacePriceId: uuid('workspace_price_id').references(() => workspacePublicationPrices.id, { onDelete: 'restrict' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -340,6 +345,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 }));
 
 export const coursesRelations = relations(courses, ({ one, many }) => ({
+  discoveryStats: one(courseDiscoveryStats, { fields: [courses.id], references: [courseDiscoveryStats.courseId] }),
   instructor: one(users, {
     fields: [courses.instructorId],
     references: [users.id],
@@ -1034,3 +1040,43 @@ export const workspacePublicationEvents=pgTable('workspace_publication_events',{
 export const workspaceTrustEvents=pgTable('workspace_trust_events',{
  id:uuid('id').defaultRandom().primaryKey(),creatorProfileId:uuid('creator_profile_id').notNull().references(()=>workspaceCreatorProfiles.id,{onDelete:'restrict'}),actorId:uuid('actor_id').notNull().references(()=>users.id,{onDelete:'restrict'}),trusted:boolean('trusted').notNull(),version:integer('version').notNull(),reason:text('reason').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).notNull(),
 },t=>[unique('workspace_trust_event_version').on(t.creatorProfileId,t.version)]);
+
+// Shared learner feedback. Creator publication approval remains a separate domain.
+export const courseReviews = pgTable('course_reviews', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  courseId: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'restrict' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  rating: integer('rating').notNull(), content: text('content').notNull(),
+  showName: boolean('show_name').default(false).notNull(),
+  status: text('status').$type<'pending' | 'published' | 'hidden' | 'deleted'>().default('pending').notNull(),
+  version: integer('version').default(1).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, t => [unique('course_review_learner_unique').on(t.courseId, t.userId),
+  index('course_review_public_idx').on(t.courseId, t.status, t.updatedAt, t.id),
+  check('course_review_valid', sql`${t.rating} BETWEEN 1 AND 5 AND length(${t.content}) BETWEEN 20 AND 3000 AND ${t.version}>0 AND ${t.status} IN ('pending','published','hidden','deleted')`)]);
+export const courseReviewReports = pgTable('course_review_reports', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  reviewId: uuid('review_id').notNull().references(() => courseReviews.id, { onDelete: 'restrict' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  reason: text('reason').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, t => [unique('course_review_report_unique').on(t.reviewId, t.userId), check('course_review_report_reason', sql`length(${t.reason}) BETWEEN 10 AND 1000`)]);
+export const courseReviewEvents = pgTable('course_review_events', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  reviewId: uuid('review_id').notNull().references(() => courseReviews.id, { onDelete: 'restrict' }),
+  actorId: uuid('actor_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  action: text('action').notNull(), reason: text('reason').default('').notNull(),
+  version: integer('version').notNull(),
+  snapshot: jsonb('snapshot').$type<{rating:number;content:string;showName:boolean;status:string}>().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, t => [unique('course_review_event_version').on(t.reviewId, t.version), index('course_review_actor_time_idx').on(t.actorId,t.createdAt)]);
+export const courseDiscoveryStats = pgTable('course_discovery_stats', {
+  courseId: uuid('course_id').primaryKey().references(() => courses.id, { onDelete: 'cascade' }),
+  reviewCount: integer('review_count').default(0).notNull(), ratingSum: integer('rating_sum').default(0).notNull(),
+  distribution: jsonb('distribution').$type<number[]>().default([0,0,0,0,0]).notNull(),
+  learners: integer('learners').default(0).notNull(), engaged: integer('engaged').default(0).notNull(), completed: integer('completed').default(0).notNull(),
+  lessons: integer('lessons').default(0).notNull(), modules: integer('modules').default(0).notNull(),
+  publishedAt: timestamp('published_at', { withTimezone: true }).notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});

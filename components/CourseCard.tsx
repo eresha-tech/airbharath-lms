@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { BookOpen, Users, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
+import { BookOpen, Users, ArrowRight, CheckCircle2, ShieldCheck, Star } from "lucide-react";
 import { CourseProgress } from "@/components/CourseProgress";
 import { Button } from "@/components/ui/button";
 
@@ -22,6 +22,9 @@ export interface CourseCardProps {
     modulesCount?: number;
     lessonsCount?: number;
     badge?: string;
+    averageRating?: number | null;
+    reviewCount?: number;
+    difficulty?: string;
     category?: {
       name: string;
     };
@@ -57,6 +60,7 @@ export function CourseCard({ course, progress, href }: CourseCardProps) {
               src={thumbnailUrl}
               alt={course.title || "Course Thumbnail"}
               fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
               className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
@@ -99,6 +103,13 @@ export function CourseCard({ course, progress, href }: CourseCardProps) {
               </p>
             )}
           </div>
+
+          {course.instructor?.fullName && <p className="text-xs text-muted-foreground">By {course.instructor.fullName}</p>}
+          {course.reviewCount !== undefined && <div className="flex flex-wrap items-center gap-2 text-xs">
+            <Star aria-hidden="true" className="h-4 w-4 fill-amber-400 text-amber-500" />
+            {course.reviewCount ? <span aria-label={`${course.averageRating?.toFixed(1)} out of 5 from ${course.reviewCount} reviews`}><strong>{course.averageRating?.toFixed(1)}</strong> <span className="text-muted-foreground">({course.reviewCount} reviews)</span></span> : <span className="text-muted-foreground">New · No reviews yet</span>}
+            {course.difficulty && <span className="ml-auto rounded-full bg-muted px-2 py-1">{course.difficulty.replaceAll('_',' ')}</span>}
+          </div>}
 
           {/* Metadata Highlights */}
           <div className="flex items-center gap-3.5 text-xs text-muted-foreground pt-1 border-t border-border/50">

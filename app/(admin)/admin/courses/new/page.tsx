@@ -14,6 +14,8 @@ export default function NewCourse() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [category,setCategory]=useState("general");
+  const [difficulty,setDifficulty]=useState("all_levels");
   const [price, setPrice] = useState("");
   const [accessDays, setAccessDays] = useState("");
   const [isPublished, setIsPublished] = useState(false);
@@ -36,7 +38,7 @@ export default function NewCourse() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: title.trim(),
+          title: title.trim(), category, difficulty,
           description: description.trim(),
           thumbnailUrl: thumbnailUrl.trim() || null,
           price: parseFloat(price),
@@ -93,6 +95,7 @@ export default function NewCourse() {
         </div>
       )}
 
+      <div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-medium">Catalog category<input value={category} onChange={e=>setCategory(e.target.value.toLowerCase())} maxLength={80} className="mt-2 h-11 w-full rounded-xl border bg-background px-3"/></label><label className="text-sm font-medium">Difficulty<select value={difficulty} onChange={e=>setDifficulty(e.target.value)} className="mt-2 h-11 w-full rounded-xl border bg-background px-3">{['all_levels','beginner','intermediate','advanced'].map(v=><option key={v} value={v}>{v.replaceAll('_',' ')}</option>)}</select></label></div>
       {/* Form */}
       <form onSubmit={handleCreate} className="space-y-6">
         {/* Section 1: Basic Information */}

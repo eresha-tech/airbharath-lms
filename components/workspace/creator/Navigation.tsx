@@ -6,6 +6,7 @@ export const creatorLinks = [
   { label: 'Overview', href: '/workspace/dashboard', icon: LayoutDashboard },
   { label: 'My Profile', href: '/workspace/profile', icon: UserRound },
   { label: 'My Courses', href: '/workspace/courses', icon: BookOpen },
+  { label: 'Learner Reviews', href: '/workspace/reviews', icon: BookOpen },
   { label: 'Membership', href: '/workspace/member', icon: BadgeCheck },
 ];
 export function creatorSection(pathname: string) {

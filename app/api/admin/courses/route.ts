@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getAuthorizedAdminSession } from "@/lib/admin-authorization";
 import { db } from "@/lib/db";
-import { courses, modules, lessons, certificates, orders } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { courses, modules, lessons, certificates, orders, courseReviews } from "@/lib/db/schema";
+import { difficulties } from '@/lib/discovery/model';
+import { and, eq, isNotNull } from "drizzle-orm";
 import { serverTrack } from "@/lib/analytics-server";
 
 export async function POST(req: Request) {
@@ -26,13 +27,15 @@ export async function POST(req: Request) {
       price,
       thumbnailUrl,
       accessDays,
-      isPublished,
+      isPublished, category, difficulty,
     } = await req.json();
+    if ((category !== undefined && (typeof category !== "string" || !/^[a-z0-9][a-z0-9_ -]{0,79}$/.test(category))) || (difficulty !== undefined && !difficulties.includes(difficulty))) return NextResponse.json({error:"Invalid category or difficulty"},{status:400});
 
     const [newCourse] = await db
       .insert(courses)
       .values({
         title,
+        category, difficulty,
         description,
         shortDescription: shortDescription || null,
         aboutCourse: aboutCourse || null,
@@ -85,8 +88,9 @@ export async function PUT(req: Request) {
       price,
       thumbnailUrl,
       accessDays,
-      isPublished,
+      isPublished, category, difficulty,
     } = await req.json();
+    if ((category !== undefined && (typeof category !== "string" || !/^[a-z0-9][a-z0-9_ -]{0,79}$/.test(category))) || (difficulty !== undefined && !difficulties.includes(difficulty))) return NextResponse.json({error:"Invalid category or difficulty"},{status:400});
 
     if ((await db.query.courses.findFirst({ where: eq(courses.id, id) }))?.workspaceProjectId) return NextResponse.json({ error: "Use Creator publishing to manage this course." }, { status: 409 });
 
@@ -94,6 +98,7 @@ export async function PUT(req: Request) {
       .update(courses)
       .set({
         title,
+        category, difficulty,
         description,
         shortDescription: shortDescription !== undefined ? (shortDescription || null) : undefined,
         aboutCourse: aboutCourse !== undefined ? (aboutCourse || null) : undefined,
@@ -136,6 +141,12 @@ export async function DELETE(req: Request) {
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
     if ((await db.query.courses.findFirst({ where: eq(courses.id, id) }))?.workspaceProjectId) return NextResponse.json({ error: "Creator publications retain learner history. Use unpublish or emergency suspension." }, { status: 409 });
+
+    const [feedback, purchase] = await Promise.all([
+      db.query.courseReviews.findFirst({ where: eq(courseReviews.courseId,id), columns: { id:true } }),
+      db.query.orders.findFirst({ where: and(eq(orders.courseId,id),isNotNull(orders.purchaseEvidence)), columns: { id:true } }),
+    ]);
+    if(feedback || purchase) return NextResponse.json({error:"This course retains learner feedback or purchase evidence. Unpublish it instead."},{status:409});
 
     await db.delete(certificates).where(eq(certificates.courseId, id));
     await db.update(orders).set({ courseId: null }).where(eq(orders.courseId, id));

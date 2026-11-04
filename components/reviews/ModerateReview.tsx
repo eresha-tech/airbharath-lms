@@ -1,0 +1,8 @@
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+export function ModerateReview({id,version}:{id:string;version:number}) {
+ const [reason,setReason]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);const router=useRouter();
+ async function submit(status:string){setBusy(true);setError('');try{const res=await fetch(`/api/admin/learner-reviews/${id}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status,reason,version})});const b=await res.json();if(!res.ok)throw Error(b.error||'Moderation failed.');setReason('');router.refresh();}catch(e){setError(e instanceof Error?e.message:'Connection failed.');}finally{setBusy(false);}}
+ return <form className="space-y-3" onSubmit={e=>{e.preventDefault();void submit('published');}}><label htmlFor="moderation-reason" className="block text-sm font-medium">Decision reason (10–1000 characters)</label><textarea id="moderation-reason" required minLength={10} maxLength={1000} value={reason} onChange={e=>setReason(e.target.value)} className="w-full rounded-xl border bg-background p-3"/><div className="flex flex-wrap gap-3"><button disabled={busy||reason.trim().length<10} className="min-h-11 rounded-xl bg-primary px-5 text-primary-foreground disabled:opacity-50">Publish review</button><button type="button" disabled={busy||reason.trim().length<10} onClick={()=>void submit('hidden')} className="min-h-11 rounded-xl border px-5 disabled:opacity-50">Hide review</button></div>{error&&<p role="alert" className="text-sm text-destructive">{error}</p>}</form>;
+}
