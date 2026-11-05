@@ -17,7 +17,7 @@ it('additive migration has snapshot/event guards, ownership, numbering and open 
 });
 it('review implementation writes no LMS/financial tables, performs no external calls and exposes no snapshot-update method',()=>{
  const source=['model','snapshot','transaction','repository','service','http'].map(name=>readFileSync('lib/workspace/review/'+name+'.ts','utf8')).join('\n');expect(source).not.toMatch(/fetch\(|axios|razorpay|insert\(courses\)|insert\(courseAuthors\)|insert\(enrollments\)|workspaceMembershipOrders|sendEmail/);
- expect(readFileSync('lib/workspace/review/repository.ts','utf8')).toContain('version: prior.version + 1');expect(readFileSync('lib/workspace/creator/service.ts','utf8')).toContain('tx.reviews.latest(id)');
+ expect(readFileSync('lib/workspace/review/repository.ts','utf8')).toContain('version: prior.version + 1');expect(readFileSync('lib/workspace/creator/service.ts','utf8')).not.toContain("throw new CreatorError('review_locked')");
 });
 it('hash covers every reviewed content field and INR but excludes mutable metadata',()=>{
  const base={...content,currency:'INR'} as Draft;const hash=snapshot(base).contentHash;expect(snapshot({...base,id:owner,version:100,updatedAt:new Date()}).contentHash).toBe(hash);

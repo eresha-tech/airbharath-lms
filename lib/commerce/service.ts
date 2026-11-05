@@ -18,7 +18,7 @@ export function commerceService(database=db, provider=razorpay) {
   if(course.workspaceProjectId) {
    const state=await source.query.workspacePublicationStates.findFirst({where:eq(states.projectId,course.workspaceProjectId)});
    const price=state?.currentPriceId ? await source.query.workspacePublicationPrices.findFirst({where:eq(prices.id,state.currentPriceId)}) : null;
-   if(!price || price.status!=='approved' || price.projectId!==course.workspaceProjectId || price.userId!==course.instructorId || price.decidedBy===price.userId || !price.decidedBy || price.amountPaise!==moneyPaise(course.price) || state?.status!=='live' || state.courseId!==courseId) throw new CommerceError(409,'An independently approved course price is required.');
+   if(!price || !['creator','approved'].includes(price.status) || price.projectId!==course.workspaceProjectId || price.userId!==course.instructorId || price.amountPaise!==moneyPaise(course.price) || state?.status!=='live' || state.courseId!==courseId) throw new CommerceError(409,'The current Creator course price is unavailable.');
    priceId=price.id;
   }
   const coupon=couponCode ? await source.query.coupons.findFirst({where:eq(coupons.code,couponCode)}) : null;

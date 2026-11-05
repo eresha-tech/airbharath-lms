@@ -3,8 +3,8 @@ import { UUID } from '../eligibility/model';
 import { CONTENT_FORMATS, type ContentFormat } from '../media/model';
 export const BUILDER_BODY_LIMIT = 131_072;
 export const MAX_MODULES = 50, MAX_LESSONS_PER_MODULE = 100, MAX_PROJECT_LESSONS = 500;
-export const BUILD_APPROVAL_COPY = 'Your course idea is approved. Build your lessons, add videos and resources, then submit the finished course for approval. Course pricing needs separate Admin approval.';
-export const STRUCTURE_REVIEW_COPY = 'Keep your lessons aligned with the approved course idea. The finished course is checked separately before publishing.';
+export const BUILD_APPROVAL_COPY = 'Build your lessons, set your price, preview your course and acknowledge the publishing guidelines. You can publish independently when the course is ready.';
+export const STRUCTURE_REVIEW_COPY = 'Organize your lessons for your learners. Technical readiness and current publishing guidelines are required before publishing.';
 export class BuildError extends Error {
   constructor(public code: 'authentication' | 'forbidden' | 'not_found' | 'not_approved' | 'conflict' | 'validation' | 'too_large' | 'not_empty' | 'media_exists' | 'limit') { super(code); }
 }
@@ -22,7 +22,7 @@ export type BuildCommand =
 function object(raw: unknown) { if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new BuildError('validation'); return raw as Record<string, unknown>; }
 function exact(input: Record<string, unknown>, allowed: string[]) { if (Object.keys(input).some(k => !allowed.includes(k))) throw new BuildError('validation'); }
 export function buildId(value: unknown) { if (typeof value !== 'string' || !UUID.test(value)) throw new BuildError('not_found'); return value; }
-export function startCommand(raw: unknown) { const input = object(raw); exact(input, ['approvedSubmissionId']); return { approvedSubmissionId: buildId(input.approvedSubmissionId) }; }
+export function startCommand(raw: unknown) { const input = object(raw); exact(input, ['approvedSubmissionId']); return { approvedSubmissionId: input.approvedSubmissionId===undefined?undefined:buildId(input.approvedSubmissionId) }; }
 function expected(value: unknown) { const v = version(value); if (!v) throw new BuildError('validation'); return v; }
 export function moduleContent(raw: unknown): ModuleContent { const i = object(raw); exact(i, ['title', 'description']); return { title: plain(i.title, 'title', 2, 200), description: plain(i.description ?? '', 'description', 0, 1000) }; }
 export function lessonContent(raw: unknown): LessonContent {

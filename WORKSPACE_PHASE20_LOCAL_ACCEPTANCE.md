@@ -1,5 +1,7 @@
 # Phase 2.0 — founder local acceptance
 
+> Superseded for current publishing and pricing acceptance by [the final-policy guide](WORKSPACE_SELF_PUBLISHING_LOCAL_ACCEPTANCE.md). The approval/Trusted Creator steps below describe the previous policy and must not be used for active testing.
+
 **Internal milestone only. Phase 2.0 is not accepted until the founder tests it and explicitly approves.** Phase 1.9 core Studio acceptance stands. No public launch, deployment or Phase 2.1 is part of this work.
 
 ## Start your existing founder environment

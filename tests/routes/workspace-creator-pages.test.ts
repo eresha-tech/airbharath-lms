@@ -23,14 +23,14 @@ const row = { ...content, id: draftId, userId: owner, creatorProfileId: profileI
 let state: Record<string, unknown>;
 beforeEach(() => {mocks.adminList.mockResolvedValue(adminListFixture()); state = { user: { id: owner, fullName: 'Account suggestion' }, profileId, evidence, capabilities: creatorCapabilities(evidence, now, 'test'), planName: 'Quarterly', drafts: [row], total: 1, hasNext: false, details: { ...profile, version: 1 } }; mocks.state.mockImplementation(async () => state); mocks.summary.mockResolvedValue({total:1,drafts:1,underReview:0,changesRequested:0,approved:0,building:0}); mocks.content.mockResolvedValue(row); mocks.admin.mockResolvedValue(null); mocks.inspect.mockResolvedValue([{ draft: row, creatorName: 'Creator', creatorStatus: 'enabled' }]); });
 it('dashboard has actual count, membership dates, early access notice, draft links and no invented analytics', async () => {
-  const html = renderToStaticMarkup(await Dashboard()); expect(html).toContain('Early Access Active'); expect(html).toContain('Your paid membership term begins on 9 November 2026.'); expect(html).toContain('Quarterly'); expect(html).toContain('Continue Draft'); expect(html).toContain(content.title); expect(html).not.toMatch(/Revenue|Sales|Payout|Completion rate|DGCA/);
+  const html = renderToStaticMarkup(await Dashboard()); expect(html).toContain('Early Access Active'); expect(html).toContain('Your paid membership term begins on 9 November 2026.'); expect(html).toContain('Quarterly'); expect(html).toContain('Continue course'); expect(html).toContain(content.title); expect(html).not.toMatch(/Revenue|Sales|Payout|Completion rate|DGCA/);
 });
 it('expired creator sees retained profile/draft content without an editor or create CTA', async () => {
   state.capabilities = creatorCapabilities(evidence, evidence.membership.endsAt, 'test');
-  expect(renderToStaticMarkup(await Dashboard())).not.toContain('Create Course'); const html = renderToStaticMarkup(await OwnedDraft({ params: Promise.resolve({ id: draftId }) })); expect(html).toContain(content.description); expect(html).toContain('Editing is currently unavailable'); expect(html).not.toContain('<form'); const profileHtml = renderToStaticMarkup(await Profile()); expect(profileHtml).toContain(profile.shortBio); expect(profileHtml).not.toContain('Save Profile'); await expect(NewDraft()).rejects.toThrow('REDIRECT:/workspace/courses');
+  expect(renderToStaticMarkup(await Dashboard())).not.toContain('Create Course'); const html = renderToStaticMarkup(await OwnedDraft({ params: Promise.resolve({ id: draftId }) })); expect(html).toContain(content.description); expect(html).toContain('Active Creator access is required to edit'); expect(html).not.toContain('<form'); const profileHtml = renderToStaticMarkup(await Profile()); expect(profileHtml).toContain(profile.shortBio); expect(profileHtml).not.toContain('Save Profile'); await expect(NewDraft()).rejects.toThrow('REDIRECT:/workspace/courses');
 });
 it('editor is bounded, explicitly saved and labels price as tentative; profile suggestion is not persisted', async () => {
-  const html = renderToStaticMarkup(await NewDraft()); for (const text of ['Course Basics', 'Target Learner', 'Learning Outcomes', 'Course Outline', 'Tentative Price', 'Save Draft', 'finished course for its own approval']) expect(html).toContain(text); expect(html).not.toMatch(/<button[^>]*>[^<]*(?:Publish|Approve|Checkout|Upload)/i);
+  const html = renderToStaticMarkup(await NewDraft()); for (const text of ['Course Basics', 'Target Learner', 'Learning Outcomes', 'Course Outline', 'Tentative Price', 'Save Draft', 'You can publish independently']) expect(html).toContain(text); expect(html).not.toMatch(/<button[^>]*>[^<]*(?:Publish|Approve|Checkout|Upload)/i);
   state.details = null; const profileHtml = renderToStaticMarkup(await Profile()); expect(profileHtml).toContain('Account suggestion'); expect(profileHtml).toContain('Nothing is saved until'); expect(profileHtml).toContain('Save Profile');
 });
 it('owned draft page uses server-derived owner and cross-owner/malformed IDs render not found', async () => {
@@ -46,7 +46,7 @@ it('admin draft list/detail require persisted authorization; inspection has no w
 });
 it('dashboard tolerates capability-resolved creator access without inventing a financial source', async()=>{
  state.evidence=null;state.planName=null;state.capabilities={...(state.capabilities as object),canEditWorkspace:true,state:null};
- const html=renderToStaticMarkup(await Dashboard());expect(html).toContain('Creator access active');expect(html).not.toContain('Razorpay');expect(html).toContain('Continue Draft');
+ const html=renderToStaticMarkup(await Dashboard());expect(html).toContain('Creator access active');expect(html).not.toContain('Razorpay');expect(html).toContain('Continue course');
 });
 it('unavailable summary never substitutes invented counts or completed progress',async()=>{
  mocks.summary.mockRejectedValue(Error('Synthetic unavailable'));

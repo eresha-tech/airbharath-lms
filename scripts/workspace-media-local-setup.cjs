@@ -4,7 +4,7 @@ let stage='target';
 (async()=>{let c;try{
  const t=await localTarget({write:true});c=t.client;
  const {assertDestructiveDatabaseOperation}=await import('./database-safety.mjs');assertDestructiveDatabaseOperation({databaseEnv:t.env.DATABASE_ENV,databaseUrl:t.env.DATABASE_URL,acknowledgement:t.env.ALLOW_DESTRUCTIVE_DB_OPERATION});
- if((await c`select count(*)::int n from drizzle.__drizzle_migrations`)[0].n!==37)throw Error('migration_0036_required');
+ if((await c`select count(*)::int n from drizzle.__drizzle_migrations`)[0].n!==38)throw Error('migration_0037_required');
  const dir=path.join(t.root,'output/audits/workspace-phase19-local'),file=path.join(dir,'fixture.json');fs.mkdirSync(dir,{recursive:true});
  if(fs.existsSync(file)){
   const f=JSON.parse(fs.readFileSync(file));

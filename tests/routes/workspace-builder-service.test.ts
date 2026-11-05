@@ -46,9 +46,9 @@ it('uses only approved source, bootstraps once and concurrent retry converges to
 it('outline failure rolls back project and first module; retry creates the complete outline',async()=>{
  source.outline.push({title:'Second approved module',description:'Outline only',ordering:1});failBootstrap=true;await expect(start()).rejects.toThrow('bootstrap failure');expect(projects).toEqual([]);expect(modules).toEqual([]);failBootstrap=false;await start();expect(modules.map(m=>m.position)).toEqual([0,1]);
 });
-it.each(['submitted','under_review','changes_requested'] as const)('rejects %s source',async status=>{source.reviewStatus=status;await expect(start()).rejects.toMatchObject({code:'not_approved'});expect(projects).toEqual([]);});
+it.each(['submitted','under_review','changes_requested'] as const)('allows owned legacy %s source without an approval gate',async status=>{source.reviewStatus=status;await start();expect(projects).toHaveLength(1);});
 it('rejects approval without event, another creator/profile/draft and client ownership fields',async()=>{
- source.approvalExists=false;await expect(start()).rejects.toMatchObject({code:'not_approved'});source.approvalExists=true;await expect(service().start(other,draftId,{approvedSubmissionId:key})).rejects.toMatchObject({code:'not_found'});await expect(service().start(owner,other,{approvedSubmissionId:key})).rejects.toMatchObject({code:'not_found'});context.profileId=other;await expect(start()).rejects.toMatchObject({code:'not_found'});
+ source.approvalExists=false;await expect(service().start(other,draftId,{approvedSubmissionId:key})).rejects.toMatchObject({code:'not_found'});await expect(service().start(owner,other,{approvedSubmissionId:key})).rejects.toMatchObject({code:'not_found'});context.profileId=other;await expect(start()).rejects.toMatchObject({code:'not_found'});
  expect(()=>service().start(owner,draftId,{approvedSubmissionId:key,userId:owner})).toThrow('validation');expect(projects).toEqual([]);
 });
 it('independent module and lesson edits persist; stale writes never overwrite',async()=>{

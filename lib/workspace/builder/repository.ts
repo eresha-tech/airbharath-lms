@@ -32,6 +32,7 @@ export const postgresBuildStore: BuildStore = {
     const lessonOwner = (project: Project, moduleId?: string) => and(eq(lessons.projectId, project.id), eq(lessons.userId, userId), moduleId ? eq(lessons.moduleId, moduleId) : undefined);
     return work({
       context: async () => ({ user, grant, profileId: profile?.id || null, evidence: access.row ? { refundedAt: access.row.refund?.confirmedAt, profileStatus: access.row.profile.status, activationState: access.row.order.activationState, providerMode: access.row.order.providerMode, commercialPolicyVersion: access.row.order.commercialPolicyVersion, membership: access.row.membership } : null, financialReview: access.latestOrder?.activationState === 'held_for_review', planName: access.row?.order.planSnapshot.displayName || null }),
+      fromDraft:async draftId=>{const [d]=await tx.select().from(drafts).where(and(eq(drafts.id,draftId),eq(drafts.userId,userId))).for('update');return d?{...d,draftId:d.id,direct:true,submissionNumber:0,reviewCompletedAt:null,approvalExists:false}:null;},
       source: async (id, draftId) => {
         // Match the established creator/review order: draft before submission.
         await tx.select({ id: drafts.id }).from(drafts).where(and(eq(drafts.id, draftId), eq(drafts.userId, userId))).for('update');
@@ -39,7 +40,7 @@ export const postgresBuildStore: BuildStore = {
       },
       project: async draftId => (await tx.select().from(projects).where(and(eq(projects.userId, userId), eq(projects.draftId, draftId))).orderBy(desc(projects.createdAt), desc(projects.id)).limit(1).for('update'))[0] || null,
       existing: async id => (await tx.select().from(projects).where(and(eq(projects.userId, userId), eq(projects.approvedSubmissionId, id))).for('update'))[0] || null,
-      createProject: async (s, now) => (await tx.insert(projects).values({ userId, creatorProfileId: s.creatorProfileId, draftId: s.draftId, approvedSubmissionId: s.id, createdAt: now, updatedAt: now }).returning())[0],
+      createProject: async (s, now) => (await tx.insert(projects).values({ userId, creatorProfileId: s.creatorProfileId, draftId: s.draftId, approvedSubmissionId: s.direct?null:s.id, sourceSnapshot:s.direct?s:null, createdAt: now, updatedAt: now }).returning())[0],
       modules: async project => tx.select().from(modules).where(owner(project)).orderBy(asc(modules.position)),
       lessons: async project => tx.select(lessonColumns).from(lessons).where(lessonOwner(project)).orderBy(asc(lessons.moduleId), asc(lessons.position)),
       module: async (project, id) => (await tx.select().from(modules).where(and(owner(project), eq(modules.id, id))).for('update'))[0] || null,
@@ -76,28 +77,28 @@ async function admin<T>(actorId: string, work: (tx: Tx) => Promise<T>) {
   return db.transaction(async tx => { const [actor] = await tx.select({ role: users.role }).from(users).where(eq(users.id, actorId)).for('share'); if (actor?.role !== 'admin') throw new BuildError('forbidden'); return work(tx); });
 }
 export async function inspectBuilds(actorId: string, page: number) {
-  return admin(actorId, async tx => { const rows = await tx.select({ project: projects, source: submissions, creatorName: users.fullName,
+  return admin(actorId, async tx => { const rows = await tx.select({ project: projects, source: sql<ApprovedSource>`coalesce(${projects.sourceSnapshot},to_jsonb(${submissions}))`, creatorName: users.fullName,
     moduleCount: sql<number>`(select count(*)::int from ${modules} where ${modules}.${sql.identifier('project_id')}=${projects}.${sql.identifier('id')})`, lessonCount: sql<number>`(select count(*)::int from ${lessons} where ${lessons}.${sql.identifier('project_id')}=${projects}.${sql.identifier('id')})`,
-  }).from(projects).innerJoin(submissions, eq(submissions.id, projects.approvedSubmissionId)).innerJoin(users, eq(users.id, projects.userId)).orderBy(desc(projects.createdAt), desc(projects.id)).limit(21).offset((page - 1) * 20); return { rows: rows.slice(0, 20), hasNext: rows.length > 20 }; });
+  }).from(projects).leftJoin(submissions, eq(submissions.id, projects.approvedSubmissionId)).innerJoin(users, eq(users.id, projects.userId)).orderBy(desc(projects.createdAt), desc(projects.id)).limit(21).offset((page - 1) * 20); return { rows: rows.slice(0, 20), hasNext: rows.length > 20 }; });
 }
 export async function inspectBuild(actorId: string, projectId: string): Promise<BuildTree> {
-  return admin(actorId, async tx => { const [p] = await tx.select().from(projects).where(eq(projects.id, projectId)); if (!p) throw new BuildError('not_found'); const s = await source(tx, p.approvedSubmissionId); if (!s || !s.approvalExists || s.reviewStatus !== 'approved') throw new BuildError('not_approved'); const [creator] = await tx.select({ creatorName: users.fullName, creatorStatus: profiles.status }).from(users).innerJoin(profiles, and(eq(profiles.userId, users.id), eq(profiles.id, p.creatorProfileId))).where(eq(users.id, p.userId)); if (!creator) throw new BuildError('not_found'); const rows = await structure(tx, p); return { inspection: creator, project: projectReceipt(p), source: sourceReceipt(s), modules: rows.modules.map(moduleReceipt), lessons: rows.lessons.map(lessonSummary), canEdit: false }; });
+  return admin(actorId, async tx => { const [p] = await tx.select().from(projects).where(eq(projects.id, projectId)); if (!p) throw new BuildError('not_found'); const s=p.sourceSnapshot??await source(tx,p.approvedSubmissionId!);if(!s)throw new BuildError('not_found'); const [creator] = await tx.select({ creatorName: users.fullName, creatorStatus: profiles.status }).from(users).innerJoin(profiles, and(eq(profiles.userId, users.id), eq(profiles.id, p.creatorProfileId))).where(eq(users.id, p.userId)); if (!creator) throw new BuildError('not_found'); const rows = await structure(tx, p); return { inspection: creator, project: projectReceipt(p), source: sourceReceipt(s), modules: rows.modules.map(moduleReceipt), lessons: rows.lessons.map(lessonSummary), canEdit: false }; });
 }
 export async function inspectLesson(actorId: string, projectId: string, moduleId: string, lessonId: string) {
   return admin(actorId, async tx => { const [row] = await tx.select({ lesson: lessons }).from(lessons).innerJoin(projects, and(eq(projects.id, lessons.projectId), eq(projects.userId, lessons.userId))).where(and(eq(projects.id, projectId), eq(lessons.moduleId, moduleId), eq(lessons.id, lessonId))); if (!row) throw new BuildError('not_found'); return lessonReceipt(row.lesson); });
 }
 
-export type BuildSummary = { projectId: string; moduleCount: number; lessonCount: number; publicationStatus?:string|null; courseApproval?:string|null; approvedPrice?:boolean };
+export type BuildSummary = { projectId: string; moduleCount: number; lessonCount: number; publicationStatus?:string|null; courseApproval?:string|null; approvedPrice?:boolean; priceSet?:boolean; moderationRestriction?:string|null };
 // A missing/unapplied builder migration must not take the existing draft library
 // offline. Callers show unavailable instead of mistaking query failure for no build.
 export async function readBuildSummaries(userId: string, draftIds: string[]): Promise<{ available: boolean; rows: Record<string, BuildSummary> }> {
   if (!draftIds.length) return { available: true, rows: {} };
   try {
     const rows = await db.select({ draftId: projects.draftId, projectId: projects.id,
-      publicationStatus:sql<string|null>`(select status from workspace_publication_states where project_id=${projects.id})`,courseApproval:sql<string|null>`(select status from workspace_publication_revisions where project_id=${projects.id} order by number desc limit 1)`,approvedPrice:sql<boolean>`exists(select 1 from workspace_publication_prices where project_id=${projects.id} and status='approved')`,
+      publicationStatus:sql<string|null>`(select status from workspace_publication_states where project_id=${projects.id})`,courseApproval:sql<string|null>`(select status from workspace_publication_revisions where project_id=${projects.id} order by number desc limit 1)`,moderationRestriction:sql<string|null>`(select moderation->>'restriction' from workspace_publication_states where project_id=${projects.id})`,priceSet:sql<boolean>`exists(select 1 from workspace_publication_prices where project_id=${projects.id} and status in ('approved','creator'))`,
       moduleCount: sql<number>`(select count(*)::int from ${modules} where ${modules}.${sql.identifier('project_id')}=${projects}.${sql.identifier('id')})`,
       lessonCount: sql<number>`(select count(*)::int from ${lessons} where ${lessons}.${sql.identifier('project_id')}=${projects}.${sql.identifier('id')})`,
     }).from(projects).where(and(eq(projects.userId, userId), inArray(projects.draftId, draftIds))).orderBy(asc(projects.createdAt), asc(projects.id));
-    return { available: true, rows: Object.fromEntries(rows.map(row => [row.draftId, { projectId: row.projectId, moduleCount: row.moduleCount, lessonCount: row.lessonCount,publicationStatus:row.publicationStatus,courseApproval:row.courseApproval,approvedPrice:row.approvedPrice }])) };
+    return { available: true, rows: Object.fromEntries(rows.map(row => [row.draftId, { projectId: row.projectId, moduleCount: row.moduleCount, lessonCount: row.lessonCount,publicationStatus:row.publicationStatus,courseApproval:row.courseApproval,priceSet:row.priceSet,moderationRestriction:row.moderationRestriction }])) };
   } catch { return { available: false, rows: {} }; }
 }

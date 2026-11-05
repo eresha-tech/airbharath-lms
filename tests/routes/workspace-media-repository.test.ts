@@ -37,17 +37,13 @@ beforeEach(() => {
   mocks.grant.mockResolvedValue({ id: key, source: 'admin_complimentary' });
 });
 const params = (q: Query) => dialect.sqlToQuery(q.where!).params;
-it('uses current owner locks, refund and complimentary evidence; verifies exact authoritative approval', async () => {
+it('uses current owner locks, refund and complimentary evidence; does not gate owned media on legacy approval', async () => {
   await postgresMediaStore.transaction(owner, { lessonId: key }, async tx => {
     expect(tx.context.grant).toMatchObject({ source: 'admin_complimentary' }); expect(tx.context.evidence?.refundedAt).toEqual(now); await tx.lesson();
   });
-  expect(queries.filter(q => q.lock).map(q => [q.table, q.lock])).toEqual([[users, 'update'], [orders, 'update'], [profiles, 'update'], [projects, 'update'], [drafts, 'update'], [submissions, 'share'], [lessons, 'update']]);
+  expect(queries.filter(q => q.lock).map(q => [q.table, q.lock])).toEqual([[users, 'update'], [orders, 'update'], [profiles, 'update'], [projects, 'update'], [drafts, 'update'], [lessons, 'update']]);
   expect(mocks.access).toHaveBeenCalledWith(owner, expect.anything()); expect(mocks.grant).toHaveBeenCalledWith(owner, expect.anything());
-  const source = queries.find(q => q.table === submissions)!;
-  expect(params(source)).toEqual([other, draftId, owner, profileId]);
-  const columns = source.columns as { approved: SQL }; const sql = dialect.sqlToQuery(columns.approved).sql;
-  expect(sql).toContain('transition_version'); expect(sql).toContain('review_completed_at');
-  approved = false; await expect(postgresMediaStore.transaction(owner, { lessonId: key }, async () => null)).rejects.toMatchObject({ code: 'forbidden' });
+  expect(queries.some(q=>q.table===submissions)).toBe(false);approved=false;await postgresMediaStore.transaction(owner,{lessonId:key},async()=>null);
 });
 it('scopes asset identity, list and versioned update to actor/profile/project/lesson', async () => {
   await postgresMediaStore.transaction(owner, { assetId: other }, async tx => {

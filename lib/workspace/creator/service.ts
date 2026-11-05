@@ -1,7 +1,6 @@
 import type { CourseSummary } from './dashboard';
 import { createHash } from 'node:crypto';
 import type { SubmissionTransaction } from '../review/service';
-import { permitsDraftEdit } from '../review/model';
 import type { workspaceCourseDrafts, workspaceCreatorProfileDetails } from '@/lib/db/schema';
 import { UUID } from '../eligibility/model';
 import type { AccessEvidence } from '../activation/model';
@@ -52,7 +51,6 @@ export function creatorService(store: CreatorStore, environment: string | undefi
       const content = validateDraft(input); const expectedVersion = version(expected);
       return run(userId, true, async (tx, context) => {
         if (!await tx.draft(id)) throw new CreatorError('not_found');
-        if (!permitsDraftEdit((await tx.reviews.latest(id))?.reviewStatus)) throw new CreatorError('review_locked');
         const now = clock();
         if (!creatorCapabilities(context.evidence, now, environment, context.financialReview, context.grant).canEditWorkspace) throw new CreatorError('restricted');
         const updated = await tx.update(id, expectedVersion, content, now);

@@ -260,6 +260,13 @@
       "when": 1793771590465,
       "tag": "0036_course_reviews_discovery_commerce",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793777552474,
+      "tag": "0037_workspace_self_publishing",
+      "breakpoints": true
     }
   ]
 }

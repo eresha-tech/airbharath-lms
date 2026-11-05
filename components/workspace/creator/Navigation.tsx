@@ -12,9 +12,9 @@ export const creatorLinks = [
 export function creatorSection(pathname: string) {
   if (pathname.endsWith('/build')) return 'Course Studio';
   if(pathname.endsWith('/preview'))return 'Course preview';
-  if(pathname.endsWith('/publishing'))return 'Course approval & publishing';
-  if (pathname === '/workspace/courses/new') return 'New course idea';
-  if (pathname.startsWith('/workspace/courses/')) return 'Course idea';
+  if(pathname.endsWith('/publishing'))return 'Course publishing';
+  if (pathname === '/workspace/courses/new') return 'New course';
+  if (pathname.startsWith('/workspace/courses/')) return 'Course';
   if (pathname === '/workspace/member/billing' || pathname === '/workspace/refunds') return 'Billing & Support';
   return creatorLinks.find(link => pathname === link.href)?.label || 'Creator Workspace';
 }

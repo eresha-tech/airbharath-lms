@@ -1,5 +1,7 @@
 # Phase 2.1 local startup and founder acceptance
 
+> Use [the final-policy guide](WORKSPACE_SELF_PUBLISHING_LOCAL_ACCEPTANCE.md) for current publishing, pricing and the combined local testing server. Approval/Trusted Creator requirements in earlier guides are historical. Existing learner reviews and discovery remain available.
+
 Use the existing `feat/creator-workspace` working tree. Do not reset it or treat earlier uncommitted work as disposable. Phase 2.1 is an acceptance candidate, not a public release.
 
 ## Persistent founder environment

@@ -27,20 +27,14 @@ export const postgresCreatorStore: CreatorStore = {
         return { drafts: rows.slice(0, 20), total: total.value, hasNext: rows.length > 20 };
       },
       summary: async () => {
-        const rows = await tx.execute(sql`with latest as (
-          select distinct on (draft_id) draft_id,review_status from ${submissions}
-          where user_id=${userId} order by draft_id,submission_number desc
-        ) select count(*)::int as total,
-          count(*) filter(where latest.review_status is null)::int as drafts,
-          count(*) filter(where latest.review_status in ('submitted','under_review'))::int as "underReview",
-          count(*) filter(where latest.review_status='changes_requested')::int as "changesRequested",
-          count(*) filter(where latest.review_status='approved')::int as approved,
-          count(*) filter(where latest.review_status='approved' and exists(
-            select 1 from ${projects} where user_id=${userId} and draft_id=d.id
-          ))::int as building
-          from ${drafts} d left join latest on latest.draft_id=d.id where d.user_id=${userId}`);
-        const row = rows[0] as { total: number; drafts: number; underReview: number; changesRequested: number; approved: number; building: number };
-        if (!row || row.total !== row.drafts+row.underReview+row.changesRequested+row.approved || row.building>row.approved) throw new Error('Course summary unavailable');
+        const rows=await tx.execute(sql`select count(*)::int as total,
+         count(*) filter(where not exists(select 1 from workspace_course_projects p where p.draft_id=d.id))::int as drafts,
+         count(*) filter(where exists(select 1 from workspace_course_projects p where p.draft_id=d.id))::int as building,
+         count(*) filter(where exists(select 1 from workspace_course_projects p join workspace_publication_states s on s.project_id=p.id where p.draft_id=d.id and s.status='live'))::int as published,
+         0::int as "underReview",0::int as "changesRequested",0::int as approved
+         from ${drafts} d where d.user_id=${userId}`);
+        const row=rows[0] as {total:number;drafts:number;building:number;published:number;underReview:number;changesRequested:number;approved:number};
+        if(!row||row.total!==row.drafts+row.building)throw Error('Course summary unavailable');
         return row;
       },
       details: async () => (await tx.select().from(details).where(eq(details.userId, userId)).limit(1))[0] || null,

@@ -23,9 +23,6 @@ export const postgresMediaStore: MediaStore = {
     const [project] = await tx.select().from(projects).where(and(eq(projects.id, identity.projectId), eq(projects.userId, actorId), eq(projects.creatorProfileId, profile.id))).for('update');
     if (!project) throw new MediaError('not_found');
     await tx.select({ id: drafts.id }).from(drafts).where(and(eq(drafts.id, project.draftId), eq(drafts.userId, actorId))).for('update');
-    const approval = sql<boolean>`exists(select 1 from ${reviews} where ${reviews}.${sql.identifier('submission_id')}=${submissions}.${sql.identifier('id')} and ${reviews}.${sql.identifier('action')}='approved' and ${reviews}.${sql.identifier('to_status')}='approved' and ${reviews}.${sql.identifier('transition_version')}=${submissions}.${sql.identifier('version')} and ${reviews}.${sql.identifier('created_at')}=${submissions}.${sql.identifier('review_completed_at')})`;
-    const [source] = await tx.select({ status: submissions.reviewStatus, completedAt: submissions.reviewCompletedAt, approved: approval }).from(submissions).where(and(eq(submissions.id, project.approvedSubmissionId), eq(submissions.draftId, project.draftId), eq(submissions.userId, actorId), eq(submissions.creatorProfileId, profile.id))).for('share');
-    if (!source || source.status !== 'approved' || !source.completedAt || !source.approved) throw new MediaError('forbidden');
     const artwork=identity.lessonId===null;
     const lessonScope = and(eq(lessons.id, identity.lessonId??project.id), eq(lessons.projectId, project.id), eq(lessons.userId, actorId));
     const [lesson] = artwork?[{id:project.id}]:await tx.select().from(lessons).where(lessonScope).for('update');

@@ -3,10 +3,11 @@ import type { Submission } from '../review/service';
 import type { CreatorContext } from '../creator/service';
 import { creatorCapabilities } from '../creator/model';
 import { BuildError, buildId, startCommand, buildCommand, moduleContent, MAX_MODULES, MAX_LESSONS_PER_MODULE, MAX_PROJECT_LESSONS, type ModuleContent, type LessonContent } from './model';
-export type Project = typeof workspaceCourseProjects.$inferSelect;
+type StoredProject=typeof workspaceCourseProjects.$inferSelect;
+export type Project=Omit<StoredProject,'sourceSnapshot'>&Partial<Pick<StoredProject,'sourceSnapshot'>>;
 export type CourseModule = typeof workspaceCourseModules.$inferSelect;
 export type Lesson = typeof workspaceCourseLessons.$inferSelect;
-export type ApprovedSource = Submission & { approvalExists: boolean };
+export type ApprovedSource = Pick<Submission,'id'|'draftId'|'userId'|'creatorProfileId'|'title'|'category'|'description'|'targetLearner'|'learningOutcomes'|'outline'|'tentativePricePaise'|'currency'|'submissionNumber'|'reviewCompletedAt'> & Partial<Submission> & {approvalExists:boolean;direct?:boolean};
 export const projectReceipt = ({ id, draftId, approvedSubmissionId, status, version, createdAt, updatedAt }: Project) => ({ id, draftId, approvedSubmissionId, status, version, createdAt, updatedAt });
 export const moduleReceipt = ({ id, title, description, position, version, createdAt, updatedAt }: CourseModule) => ({ id, title, description, position, version, createdAt, updatedAt });
 export const lessonSummary = ({ id, moduleId, title, summary, position, version, contentFormat, mediaRevision, createdAt, updatedAt }: Omit<Lesson, 'content'>) => ({ id, moduleId, title, summary, position, version, contentFormat, mediaRevision, createdAt, updatedAt });
@@ -15,6 +16,7 @@ export const sourceReceipt = ({ id, submissionNumber, title, category, descripti
 export type BuildTree = { project: ReturnType<typeof projectReceipt>; source: ReturnType<typeof sourceReceipt>; modules: ReturnType<typeof moduleReceipt>[]; lessons: ReturnType<typeof lessonSummary>[]; canEdit: boolean; inspection?: { creatorName: string | null; creatorStatus: string } };
 export interface BuildTransaction {
   context(): Promise<CreatorContext>;
+  fromDraft?(draftId:string):Promise<ApprovedSource|null>;
   source(id: string, draftId: string): Promise<ApprovedSource | null>;
   project(draftId: string): Promise<Project | null>;
   existing(sourceId: string): Promise<Project | null>;
@@ -34,8 +36,7 @@ export interface BuildTransaction {
 export interface BuildStore { transaction<T>(userId: string, work: (tx: BuildTransaction) => Promise<T>): Promise<T> }
 function approved(source: ApprovedSource | null, project?: Project) {
   if (!source) throw new BuildError('not_found');
-  if (source.reviewStatus !== 'approved' || !source.approvalExists || !source.reviewCompletedAt) throw new BuildError('not_approved');
-  if (project && (project.userId !== source.userId || project.creatorProfileId !== source.creatorProfileId || project.draftId !== source.draftId || project.approvedSubmissionId !== source.id)) throw new BuildError('not_found');
+  if (project && (project.userId !== source.userId || project.creatorProfileId !== source.creatorProfileId || project.draftId !== source.draftId || (project.approvedSubmissionId??project.sourceSnapshot?.id) !== source.id)) throw new BuildError('not_found');
   return source;
 }
 async function tree(tx: BuildTransaction, project: Project, source: ApprovedSource, canEdit: boolean): Promise<BuildTree> {
@@ -54,7 +55,7 @@ export function builderService(store: BuildStore, environment: string | undefine
     buildId(draftId);
     return transaction(userId, edit, async (tx, context, permit) => {
       const project = await tx.project(draftId); if (!project || project.userId !== userId || project.creatorProfileId !== context.profileId) throw new BuildError('not_found');
-      const source = approved(await tx.source(project.approvedSubmissionId, draftId), project); permit();
+      const source = approved(project.sourceSnapshot??await tx.source(project.approvedSubmissionId!, draftId), project); permit();
       return work(tx, project, source, permit, creatorCapabilities(context.evidence, clock(), environment, context.financialReview, context.grant).canEditWorkspace);
     });
   }
@@ -62,7 +63,8 @@ export function builderService(store: BuildStore, environment: string | undefine
     start: (userId: string, draftId: string, raw: unknown) => {
       const command = startCommand(raw); buildId(draftId);
       return transaction(userId, true, async (tx, context, permit) => {
-        const source = approved(await tx.source(command.approvedSubmissionId, draftId));
+        const existing=await tx.project(draftId);if(existing){if(existing.userId!==userId||existing.creatorProfileId!==context.profileId)throw new BuildError('not_found');const source=approved(existing.sourceSnapshot??await tx.source(existing.approvedSubmissionId!,draftId),existing);return {project:projectReceipt(existing),created:false};}
+        const source=approved(command.approvedSubmissionId?await tx.source(command.approvedSubmissionId,draftId):await tx.fromDraft?.(draftId)??null);
         if (source.userId !== userId || source.creatorProfileId !== context.profileId) throw new BuildError('not_found');
         const prior = await tx.existing(source.id); const now = permit();
         if (prior) { approved(source, prior); return { project: projectReceipt(prior), created: false }; }
