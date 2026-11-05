@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { CourseSteps } from '../course/CourseSteps';
+import { CourseStepFooter, CourseSteps } from '../course/CourseSteps';
 import { structureReadiness } from '@/lib/workspace/builder/readiness';
 import { useStudioNavigation } from './NavigationProtection';
 import { Button } from '@/components/ui/button';
@@ -127,5 +127,6 @@ export function CourseBuilder({ initial, admin = false, previewOnly = false }: {
     </div>
     <details className="rounded-2xl border border-border bg-card p-5"><summary className="cursor-pointer font-outfit font-semibold">Course checklist</summary>{structureReadiness(tree).length?<ul className="mt-3 list-disc pl-5 text-sm leading-7 text-muted-foreground">{structureReadiness(tree).map(issue=><li key={issue}>{issue}</li>)}</ul>:<p className="mt-3 text-sm text-muted-foreground">Every module has a lesson. Review each saved lesson before publishing.</p>}</details>
     <details className="rounded-2xl border border-border bg-card p-5"><summary className="cursor-pointer font-outfit font-semibold">Course starting outline</summary><dl className="mt-5 grid gap-5 text-sm sm:grid-cols-2">{[['Title',source.title],['Category',categoryLabel(source.category)],['Target learner',source.targetLearner],['Tentative price',priceLabel(source.tentativePricePaise)],['Description',source.description]].map(([label,value])=><div key={label}><dt className="font-semibold">{label}</dt><dd className="mt-2 whitespace-pre-wrap leading-7 text-muted-foreground">{value}</dd></div>)}<div><dt className="font-semibold">Learning outcomes</dt><dd><ul className="mt-2 list-disc space-y-2 pl-5">{source.learningOutcomes.map((item,i)=><li key={i}>{item}</li>)}</ul></dd></div><div><dt className="font-semibold">Starting outline</dt><dd><ol className="mt-2 list-decimal space-y-2 pl-5">{source.outline.map(item=><li key={item.ordering}>{item.title}</li>)}</ol></dd></div></dl><p className="mt-5 text-xs leading-6 text-muted-foreground">This starting outline is retained for context. Manage learner-facing details and the selling price in your publishing workflow.</p></details>
+    {!admin&&<CourseStepFooter draftId={tree.project.draftId} active={previewOnly?'preview':'build'} disabled={locked||dirty} help={dirty?'Save your current lesson or module before continuing.':undefined}/>}
   </div>;
 }

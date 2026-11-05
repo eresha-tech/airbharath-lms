@@ -120,3 +120,31 @@ tests/routes/workspace-review-routes.test.ts
 tests/routes/workspace-review-service.test.ts
 tests/routes/workspace-self-publishing-pages.test.ts
 ```
+
+## Bottom navigation and publication confirmation — 5 November 2026
+
+Added a matching bottom Back/Next footer to every Creator course step. Next saves edited course details and price before navigation; a failed save retains the current page and entered values. Studio requires saving the selected lesson/module before continuing. Next on guidelines acknowledges the checked current version before opening the last step. Existing access, upload/navigation protection, moderation and publication readiness checks remain in place.
+
+The final bottom Publish course/update button opens an accessible confirmation dialog displaying the course and current price. Cancel/Escape returns without a publication request. Only explicit Yes, publish course/update submits, and server errors remain visible on the publishing page. Admin screens do not gain Creator navigation or publication controls.
+
+Validation: `pnpm validate` passed again (1,709 Vitest tests, 55 Node tests, TypeScript and lint). The focused actual Chrome test passed five groups covering failed-save retention, saving details before Next, the full price/preview/guidelines sequence, Cancel/Escape with no request, and one explicit confirmation request with a simulated server readiness rejection on mobile. This UI test deliberately does not perform a real publication. Existing backend publication tests remain part of validation. The mobile confirmation screenshot was inspected. No database migration or dependency change was required.
+
+Changed files for this UI follow-up:
+
+- `components/workspace/course/CourseSteps.tsx`
+- `components/workspace/builder/Builder.tsx`
+- `components/workspace/publishing/Publishing.tsx`
+- `tests/postgres/self-publishing-browser.cjs` (existing full browser harness now confirms publication)
+- `tests/postgres/workspace-course-navigation-browser.cjs` (new focused browser verification)
+- `WORKSPACE_SELF_PUBLISHING_LOCAL_ACCEPTANCE.md`
+- `WORKSPACE_SELF_PUBLISHING_IMPLEMENTATION.md`
+
+Browser evidence: `output/playwright/course-next.json` and `output/playwright/course-next-confirmation.png`. Logs: `/tmp/course-next-validate.log` and `/tmp/course-next-browser.log`. All six protected unrelated modifications remain unchanged. No production operations, deployment, push or merge were performed. Founder acceptance is still required.
+
+## Floating step controls — 5 November 2026
+
+The shared step navigation now floats at the bottom of the viewport, with mobile safe-area clearance, desktop sidebar clearance, and reserved page space so the last content can scroll above it. It stays below menus/dialogs. Existing save, guideline and publication confirmation behavior is unchanged.
+
+Verification: `pnpm validate` passed (1,709 Vitest tests, 55 Node tests, TypeScript and lint). Six focused browser groups passed, including fixed controls at both scroll extremes on desktop and mobile heights 568/844, the Next flow, save failure retention, and publish confirmation. Desktop/mobile screenshots were inspected: `output/playwright/course-floating-desktop.png` and `output/playwright/course-floating-mobile.png`. Logs: `/tmp/course-floating-validate.log` and `/tmp/course-floating-browser.log`.
+
+Files changed in this follow-up: `components/workspace/course/CourseSteps.tsx`, `tests/postgres/workspace-course-navigation-browser.cjs`, `WORKSPACE_SELF_PUBLISHING_LOCAL_ACCEPTANCE.md`, and `WORKSPACE_SELF_PUBLISHING_IMPLEMENTATION.md`. No backend, database, dependency or production changes were made.
