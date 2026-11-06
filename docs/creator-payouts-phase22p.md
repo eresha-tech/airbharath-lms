@@ -88,13 +88,13 @@ The adapter uses standard contact/fund-account endpoints and the required `X-Pay
 
 ## Founder local acceptance
 
-The credential-free local fixture uses synthetic identities, bank accounts and provider HTTP responses. It does not prove real money movement. Current screenshots and results are in `output/audits/workspace-phase22p/REPORT.md`.
+The credential-free local fixture uses synthetic identities, bank accounts and provider HTTP responses. It does not prove real money movement. The focused UI/UX review, current Creator labels and founder checklist are in [the final UI/UX review](creator-payouts-phase22p-ux-review.md). Current before/after screenshots and results are in `output/audits/workspace-phase22p-uiux/REPORT.md`; the original integration evidence remains in `output/audits/workspace-phase22p/REPORT.md`.
 
 1. Creator: open `/workspace/earnings`, inspect 0% commission, ledger adjustments and payout history. Open Settings → Payout account; confirm recent authentication is required, details stay masked and a change creates a new pending version.
 2. First Admin: open `/admin/creator-settlements`, review prior-month proceeds, verify the payee and approve a small **synthetic** amount. Confirm it awaits independent approval and that this Admin cannot authorize execution.
 3. Second Admin: open that payout and select **Authorize automated payout**. Review the exact amount and masked destination in the confirmation dialog. Confirm automatic initiation; no manual bank action is offered.
 4. Inspect queued/low-funding, provider pending, processing and uncertainty. Each retains its reservation. The synthetic browser suite exercises lost-response recovery using the same operation.
-5. Inspect Paid after reconciled processed status, and a later Reversed state with original processed date retained. Check UTR, Creator history, Admin provider evidence and the monthly earnings CSV.
+5. Inspect Paid after reconciled processed status, and a later Creator **Payment returned** / Admin **Reversed** state with original processed date retained. Check UTR, Creator history, Admin provider evidence and the monthly earnings CSV.
 6. Verify responsive mobile screens, keyboard-contained dialogs, unchanged bank version binding, membership expiry restrictions and preserved learner access.
 
 To reproduce isolated checks with the declared pnpm and existing dependencies, use the credential-free source-copy workflow in `scripts/phase22p-safe-source.cjs`; do not point any harness at `DATABASE_URL`. `scripts/phase22p-isolated-postgres.cjs` requires `DATABASE_ENV=test`, `PHASE22_ISOLATED_VERIFY=true`, `ALLOW_DATABASE_MIGRATION=true` and `ALLOW_DESTRUCTIVE_DB_OPERATION=true`; it creates a fresh database/cluster, checks its data directory and private Unix socket, migrates the versioned chain and runs the existing financial suite plus `phase22p-payouts.cjs`. `PHASE22_KEEP_FIXTURE=true` retains that synthetic fixture for the localhost server and browser checks. `PHASE22P_AUDIT_ROOT` may select an absolute dedicated `output/audits/workspace-phase22p` directory when the safe source copy runs in `/tmp`.

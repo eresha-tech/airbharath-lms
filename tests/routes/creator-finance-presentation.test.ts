@@ -20,6 +20,46 @@ it('describes provider statuses, uncertain response, separate funding and later 
  expect(payoutLabel({provider:'razorpayx',state:'uncertain',providerStatus:'processed'})).not.toBe('Paid');
  expect(payoutLabel({provider:'razorpayx',state:'confirmed',providerStatus:'processed'})).toBe('Paid');
  expect(payoutLabel({provider:'razorpayx',state:'failed',providerStatus:'reversed'})).toBe('Reversed');
- expect(payoutExplanation({state:'uncertain',reason:'low_balance'})).toContain('separate payout account');
+ expect(payoutExplanation({state:'uncertain',providerStatus:'queued',reason:'low_balance'})).toContain('separate payout account');
  expect(payoutExplanation({state:'uncertain',lastError:'provider_response_unknown'})).toContain('remains reserved');
 });
+
+it.each([
+ ['approved',null,'Payment being prepared'],
+ ['uncertain','queued','Payment being prepared'],
+ ['uncertain','pending','Awaiting payment approval'],
+ ['uncertain','scheduled','Payment being prepared'],
+ ['initiated','processing','Transfer in progress'],
+ ['uncertain',null,'We’re checking your payment'],
+ ['confirmed','processed','Paid'],
+ ['failed','failed','Payment failed'],
+ ['failed','rejected','Payment failed'],
+ ['failed','request_rejected','Payment failed'],
+ ['failed','reversed','Payment returned'],
+ ['cancelled',null,'Payment cancelled'],
+])('gives Creators a clear label for %s / %s without changing the financial state',async(state,providerStatus,label)=>{
+ const {creatorPayoutPresentation}=await import('@/lib/creator-payments/presentation');
+ const view=creatorPayoutPresentation({provider:'razorpayx',state,providerStatus});expect(view.label).toBe(label);expect(view.description.length).toBeGreaterThan(30);expect(view.action.length).toBeGreaterThan(30);
+ expect(JSON.stringify(view)).not.toMatch(/RazorpayX|funding account|reconciliation|independent GET|idempotency/);
+});
+it('never labels a Creator payment Paid from approval, a POST response, or inconsistent provider projection',async()=>{
+ const {creatorPayoutPresentation}=await import('@/lib/creator-payments/presentation');
+ for(const state of ['approved','initiated','uncertain','failed'])expect(creatorPayoutPresentation({provider:'razorpayx',state,providerStatus:'processed'}).label).not.toBe('Paid');
+ expect(creatorPayoutPresentation({provider:'razorpayx',state:'confirmed',providerStatus:null}).label).not.toBe('Paid');
+ expect(creatorPayoutPresentation({state:'confirmed'}).label).toBe('Paid');
+});
+it('assigns a funding delay to AirBharath and asks for no redundant bank change',async()=>{
+ const {creatorPayoutPresentation,payoutExplanation}=await import('@/lib/creator-payments/presentation');
+ const p={provider:'razorpayx',state:'uncertain',providerStatus:'queued',reason:'low_balance'};
+ expect(creatorPayoutPresentation(p)).toMatchObject({label:'Payment delayed',tone:'review'});
+ expect(creatorPayoutPresentation(p).description).toContain('AirBharath’s side');expect(creatorPayoutPresentation(p).action).toContain('do not need to change your bank account');
+ expect(payoutExplanation(p)).toContain('add funds to the separate payout account');
+ expect(payoutExplanation({...p,state:'confirmed',providerStatus:'processed'})).not.toContain('insufficient');
+});
+it('explains the next step for each bank verification decision and keeps course publication separate',async()=>{
+ const {payeeGuidance}=await import('@/lib/creator-payments/presentation');
+ expect(payeeGuidance()).toContain('publish courses before');expect(payeeGuidance({decision:null})).toContain('do not need to submit them again');
+ expect(payeeGuidance({decision:'reject_payee'})).toContain('save corrected details');expect(payeeGuidance({decision:'verify_payee'})).toContain('No action is needed');
+});
+
+it('never tells Admin to execute an already cancelled operation',async()=>{const {payoutExplanation}=await import('@/lib/creator-payments/presentation');expect(payoutExplanation({state:'cancelled',executionStage:'done'})).toContain('operation is closed');expect(payoutExplanation({state:'cancelled',executionStage:'done'})).not.toContain('processed automatically');});
