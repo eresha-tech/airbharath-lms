@@ -1,5 +1,7 @@
 # Phase 2.2 — founder local acceptance
 
+> Historical Phase 2.2 report. New payout execution is superseded by [Phase 2.2P](creator-payouts-phase22p.md); existing manual records retain their audit.
+
 Creator course sales use the existing Razorpay checkout. AirBharath commission is **0%**. Deduct actual evidenced gateway fees, including the fee's GST component once. Course tax comes from the existing frozen tax-inclusive checkout quote; it is separate from gateway tax.
 
 The initial settlement method is **manual monthly bank payout with independent Admin approval and bank evidence**. The application does not initiate a bank transfer or claim a direct Razorpay-to-Creator settlement. Creator membership expiry blocks editing, uploads and new publishing; it does not block published course purchases, retained learning access, earnings history, bank-detail corrections or valid settlement obligations.

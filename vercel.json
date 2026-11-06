@@ -8,6 +8,10 @@
     {
       "path": "/api/internal/course-payments/reconcile",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/internal/creator-payouts/reconcile",
+      "schedule": "* * * * *"
     }
   ]
 }

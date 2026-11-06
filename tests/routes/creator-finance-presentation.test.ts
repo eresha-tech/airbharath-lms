@@ -14,3 +14,12 @@ describe('finance statements and navigation',()=>{
   expect(settlementMonth('2026-10-31T18:30:00Z')).toBe('October 2026');
  });
 });
+it('describes provider statuses, uncertain response, separate funding and later reversals accurately',async()=>{
+ const {payoutLabel,payoutExplanation}=await import('@/lib/creator-payments/presentation');
+ expect(payoutLabel({provider:'razorpayx',state:'approved',executionStage:'awaiting_authorization'})).toBe('Awaiting independent approval');
+ expect(payoutLabel({provider:'razorpayx',state:'uncertain',providerStatus:'processed'})).not.toBe('Paid');
+ expect(payoutLabel({provider:'razorpayx',state:'confirmed',providerStatus:'processed'})).toBe('Paid');
+ expect(payoutLabel({provider:'razorpayx',state:'failed',providerStatus:'reversed'})).toBe('Reversed');
+ expect(payoutExplanation({state:'uncertain',reason:'low_balance'})).toContain('separate payout account');
+ expect(payoutExplanation({state:'uncertain',lastError:'provider_response_unknown'})).toContain('remains reserved');
+});

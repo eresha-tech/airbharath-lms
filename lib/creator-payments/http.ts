@@ -1,3 +1,6 @@
+import {after} from 'next/server';
+import {payoutControl} from './razorpayx/service';
+import {runPayoutWorker} from './razorpayx/worker';
 import { financeReporting } from './reporting';
 import { financeFilters, csv, financeDate } from './presentation';
 import { getSession } from '@/lib/auth';
@@ -42,6 +45,11 @@ export async function financeHttp(request: Request, admin = false) {
             if (typeof authenticatedAt !== 'number' || authenticatedAt > Math.floor(Date.now() / 1000) || Date.now() / 1000 - authenticatedAt > 600)
                 throw new CommerceError(403, 'Please verify your phone again through login, then return to Payout account within 10 minutes.');
             input.creatorId = actor.id;
+        }
+        if(admin&&['authorize_razorpayx','reconcile_razorpayx','trace_razorpayx'].includes(input.action)){
+          const result=await payoutControl(actor.id,input);
+          try{after(async()=>{try{await runPayoutWorker();}catch{/* Durable job is recovered by the authenticated scheduler. */}});}catch{/* Framework after-response scheduling is best-effort. */}
+          return privateJson(result);
         }
         return privateJson(await service.execute(actor.id, input));
     }

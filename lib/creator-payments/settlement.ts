@@ -7,9 +7,12 @@ import { CommerceError } from '@/lib/commerce/model';
 import { encryptPayee,decryptPayee } from './crypto';
 import { SETTLEMENT_POLICY,dueBefore,requiredText,UUID,paise } from './model';
 import { requireCourseScope } from './config';
+import {preparePayoutJob} from './razorpayx/service';
+import {requirePayoutExecution} from './razorpayx/config';
+import {creatorPayoutJobs} from '@/lib/db/schema';
 import { ledgerBalance } from './ledger';
 type Tx=Parameters<Parameters<typeof db.transaction>[0]>[0];
-export type FinanceCommand={action:string;requestKey:string;creatorId:string;entityId?:string;holder?:string;account?:string;ifsc?:string;acknowledged?:boolean;amountPaise?:number;evidence?:string;bankReference?:string;adjustmentPaise?:number};
+export type FinanceCommand={action:string;requestKey:string;creatorId:string;entityId?:string;holder?:string;account?:string;ifsc?:string;acknowledged?:boolean;amountPaise?:number;evidence?:string;bankReference?:string;adjustmentPaise?:number;providerPayoutId?:string};
 async function identity(tx:Tx,id:string,admin=false) {
  const [u]=await tx.select().from(users).where(eq(users.id,id)).for('share');
  if(!u||admin&&u.role!=='admin')throw new CommerceError(403,'Forbidden.');return u;
@@ -18,7 +21,8 @@ async function creator(tx:Tx,id:string) {
  const p=await tx.query.workspaceCreatorProfiles.findFirst({where:eq(workspaceCreatorProfiles.userId,id)});
  if(!p)throw new CommerceError(403,'Creator account required.');
 }
-export function settlementService(database=db,scope= requireCourseScope()) {
+export function settlementService(database=db,scope= requireCourseScope(),execution:'razorpayx'|'legacy-manual'='razorpayx') {
+ if(execution==='legacy-manual'&&process.env.DATABASE_ENV!=='test')throw new CommerceError(403,'Legacy manual fixture creation is test-only.');
  async function read(actor:string,creatorId=actor,page=1) {
   return database.transaction(async tx=>{
    await identity(tx,actor,creatorId!==actor);await creator(tx,creatorId);
@@ -45,7 +49,7 @@ export function settlementService(database=db,scope= requireCourseScope()) {
    let evidence=requiredText(command.evidence??'Creator bank details and settlement policy accepted');
    if(command.action==='save_payee') {
     if(!isOwner||command.acknowledged!==true)throw new CommerceError(403,'Accept the settlement policy as the payee.');
-    const holder=requiredText(command.holder,2,100),account=command.account??'',ifsc=(command.ifsc??'').toUpperCase();
+    const holder=requiredText(command.holder,3,100),account=command.account??'',ifsc=(command.ifsc??'').toUpperCase();
     if(!/^\d{9,18}$/.test(account)||!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc))throw new CommerceError(400,'Enter a valid account number and IFSC.');
     id=randomUUID();await tx.insert(payees).values({id,creatorId:actor,encrypted:encryptPayee({holder,account,ifsc},actor),masked:`Account ••••${account.slice(-4)} · ${ifsc}`,policyVersion:SETTLEMENT_POLICY});
    }else {
@@ -80,6 +84,8 @@ export function settlementService(database=db,scope= requireCourseScope()) {
      }
     }else if(command.action==='approve_payout') {
      if(process.env.CREATOR_BANK_SETTLEMENT_ENABLED!=='true')throw new CommerceError(503,'Bank settlement awaits launch approval and configuration.');
+     const providerConfig=execution==='razorpayx'?requirePayoutExecution():null;
+     if(providerConfig&&Number(command.amountPaise)<100)throw new CommerceError(400,'RazorpayX requires a minimum payout of ₹1.');
      paise(command.amountPaise);if(!command.amountPaise)throw new CommerceError(400,'Enter a positive payout amount.');
      const payee=await tx.query.creatorPayees.findFirst({where:and(eq(payees.id,id),eq(payees.creatorId,command.creatorId))});
      const verification=await tx.query.creatorFinanceEvents.findFirst({where:and(eq(events.entityId,id),sql`${events.action} in ('verify_payee','reject_payee')`),orderBy:[desc(events.createdAt),desc(events.id)]});
@@ -92,8 +98,11 @@ export function settlementService(database=db,scope= requireCourseScope()) {
      const balance=await ledgerBalance(tx,command.creatorId,scope),matured=await ledgerBalance(tx,command.creatorId,scope,dueBefore());
      if(command.amountPaise>Math.min(balance,matured)-Number(reserved.n))throw new CommerceError(409,'Amount exceeds reconciled previous-month proceeds.');
      id=randomUUID();await tx.insert(payouts).values({id,creatorId:command.creatorId,payeeId:payee.id,scope,amountPaise:command.amountPaise,periodEnd:dueBefore(),approvedBy:actor});
+     if(providerConfig)await preparePayoutJob(tx,id,scope,providerConfig);
     }else {
      const payout=await tx.query.creatorPayouts.findFirst({where:and(eq(payouts.id,id),eq(payouts.creatorId,command.creatorId),eq(payouts.scope,scope))});if(!payout)throw new CommerceError(404,'Payout not found.');
+     const [providerJob]=await tx.select().from(creatorPayoutJobs).where(eq(creatorPayoutJobs.payoutId,id));
+     if(providerJob&&(command.action!=='cancel_payout'||providerJob.submitAttempts>0||payout.state!=='approved'))throw new CommerceError(409,'Provider-managed payouts require RazorpayX reconciliation; bank receipt cannot be recorded manually.');
      if(!command.evidence)throw new CommerceError(400,'Bank evidence reference or reason is required.');
      let state:string;
      const updates:Partial<typeof payouts.$inferInsert>={updatedAt:new Date()};
@@ -110,6 +119,7 @@ export function settlementService(database=db,scope= requireCourseScope()) {
      else if(command.action==='cancel_payout'&&payout.state==='approved')state='cancelled';
      else throw new CommerceError(409,'Payout transition needs independent bank evidence.');
      await tx.update(payouts).set({...updates,state}).where(eq(payouts.id,id));
+     if(providerJob&&state==='cancelled')await tx.update(creatorPayoutJobs).set({stage:'done',updatedAt:new Date()}).where(eq(creatorPayoutJobs.id,providerJob.id));
     }
    }
    await tx.insert(events).values({creatorId:command.creatorId,actorId:actor,requestKey:command.requestKey,commandHash:hash,action:command.action,entityId:id,evidence});

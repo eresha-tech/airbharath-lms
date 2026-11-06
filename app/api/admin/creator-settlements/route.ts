@@ -1,3 +1,4 @@
+export const maxDuration = 60;
 import { financeHttp } from '@/lib/creator-payments/http';
 import { getAuthorizedAdminSession } from '@/lib/admin-authorization';
 import { privateJson } from '@/lib/workspace/http';

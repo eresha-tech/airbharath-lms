@@ -5,8 +5,8 @@ import { queries } from './database-readonly-queries.mjs';
 import { safeDiagnostic } from './database-readonly-diagnostics.mjs';
 
 const sha = value => createHash('sha256').update(value).digest('hex');
-// Reviewed additive 0038 source: historical SQL unchanged; exact 39-entry chain remains pinned.
-const pinnedManifest = '48b316aae1045b46d4a77ba9dacd1fb3ef73b6f93e47ff08bd51a7234c61788a';
+// Reviewed additive 0039 source: historical SQL unchanged; exact 40-entry chain remains pinned.
+const pinnedManifest = '23ea9c85d07a459c70e6063fe04bce72cd75a7c6bf29c2720ab735433297812f';
 const identifier = value => typeof value === 'string' && /^[A-Za-z_][A-Za-z0-9_$]{0,62}$/.test(value);
 export class PreflightError extends Error {
   constructor(code, diagnostic = null) { super(code); this.name = 'PreflightError'; this.code = code; this.diagnostic = diagnostic; }
@@ -80,13 +80,13 @@ export function preflightConfiguration(env) {
 
 export function loadReviewedSource(root = fileURLToPath(new URL('../', import.meta.url))) {
   const journal = JSON.parse(readFileSync(root + '/drizzle/meta/_journal.json', 'utf8')).entries;
-  if (journal.length !== 39 || journal.some((e, i) => e.idx !== i || !/^\d{4}_[a-z0-9_]+$/.test(e.tag) || !Number.isSafeInteger(e.when) || (i && e.when <= journal[i-1].when))) fail('preflight_source_unreviewed');
+  if (journal.length !== 40 || journal.some((e, i) => e.idx !== i || !/^\d{4}_[a-z0-9_]+$/.test(e.tag) || !Number.isSafeInteger(e.when) || (i && e.when <= journal[i-1].when))) fail('preflight_source_unreviewed');
   const migrations = journal.map(e => ({ ...e, sql: readFileSync(root + '/drizzle/' + e.tag + '.sql', 'utf8') }));
   const manifest = migrations.map(e => ({ idx: e.idx, sha256: sha(e.sql), tag: e.tag, when: e.when }));
   if (sha(JSON.stringify(manifest)) !== pinnedManifest) fail('preflight_source_unreviewed');
   const reviewedFiles = ['drizzle/meta/_journal.json','lib/db/schema.ts', ...journal.flatMap(e => ['drizzle/'+e.tag+'.sql', 'drizzle/meta/'+e.tag.slice(0,4)+'_snapshot.json'])].sort();
   const sourceFiles = reviewedFiles.map(path => ({ path, sha256: sha(readFileSync(root+'/'+path)) }));
-  if (sha(JSON.stringify(sourceFiles)) !== '0d7c8decd22b10a43d2de76ff84326c36d72da25ba36e75ea4304869d82edd36') fail('preflight_source_unreviewed');
+  if (sha(JSON.stringify(sourceFiles)) !== 'ec5850068dfaa9520e24d4f775d115c6e741c312124a417bcd94b2f571495e85') fail('preflight_source_unreviewed');
   const snapshots = journal.map(e => JSON.parse(readFileSync(root + '/drizzle/meta/' + e.tag.slice(0,4) + '_snapshot.json', 'utf8')));
   if (snapshots.some((s, i) => s.dialect !== 'postgresql' || (i && s.prevId !== snapshots[i-1].id))) fail('preflight_snapshot_lineage_invalid');
   return { manifest, migrations, snapshots };

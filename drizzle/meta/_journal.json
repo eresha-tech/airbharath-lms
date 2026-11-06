@@ -274,6 +274,13 @@
       "when": 1793874293802,
       "tag": "0038_creator_course_settlement",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1793954888591,
+      "tag": "0039_creator_razorpayx_payouts",
+      "breakpoints": true
     }
   ]
 }
