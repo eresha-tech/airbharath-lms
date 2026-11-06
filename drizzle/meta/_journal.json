@@ -267,6 +267,13 @@
       "when": 1793777552474,
       "tag": "0037_workspace_self_publishing",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793874293802,
+      "tag": "0038_creator_course_settlement",
+      "breakpoints": true
     }
   ]
 }

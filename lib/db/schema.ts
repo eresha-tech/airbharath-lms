@@ -1088,3 +1088,26 @@ export const courseDiscoveryStats = pgTable('course_discovery_stats', {
 export const workspacePublicationNotices=pgTable('workspace_publication_notices',{
  id:uuid('id').defaultRandom().primaryKey(),projectId:uuid('project_id').notNull().references(()=>workspaceCourseProjects.id,{onDelete:'restrict'}),userId:uuid('user_id').notNull().references(()=>users.id,{onDelete:'restrict'}),eventId:uuid('event_id').notNull().references(()=>workspacePublicationEvents.id,{onDelete:'restrict'}).unique(),message:text('message').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).notNull(),
 },t=>[index('workspace_notice_owner_idx').on(t.userId,t.createdAt),foreignKey({columns:[t.projectId,t.userId],foreignColumns:[workspaceCourseProjects.id,workspaceCourseProjects.userId],name:'workspace_notice_owner_fk'}).onDelete('restrict')]);
+
+// Phase 2.2: course money evidence is separate from membership billing.
+export const coursePaymentChecks=pgTable('course_payment_checks',{
+ orderId:uuid('order_id').primaryKey().references(()=>orders.id,{onDelete:'restrict'}),scope:text('scope').notNull(),paymentId:text('payment_id').unique(),lastCheckedAt:timestamp('last_checked_at',{withTimezone:true}),nextCheckAt:timestamp('next_check_at',{withTimezone:true}).defaultNow().notNull(),issue:text('issue'),
+});
+export const creatorLedger=pgTable('creator_ledger',{
+ id:uuid('id').defaultRandom().primaryKey(),creatorId:uuid('creator_id').notNull().references(()=>users.id,{onDelete:'restrict'}),orderId:uuid('order_id').notNull().references(()=>orders.id,{onDelete:'restrict'}),scope:text('scope').notNull(),sourceKey:text('source_key').notNull(),kind:text('kind').notNull(),grossPaise:integer('gross_paise').default(0).notNull(),taxPaise:integer('tax_paise').default(0).notNull(),feePaise:integer('fee_paise').default(0).notNull(),feeTaxPaise:integer('fee_tax_paise').default(0).notNull(),netPaise:integer('net_paise').notNull(),commissionPaise:integer('commission_paise').default(0).notNull(),evidence:jsonb('evidence').$type<Record<string,unknown>>().notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('creator_ledger_source').on(t.orderId,t.sourceKey),index('creator_ledger_owner').on(t.creatorId,t.createdAt),check('creator_ledger_money',sql`${t.commissionPaise}=0 AND ${t.netPaise}=${t.grossPaise}-${t.taxPaise}-${t.feePaise}`)]);
+export const coursePaymentInbox=pgTable('course_payment_inbox',{
+ id:text('id').primaryKey(),scope:text('scope').notNull(),hash:text('hash').notNull(),paymentId:text('payment_id').notNull(),disputeId:text('dispute_id'),state:text('state').default('pending').notNull(),attempts:integer('attempts').default(0).notNull(),nextAttemptAt:timestamp('next_attempt_at',{withTimezone:true}).defaultNow().notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),error:text('error'),
+},t=>[index('course_inbox_due').on(t.state,t.nextAttemptAt)]);
+export const creatorPayees=pgTable('creator_payees',{
+ id:uuid('id').defaultRandom().primaryKey(),creatorId:uuid('creator_id').notNull().references(()=>users.id,{onDelete:'restrict'}),encrypted:text('encrypted').notNull(),masked:text('masked').notNull(),policyVersion:text('policy_version').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+});
+export const creatorFinanceEvents=pgTable('creator_finance_events',{
+ id:uuid('id').defaultRandom().primaryKey(),creatorId:uuid('creator_id').notNull().references(()=>users.id,{onDelete:'restrict'}),actorId:uuid('actor_id').notNull().references(()=>users.id,{onDelete:'restrict'}),requestKey:uuid('request_key').notNull(),commandHash:text('command_hash').notNull(),action:text('action').notNull(),entityId:uuid('entity_id').notNull(),evidence:text('evidence').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('creator_finance_request').on(t.actorId,t.requestKey)]);
+export const creatorPayouts=pgTable('creator_payouts',{
+ id:uuid('id').defaultRandom().primaryKey(),creatorId:uuid('creator_id').notNull().references(()=>users.id,{onDelete:'restrict'}),payeeId:uuid('payee_id').notNull().references(()=>creatorPayees.id,{onDelete:'restrict'}),scope:text('scope').notNull(),amountPaise:integer('amount_paise').notNull(),periodEnd:timestamp('period_end',{withTimezone:true}).notNull(),approvedBy:uuid('approved_by').notNull().references(()=>users.id,{onDelete:'restrict'}),state:text('state').default('approved').notNull(),bankReference:text('bank_reference'),initiatedBy:uuid('initiated_by').references(()=>users.id,{onDelete:'restrict'}),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),updatedAt:timestamp('updated_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('creator_payout_bank_reference').on(t.bankReference),check('creator_payout_money',sql`${t.amountPaise}>0 AND ${t.approvedBy}<>${t.creatorId} AND ${t.state} IN ('approved','initiated','uncertain','confirmed','failed','cancelled')`)]);
+export const courseFinanceRuns=pgTable('course_finance_runs',{
+ scope:text('scope').primaryKey(),disputeSkip:integer('dispute_skip').default(0).notNull(),disputesCheckedAt:timestamp('disputes_checked_at',{withTimezone:true}),
+});

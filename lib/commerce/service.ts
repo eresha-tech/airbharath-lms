@@ -4,10 +4,13 @@ import { and, desc, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { courses, coupons, enrollments, orders, users, workspacePublicationStates as states, workspacePublicationPrices as prices } from '@/lib/db/schema';
 import { razorpay } from '@/lib/razorpay';
+import { recordCapture } from '@/lib/creator-payments/ledger';
+import { courseScope, requireCourseScope } from '@/lib/creator-payments/config';
+import { coursePaymentChecks } from '@/lib/db/schema';
 import { capturedPayment, CommerceError, moneyPaise, priceEvidence } from './model';
 
 // Provider calls stay outside database locks. Tests inject a synthetic adapter.
-export function commerceService(database=db, provider=razorpay) {
+export function commerceService(database=db, provider=razorpay, scope=courseScope()??'test:synthetic') {
  async function quote(actor:string,courseId:string,couponCode?:string, source=database) {
   const user=await source.query.users.findFirst({where:eq(users.id,actor)});
   if(!user) throw new CommerceError(401,'Sign in again.');
@@ -27,6 +30,7 @@ export function commerceService(database=db, provider=razorpay) {
  }
  return {
   async create(actor:string,courseId:string,couponCode?:string) {
+   if(provider===razorpay) requireCourseScope();
    const initial=await quote(actor,courseId,couponCode);
    const pending=await database.query.orders.findFirst({where:and(eq(orders.userId,actor),eq(orders.courseId,courseId),eq(orders.status,'pending')),orderBy:[desc(orders.createdAt),desc(orders.id)]});
    if(pending) {
@@ -48,7 +52,8 @@ export function commerceService(database=db, provider=razorpay) {
     if(existing?.status==='active'&&(!existing.expiresAt||existing.expiresAt>new Date())) throw new CommerceError(409,'You already have course access.');
     const prior=await tx.query.orders.findFirst({where:and(eq(orders.userId,actor),eq(orders.courseId,courseId),eq(orders.status,'pending')),orderBy:[desc(orders.createdAt),desc(orders.id)]});
     if(prior) return {id:prior.razorpayOrderId,amount:moneyPaise(prior.amount),currency:'INR',discountedAmount:Number(prior.amount),resumed:true};
-    await tx.insert(orders).values({userId:actor,courseId,razorpayOrderId:order.id,amount:(initial.evidence.totalPaise/100).toFixed(2),status:'pending',purchaseEvidence:initial.evidence,creatorId:initial.evidence.creatorId,workspacePriceId:initial.evidence.priceId});
+    const [saved]=await tx.insert(orders).values({userId:actor,courseId,razorpayOrderId:order.id,amount:(initial.evidence.totalPaise/100).toFixed(2),status:'pending',purchaseEvidence:initial.evidence,creatorId:initial.evidence.creatorId,workspacePriceId:initial.evidence.priceId}).returning();
+    await tx.insert(coursePaymentChecks).values({orderId:saved.id,scope});
     return {...order,discountedAmount:initial.evidence.totalPaise/100,resumed:false};
    });
    return persisted;
@@ -63,26 +68,28 @@ export function commerceService(database=db, provider=razorpay) {
    const list=await provider.orders.fetchPayments(orderId);
    const captured=list.items.find(p=>capturedPayment(p,order,p.id));
    if(!captured) return {success:false};
-   const result=await commerceService(database,provider).verify(actor,orderId,captured.id);
+   const result=await commerceService(database,provider,scope).verify(actor,orderId,captured.id);
    return {success:true,alreadyVerified:result.alreadyVerified,order:result.order};
   },
-  async verify(actor:string,orderId:string,paymentId:string) {
+  async verify(actor:string,orderId:string,paymentId:string, reconciled=false) {
    const order=await database.query.orders.findFirst({where:eq(orders.razorpayOrderId,orderId)});
    if(!order) throw new CommerceError(404,'Payment order not found.');
    if(order.userId!==actor) throw new CommerceError(403,'Forbidden.');
-   if(order.status==='paid') {
+   if(order.status==='paid'&&!reconciled) {
     if(order.razorpayPaymentId!==paymentId) throw new CommerceError(409,'Payment cannot be verified.');
     return {alreadyVerified:true,order};
    }
-   if(order.status!=='pending'||!order.courseId) throw new CommerceError(409,'Payment cannot be verified.');
+   if(!(reconciled?['pending','paid','refunded','chargeback']:['pending','paid']).includes(order.status)||!order.courseId) throw new CommerceError(409,'Payment cannot be verified.');
    // A checkout signature proves authenticity, not capture or amount. Uncertain
    // provider responses leave the order pending and safe to retry.
+   const observedAt=new Date();
    const payment=await provider.payments.fetch(paymentId);
-   if(!capturedPayment(payment,order,paymentId)) throw new CommerceError(409,'Payment is not captured for this order. Please retry after confirmation.');
+   if(!capturedPayment({...payment,status:reconciled&&payment.status==='refunded'?'captured':payment.status,amount_refunded:reconciled?0:payment.amount_refunded},order,paymentId)) throw new CommerceError(409,'Payment is not captured for this order. Please retry after confirmation.');
    return database.transaction(async tx=>{
+    if(order.creatorId) await tx.select({id:users.id}).from(users).where(eq(users.id,order.creatorId)).for('update');
     await tx.select({id:users.id}).from(users).where(eq(users.id,actor)).for('update');
     const [locked]=await tx.select().from(orders).where(eq(orders.id,order.id)).for('update');
-    if(locked.status==='paid'&&locked.razorpayPaymentId===paymentId) return {alreadyVerified:true,order:locked};
+    if(['paid','refunded','chargeback'].includes(locked.status)&&locked.razorpayPaymentId===paymentId) {await recordCapture(tx,locked,payment,scope,observedAt);return {alreadyVerified:true,order:locked};}
     if(locked.status!=='pending') throw new CommerceError(409,'Payment cannot be verified.');
     const [course]=await tx.select().from(courses).where(eq(courses.id,locked.courseId!));
     if(!course) throw new CommerceError(409,'Course needs manual payment review.');
@@ -92,14 +99,15 @@ export function commerceService(database=db, provider=razorpay) {
     const expiresAt=days?new Date(Date.now()+days*86400000):null;
     const existing=await tx.query.enrollments.findFirst({where:and(eq(enrollments.userId,actor),eq(enrollments.courseId,course.id))});
     if(existing && !['active','expired'].includes(existing.status)) throw new CommerceError(409,'Access was restricted. Contact support for payment review.');
-    if(!existing) await tx.insert(enrollments).values({userId:actor,courseId:course.id,status:'active',expiresAt});
-    else {
+    if(!existing && !(reconciled&&Number(payment.amount_refunded)===Number(payment.amount))) await tx.insert(enrollments).values({userId:actor,courseId:course.id,status:'active',expiresAt});
+    else if(existing && !(reconciled&&Number(payment.amount_refunded)===Number(payment.amount))) {
      // Never shorten lifetime or a later existing entitlement; progress is untouched.
      const until=existing.expiresAt===null||expiresAt===null?null:new Date(Math.max(existing.expiresAt.getTime(),expiresAt.getTime()));
      await tx.update(enrollments).set({status:'active',expiresAt:until}).where(eq(enrollments.id,existing.id));
     }
     await tx.update(orders).set({status:'paid',razorpayPaymentId:paymentId}).where(eq(orders.id,locked.id));
     if(locked.purchaseEvidence?.couponId) await tx.update(coupons).set({usedCount:sql`${coupons.usedCount}+1`}).where(eq(coupons.id,locked.purchaseEvidence.couponId));
+    await recordCapture(tx,{...locked,status:'paid',razorpayPaymentId:paymentId},payment,scope,observedAt);
     return {alreadyVerified:false,order:locked};
    });
   },

@@ -1,0 +1,7 @@
+const fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process');
+const mode=process.argv[2]??'source';if(!['source','validation','build'].includes(mode))throw Error('Invalid safe-copy purpose');const target=mode==='build'?path.resolve('output/audits/workspace-phase22-finance-ux/build-source'):'/tmp/airbharath-phase22-finance-ux/'+mode;fs.mkdirSync(target,{recursive:true});
+const manifest='/tmp/airbharath-phase22-finance-ux/files.manifest';
+const files=(fs.existsSync(manifest)?fs.readFileSync(manifest,'utf8'):execFileSync('git',['ls-files','--cached','--others','--exclude-standard','-z'],{encoding:'utf8'})).split('\0').filter(Boolean);
+for(const name of files){if((name.startsWith('output/')&&!['output/audits/workspace-f6r/coverage-review.json','output/audits/workspace-f6/catalog-before.json'].includes(name))||/(^|\/)(\.env[^/]*|\.aws|\.codex|\.agents|\.git)(\/|$)/.test(name)||/\.(pem|key|log)$/.test(name))continue;const source=path.resolve(name);if(!fs.existsSync(source)||!fs.statSync(source).isFile())continue;const dest=path.join(target,name);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(source,dest);}
+if(!fs.existsSync(path.join(target,'node_modules')))fs.symlinkSync(path.resolve('node_modules'),path.join(target,'node_modules'),'dir');
+fs.mkdirSync(path.join(target,'output/audits/workspace-phase22'),{recursive:true});console.log(target);
