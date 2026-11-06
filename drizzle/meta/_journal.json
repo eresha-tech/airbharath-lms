@@ -281,6 +281,13 @@
       "when": 1793954888591,
       "tag": "0039_creator_razorpayx_payouts",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1793981191153,
+      "tag": "0040_creator_analytics_paid_origin",
+      "breakpoints": true
     }
   ]
 }

@@ -225,7 +225,7 @@ export const orders = pgTable('orders', {
   creatorId: uuid('creator_id').references(() => users.id, { onDelete: 'restrict' }),
   workspacePriceId: uuid('workspace_price_id').references(() => workspacePublicationPrices.id, { onDelete: 'restrict' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}, t => [index('orders_paid_origin_idx').on(t.userId, t.courseId).where(sql`${t.status} IN ('paid','refunded','chargeback') AND ${t.razorpayPaymentId} IS NOT NULL AND ${t.amount}>0`)]);
 
 // Invoices Table
 export const invoices = pgTable('invoices', {

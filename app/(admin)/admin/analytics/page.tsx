@@ -1,3 +1,8 @@
+import Link from 'next/link';
+import { getAuthorizedAdminSession } from '@/lib/admin-authorization';
+import { redirect } from 'next/navigation';
+import { readAnalyticsPage } from '@/lib/workspace/creator-analytics/pages';
+import { AnalyticsScreen } from '@/components/workspace/analytics/Analytics';
 import React from "react";
 import { db } from "@/lib/db";
 import {
@@ -29,7 +34,15 @@ export const metadata = {
   description: "Executive analytics, cohort syllabus progression, verified financial reporting, and product analytics.",
 };
 
-export default async function AdminAnalyticsPage() {
+export default async function AdminAnalyticsPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}) {
+  const admin=await getAuthorizedAdminSession();if(!admin)redirect('/login');
+  const params=await searchParams;
+  const navigation=<nav aria-label="Admin analytics areas" className="flex flex-wrap gap-4 border-b pb-4"><Link className="inline-flex min-h-11 items-center text-sm text-primary underline" href="/admin/analytics">Academy reports</Link><Link className="inline-flex min-h-11 items-center text-sm text-primary underline" href="/admin/analytics?view=creators">Creator Marketplace</Link></nav>;
+  if(params.view==='creators'){
+    const creator=typeof params.creator==='string'&&params.creator?params.creator:null;
+    const v=await readAnalyticsPage(admin.id,creator,params);
+    return <div className="space-y-6">{navigation}{v.data?<AnalyticsScreen data={v.data} admin detail={params.detail==='course'&&!!v.data.filters.course}/>:<div><h1 className="font-outfit text-2xl">Choose analytics filters</h1><p role="alert" className="mt-4">{v.error}</p><Link className="inline-flex min-h-11 items-center text-primary underline" href="/admin/analytics?view=creators">Reset filters</Link></div>}</div>;
+  }
   const [
     modulesList,
     lessonsList,
@@ -154,7 +167,7 @@ export default async function AdminAnalyticsPage() {
   }));
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fade-in pb-12">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in pb-12">{navigation}
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-5">
         <div className="space-y-1">
