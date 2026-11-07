@@ -17,7 +17,7 @@ export default async function EligibilityResult() {
       <h2 className="mt-6 text-xl font-semibold">{eligible ? 'Eligibility valid until' : 'You can check again from'}</h2><p className="mt-3 text-lg">{formatWorkspaceDate((eligible ? attempt.eligibleUntil : attempt.reapplyAt)!)} IST</p>
       {!eligible && <ul className="mt-6 list-disc space-y-2 pl-5 text-sm leading-6">{attempt.reasons.map(reason => <li key={reason}>{REASON_LABELS[reason]}</li>)}</ul>}
       <p className="mt-7 border-t border-border pt-6 text-sm leading-7 text-muted-foreground">Eligibility is a self-declared assessment. It does not grant creator access, activate membership or approve courses. No payment is required for this check.</p>
-      <Link href={eligible ? '/workspace/activate' : '/workspace'} className="mt-7 inline-block rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground">{eligible ? 'Choose a plan' : 'Back to Workspace'}</Link>
+      <Link href={eligible ? '/workspace/pricing' : '/workspace'} className="mt-7 inline-block rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground">{eligible ? 'Choose a plan' : 'Back to Workspace'}</Link>
     </section>
   </EligibilityShell>;
 }

@@ -12,8 +12,8 @@ import { completeLogoutNavigation } from '@/app/(auth)/login/actions';
 import { resetUser } from '@/lib/analytics';
 import { clearClientUser, subscribeClientUser, getClientUser, type ClientUser } from '@/lib/user-session-client';
 import './public/public.css';
-const desktopLinks = [['/courses', 'Courses'], ['/workspace', 'Workspace'], ['/pricing', 'Course Pricing'], ['/about', 'About'], ['/contact', 'Support']] as const;
-const extraLinks = [['/practice', 'Practice Lab'], ['/#benefits', 'Learning features'], ['/#how-it-works', 'How learning works'], ['/#certificate', 'Certificate verification'], ['/faq', 'Learner FAQ']] as const;
+const desktopLinks = [['/courses', 'Courses'], ['/workspace', 'Workspace'], ['/mentorship', 'Mentorship'], ['/pricing', 'Course Pricing'], ['/about', 'About'], ['/contact', 'Support']] as const;
+const extraLinks = [['/workspace/pricing', 'Creator Plans'], ['/practice', 'Practice Lab'], ['/#benefits', 'Learning features'], ['/#how-it-works', 'How learning works'], ['/#certificate', 'Certificate verification'], ['/faq', 'Learner FAQ']] as const;
 export default function Header() {
     const pathname = usePathname();
     const workspace = pathname.startsWith('/workspace');
@@ -55,7 +55,7 @@ export default function Header() {
         mq.addEventListener('change', close);
         return () => mq.removeEventListener('change', close);
     }, []);
-    const active = (href: string) => href === '/workspace' ? workspace : pathname === href || (href === '/courses' && pathname.startsWith('/courses/'));
+    const active = (href: string) => href === '/workspace' ? workspace : pathname === href || (href === '/mentorship' && pathname.startsWith('/mentorship/')) || (href === '/courses' && pathname.startsWith('/courses/'));
     return <header className="public-ui public-header" data-scrolled={scrolled}>
     <a href="#public-content" className="public-skip">Skip to content</a>
     <div className="public-container public-header-row">
@@ -73,7 +73,7 @@ export default function Header() {
     </SheetTrigger>
           <SheetContent className="public-ui public-drawer" side="right">
             <SheetTitle className="pr-12 font-outfit text-xl">Explore AirBharath</SheetTitle>
-            <SheetDescription>Courses, Creator Workspace and support.</SheetDescription>
+            <SheetDescription>Learner courses, Creator Workspace, independent mentorship and support.</SheetDescription>
             <div data-public-search>
     <SearchInput onNavigate={() => setOpen(false)}/>
     </div>

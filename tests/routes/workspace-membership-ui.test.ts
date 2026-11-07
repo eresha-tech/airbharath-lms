@@ -42,16 +42,17 @@ it('advertises F.1 inclusive totals from supplied successor rows with an exact s
   expect(html).toContain('Payments not yet enabled'); expect(html.match(/type="checkbox"/g)).toHaveLength(2);
 });
 
-it('describes release targets without announcing open payments or current uploads and publication', () => {
+it('prepares independent launch copy without changing canonical or historical billing records', () => {
   for (const file of ['components/workspace/WorkspaceLanding.tsx', 'app/(user)/workspace/activate/page.tsx']) {
     const source = readFileSync(file, 'utf8');
-    expect(source).toContain('14 October 2026, subject to launch verification');
+    expect(source).not.toContain('14 October 2026');
     expect(source).toMatch(/FULL_WORKSPACE_LAUNCH|WorkspaceLaunchNotice/);
-    expect(source).toContain('publication and course sales');
+    expect(source).toContain('/workspace/pricing');
   }
   const landing = renderToStaticMarkup(React.createElement(WorkspaceLanding));
-  expect(landing).toContain('Full AirBharath Workspace is targeted for 9 November 2026, subject to release readiness.');
-  expect(landing).toContain('Workspace payments are awaiting launch verification');
+  expect(landing).toContain('coordinated launch verification');
+  expect(landing).toContain('No routine course-proposal approval is required');
+  expect(landing).not.toContain('Targeted for 9 November');
   const member = readFileSync('app/(workspace)/workspace/(membership)/member/page.tsx', 'utf8');
   expect(member).toContain("['Original payment amount', formatPaise(row.order.totalPaise)]");
   expect(member).not.toContain('getCurrentPlans');

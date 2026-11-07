@@ -103,20 +103,20 @@ it('renders eight purposeful homepage sections with courses followed by Workspac
     expect(result).toContain('Explore Creator Workspace');
     expect(result).not.toMatch(/IIM|30\+|lifetime|365 Days Access/);
 });
-it('publishes current policy and exact inclusive prices without internal IDs or private evidence', async () => {
+it('reads exact authoritative prices and publishes current criteria with a dedicated Creator pricing link', async () => {
     const info = await readPublicWorkspaceInfo();
     expect(info.plans?.map(p => p.totalPaise)).toEqual([589900, 999900, 1769900]);
     expect(JSON.stringify(info)).not.toContain('private');
     expect(info.eligibility?.categories).toEqual(['Pilot / Flight Crew']);
     const result = html(React.createElement(WorkspaceLanding, { info }));
     expect(result.match(/<section\b/g)).toHaveLength(8);
-    for (const text of ['₹5,899', '₹9,999', '₹17,699', '24 months', '18 or older', 'HTTPS', 'verified payment time', '72 elapsed hours', '00:00 IST', 'Admin-issued', 'proposal approval', 'Check Eligibility'])
+    for (const text of ['24 months', 'at least 18', 'HTTPS', 'verified payment time', 'complimentary grants', 'No routine course-proposal approval', 'Check Eligibility', 'href="/workspace/pricing"'])
         expect(result).toContain(text);
     expect(result).not.toMatch(/Pay Now|checkout\.js/);
     expect(result).toContain('href="/workspace/creator-terms"');
     expect(result).toContain('href="/workspace/refund-policy"');
 });
-it('uses changed published criteria and retains independent prices when policy reads fail', async () => {
+it('uses changed published criteria and retains the pricing path when policy reads fail', async () => {
     mocks.policy.mockResolvedValueOnce({ settings: { config: { minimumExperienceMonths: 36, profileRequired: false, allowedCategories: ['cabin_crew'] } } });
     const current = await readPublicWorkspaceInfo();
     expect(html(React.createElement(WorkspaceLanding, { info: current }))).toContain('36 months');
@@ -124,16 +124,16 @@ it('uses changed published criteria and retains independent prices when policy r
     mocks.policy.mockRejectedValueOnce(new Error('private'));
     const partial = await readPublicWorkspaceInfo();
     const result = html(React.createElement(WorkspaceLanding, { info: partial }));
-    expect(result).toContain('Eligibility requirements are temporarily unavailable');
-    expect(result).toContain('₹5,899');
+    expect(result).toContain('Current requirements are temporarily unavailable');
+    expect(partial.plans?.[0].totalPaise).toBe(589900);expect(result).toContain('href="/workspace/pricing"');
     expect(result).not.toContain('private-policy');
 });
 it('does not fabricate public prices when current catalog is unavailable', async () => {
     mocks.plans.mockRejectedValueOnce(new Error('private'));
     const result = html(React.createElement(WorkspaceLanding, { info: await readPublicWorkspaceInfo() }));
-    expect(result).toContain('Membership prices are temporarily unavailable');
+    expect(result).toContain('Current plan information is temporarily unavailable');
     expect(result).not.toMatch(/₹5,899|₹9,999|₹17,699/);
-    expect(result).toContain('Payments not yet enabled');
+    expect(result).toContain('coordinated launch verification');
 });
 it('exposes separate footer learner/Creator/legal paths without fabricated proof/social links', () => {
     const result = html(React.createElement(Footer));

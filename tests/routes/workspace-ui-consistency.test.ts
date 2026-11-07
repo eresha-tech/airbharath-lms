@@ -31,9 +31,9 @@ it('load error exposes an actionable retry without inventing an empty financial 
   const result = html(createElement(WorkspaceErrorState, { title: 'Financial evidence unavailable', href: '/admin/workspace/reports' }));
   expect(result).toContain('role="alert"'); expect(result).toContain('Reload this page'); expect(result).not.toContain('₹0');
 });
-it('launch notice separates Early Access preparation from planned publication and selling', () => {
+it('launch notice describes independent publishing without promising a release date', () => {
   const result = html(createElement(WorkspaceLaunchNotice));
-  expect(result).toContain('Full AirBharath Workspace is targeted for 9 November 2026, subject to release readiness.'); expect(result).toContain('not available during Early Access');
+  expect(result).toContain('coordinated launch verification');expect(result).toContain('independent course building');expect(result).toContain('Admin moderation');expect(result).not.toContain('9 November');
 });
 it('saved legal history does not pre-check or auto-acknowledge current purchase consent', () => {
   const accepted = vi.fn();

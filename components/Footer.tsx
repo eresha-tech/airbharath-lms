@@ -3,7 +3,7 @@ import { PublicBrand } from './public/PublicUI';
 import './public/public.css';
 const groups = [
     ['Learn', [['/courses', 'All Courses'], ['/courses/combo-pack', 'All-in-One Combo Pass'], ['/courses/ai-skills', 'AI Skills'], ['/courses/content-creation', 'Digital Marketing & Content'], ['/courses/entrepreneurship', 'Entrepreneurship'], ['/courses/ms-office', 'MS Office & Productivity'], ['/practice', 'Practice Lab'], ['/verify-certificate', 'Certificate Verification'], ['/dashboard/courses', 'My Learning'], ['/pricing', 'Course Pricing']]],
-    ['Create', [['/workspace', 'AirBharath Workspace'], ['/workspace/apply', 'Check Eligibility'], ['/workspace/manual-application', 'Manual Application'], ['/workspace/creator-terms', 'Creator Terms'], ['/workspace/refund-policy', 'Workspace Refund Policy']]],
+    ['Create', [['/workspace', 'AirBharath Workspace'], ['/workspace/pricing', 'Creator Plans'], ['/mentorship', 'Aviation Mentorship'], ['/mentorship/register', 'Register as a Mentor'], ['/workspace/apply', 'Check Eligibility'], ['/workspace/manual-application', 'Manual Application'], ['/workspace/creator-terms', 'Creator Terms'], ['/workspace/refund-policy', 'Workspace Refund Policy']]],
     ['Company & Support', [['/', 'Home'], ['/about', 'About AirBharath'], ['/contact', 'Contact & Support'], ['/faq', 'Learner FAQ'], ['/privacy', 'Privacy Policy'], ['/terms', 'Terms & Conditions'], ['/login', 'Sign In / Register']]],
 ] as const;
 export function Footer() {
@@ -12,7 +12,7 @@ export function Footer() {
     <div className="public-footer-grid">
       <div className="public-footer-brand">
     <PublicBrand />
-    <p className="public-footer-description">Professional Aviation Learning<br />Practical skills for learners. Private course preparation for aviation creators.</p>
+    <p className="public-footer-description">Professional Aviation Learning<br />Practical skills for learners. Independent course creation and mentorship pre-registration for aviation professionals.</p>
     <address>Eresha Technology Innovators Pvt. Ltd.<br />West Patel Nagar, New Delhi 110008, India<br />
     <a href="mailto:academy@airbharath.in">academy@airbharath.in</a>
     </address>

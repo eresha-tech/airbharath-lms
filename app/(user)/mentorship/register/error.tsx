@@ -1,0 +1,2 @@
+'use client';
+export default function Error({reset}:{reset:()=>void}){return <section className="mx-auto max-w-3xl px-5 py-32"><h1 className="font-outfit text-3xl">Application status unavailable</h1><p role="alert" className="my-5">Your saved application has not been changed. Please reload before trying again.</p><button className="min-h-11 rounded-xl border border-border px-5" onClick={reset}>Try again</button></section>;}

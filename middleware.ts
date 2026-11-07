@@ -34,6 +34,10 @@ export async function middleware(request: NextRequest) {
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml' ||
     pathname === '/workspace' ||
+    pathname === '/workspace/pricing' ||
+    pathname === '/workspace/choose-plan' ||
+    pathname === '/mentorship' ||
+    pathname === '/mentorship/register' ||
     pathname === '/workspace/creator-terms' ||
     pathname === '/workspace/refund-policy' ||
     pathname === '/workspace/manual-application' ||

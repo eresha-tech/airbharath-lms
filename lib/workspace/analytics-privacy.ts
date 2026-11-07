@@ -35,6 +35,9 @@ export function sanitizeWorkspaceAnalytics(event: CaptureResult | null): Capture
   if (/^workspace_(?:payment|financial|order|reservation|redemption|refund)(?:_|$)/.test(event.event)) return null;
   let url: URL | null = null;
   try { if (typeof event.properties.$current_url === 'string') url = new URL(event.properties.$current_url); } catch { /* Prefix still enforces privacy. */ }
+  const callback=url?.searchParams.get('callbackUrl')??'';
+  if(url&&(url.pathname.startsWith('/mentorship')||url.pathname.startsWith('/admin/workspace/mentor-applications')||url.pathname==='/login'&&callback.startsWith('/mentorship')))return null;
+  if(typeof event.properties.pathname==='string'&&(event.properties.pathname.startsWith('/mentorship')||event.properties.pathname.startsWith('/admin/workspace/mentor-applications')))return null;
   const path = url ? workspaceAnalyticsPath(url.pathname) : typeof event.properties.pathname === 'string' ? workspaceAnalyticsPath(event.properties.pathname) : null;
   const login = !!url && workspaceLoginUrl(url);
   if (!path && !login && !event.event.startsWith('workspace_')) return event;

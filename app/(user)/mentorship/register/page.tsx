@@ -1,0 +1,10 @@
+import Link from 'next/link';
+import {redirect} from 'next/navigation';
+import {getWorkspaceUser} from '@/lib/workspace/eligibility/service';
+import {mentorRepository} from '@/lib/mentorship/repository';
+import {STATUS_LABELS} from '@/lib/mentorship/model';
+import {MentorForm} from '@/components/mentorship/Forms';
+import {readContactEmail} from '@/lib/workspace/email/contact';
+export const dynamic='force-dynamic';
+export const metadata={title:'Mentor pre-registration — AirBharath',robots:{index:false,follow:false}};
+export default async function Register(){const user=await getWorkspaceUser();if(!user)redirect('/login?callbackUrl=%2Fmentorship%2Fregister');const saved=await mentorRepository().own(user.id);return <section className="ph-no-capture mx-auto max-w-3xl px-5 pb-24 pt-28 sm:px-8"><Link className="underline" href="/mentorship">← Aviation Mentorship</Link><p className="mt-8 text-xs uppercase tracking-widest text-primary">Independent programme · Free to apply</p><h1 className="mt-4 font-outfit text-4xl font-semibold">Register as a Mentor</h1><p className="mb-8 mt-5 leading-7 text-muted-foreground">Tell us about the experience you would like to share. All applications undergo eligibility review. No Creator membership or payment is required.</p>{saved?<section className="space-y-4 rounded-2xl border border-border p-7"><h2 className="font-outfit text-2xl">Your application is saved.</h2><p className="break-all text-sm">Reference: {saved.id}</p><p>Status: <strong>{STATUS_LABELS[saved.status]}</strong></p><p>Submitted: {new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeZone:'Asia/Kolkata'}).format(new Date(saved.submitted_at))} IST</p><p className="text-sm leading-7 text-muted-foreground">No public mentor profile or booking service is active. Shortlisting is a screening outcome; it does not guarantee acceptance, bookings or earnings. Staff notes remain private. No acknowledgement email was sent.</p><Link className="inline-block underline" href="/contact">Contact support about a correction or privacy request</Link></section>:<MentorForm name={user.fullName??''} email={await readContactEmail(user.id)??''}/>}</section>;}

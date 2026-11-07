@@ -295,6 +295,13 @@
       "when": 1793996390037,
       "tag": "0041_workspace_launch_operations",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1794076456963,
+      "tag": "0042_mentor_preregistration",
+      "breakpoints": true
     }
   ]
 }

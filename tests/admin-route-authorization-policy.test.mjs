@@ -13,7 +13,7 @@ function routeFiles(directory) {
 
 test('privileged admin route handlers use persisted-role authorization', () => {
   const files = routeFiles(adminRoot);
-  assert.equal(files.length, 49);
+  assert.equal(files.length, 50);
 
   const operationsGuard = readFileSync(join(process.cwd(), 'lib/workspace/operations/http.ts'), 'utf8');
   assert.match(operationsGuard, /admin\?await getAuthorizedAdminSession\(\):await getWorkspaceUser\(\)/);
