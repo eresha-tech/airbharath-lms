@@ -7,11 +7,19 @@
     },
     {
       "path": "/api/internal/course-payments/reconcile",
-      "schedule": "0 * * * *"
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/internal/creator-payouts/reconcile",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/internal/workspace/media",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/internal/workspace/refund-notices",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

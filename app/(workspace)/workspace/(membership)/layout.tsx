@@ -1,3 +1,5 @@
+import Link from 'next/link';
+import {operationsEnabled} from '@/lib/workspace/operations/model';
 import { redirect } from 'next/navigation';
 import { getWorkspaceUser } from '@/lib/workspace/eligibility/service';
 import { workspaceContent } from '@/lib/workspace/creator/repository';
@@ -14,5 +16,5 @@ export default async function MembershipLayout({ children }: { children: React.R
   try { state = await workspaceContent().overview(user.id); }
   catch (error) { if (!(error instanceof CreatorError) || error.code !== 'restricted') throw new Error('Workspace access could not be loaded. Please try again.'); }
   if (state) return <CreatorShell name={state.details?.displayName || user.fullName || 'Creator'} editable={state.capabilities.canEditWorkspace} retainedState={state.capabilities.state}>{children}</CreatorShell>;
-  return <div className="min-h-screen bg-background text-foreground"><Header /><main id="public-content" tabIndex={-1} className="mx-auto max-w-4xl px-5 pb-16 pt-28">{children}</main><Footer /></div>;
+  return <div className="min-h-screen bg-background text-foreground"><Header /><main id="public-content" tabIndex={-1} className="mx-auto max-w-4xl px-5 pb-16 pt-28">{operationsEnabled()&&<nav aria-label="Workspace assistance" className="mb-6 flex gap-5 text-sm text-primary"><Link className="inline-flex min-h-11 items-center underline" href="/workspace/support">Workspace support</Link><Link className="inline-flex min-h-11 items-center underline" href="/workspace/notifications">Notifications</Link></nav>}{children}</main><Footer /></div>;
 }

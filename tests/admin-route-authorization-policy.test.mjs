@@ -13,7 +13,12 @@ function routeFiles(directory) {
 
 test('privileged admin route handlers use persisted-role authorization', () => {
   const files = routeFiles(adminRoot);
-  assert.equal(files.length, 47);
+  assert.equal(files.length, 49);
+
+  const operationsGuard = readFileSync(join(process.cwd(), 'lib/workspace/operations/http.ts'), 'utf8');
+  assert.match(operationsGuard, /admin\?await getAuthorizedAdminSession\(\):await getWorkspaceUser\(\)/);
+  assert.match(operationsGuard, /if\(!user\)throw new OperationsError/);
+  assert.match(operationsGuard, /const user=await operationActor\(request,admin\)/);
 
   for (const file of files) {
     const source = readFileSync(file, 'utf8');
@@ -22,6 +27,16 @@ test('privileged admin route handlers use persisted-role authorization', () => {
     const authorizationCount = source.match(/await getAuthorizedAdminSession\(\)/g)?.length ?? 0;
 
     assert.doesNotMatch(source, /getSession\(|session\.role\s*[!=]==?\s*["']admin["']/);
+    if (route === 'workspace/support/[id]/route.ts') {
+      assert.match(source, /export const GET=async\(r:Request,c:Context\)=>supportHttp\(r,\(await c.params\).id,true\)/);
+      assert.match(source, /export const POST=async\(r:Request,c:Context\)=>supportHttp\(r,\(await c.params\).id,true\)/);
+      continue;
+    }
+    if (route === 'workspace/operations/media/[id]/route.ts') {
+      assert.equal(handlerCount, 1);
+      assert.match(source, /const u=await operationActor\(r,true\)/);
+      continue;
+    }
     assert.equal(
       authorizationCount,
       handlerCount,

@@ -288,6 +288,13 @@
       "when": 1793981191153,
       "tag": "0040_creator_analytics_paid_origin",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1793996390037,
+      "tag": "0041_workspace_launch_operations",
+      "breakpoints": true
     }
   ]
 }

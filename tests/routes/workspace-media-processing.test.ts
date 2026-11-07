@@ -55,3 +55,6 @@ it('uploads verified plain captions bound to the selected source without exposin
  await f.uploads.finalize(f.owner,asset.id,{});await f.mutate(asset.id,'attach');expect(f.state.rows.find(a=>a.id===asset.id)?.isAttached).toBe(true);
  await f.mutate(f.asset.id,'detach');expect(f.state.rows.find(a=>a.id===asset.id)?.status).toBe('detached');
 });
+
+it('finishes a previously verified video after membership expiry while new uploads remain blocked',async()=>{const f=await fixture();await f.service.request(f.owner,f.asset.id,{});f.state.clock=new Date(f.state.context.evidence!.membership.endsAt.getTime()+1);await f.service.dispatch(f.owner,f.asset.id);await f.service.reconcile(f.owner,f.asset.id);expect(f.state.rows[0].status).toBe('ready');await expect(f.reserve()).rejects.toThrow('forbidden');});
+it('does not make a queued intent uncertain merely because provider configuration is absent',async()=>{const f=await fixture();await f.service.request(f.owner,f.asset.id,{});await expect(mediaProcessing(f.store,'test',()=>f.state.clock).dispatch(f.owner,f.asset.id)).rejects.toThrow('unavailable');expect(f.state.jobs[0].state).toBe('queued');});

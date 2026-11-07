@@ -54,10 +54,10 @@ export const postgresPublishingStore:PublishingStore={transaction:(actor,project
   },
   notices:async()=>tx.select({id:notices.id,message:notices.message,createdAt:notices.createdAt}).from(notices).where(eq(notices.projectId,project)).orderBy(desc(notices.createdAt)).limit(50),
   reprice:async(_revision,price)=>{await guard();if(!state?.courseId)throw new PublishingError('not_ready');await tx.update(courses).set({price:rupees(price.amountPaise)}).where(eq(courses.id,state.courseId));},
-  visibility:async(status)=>{await guard();if(!state?.courseId)throw new PublishingError('not_ready');await tx.update(courses).set({isPublished:false,workspaceState:status}).where(eq(courses.id,state.courseId));},
+  visibility:async(status)=>{await guard();if(!state?.courseId)throw new PublishingError('not_ready');await tx.update(courses).set({isPublished:status==='live',workspaceState:status}).where(eq(courses.id,state.courseId));},
   save:async(s:State)=>{await tx.insert(states).values(s).onConflictDoUpdate({target:states.projectId,set:{...s}});},
-  event:async(action,requestKey,commandHash,note,result,at)=>{const [event]=await tx.insert(events).values({projectId:project,actorId:actor,action,requestKey,commandHash,note,result,createdAt:at}).returning();if(['flag','request_corrections','moderate_unpublish','suspend','resolve'].includes(action))await tx.insert(notices).values({projectId:project,userId:p.userId,eventId:event.id,message:note,createdAt:at});},
-  history:async()=>tx.select({action:events.action,note:events.note,createdAt:events.createdAt}).from(events).where(eq(events.projectId,project)).orderBy(desc(events.createdAt)).limit(100),
+  event:async(action,requestKey,commandHash,note,result,at)=>{const [event]=await tx.insert(events).values({projectId:project,actorId:actor,action,requestKey,commandHash,note,result,createdAt:at}).returning();if(['flag','request_corrections','moderate_unpublish','suspend','resolve','restore','publish'].includes(action))await tx.insert(notices).values({projectId:project,userId:p.userId,eventId:event.id,message:action==='publish'?'Your saved course version is published. Existing learners retain their access.':note,createdAt:at});},
+  history:async()=>tx.select({action:events.action,note:events.note,createdAt:events.createdAt}).from(events).where(eq(events.projectId,project)).orderBy(sql`coalesce((${events.result}->>'version')::integer,0) desc`).limit(100),
  });
 })};
 export function workspacePublishing(){return publishingService(postgresPublishingStore,()=>new Date(),()=>publishingEnabled());}

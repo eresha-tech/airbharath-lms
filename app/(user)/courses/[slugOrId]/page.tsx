@@ -1,3 +1,4 @@
+import {operationsEnabled} from '@/lib/workspace/operations/model';
 import Image from "next/image";
 import { Suspense } from "react";
 import { ReviewSection } from "@/components/reviews/ReviewSection";
@@ -676,7 +677,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
             </section>
 
             {/* SECTION: Curriculum */}
-            <Suspense fallback={<p role="status">Loading learner reviews…</p>}><ReviewSection courseId={course.id} actor={session?.id??null}/></Suspense>
+            {course.workspaceProjectId&&operationsEnabled()&&<Link className="inline-flex min-h-11 items-center text-sm text-primary underline" href={"/workspace/support/new?report="+course.id}>Report this course</Link>}<Suspense fallback={<p role="status">Loading learner reviews…</p>}><ReviewSection courseId={course.id} actor={session?.id??null}/></Suspense>
             <section id="course-curriculum" className="scroll-mt-28 space-y-6">
               <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xs">
                 <div className="flex items-center justify-between">

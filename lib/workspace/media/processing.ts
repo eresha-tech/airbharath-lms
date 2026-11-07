@@ -21,6 +21,7 @@ export async function enqueueVerifiedVideo(tx: MediaTransaction, a: Asset, now: 
 }
 export function mediaProcessing(store: MediaStore, environment: string | undefined, clock = () => new Date(), provider?: MediaProcessor) {
   const run = <T>(actor: string, id: string, work: (tx: MediaTransaction, permit: () => Date) => Promise<T>) => mediaTransaction(store, environment, clock, actor, { assetId: id }, true, work);
+  const observe = <T>(actor: string, id: string, work: (tx: MediaTransaction, permit: () => Date) => Promise<T>) => mediaTransaction(store, environment, clock, actor, { assetId: id }, false, work);
   async function selected(tx: MediaTransaction, id: string) { const a = (await tx.assets()).find(a => a.id === id); if (!a) throw new MediaError('not_found'); return a; }
   const processor = () => { if (!provider) throw new MediaError('unavailable'); return provider; };
   const outbox = (tx: MediaTransaction) => { if (!tx.processing) throw new MediaError('unavailable'); return tx.processing; };
@@ -35,7 +36,8 @@ export function mediaProcessing(store: MediaStore, environment: string | undefin
       });
     },
     dispatch: async (actor: string, id: string) => {
-      const claimed = await run(actor, id, async (tx, permit) => {
+      processor(); // Refuse missing provider configuration before claiming a dispatch intent.
+      const claimed = await observe(actor, id, async (tx, permit) => {
         const a = await selected(tx, id), jobs = outbox(tx), j = await jobs.read();
         if (!j || a.status !== 'processing' || j.state !== 'queued') return null;
         const now = permit(); return { asset: a, job: await jobs.update(j, { state: 'dispatching', dispatchedAt: now, updatedAt: now }) };
@@ -46,17 +48,17 @@ export function mediaProcessing(store: MediaStore, environment: string | undefin
       let externalId: string;
       try { externalId = await processor().dispatch(claimed.asset, claimed.job); }
       catch {
-        await run(actor, id, async (tx, permit) => { const jobs = outbox(tx), j = await jobs.read(); if (j?.state === 'dispatching') await jobs.update(j, { state: 'uncertain', updatedAt: permit() }); });
+        await observe(actor, id, async (tx, permit) => { const jobs = outbox(tx), j = await jobs.read(); if (j?.state === 'dispatching') await jobs.update(j, { state: 'uncertain', updatedAt: permit() }); });
         throw new MediaError('unavailable');
       }
-      await run(actor, id, async (tx, permit) => {
+      await observe(actor, id, async (tx, permit) => {
         const jobs = outbox(tx), j = await jobs.read(), a = await selected(tx, id);
         if (!j || a.status !== 'processing' || !['dispatching', 'uncertain'].includes(j.state)) return;
         await jobs.update(j, { state: 'submitted', providerJobId: externalId, updatedAt: permit() });
       });
     },
     reconcile: async (actor: string, id: string, callbackId?: string) => {
-      const prior = await run(actor, id, async tx => {
+      const prior = await observe(actor, id, async tx => {
         const asset = await selected(tx, id), job = await outbox(tx).read();
         if (!job || asset.status !== 'processing' || ['complete', 'failed'].includes(job.state)) return null;
         const externalId = callbackId || job.providerJobId;
@@ -65,7 +67,7 @@ export function mediaProcessing(store: MediaStore, environment: string | undefin
       });
       if (!prior) return;
       const result = await processor().inspect(prior.asset, prior.job, prior.externalId);
-      await run(actor, id, async (tx, permit) => {
+      await observe(actor, id, async (tx, permit) => {
         const asset = await selected(tx, id), jobs = outbox(tx), job = await jobs.read();
         if (!job || job.id !== prior.job.id || asset.status !== 'processing' || ['complete', 'failed'].includes(job.state)) return;
         if (job.providerJobId && job.providerJobId !== prior.externalId || job.sourceVersion !== asset.objectVersionId || job.id !== asset.processingJobId) throw new MediaError('conflict');

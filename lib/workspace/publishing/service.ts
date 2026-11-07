@@ -20,7 +20,7 @@ export interface PublishingTx{
  publish(snapshot:FrozenCourse,revision:Revision,price:Price,actor:string,at:Date):Promise<string>;
  reprice?(revision:Revision,price:Price,actor:string,at:Date):Promise<void>;
  notices?():Promise<{id:string;message:string;createdAt:Date}[]>;
- visibility(state:'unpublished'|'suspended',at:Date):Promise<void>;
+ visibility(state:'unpublished'|'suspended'|'live',at:Date):Promise<void>;
  save(state:State):Promise<void>;
  event(action:string,key:string,digest:string,note:string,result:Record<string,unknown>,at:Date):Promise<void>;
  history():Promise<{action:string;createdAt:Date;note:string}[]>;
@@ -31,14 +31,14 @@ export function publishingService(store:PublishingStore,clock=()=>new Date(),ena
  return {
  read:(actor:string,project:string)=>store.transaction(actor,project,async tx=>{
   if(!tx.context.admin&&(!tx.context.canView||tx.context.ownerId!==actor))throw new PublishingError('forbidden');
-  return {projectId:project,version:tx.state?.version??0,metadata:tx.state?.metadata??tx.context.defaults,status:tx.state?.status??'draft',courseId:tx.state?.courseId??null,currentRevisionId:tx.state?.currentRevisionId??null,currentPriceId:tx.state?.currentPriceId??null,canEdit:tx.context.ownerId===actor&&tx.context.canEdit,admin:tx.context.admin,independentAdmin:tx.context.admin&&tx.context.ownerId!==actor,publishingEnabled:enabled(),guidelines:PUBLISHING_GUIDELINES,guidelineHash:GUIDELINE_HASH,guidelinesAccepted:currentGuidelines(tx.state?.guidelines,tx.context.ownerId),moderation:tx.state?.moderation??null,notices:await tx.notices?.()??[],revisions:tx.revisions.map(revisionReceipt),prices:tx.prices,history:await tx.history(),artwork:await tx.artwork()};
+  return {projectId:project,version:tx.state?.version??0,metadata:tx.state?.metadata??tx.context.defaults,status:tx.state?.status??'draft',courseId:tx.state?.courseId??null,currentRevisionId:tx.state?.currentRevisionId??null,currentPriceId:tx.state?.currentPriceId??null,canRespond:tx.context.ownerId===actor&&tx.context.canView&&tx.context.profileStatus==='enabled',canEdit:tx.context.ownerId===actor&&tx.context.canEdit,admin:tx.context.admin,independentAdmin:tx.context.admin&&tx.context.ownerId!==actor,publishingEnabled:enabled(),guidelines:PUBLISHING_GUIDELINES,guidelineHash:GUIDELINE_HASH,guidelinesAccepted:currentGuidelines(tx.state?.guidelines,tx.context.ownerId),moderation:tx.state?.moderation??null,notices:await tx.notices?.()??[],revisions:tx.revisions.map(revisionReceipt),prices:tx.prices,history:await tx.history(),artwork:await tx.artwork()};
  }),
  execute:(actor:string,project:string,raw:unknown)=>{
   const c=command(raw),digest=hash({project,...c});
   return store.transaction(actor,project,async tx=>{
    const x=tx.context;
    if(adminActions.has(c.action)){if(!x.admin||actor===x.ownerId)throw new PublishingError('forbidden');}
-   else if(actor!==x.ownerId||!x.canEdit||x.profileStatus!=='enabled')throw new PublishingError('forbidden');
+   else if(actor!==x.ownerId||!(['appeal','submit_correction'].includes(c.action)?x.canView:x.canEdit)||x.profileStatus!=='enabled')throw new PublishingError('forbidden');
    const prior=await tx.prior(c.requestKey);if(prior){if(prior.commandHash!==digest)throw new PublishingError('conflict');return prior.result;}
    const now=clock();const s:State=tx.state??{projectId:project,userId:x.ownerId,version:0,metadata:x.defaults,status:'draft',courseId:null,currentRevisionId:null,currentPriceId:null,guidelines:null,moderation:null,updatedAt:now};
    if(s.version!==c.expectedVersion)throw new PublishingError('conflict');
@@ -66,7 +66,8 @@ export function publishingService(store:PublishingStore,clock=()=>new Date(),ena
    }
    if(adminActions.has(c.action)){
     if(!s.courseId)throw new PublishingError('not_ready');
-    if(c.action==='resolve'){if(!s.moderation||s.moderation.restriction==='none')throw new PublishingError('conflict');s.moderation={...s.moderation,restriction:'none',reason:c.note!};if(s.status==='suspended'){s.status='unpublished';await tx.visibility(s.status,now);}}
+    if(c.action==='restore'){if(!enabled())throw new PublishingError('disabled');if(s.status!=='unpublished'||s.moderation?.restriction!=='none'||(await tx.history())[0]?.action!=='resolve')throw new PublishingError('conflict');s.status='live';await tx.visibility('live',now);}
+    else if(c.action==='resolve'){if(!s.moderation||s.moderation.restriction==='none')throw new PublishingError('conflict');s.moderation={...s.moderation,restriction:'none',reason:c.note!};if(s.status==='suspended'){s.status='unpublished';await tx.visibility(s.status,now);}}
     else{
      if(publishRestricted(s.moderation)&&c.action!=='suspend')throw new PublishingError('suspended');
      s.moderation={restriction:c.action==='flag'?'flagged':c.action==='request_corrections'?'corrections':c.action==='moderate_unpublish'?'unpublished':'suspended',reason:c.note!,caseId:randomUUID(),correction:null,appeal:null};

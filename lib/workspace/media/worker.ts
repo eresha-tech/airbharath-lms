@@ -13,8 +13,10 @@ export function mediaWorkerAuthorized(request: Request, env: Record<string, stri
 export async function runMediaWorker() {
   const rows = await db.select({ actor: assets.userId, id: assets.id, state: jobs.state, providerJobId: jobs.providerJobId }).from(jobs).innerJoin(assets, eq(jobs.assetId, assets.id)).where(and(eq(assets.status, 'processing'), inArray(jobs.state, ['queued', 'submitted']))).orderBy(asc(jobs.updatedAt)).limit(3);
   let dispatched = 0, reconciled = 0, deferred = 0;
+  const deadline=Date.now()+240_000;
   const service = workspaceMediaProcessing();
-  for (const row of rows) {
+  for (const [index,row] of rows.entries()) {
+    if(Date.now()>deadline-60_000){deferred+=rows.length-index;break;}
     try {
       if (row.state === 'queued') { await service.dispatch(row.actor, row.id); dispatched++; }
       else if (row.providerJobId) { await service.reconcile(row.actor, row.id); reconciled++; }

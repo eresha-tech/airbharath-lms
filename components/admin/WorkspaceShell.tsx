@@ -12,7 +12,7 @@ export const workspaceAdminGroups=[
  {label:'Courses',links:[['Course moderation','/admin/workspace/publishing'],['Legacy reviews','/admin/workspace/course-reviews'],['Private courses','/admin/workspace/course-drafts'],['Private builds','/admin/workspace/course-builds']]},
  {label:'Memberships & Finance',links:[['Paid memberships','/admin/workspace/memberships'],['Financial orders','/admin/workspace/orders'],['Refund administration','/admin/workspace-refunds'],['External refund exceptions','/admin/workspace/refund-exceptions'],['Financial reports','/admin/workspace/reports']]},
  {label:'Promotions',links:[['Workspace Membership Coupons','/admin/workspace/coupons'],['Influencers','/admin/workspace/influencers'],['LMS Course Coupons','/admin/coupons']]},
- {label:'Operations',links:[['Refund notifications','/admin/workspace/notices'],['Financial worker inbox','/admin/workspace/events'],['Audit activity','/admin/workspace/audit'],['Eligibility settings','/admin/workspace/settings']]},
+ {label:'Operations',links:[['Creator support','/admin/workspace/support'],['Launch operations','/admin/workspace/operations'],['Refund notifications','/admin/workspace/notices'],['Financial worker inbox','/admin/workspace/events'],['Audit activity','/admin/workspace/audit'],['Eligibility settings','/admin/workspace/settings']]},
 ];
 export const workspaceAdminRoute=(path:string)=>path==='/admin/workspace'||path.startsWith('/admin/workspace/')||path.startsWith('/admin/workspace-applications')||path.startsWith('/admin/workspace-refunds');
 function active(path:string,href:string){return href==='/admin/workspace'?path===href:path===href||path.startsWith(href+'/');}
