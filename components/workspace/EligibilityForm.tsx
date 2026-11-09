@@ -5,13 +5,13 @@ import Link from 'next/link';
 import { CATEGORIES, DECLARATIONS, EXPERIENCE_OPTIONS, PROFESSIONAL_STATUSES, type SettingsConfig } from '@/lib/workspace/eligibility/model';
 import { trackEligibilityStarted } from '@/lib/workspace/eligibility/analytics';
 const control = 'mt-2 min-h-12 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring';
-export function EligibilityForm({ settingsId, policyId, config, declarations }: { settingsId: string; policyId: string; config: SettingsConfig; declarations: Record<keyof typeof DECLARATIONS, string> }) {
+export function EligibilityForm({ settingsId, policyId, config, declarations,renewal=false }: {renewal?:boolean; settingsId: string; policyId: string; config: SettingsConfig; declarations: Record<keyof typeof DECLARATIONS, string> }) {
   const inFlight = useRef(false), navigating = useRef(false);
   const [saved, setSaved] = useState(false);
   async function openResult() {
     navigating.current = true; setBusy(true); setMessage('');
     try {
-      const result = await continueAfterEligibility();
+      const result = await continueAfterEligibility(renewal);
       if (result?.error) throw new Error(result.error);
     } catch {
       navigating.current = false; setBusy(false);

@@ -169,3 +169,9 @@ it('scoped Live production recovery concurrently fulfills authoritative evidence
   expect(h.rows.memberships[0].endsAt.toISOString()).toBe('2027-02-08T18:30:00.000Z');
   await expect(createWorkspaceActivationService(h.store, 'production').fulfill(h.order.userId, h.order.id)).rejects.toThrow('activation_environment_disabled');
 });
+
+it('holds a renewal if its store cannot supply authoritative unrefunded paid history',async()=>{
+ const h=await fixture(false);const {RENEWAL_RULE,RENEWAL_RULE_VERSION}=await import('@/lib/workspace/membership/model');
+ Object.assign(h.order,{purchaseKind:'renewal',membershipStartRuleVersion:RENEWAL_RULE_VERSION,membershipStartRule:RENEWAL_RULE});
+ expect((await h.fulfill()).state).toBe('held_for_review');expect(h.order.reviewReason).toBe('renewal_history_unavailable');expect(h.rows.memberships).toHaveLength(0);
+});

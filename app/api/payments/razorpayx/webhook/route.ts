@@ -1,3 +1,4 @@
+import {runBankValidationWorker} from '@/lib/creator-payments/bank-validation/worker';
 export const maxDuration = 60;
 import { after } from 'next/server';
 import { receivePayoutWebhook } from '@/lib/creator-payments/razorpayx/webhook';
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
         if (!('ignored' in result))
             try {
                 after(async () => { try {
-                    await runPayoutWorker();
+                    if('bankValidation' in result)await runBankValidationWorker();else await runPayoutWorker();
                 }
                 catch { /* Durable inbox and polling recover independently. */ } });
             }

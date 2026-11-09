@@ -1,3 +1,4 @@
+import {requireVerifiedBank,payoutBankScope} from '../bank-validation/service';
 import 'server-only';
 import { randomUUID } from 'node:crypto';
 import { and, eq, sql } from 'drizzle-orm';
@@ -102,6 +103,8 @@ export async function runPayoutWorker(database = db, config = payoutConfiguratio
                 if (decision?.action !== 'verify_payee')
                     throw new CommerceError(409, 'Payee verification was revoked.');
             }
+            const validation=await requireVerifiedBank(database,p.payeeId,payoutBankScope(config),j.fundAccountId??undefined);
+            if(!j.contactId&&!j.fundAccountId) {await persist(j,{contactId:validation.contactId,fundAccountId:validation.fundAccountId});j={...j,contactId:validation.contactId,fundAccountId:validation.fundAccountId};}
             if (!j.contactId) {
                 const id = await call(() => provider.contact(p.payeeId));
                 await persist(j, { contactId: id });
@@ -152,7 +155,7 @@ export async function runPayoutWorker(database = db, config = payoutConfiguratio
             await call(() => provider.verifyFund(j.fundAccountId!, j.contactId!, details));
             // Recheck and commit the attempt before any money request. Database guards
             // independently recheck payee, ledger reservations, refunds and disputes.
-            await database.transaction(async (tx) => { const current = await locked(tx, j); if (current.p.state === 'cancelled' || current.j.stage === 'done')
+            await database.transaction(async (tx) => { const current = await locked(tx, j); await requireVerifiedBank(tx,p.payeeId,payoutBankScope(config),j.fundAccountId!); if (current.p.state === 'cancelled' || current.j.stage === 'done')
                 throw new CommerceError(409, 'Payout was cancelled.'); if (current.j.providerId)
                 throw new CommerceError(409, 'Provider payout is already bound.'); const now = new Date(); await tx.update(jobs).set({ submitAttempts: current.j.submitAttempts + 1, firstSubmittedAt: current.j.firstSubmittedAt ?? now, stage: 'tracking', updatedAt: now }).where(eq(jobs.id, j.id)); if (current.p.state === 'approved')
                 await tx.update(payouts).set({ state: 'uncertain', initiatedBy: current.j.authorizedBy, updatedAt: now }).where(eq(payouts.id, p.id)); });

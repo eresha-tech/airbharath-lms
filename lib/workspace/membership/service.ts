@@ -2,9 +2,9 @@ import { normalizeEmail } from '../email/model';
 import { createHash } from 'node:crypto';
 import { and, asc, count, desc, eq, ilike, inArray, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { users, workspaceMembershipPlans as plans, workspaceCoupons as coupons, workspaceCouponPlans as applicability, workspaceInfluencers as influencers, workspaceCouponRedemptions as redemptions, workspaceAuditEvents as audits, workspaceEligibilityAttempts as attempts, workspaceEligibilitySettings as settings, workspacePolicyVersions as policies } from '@/lib/db/schema';
+import { users, workspaceMembershipPlans as plans, workspaceMemberships as memberships, workspaceCreatorProfiles as profiles, workspaceCoupons as coupons, workspaceCouponPlans as applicability, workspaceInfluencers as influencers, workspaceCouponRedemptions as redemptions, workspaceAuditEvents as audits, workspaceEligibilityAttempts as attempts, workspaceEligibilitySettings as settings, workspacePolicyVersions as policies } from '@/lib/db/schema';
 import { resolveJourney, UUID, validateSettings, EVALUATOR_VERSION, ELIGIBILITY_POLICY_VERSION } from '../eligibility/model';
-import { calculatePrice, couponFailure, membershipStartInfo, PLAN_CODES, QUOTE_VERSION, validPlan, validateCouponDefinition, parseQuoteInput, isBoundedInteger, COUPON_STATUSES, type CouponDefinition, type CouponStatus, type QuoteInput } from './model';
+import { calculatePrice, couponFailure, membershipStartInfo, PLAN_CODES, QUOTE_VERSION, RENEWAL_RULE, RENEWAL_RULE_VERSION, validPlan, validateCouponDefinition, parseQuoteInput, isBoundedInteger, COUPON_STATUSES, type CouponDefinition, type CouponStatus, type QuoteInput } from './model';
 
 export class MembershipError extends Error {
   constructor(public code: 'authentication' | 'forbidden' | 'eligibility_required' | 'stale_plan' | 'plan_unavailable' | 'validation' | 'conflict' | 'unavailable' | import('./model').CouponError, public destination?: string) { super(code); }
@@ -37,6 +37,11 @@ export async function readMembershipQuote(tx: Parameters<Parameters<typeof db.tr
     input.couponCode ? tx.query.workspaceCoupons.findFirst({ where: and(eq(coupons.scope, 'workspace_membership'), eq(coupons.code, input.couponCode)) }) : Promise.resolve(undefined),
   ]);
   const couponPlans = coupon ? await tx.query.workspaceCouponPlans.findMany({ where: eq(applicability.couponId, coupon.id) }) : [];
+  const paidHistory = await tx.query.workspaceMemberships.findMany({where:eq(memberships.userId,userId),columns:{id:true}});
+  const history=paidHistory[0];
+  const profile = await tx.query.workspaceCreatorProfiles.findFirst({where:eq(profiles.userId,userId),columns:{status:true}});
+  if (profile && profile.status !== 'enabled') throw new MembershipError('forbidden');
+  const purchaseKind = history ? 'renewal' as const : 'initial' as const;
   const now = clock();
   const journey = resolveJourney(true, attempt || null, now);
   if (journey.state !== 'eligibility_active') throw new MembershipError('eligibility_required', journey.destination);
@@ -60,11 +65,11 @@ export async function readMembershipQuote(tx: Parameters<Parameters<typeof db.tr
   const amounts = calculatePrice(plan.basePricePaise, plan.taxRateBps, coupon);
   const expiry = Math.min(now.getTime() + 10 * 60_000, attempt!.eligibleUntil!.getTime(), coupon?.expiresAt?.getTime() ?? Infinity);
   const quote = { quoteVersion: QUOTE_VERSION, planCode: plan.code, planVersionId: plan.id, planVersion: plan.version, planName: plan.displayName, durationMonths: plan.durationMonths, currency: plan.currency,
-    ...amounts, couponApplied: !!coupon, couponCode: coupon?.code || null, generatedAt: now.toISOString(), expiresAt: new Date(expiry).toISOString(),
-    membershipStart: membershipStartInfo(currentSettings.config.launchAt, now), advisory: true as const, reserved: false as const };
+    ...amounts, purchaseKind, couponApplied: !!coupon, couponCode: coupon?.code || null, generatedAt: now.toISOString(), expiresAt: new Date(expiry).toISOString(),
+    membershipStart: purchaseKind === 'renewal' ? {...membershipStartInfo(currentSettings.config.launchAt, now), version: RENEWAL_RULE_VERSION, rule: RENEWAL_RULE, summary: 'Your remaining paid time is preserved. The new prepaid term follows your existing unrefunded paid terms, or begins at verified payment capture after expiry. Complimentary access keeps its separate dates.'} : membershipStartInfo(currentSettings.config.launchAt, now), advisory: true as const, reserved: false as const };
   // Bound economics, offer/version, qualification and applicable start/policy versions without exposing IDs in analytics.
   const { generatedAt: _generatedAt, expiresAt: _expiresAt, ...economics } = quote;
-  const result = { ...quote, quoteHash: hash({ emailContact: normalizeEmail(user.email), quote: economics, couponId: coupon?.id, couponVersion: coupon?.version, settingsId: currentSettings.id, settingsHash: currentSettings.configurationHash, policyId: policy.id, policyHash: policy.contentHash, eligibilityAttemptId: attempt!.id, acceptedPolicyId: attempt!.policyId, eligibilityValidUntil: attempt!.eligibleUntil }) };
+  const result = { ...quote, quoteHash: hash({ paidHistory:paidHistory.map(row=>row.id).sort(), emailContact: normalizeEmail(user.email), quote: economics, couponId: coupon?.id, couponVersion: coupon?.version, settingsId: currentSettings.id, settingsHash: currentSettings.configurationHash, policyId: policy.id, policyHash: policy.contentHash, eligibilityAttemptId: attempt!.id, acceptedPolicyId: attempt!.policyId, eligibilityValidUntil: attempt!.eligibleUntil }) };
   return { quote: result, context: { contactEmail: normalizeEmail(user.email), attempt: attempt!, plan, currentSettings, policy, coupon } };
 }
 export type MembershipQuoteContext = Awaited<ReturnType<typeof readMembershipQuote>>;

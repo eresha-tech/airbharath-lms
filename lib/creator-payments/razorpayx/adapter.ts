@@ -10,8 +10,8 @@ type Bank = {
 export class PayoutProviderError extends Error {
     constructor(public code: string, public httpStatus?: number) { super(code); }
 }
-export function razorpayXPayoutAdapter(config: PayoutConfig, transport: typeof fetch = fetch) {
-    async function request(path: string, body?: unknown, idempotency?: string) {
+export function razorpayXRequest(config: PayoutConfig, transport: typeof fetch = fetch) {
+    return async function request(path: string, body?: unknown, idempotency?: string) {
         const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 6000);
         try {
             const response = await transport('https://api.razorpay.com/v1/' + path, { method: body ? 'POST' : 'GET', headers: { Authorization: 'Basic ' + Buffer.from(config.keyId + ':' + config.secret).toString('base64'), 'Content-Type': 'application/json', ...(idempotency ? { 'X-Payout-Idempotency': idempotency } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}), signal: controller.signal, redirect: 'error', cache: 'no-store' });
@@ -44,6 +44,9 @@ export function razorpayXPayoutAdapter(config: PayoutConfig, transport: typeof f
             clearTimeout(timer);
         }
     }
+}
+export function razorpayXPayoutAdapter(config: PayoutConfig, transport: typeof fetch = fetch) {
+    const request = razorpayXRequest(config,transport);
     return {
         async contact(payeeId: string) { requirePayoutExecution(config); const body = { name: 'AirBharath Creator ' + payeeId.slice(0, 8), type: 'vendor', reference_id: payeeId }; const c = await request('contacts', body); if (c.entity !== 'contact' || c.reference_id !== payeeId || c.name !== body.name || c.type !== 'vendor' || c.active !== true)
             throw new CommerceError(409, 'Provider contact is inactive or does not match this payee.'); return providerId(c.id, 'cont'); },

@@ -2,7 +2,7 @@ import 'server-only';
 import { createHmac, createHash, timingSafeEqual } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { creatorPayoutInbox } from '@/lib/db/schema';
+import { creatorPayoutInbox, creatorBankInbox } from '@/lib/db/schema';
 import { CommerceError } from '@/lib/commerce/model';
 import { payoutConfiguration, type PayoutConfig } from './config';
 import { providerId } from './model';
@@ -38,6 +38,18 @@ export async function receivePayoutWebhook(request: Request, database = db, conf
     }
     if (body?.account_id !== config.merchantId)
         throw new CommerceError(409, 'Payout webhook merchant mismatch.');
+    if(['fund_account.validation.completed','fund_account.validation.failed'].includes(body.event)) {
+        const entity=body.payload?.['fund_account.validation']?.entity;
+        const eventId=request.headers.get('x-razorpay-event-id')??'';
+        if(entity?.entity!=='fund_account.validation'||!/^fav_[A-Za-z0-9]{6,100}$/.test(entity?.id)||!/^[A-Za-z0-9_-]{1,128}$/.test(eventId))throw new CommerceError(400,'Invalid bank validation notification.');
+        const key=config.scope+':'+eventId,hash=createHash('sha256').update(raw).digest('hex');
+        const hint=entity.notes?.airbharath_validation;
+        const requestId=typeof hint==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(hint)?hint:null;
+        await database.insert(creatorBankInbox).values({id:key,scope:config.scope,hash,providerId:entity.id,requestId}).onConflictDoNothing();
+        const [saved]=await database.select({hash:creatorBankInbox.hash}).from(creatorBankInbox).where(eq(creatorBankInbox.id,key));
+        if(saved?.hash!==hash)throw new CommerceError(409,'Conflicting bank notification replay.');
+        return {received:true,bankValidation:true};
+    }
     if (!['payout.pending', 'payout.rejected', 'payout.queued', 'payout.initiated', 'payout.processed', 'payout.updated', 'payout.reversed', 'payout.failed'].includes(body.event))
         return { ignored: true };
     const entity = body.payload?.payout?.entity;

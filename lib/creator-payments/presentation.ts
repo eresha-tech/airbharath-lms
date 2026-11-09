@@ -1,3 +1,4 @@
+import {bankVerificationCopy} from './bank-validation/model';
 export const payoutLabels: Record<string, string> = { approved: 'Approved', initiated: 'Transfer initiated', uncertain: 'Under investigation', confirmed: 'Paid', failed: 'Failed', cancelled: 'Cancelled' };
 export function money(value: number) { return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value / 100); }
 export function financeDate(value: Date | string | null) { return value ? new Date(value).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' IST' : 'Not recorded'; }
@@ -111,8 +112,9 @@ function checkingPayment() {
         action: 'You do not need to re-enter your bank details. Contact support if your payment is overdue.',
     };
 }
-export function payeeGuidance(payee?: { decision: string | null }) {
+export function payeeGuidance(payee?: { decision: string | null;verificationState?:string|null }) {
     if (!payee) return 'Add the bank account where you want to receive your earnings. You can publish courses before setting up payments.';
+    if ('verificationState' in payee) return bankVerificationCopy(payee.verificationState,payee.decision==='verify_payee');
     if (payee.decision === 'verify_payee') return 'Your bank details are verified. No action is needed unless they have changed. Monthly payments still depend on earnings and payment checks.';
     if (payee.decision === 'reject_payee') return 'Your bank details could not be verified. Check the account holder name, account number and IFSC, then save corrected details for review. Contact support if they are already correct.';
     return 'Your bank details are waiting for review before payments can start. You do not need to submit them again. Contact support if verification is delayed.';

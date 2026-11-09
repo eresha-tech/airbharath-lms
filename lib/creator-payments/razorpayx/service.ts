@@ -1,3 +1,4 @@
+import {requireVerifiedBank,payoutBankScope} from '../bank-validation/service';
 import 'server-only';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
@@ -51,6 +52,7 @@ export async function payoutControl(actor: string, command: {
         }
         if (command.action === 'authorize_razorpayx') {
             assertLiveOperation(config, p.id, p.amountPaise);
+            await requireVerifiedBank(tx,p.payeeId,payoutBankScope(config),j.fundAccountId??undefined);
             if (actor === p.approvedBy || j.authorizedBy || p.state !== 'approved')
                 throw new CommerceError(409, 'A second Admin must authorize the current reserved payout.');
             const [decision] = await tx.execute(sql `select action from creator_finance_events where entity_id=${p.payeeId} and creator_id=${p.creatorId} and action in ('verify_payee','reject_payee') order by created_at desc,id desc limit 1`);

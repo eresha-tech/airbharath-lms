@@ -46,7 +46,7 @@ export function BalanceCards({ s, admin = false }: { s: Summary; admin?: boolean
 }
 export function PayeeStatus({ payee }: {
     payee?: Payee;
-}) { return <Badge tone={payee?.decision === 'verify_payee' ? 'good' : 'review'}>{!payee ? 'Setup required' : payee.decision === 'verify_payee' ? 'Verified' : payee.decision === 'reject_payee' ? 'Needs correction' : 'Pending verification'}</Badge>; }
+}) { return <Badge tone={payee?.decision === 'verify_payee' ? 'good' : 'review'}>{!payee ? 'Setup required' : payee.decision === 'verify_payee' ? 'Verified' : payee.verificationState === 'invalid' || payee.decision === 'reject_payee' ? 'Needs correction' : payee.verificationState === 'review' ? 'Review needed' : 'Pending verification'}</Badge>; }
 export function AccountPreview({ payee }: { payee?: Payee }) {
     return <section className={`${panel} p-6`}><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-outfit text-lg font-semibold">Payout account</h2><PayeeStatus payee={payee}/></div><p className="mt-4 text-sm">{payee?.masked ?? 'Add your receiving bank account'}</p><p className="mt-2 text-sm leading-6 text-muted-foreground">{payeeGuidance(payee)}</p><Link className={`${secondary} mt-5`} href="/workspace/settings/payout-account">{payee ? 'Manage payout account' : 'Set up payout account'}<ArrowUpRight className="size-4" aria-hidden/></Link></section>;
 }

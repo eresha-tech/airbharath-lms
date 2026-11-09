@@ -15,7 +15,7 @@ beforeEach(() => {
   mocks.use.mockResolvedValue(undefined); mocks.occupied.mockResolvedValue({ n: 0 }); mocks.influencer.mockResolvedValue({ status: 'active' });
   mocks.user.mockResolvedValue({ id: actorId }); mocks.attempt.mockResolvedValue({ id: requestKey, userId: actorId, result: 'eligible', eligibleUntil: new Date('2026-11-01T12:00:00.000Z'), reapplyAt: null, decidedAt: now, reasons: [], policyId: policy.id });
   mocks.plan.mockResolvedValue(plans[0]); mocks.settings.mockResolvedValue(setting); mocks.policy.mockResolvedValue(policy); mocks.coupon.mockResolvedValue(undefined); mocks.applicability.mockResolvedValue([]);
-  const tx = { query: {
+  const tx = { query: {workspaceMemberships:{findMany:async()=>[]},workspaceCreatorProfiles:{findFirst:async()=>undefined},
     workspaceCouponRedemptions: { findFirst: mocks.use }, workspaceInfluencers: { findFirst: mocks.influencer },
     users: { findFirst: mocks.user }, workspaceEligibilityAttempts: { findFirst: mocks.attempt }, workspaceMembershipPlans: { findFirst: mocks.plan },
     workspaceEligibilitySettings: { findFirst: mocks.settings }, workspacePolicyVersions: { findFirst: mocks.policy }, workspaceCoupons: { findFirst: mocks.coupon }, workspaceCouponPlans: { findMany: mocks.applicability },

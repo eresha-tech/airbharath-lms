@@ -1,6 +1,6 @@
-type Options = { signal: AbortSignal; http?: typeof fetch; intervalMs?: number; timeoutMs?: number; onUpdate?: (state: 'waiting' | 'retrying') => void };
+type Options = { orderId?:string; signal: AbortSignal; http?: typeof fetch; intervalMs?: number; timeoutMs?: number; onUpdate?: (state: 'waiting' | 'retrying') => void };
 export type ActivationWatchResult = 'ready' | 'timeout' | 'authentication' | 'cancelled';
-export async function waitForWorkspaceActivation({ signal, http = fetch, onUpdate, intervalMs = 2000, timeoutMs = 60_000 }: Options): Promise<ActivationWatchResult> {
+export async function waitForWorkspaceActivation({ signal, orderId, http = fetch, onUpdate, intervalMs = 2000, timeoutMs = 60_000 }: Options): Promise<ActivationWatchResult> {
   if (signal.aborted) return 'cancelled';
   const deadline = new AbortController();
   const timer = setTimeout(() => deadline.abort(), timeoutMs);
@@ -14,12 +14,12 @@ export async function waitForWorkspaceActivation({ signal, http = fetch, onUpdat
   try {
     while (!combined.aborted) {
       try {
-        const response = await http('/api/workspace/journey', { cache: 'no-store', signal: AbortSignal.any([combined, AbortSignal.timeout(10_000)]) });
+        const response = await http(orderId?'/api/workspace/membership/orders/'+encodeURIComponent(orderId):'/api/workspace/journey', { cache: 'no-store', signal: AbortSignal.any([combined, AbortSignal.timeout(10_000)]) });
         if (combined.aborted) break;
         if (response.status === 401) return 'authentication';
         const journey = await response.json();
         if (combined.aborted) break;
-        if (response.ok && journey?.hasCreatorAccess === true && journey?.hasPaidEntitlement === true) return 'ready';
+        if (response.ok && (orderId ? journey?.order?.id===orderId && journey.order.financialState==='captured' && journey.order.activationState==='fulfilled' && journey.order.financialRefundState!=='fully_refunded' : journey?.hasCreatorAccess === true && journey?.hasPaidEntitlement === true)) return 'ready';
         onUpdate?.(response.ok ? 'waiting' : 'retrying');
       } catch { if (!combined.aborted) onUpdate?.('retrying'); }
       await pause();

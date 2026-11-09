@@ -1,3 +1,4 @@
+import {resolveJourney} from '@/lib/workspace/eligibility/model';
 export const metadata = { robots: { index: false, follow: false } };
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -6,11 +7,13 @@ import { EligibilityShell } from '@/components/workspace/EligibilityShell';
 import { getWorkspaceUser, getWorkspaceJourneyState } from '@/lib/workspace/eligibility/service';
 import { formatWorkspaceDate, REASON_LABELS } from '@/lib/workspace/eligibility/model';
 export const dynamic = 'force-dynamic';
-export default async function EligibilityResult() {
+export default async function EligibilityResult({searchParams=Promise.resolve({})}:{searchParams?:Promise<{renew?:string}>}) {
+  const renewal=(await searchParams).renew==='1';
   const user = await getWorkspaceUser(); if (!user) redirect('/login?callbackUrl=%2Fworkspace%2Fapply');
-  const journey = await getWorkspaceJourneyState(user.id);
+  const memberJourney = await getWorkspaceJourneyState(user.id);
+  const journey=renewal?{...resolveJourney(true,memberJourney.attempt,new Date()),attempt:memberJourney.attempt}:memberJourney;
   if (['/workspace/member', '/workspace/dashboard'].includes(journey.destination)) redirect(journey.destination);
-  if (!['eligibility_active', 'ineligible_cooldown'].includes(journey.state) || !journey.attempt) redirect('/workspace/apply');
+  if (!['eligibility_active', 'ineligible_cooldown'].includes(journey.state) || !journey.attempt) redirect('/workspace/apply'+(renewal?'?renew=1':''));
   const attempt = journey.attempt; const eligible = journey.state === 'eligibility_active';
   return <EligibilityShell title={eligible ? 'You meet the eligibility requirements.' : 'Eligibility requirements not met yet.'} intro={eligible ? 'Your aviation background meets the current automated onboarding rules. Choose your membership plan and preview pricing. Workspace payments are awaiting launch verification.' : 'This decision uses your submitted answers and the rules in effect when you submitted.'}>
     <section className="rounded-2xl border border-border bg-card p-7 sm:p-10">{eligible ? <CheckCircle2 aria-hidden className="size-8 text-primary" /> : <Clock3 aria-hidden className="size-8 text-muted-foreground" />}

@@ -1,3 +1,5 @@
+import {requestBankValidation,requireVerifiedBank,payoutBankScope,reviewUncertainBankName} from './bank-validation/service';
+import {bankValidationConfiguration} from './bank-validation/config';
 import 'server-only';
 import { createHash,randomUUID } from 'node:crypto';
 import { and,desc,eq,sql } from 'drizzle-orm';
@@ -9,10 +11,10 @@ import { SETTLEMENT_POLICY,dueBefore,requiredText,UUID,paise } from './model';
 import { requireCourseScope } from './config';
 import {preparePayoutJob} from './razorpayx/service';
 import {requirePayoutExecution} from './razorpayx/config';
-import {creatorPayoutJobs} from '@/lib/db/schema';
+import {creatorPayoutJobs,creatorBankValidations} from '@/lib/db/schema';
 import { ledgerBalance } from './ledger';
 type Tx=Parameters<Parameters<typeof db.transaction>[0]>[0];
-export type FinanceCommand={action:string;requestKey:string;creatorId:string;entityId?:string;holder?:string;account?:string;ifsc?:string;acknowledged?:boolean;amountPaise?:number;evidence?:string;bankReference?:string;adjustmentPaise?:number;providerPayoutId?:string};
+export type FinanceCommand={action:string;requestKey:string;creatorId:string;entityId?:string;holder?:string;account?:string;confirmAccount?:string;ifsc?:string;acknowledged?:boolean;amountPaise?:number;evidence?:string;bankReference?:string;adjustmentPaise?:number;providerPayoutId?:string};
 async function identity(tx:Tx,id:string,admin=false) {
  const [u]=await tx.select().from(users).where(eq(users.id,id)).for('share');
  if(!u||admin&&u.role!=='admin')throw new CommerceError(403,'Forbidden.');return u;
@@ -49,9 +51,12 @@ export function settlementService(database=db,scope= requireCourseScope(),execut
    let evidence=requiredText(command.evidence??'Creator bank details and settlement policy accepted');
    if(command.action==='save_payee') {
     if(!isOwner||command.acknowledged!==true)throw new CommerceError(403,'Accept the settlement policy as the payee.');
+    if(command.confirmAccount!==command.account)throw new CommerceError(400,'The account numbers do not match. Re-enter both account numbers.');
     const holder=requiredText(command.holder,3,100),account=command.account??'',ifsc=(command.ifsc??'').toUpperCase();
     if(!/^\d{9,18}$/.test(account)||!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc))throw new CommerceError(400,'Enter a valid account number and IFSC.');
-    id=randomUUID();await tx.insert(payees).values({id,creatorId:actor,encrypted:encryptPayee({holder,account,ifsc},actor),masked:`Account ••••${account.slice(-4)} · ${ifsc}`,policyVersion:SETTLEMENT_POLICY});
+    const latest=await tx.query.creatorPayees.findFirst({where:eq(payees.creatorId,actor),orderBy:[desc(payees.createdAt),desc(payees.id)]});
+    const same=latest&&latest.policyVersion===SETTLEMENT_POLICY&&JSON.stringify(decryptPayee(latest.encrypted,actor))===JSON.stringify({holder,account,ifsc});
+    if(same)id=latest.id;else {id=randomUUID();await tx.insert(payees).values({id,creatorId:actor,encrypted:encryptPayee({holder,account,ifsc},actor),masked:`Account ••••${account.slice(-4)} · ${ifsc}`,policyVersion:SETTLEMENT_POLICY});}
    }else {
     if(isOwner)throw new CommerceError(403,'An independent Admin must manage settlement.');
     if(command.action==='propose_adjustment') {
@@ -75,9 +80,23 @@ export function settlementService(database=db,scope= requireCourseScope(),execut
      // A statement correction resolves overlap review only. Missing gateway fee
      // evidence and provider failures remain blocked until actually reconciled.
      await tx.update(checks).set({issue:null}).where(and(eq(checks.orderId,id),eq(checks.issue,'refund_dispute_overlap_review')));
+    }else if(command.action==='reconcile_bank_validation') {
+     const c=bankValidationConfiguration();if(!c.enabled)throw new CommerceError(503,'Bank verification is not enabled.');
+     const [v]=await tx.select().from(creatorBankValidations).innerJoin(payees,eq(payees.id,creatorBankValidations.payeeId)).where(and(eq(payees.id,id),eq(payees.creatorId,command.creatorId),eq(creatorBankValidations.scope,c.payout.scope))).for('update');
+     const check=v?.creator_bank_validations;if(!check||check.state==='invalid'||check.recoveryRound>=3||!command.evidence||command.evidence.trim().length<20)throw new CommerceError(409,'Review the original validation intent. Invalid accounts cannot be retried; at most three bounded reconciliation rounds are available.');
+     evidence=JSON.stringify({reference:command.evidence,round:check.recoveryRound+1});id=check.id;
+     await tx.insert(events).values({creatorId:command.creatorId,actorId:actor,requestKey:command.requestKey,commandHash:hash,action:command.action,entityId:id,evidence});
+     await tx.update(creatorBankValidations).set({recoveryRound:check.recoveryRound+1,attempts:0,state:check.submitCount?'pending':'prepared',lastError:null,nextAt:new Date()}).where(eq(creatorBankValidations.id,id));return {id,replayed:false};
+    }else if(command.action==='accept_bank_name') {
+     if(!command.evidence||command.evidence.trim().length<20)throw new CommerceError(400,'Provide a secure evidence reference and the ownership review reason. Do not enter bank documents or account numbers.');
+     const validation=await reviewUncertainBankName(tx,actor,id);id=validation.id;
+    }else if(command.action==='request_bank_validation') {
+     const [bank]=await tx.select().from(payees).where(and(eq(payees.id,id),eq(payees.creatorId,command.creatorId)));if(!bank||!command.evidence)throw new CommerceError(400,'Select a bank version and supply the review reference.');
+     await requestBankValidation(tx,actor,id,command.requestKey);
     }else if(['verify_payee','reject_payee','reveal_payee'].includes(command.action)) {
      const payee=await tx.query.creatorPayees.findFirst({where:and(eq(payees.id,id),eq(payees.creatorId,command.creatorId))});if(!payee)throw new CommerceError(404,'Payee not found.');
      if(!command.evidence)throw new CommerceError(400,'Bank verification or access purpose reference required.');
+     if(command.action==='verify_payee'&&execution==='razorpayx'){const validation=await requireVerifiedBank(tx,id,bankValidationConfiguration());const [review]=await tx.select({actor:events.actorId}).from(events).where(and(eq(events.entityId,validation.id),eq(events.action,'accept_bank_name'))).limit(1);if(review?.actor===actor)throw new CommerceError(403,'A different Admin must approve the reviewed beneficiary.');}
      if(command.action==='reveal_payee') {
       const details=decryptPayee(payee.encrypted,command.creatorId);
       await tx.insert(events).values({creatorId:command.creatorId,actorId:actor,requestKey:command.requestKey,commandHash:hash,action:command.action,entityId:id,evidence});return {id,details};
@@ -89,6 +108,7 @@ export function settlementService(database=db,scope= requireCourseScope(),execut
      paise(command.amountPaise);if(!command.amountPaise)throw new CommerceError(400,'Enter a positive payout amount.');
      const payee=await tx.query.creatorPayees.findFirst({where:and(eq(payees.id,id),eq(payees.creatorId,command.creatorId))});
      const verification=await tx.query.creatorFinanceEvents.findFirst({where:and(eq(events.entityId,id),sql`${events.action} in ('verify_payee','reject_payee')`),orderBy:[desc(events.createdAt),desc(events.id)]});
+     if(providerConfig)await requireVerifiedBank(tx,id,payoutBankScope(providerConfig));
      if(!payee||payee.policyVersion!==SETTLEMENT_POLICY||verification?.action!=='verify_payee')throw new CommerceError(409,'An independently verified payee is required.');
      const run=await tx.query.courseFinanceRuns.findFirst({where:eq(runs.scope,scope)});
      if(!run?.disputesCheckedAt||run.disputesCheckedAt.getTime()<Date.now()-86400000)throw new CommerceError(409,'Run payment and dispute reconciliation before settlement.');

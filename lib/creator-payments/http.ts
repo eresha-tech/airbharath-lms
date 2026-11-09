@@ -1,3 +1,4 @@
+import {runBankValidationWorker} from './bank-validation/worker';
 import {after} from 'next/server';
 import {payoutControl} from './razorpayx/service';
 import {runPayoutWorker} from './razorpayx/worker';
@@ -51,7 +52,9 @@ export async function financeHttp(request: Request, admin = false) {
           try{after(async()=>{try{await runPayoutWorker();}catch{/* Durable job is recovered by the authenticated scheduler. */}});}catch{/* Framework after-response scheduling is best-effort. */}
           return privateJson(result);
         }
-        return privateJson(await service.execute(actor.id, input));
+        const result=await service.execute(actor.id,input);
+        if(admin&&['request_bank_validation','reconcile_bank_validation'].includes(input.action))try{after(async()=>{try{await runBankValidationWorker();}catch{/* Durable intent remains available to the authenticated worker. */}});}catch{/* Recovered by polling. */}
+        return privateJson(result);
     }
     catch (error) {
         return commerceFailure(error);
