@@ -206,7 +206,7 @@ export async function inspectDatabase({ env, connect, source = /** @type {Return
         if (expired) fail('preflight_deadline_exceeded');
         try {
           const rows = await tx.savepoint(sp => sp.unsafe(queries[name],parameters));
-          if (rows.length>({objects:2000,columns:10000,constraints:2000,indexes:2000,functions:1000,triggers:1000,ledger:32}[name] ?? 100)) { limitations.push(name+':catalog_limit_exceeded'); return null; }
+          if (rows.length>({objects:2000,columns:10000,constraints:2000,indexes:2000,functions:1000,triggers:1000,ledger:source.manifest.length}[name] ?? 100)) { limitations.push(name+':catalog_limit_exceeded'); return null; }
           return Array.from(rows);
         } catch (error) {
           const diagnostic = safeDiagnostic(error, name);

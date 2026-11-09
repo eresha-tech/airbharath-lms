@@ -107,6 +107,21 @@ it.each(['CONNECTION_DESTROYED','ECONNRESET','CONNECT_TIMEOUT','ERR_TLS_CERT_ALT
 it.each([1,7,31,32,33])('reconciles the exact contiguous prefix of %i migrations',count=>{
   const r=reconcileLedger(ledger(count),source,true,true); expect(r.state).toBe('MATCHED_PREFIX'); expect(r.installed).toHaveLength(count); expect(r.pending).toHaveLength(44-count);
 });
+it('reads the complete reviewed 44-migration ledger rather than truncating at the old 32-entry ceiling',async()=>{
+  const h=harness(44), report=await h.run();
+  expect(report.ledger.state).toBe('MATCHED_PREFIX');
+  expect(report.ledger.installed).toHaveLength(44);
+  expect(report.ledger.pending).toEqual([]);
+  expect(report.limitations).not.toContain('ledger:catalog_limit_exceeded');
+  expect(queries.ledger).toContain('limit 45');
+});
+it('fails closed on a ledger extending beyond the reviewed migration chain',async()=>{
+  const h=harness(44);
+  h.data.ledger=[...ledger(44),{id:45,hash:'b'.repeat(64),created_at:'9999999999999'}];
+  const report=await h.run();
+  expect(report.ledger.state).toBe('UNKNOWN');
+  expect(report.limitations).toContain('ledger:catalog_limit_exceeded');
+});
 it('never assumes the owner provisional 0006 boundary, accepting a different proven prefix',()=>{
   expect(reconcileLedger(ledger(8),source,true,true).pending?.[0]).toBe('0008_eager_energizer');
 });
