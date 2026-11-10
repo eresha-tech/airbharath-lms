@@ -25,10 +25,10 @@ it('requires COMPLETE and verifies every output version/checksum and playlist re
  mocks.mc.mockResolvedValue({Job:{...Job,Status:'PROGRESSING'}});expect(await provider.inspect(a,j,'aws-job')).toEqual({status:'pending'});expect(mocks.s3).not.toHaveBeenCalled();
  const files:Record<string,Uint8Array>={'master.m3u8':new TextEncoder().encode('#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=10\nmaster_720.m3u8\n'),'master_720.m3u8':new TextEncoder().encode('#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:1\n#EXTINF:6,\nmaster_720_00001.ts\n#EXT-X-ENDLIST\n'),'master_720_00001.ts':new Uint8Array(188).fill(0x47)};
  mocks.mc.mockResolvedValue({Job});mocks.s3.mockImplementation(async(cmd:{input:{Key?:string;MaxKeys?:number}})=>{
-  if(cmd.input.MaxKeys)return {Contents:Object.keys(files).map(name=>({Key:prefix+'processed/'+name}))};
-  const bytes=files[cmd.input.Key!.split('/').at(-1)!];return {VersionId:'pinned-v1',ContentLength:bytes.length,ServerSideEncryption:'AES256',Body:{transformToWebStream:()=>new ReadableStream({start(c){c.enqueue(bytes);c.close();}})}};
+  if(cmd.input.MaxKeys)return {Contents:Object.keys(files).map(name=>({Key:prefix+'processed/'+name,Size:files[name].length,ETag:'synthetic-etag'}))};
+  const bytes=files[cmd.input.Key!.split('/').at(-1)!];return {ETag:'synthetic-etag',VersionId:'pinned-v1',ContentLength:bytes.length,ServerSideEncryption:'AES256',Body:{transformToWebStream:()=>new ReadableStream({start(c){c.enqueue(bytes);c.close();}})}};
  });
  const result=await provider.inspect(a,j,'aws-job');expect(result.status).toBe('complete');if(result.status==='complete')expect(result.manifest['master.m3u8']).toEqual({version:'pinned-v1',size:files['master.m3u8'].length,checksum:createHash('sha256').update(files['master.m3u8']).digest('hex')});
- if(result.status==='complete'){mocks.inspect.mockClear();expect(await provider.read(a,'master.m3u8',result.manifest['master.m3u8'])).toEqual(files['master.m3u8']);expect(mocks.inspect).toHaveBeenCalledWith(a);await expect(provider.read(a,'master.m3u8',{...result.manifest['master.m3u8'],checksum:'d'.repeat(64)})).rejects.toThrow('verification');}
+ if(result.status==='complete'){mocks.inspect.mockClear();expect(await provider.read(a,'master.m3u8',result.manifest['master.m3u8'])).toEqual(files['master.m3u8']);expect(mocks.inspect).toHaveBeenCalledWith(a,expect.any(AbortSignal));await expect(provider.read(a,'master.m3u8',{...result.manifest['master.m3u8'],checksum:'d'.repeat(64)})).rejects.toThrow('verification');}
  files['master_720.m3u8']=new TextEncoder().encode('#EXTM3U\nhttps://malicious.invalid/x.ts');expect(await provider.inspect(a,j,'aws-job')).toEqual({status:'failed'});
 });

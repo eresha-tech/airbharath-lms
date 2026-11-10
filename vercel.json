@@ -19,7 +19,7 @@
     },
     {
       "path": "/api/internal/workspace/media",
-      "schedule": "*/5 * * * *"
+      "schedule": "* * * * *"
     },
     {
       "path": "/api/internal/workspace/refund-notices",

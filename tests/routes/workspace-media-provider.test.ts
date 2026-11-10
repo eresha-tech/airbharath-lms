@@ -75,3 +75,23 @@ it('clamps signing lifetime after bucket checks to the original intent deadline'
  const auth=await provider.authorize(a,checksum(mp4),1000);
  expect(mocks.sign.mock.calls[0][2].expiresIn).toBeLessThanOrEqual(5); expect(Date.parse(auth.expiresAt)).toBeLessThanOrEqual(a.expiresAt.getTime());
 });
+
+it('opens pinned private byte ranges without downloading the full source',async()=>{
+ const {a,head,provider}=await fixture(),pinned={...a,objectVersionId:'version-1',checksum:checksum(mp4)};
+ objects(head,{VersionId:'version-1',ContentType:a.mimeType,ContentLength:4,ContentRange:`bytes 2-5/${a.byteSize}`,Body:body(mp4.slice(2,6))});
+ const signal=new AbortController().signal,result=await provider.open!(pinned,{start:2,end:5},signal,false);
+ expect(result.size).toBe(4);expect(new Uint8Array(await new Response(result.body).arrayBuffer())).toEqual(mp4.slice(2,6));
+ expect(objectCalls()[1][0].input).toMatchObject({VersionId:'version-1',Range:'bytes=2-5',ExpectedBucketOwner:config.accountId});expect(objectCalls()[1][1].abortSignal).toBe(signal);
+});
+it('HEAD pins privacy/version/checksum evidence without any GET body',async()=>{
+ const {a,head,provider}=await fixture();objects(head);expect(await provider.open!({...a,objectVersionId:'version-1',checksum:checksum(mp4)},null,new AbortController().signal,true)).toEqual({size:a.byteSize});expect(objectCalls()).toHaveLength(1);
+});
+it('aborts a stalled verification prefix body and cancels its reader',async()=>{
+ const {a,head,data,provider}=await fixture(),cancel=vi.fn();
+ objects(head,{...data,Body:{transformToWebStream:()=>new ReadableStream<Uint8Array>({pull:()=>new Promise(()=>undefined),cancel})}});
+ await expect(provider.inspect(a,AbortSignal.timeout(20))).rejects.toThrow('deadline');expect(cancel).toHaveBeenCalledTimes(1);
+});
+it.each(['version','range','length','encoding'])('streaming rejects a wrong %s before returning a body',async reason=>{
+ const {a,head,provider}=await fixture();objects(head,{VersionId:reason==='version'?'other':'version-1',ContentType:a.mimeType,ContentLength:reason==='length'?a.byteSize:4,ContentRange:reason==='range'?undefined:`bytes 2-5/${a.byteSize}`,...(reason==='encoding'?{ContentEncoding:'gzip'}:{}),Body:body(mp4.slice(2,6))});
+ await expect(provider.open!({...a,objectVersionId:'version-1',checksum:checksum(mp4)},{start:2,end:5},new AbortController().signal,false)).rejects.toMatchObject({code:'verification'});
+});

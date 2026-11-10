@@ -1017,6 +1017,16 @@ export const workspaceMediaJobs = pgTable('workspace_media_jobs', {
   index('workspace_media_jobs_pending_idx').on(t.state, t.updatedAt),
 ]);
 
+// Partial output verification never occupies the final Ready manifest.
+export const workspaceMediaVerifications = pgTable('workspace_media_verifications', {
+ jobId:uuid('job_id').primaryKey().references(()=>workspaceMediaJobs.id,{onDelete:'restrict'}),
+ providerJobId:text('provider_job_id').notNull(),sourceVersion:text('source_version').notNull(),
+ phase:text('phase').$type<'listing'|'verifying'|'complete'>().notNull(),
+ inventory:jsonb('inventory').$type<{name:string;size:number;etag:string}[]>().notNull(),
+ continuation:text('continuation'),verified:jsonb('verified').$type<Record<string,{version:string;checksum:string;size:number}>>().notNull(),
+ version:integer('version').notNull(),updatedAt:timestamp('updated_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[check('workspace_media_verification_values',sql`${t.phase} IN ('listing','verifying','complete') AND ${t.version}>0 AND jsonb_typeof(${t.inventory})='array' AND jsonb_array_length(${t.inventory})<=2000 AND jsonb_typeof(${t.verified})='object' AND (${t.phase}='listing' OR ${t.continuation} IS NULL)`)]);
+
 // Creator publishing is an adapter into the existing LMS, not a parallel LMS.
 export const workspaceTrustedCreators=pgTable('workspace_trusted_creators',{
  creatorProfileId:uuid('creator_profile_id').primaryKey().references(()=>workspaceCreatorProfiles.id,{onDelete:'restrict'}),userId:uuid('user_id').notNull().references(()=>users.id,{onDelete:'restrict'}),trusted:boolean('trusted').default(false).notNull(),version:integer('version').notNull(),updatedAt:timestamp('updated_at',{withTimezone:true}).notNull(),
@@ -1111,7 +1121,8 @@ export const creatorPayouts=pgTable('creator_payouts',{
 },t=>[unique('creator_payout_bank_reference').on(t.bankReference),index('creator_payout_owner_time_idx').on(t.creatorId,t.scope,t.createdAt,t.id),index('creator_payout_operations_idx').on(t.scope,t.state,t.updatedAt),check('creator_payout_money',sql`${t.amountPaise}>0 AND ${t.approvedBy}<>${t.creatorId} AND ${t.state} IN ('approved','initiated','uncertain','confirmed','failed','cancelled')`)]);
 export const courseFinanceRuns=pgTable('course_finance_runs',{
  scope:text('scope').primaryKey(),disputeSkip:integer('dispute_skip').default(0).notNull(),disputesCheckedAt:timestamp('disputes_checked_at',{withTimezone:true}),
-});
+ leaseToken:uuid('lease_token'),leaseUntil:timestamp('lease_until',{withTimezone:true}),disputeNextAt:timestamp('dispute_next_at',{withTimezone:true}).defaultNow().notNull(),phase:integer('phase').default(0).notNull(),lastError:text('last_error'),
+},t=>[check('course_finance_run_lease',sql`((${t.leaseToken} IS NULL)=(${t.leaseUntil} IS NULL)) AND ${t.phase} IN (0,1,2)`)]);
 
 // Phase 2.2P: the existing payout reservation binds one durable provider operation.
 export const creatorPayoutJobs=pgTable('creator_payout_jobs',{
@@ -1144,7 +1155,7 @@ export const workspaceNotificationReceipts=pgTable('workspace_notification_recei
 },t=>[primaryKey({columns:[t.userId,t.sourceKey]}),check('workspace_notification_key',sql`${t.sourceKey} ~ '^[a-z_]+:[a-f0-9-]{36}(:[a-z_]+)?$'`)]);
 export const workspaceWorkerHealth=pgTable('workspace_worker_health',{
  key:text('key').primaryKey(),token:uuid('token').notNull(),startedAt:timestamp('started_at',{withTimezone:true}).notNull(),finishedAt:timestamp('finished_at',{withTimezone:true}),succeededAt:timestamp('succeeded_at',{withTimezone:true}),leaseUntil:timestamp('lease_until',{withTimezone:true}),outcome:text('outcome').notNull(),counts:jsonb('counts').$type<Record<string,number>>().default({}).notNull(),
-},t=>[check('workspace_worker_health_values',sql`${t.key} IN ('membership','course_payments','payouts','media','refund_notices') AND ${t.outcome} IN ('running','success','attention','failed') AND ((${t.outcome}='running')=(${t.leaseUntil} IS NOT NULL))`)]);
+},t=>[check('workspace_worker_health_values',sql`${t.key} IN ('membership','course_payments','payouts','bank_validations','media','refund_notices') AND ${t.outcome} IN ('running','success','attention','failed') AND ((${t.outcome}='running')=(${t.leaseUntil} IS NOT NULL))`)]);
 
 // Mentor screening is independent from Creator membership, courses and payouts.
 export const mentorApplications=pgTable('mentor_applications',{

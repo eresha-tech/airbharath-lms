@@ -77,5 +77,6 @@ export async function runBankValidationWorker(database=db,c=bankValidationConfig
   } catch {result.review++;await persist({state:v.attempts>=20?'review':v.submitCount?'pending':'prepared',lastError:'bank_check_needs_reconciliation',nextAt:new Date(Date.now()+Math.min(3600000,30000*2**Math.min(v.attempts,7)))});}
   finally {await persist({leaseUntil:null,leaseToken:null});}
  }
- return result;
+ const [backlog]=await database.execute(sql`select count(*) filter(where state in ('prepared','pending'))::int pending,count(*) filter(where state='pending' and submit_count=1 and provider_id is null)::int uncertain,count(*) filter(where state in ('review','invalid') or attempts>=20)::int blocked,count(*) filter(where state in ('prepared','pending') and next_at<now()-interval '10 minutes')::int stale from creator_bank_validations where scope=${c.payout.scope} and mode=${c.mode}`);
+ return {...result,pending:Number(backlog.pending),backlog:Number(backlog.pending),uncertain:Number(backlog.uncertain),blocked:Number(backlog.blocked),stale:Number(backlog.stale)};
 }

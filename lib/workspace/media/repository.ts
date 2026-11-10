@@ -1,14 +1,14 @@
 import 'server-only';
 import { and, asc, eq, sql, isNull, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { users, workspaceMembershipOrders as orders, workspaceCreatorProfiles as profiles, workspaceCourseProjects as projects, workspaceCourseDrafts as drafts, workspaceCourseSubmissions as submissions, workspaceCourseReviewEvents as reviews, workspaceCourseLessons as lessons, workspaceCourseAssets as assets, workspaceMediaJobs as jobs } from '@/lib/db/schema';
+import { users, workspaceMembershipOrders as orders, workspaceCreatorProfiles as profiles, workspaceCourseProjects as projects, workspaceCourseDrafts as drafts, workspaceCourseSubmissions as submissions, workspaceCourseReviewEvents as reviews, workspaceCourseLessons as lessons, workspaceCourseAssets as assets, workspaceMediaJobs as jobs, workspaceMediaVerifications as checkpoints } from '@/lib/db/schema';
 import { readWorkspaceAccess } from '../activation/repository';
 import { readGrantEvidence } from '../access/repository';
 import { MediaError } from './model';
 import type { MediaStore } from './service';
 
-export const postgresMediaStore: MediaStore = {
-  transaction: (actorId, reference, work) => db.transaction(async tx => {
+export function createPostgresMediaStore(database=db): MediaStore { return {
+  transaction: (actorId, reference, work) => database.transaction(async tx => {
     // Same persisted actor -> orders -> profile -> project -> draft/source order as Builder.
     // Access-grant revocation also holds the actor lock; no provider calls occur here.
     const [actor] = await tx.select({ id: users.id, fullName: users.fullName }).from(users).where(eq(users.id, actorId)).for('update');
@@ -31,6 +31,17 @@ export const postgresMediaStore: MediaStore = {
     const scope = and(artwork?isNull(assets.lessonId):eq(assets.lessonId, lesson.id), eq(assets.projectId, project.id), eq(assets.userId, actorId), eq(assets.creatorProfileId, profile.id));
     return work({
       processing: {
+        checkpoint: async jobId => {
+          const [row] = await tx.select().from(checkpoints).where(eq(checkpoints.jobId,jobId)); return row ?? null;
+        },
+        saveCheckpoint: async (job,providerJobId,version,progress) => {
+          if (!('assetId' in reference) || job.assetId!==reference.assetId) throw new MediaError('validation');
+          const [current] = await tx.select().from(checkpoints).where(eq(checkpoints.jobId,job.id)).for('update');
+          if ((current?.version??0)!==version) throw new MediaError('conflict');
+          const values={...progress,jobId:job.id,providerJobId,sourceVersion:job.sourceVersion,version:version+1,updatedAt:new Date()};
+          const [saved]=current?await tx.update(checkpoints).set(values).where(and(eq(checkpoints.jobId,job.id),eq(checkpoints.version,version))).returning():await tx.insert(checkpoints).values(values).returning();
+          if(!saved)throw new MediaError('conflict');return saved;
+        },
         read: async () => { if (!('assetId' in reference)) throw new MediaError('validation'); return (await tx.select().from(jobs).where(eq(jobs.assetId, reference.assetId)).for('update'))[0] || null; },
         create: async job => { if (!('assetId' in reference) || job.assetId !== reference.assetId) throw new MediaError('validation'); return (await tx.insert(jobs).values(job).returning())[0]; },
         update: async (job, patch) => { if (!('assetId' in reference) || job.assetId !== reference.assetId) throw new MediaError('validation'); return (await tx.update(jobs).set(patch).where(and(eq(jobs.id, job.id), eq(jobs.assetId, reference.assetId))).returning())[0]; },
@@ -52,7 +63,8 @@ export const postgresMediaStore: MediaStore = {
       },
     });
   }),
-};
+}; }
+export const postgresMediaStore=createPostgresMediaStore();
 
 // Read-only inspection has its own persisted Admin-role check, never a Creator bypass flag.
 export async function inspectMedia(actorId: string, projectId: string, reference: { lessonId: string } | { assetId: string }) {

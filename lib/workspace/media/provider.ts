@@ -3,14 +3,18 @@ import { S3Client, PutObjectCommand, HeadObjectCommand, GetObjectCommand, GetPub
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { Asset, StorageIdentity } from './service';
 import { MediaError, MAX_RESOURCE_BYTES, UPLOAD_TTL_SECONDS } from './model';
+import type { PrivateObjectReader } from './streaming';
+import { storageBodyStream } from './streaming';
+import { abortable } from '@/lib/async-budget';
 
 export type UploadAuthorization = { url: string; method: 'PUT'; headers: Record<string, string>; expiresAt: string };
 export type ObjectInspection = { versionId: string; checksum: string; prefix: Uint8Array; bytes?: Uint8Array };
 export interface MediaStorage {
   identity: StorageIdentity;
   authorize(asset: Asset, checksum: string, lifetimeSeconds: number): Promise<UploadAuthorization>;
-  inspect(asset: Asset): Promise<ObjectInspection>;
-  download(asset: Asset): Promise<Uint8Array>;
+  inspect(asset: Asset, signal?: AbortSignal): Promise<ObjectInspection>;
+  download(asset: Asset, signal?: AbortSignal): Promise<Uint8Array>;
+  open?: (asset: Asset, ...args: Parameters<PrivateObjectReader>) => ReturnType<PrivateObjectReader>;
 }
 export type MediaStorageConfig = { region: string; bucket: string; accountId: string; accessKeyId: string; secretAccessKey: string; sessionToken?: string };
 export function mediaStorageConfig(env: Record<string, string | undefined> = process.env): MediaStorageConfig {
@@ -29,13 +33,13 @@ function digest(value: string | undefined) {
 }
 type StorageBody = { transformToWebStream(): ReadableStream<Uint8Array> };
 async function discard(body: StorageBody | undefined) { try { await body?.transformToWebStream().cancel(); } catch { /* Never expose provider error details. */ } }
-async function boundedBody(body: StorageBody | undefined, maximum: number) {
+async function boundedBody(body: StorageBody | undefined, maximum: number, signal = AbortSignal.timeout(15000)) {
   if (!body) throw new MediaError('verification');
-  const reader = body.transformToWebStream().getReader();
+  const reader = storageBodyStream(body).getReader();
   const chunks: Uint8Array[] = []; let size = 0;
   try {
-    while (true) { const { done, value } = await reader.read(); if (done) break; size += value.byteLength; if (size > maximum) { await reader.cancel(); throw new MediaError('verification'); } chunks.push(value); }
-  } finally { reader.releaseLock(); }
+    while (true) { const { done, value } = await abortable(reader.read(),signal); if (done) break; size += value.byteLength; if (size > maximum) { await reader.cancel(); throw new MediaError('verification'); } chunks.push(value); }
+  } catch (error) { await reader.cancel().catch(()=>undefined); throw error; } finally { reader.releaseLock(); }
   return new Uint8Array(Buffer.concat(chunks, size));
 }
 
@@ -46,12 +50,12 @@ export function s3MediaStorage(config: MediaStorageConfig): MediaStorage {
     if (a.storageProvider !== 's3' || a.storageContainer !== config.bucket || a.storageAccountId !== config.accountId || a.storageKey !== `workspace/${a.creatorProfileId}/${a.projectId}/${a.id}/source`) throw new MediaError('unavailable');
     return { Bucket: config.bucket, ExpectedBucketOwner: config.accountId, Key: a.storageKey };
   };
-  const options = () => ({ abortSignal: AbortSignal.timeout(15000) });
-  async function privateBucket() {
+  const options = (signal?: AbortSignal) => ({ abortSignal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000) });
+  async function privateBucket(signal?: AbortSignal) {
     const target = { Bucket: config.bucket, ExpectedBucketOwner: config.accountId };
     const [access, versioning] = await Promise.all([
-      client.send(new GetPublicAccessBlockCommand(target), options()),
-      client.send(new GetBucketVersioningCommand(target), options()),
+      client.send(new GetPublicAccessBlockCommand(target), options(signal)),
+      client.send(new GetBucketVersioningCommand(target), options(signal)),
     ]);
     const block = access.PublicAccessBlockConfiguration;
     if (!block?.BlockPublicAcls || !block.IgnorePublicAcls || !block.BlockPublicPolicy || !block.RestrictPublicBuckets || versioning.Status !== 'Enabled') throw new MediaError('unavailable');
@@ -72,28 +76,43 @@ export function s3MediaStorage(config: MediaStorageConfig): MediaStorage {
       const url = await getSignedUrl(client, command, { expiresIn: ttl, signingDate: signedAt, signableHeaders: new Set(['content-length', ...Object.keys(headers).map(h => h.toLowerCase())]), unhoistableHeaders: new Set(Object.keys(headers).filter(h => h.startsWith('x-amz-'))) });
       return { url, method: 'PUT', headers, expiresAt: new Date(signedAt.getTime() + ttl * 1000).toISOString() };
     },
-    inspect: async a => {
-      common(a); await privateBucket();
+    inspect: async (a, signal) => {
+      common(a); await privateBucket(signal);
       let head;
-      try { head = await client.send(new HeadObjectCommand({ ...common(a), ChecksumMode: 'ENABLED', ...(a.objectVersionId ? { VersionId: a.objectVersionId } : {}) }), options()); }
+      try { head = await client.send(new HeadObjectCommand({ ...common(a), ChecksumMode: 'ENABLED', ...(a.objectVersionId ? { VersionId: a.objectVersionId } : {}) }), options(signal)); }
       catch (error) { if (['NotFound', 'NoSuchKey', 'NoSuchVersion'].includes((error as { name?: string }).name || '')) throw new MediaError('object_missing'); throw error; }
       const expected = { 'workspace-asset': a.id, 'workspace-owner': a.userId, 'workspace-project': a.projectId, 'workspace-lesson': a.lessonId??'course-cover', 'workspace-context': a.contextHash };
       if (head.ContentLength !== a.byteSize || head.ContentType !== a.mimeType || head.ContentEncoding || head.ServerSideEncryption !== 'AES256' || Object.entries(expected).some(([k, v]) => head.Metadata?.[k] !== v)) throw new MediaError('verification');
       const versionId = version(head.VersionId), checksum = digest(head.ChecksumSHA256);
       if (a.objectVersionId && a.objectVersionId !== versionId || a.checksum && a.checksum !== checksum) throw new MediaError('verification');
       const maximum = a.assetKind === 'video' ? Math.min(a.byteSize, 4096) : a.byteSize;
-      const data = await client.send(new GetObjectCommand({ ...common(a), VersionId: versionId, ...(a.assetKind === 'video' ? { Range: `bytes=0-${maximum - 1}` } : {}) }), options());
+      const data = await client.send(new GetObjectCommand({ ...common(a), VersionId: versionId, ...(a.assetKind === 'video' ? { Range: `bytes=0-${maximum - 1}` } : {}) }), options(signal));
       if (data.VersionId !== versionId || data.ContentLength !== maximum || (a.assetKind === 'video' && data.ContentRange !== `bytes 0-${maximum - 1}/${a.byteSize}`)) { await discard(data.Body); throw new MediaError('verification'); }
-      const bytes = await boundedBody(data.Body, maximum);
+      const bytes = await boundedBody(data.Body, maximum, signal);
       if (bytes.byteLength !== maximum) throw new MediaError('verification');
       return { versionId, checksum, prefix: bytes.slice(0, 4096), ...(a.assetKind !== 'video' ? { bytes } : {}) };
     },
-    download: async a => {
+    download: async (a, signal) => {
       if (!['resource', 'caption'].includes(a.assetKind) || a.byteSize > MAX_RESOURCE_BYTES) throw new MediaError('not_ready');
-      common(a); await privateBucket();
-      const data = await client.send(new GetObjectCommand({ ...common(a), VersionId: version(a.objectVersionId || undefined), ChecksumMode: 'ENABLED' }), options());
+      common(a); await privateBucket(signal);
+      const data = await client.send(new GetObjectCommand({ ...common(a), VersionId: version(a.objectVersionId || undefined), ChecksumMode: 'ENABLED' }), options(signal));
       if (data.VersionId !== a.objectVersionId || data.ContentLength !== a.byteSize || data.ContentEncoding || data.ContentType !== a.mimeType) { await discard(data.Body); throw new MediaError('verification'); }
-      const bytes = await boundedBody(data.Body, a.byteSize); if (bytes.byteLength !== a.byteSize) throw new MediaError('verification'); return bytes;
+      const bytes = await boundedBody(data.Body, a.byteSize, signal); if (bytes.byteLength !== a.byteSize) throw new MediaError('verification'); return bytes;
+    },
+    open: async (a, range, signal, headOnly) => {
+      const base = { ...common(a), VersionId: version(a.objectVersionId || undefined) };
+      await privateBucket(signal); signal.throwIfAborted();
+      const options = { abortSignal: signal };
+      const head = await client.send(new HeadObjectCommand({ ...base, ChecksumMode: 'ENABLED' }), options);
+      const expected = { 'workspace-asset': a.id, 'workspace-owner': a.userId, 'workspace-project': a.projectId, 'workspace-lesson': a.lessonId ?? 'course-cover', 'workspace-context': a.contextHash };
+      if (head.VersionId !== a.objectVersionId || head.ContentLength !== a.byteSize || head.ContentType !== a.mimeType || head.ContentEncoding || head.ServerSideEncryption !== 'AES256'
+        || digest(head.ChecksumSHA256) !== a.checksum || Object.entries(expected).some(([k, v]) => head.Metadata?.[k] !== v)) throw new MediaError('verification');
+      if (headOnly) return { size: a.byteSize };
+      const size = range ? range.end - range.start + 1 : a.byteSize;
+      const data = await client.send(new GetObjectCommand({ ...base, ...(range ? { Range: `bytes=${range.start}-${range.end}` } : {}) }), options);
+      if (!data.Body || data.VersionId !== a.objectVersionId || data.ContentLength !== size || data.ContentEncoding || data.ContentType !== a.mimeType
+        || (range ? data.ContentRange !== `bytes ${range.start}-${range.end}/${a.byteSize}` : !!data.ContentRange)) { await discard(data.Body); throw new MediaError('verification'); }
+      return { size, body: storageBodyStream(data.Body) };
     },
   };
 }

@@ -3,6 +3,7 @@ import type { workspaceMediaJobs, workspaceCourseAssets } from '@/lib/db/schema'
 import type { CreatorContext } from '../creator/service';
 import { creatorCapabilities } from '../creator/model';
 import { MediaError, mediaId, reserveCommand, assetCommand, MAX_RESOURCES, MAX_CAPTIONS, MAX_LESSON_ASSETS, INTENT_LIFETIME_MS } from './model';
+import type { VerificationCheckpoint, VerificationProgress } from './verification-checkpoint';
 
 export type Asset = typeof workspaceCourseAssets.$inferSelect & {processingState?: MediaJob['state']};
 export type AssetPatch = Partial<Pick<Asset, 'status' | 'isAttached' | 'resourcePosition' | 'displayName' | 'detachedAt' | 'updatedAt' | 'objectVersionId' | 'checksum' | 'verificationPolicy' | 'uploadedAt' | 'verifiedAt' | 'readyAt' | 'processingJobId' | 'processingSourceVersion' | 'processingPolicy' | 'outputKey' | 'outputVersionId'>>;
@@ -11,7 +12,10 @@ export type StorageIdentity = { provider: 's3'; container: string; accountId: st
 export type MediaLesson = { id: string; projectId: string; userId: string; mediaRevision: number; artwork?: boolean };
 export type MediaJob = typeof workspaceMediaJobs.$inferSelect;
 export interface MediaTransaction {
-  processing?: { read(): Promise<MediaJob | null>; create(job: MediaJob): Promise<MediaJob>; update(job: MediaJob, patch: Partial<Pick<MediaJob, 'state' | 'providerJobId' | 'dispatchedAt' | 'manifest' | 'updatedAt'>>): Promise<MediaJob> };
+  processing?: { read(): Promise<MediaJob | null>; create(job: MediaJob): Promise<MediaJob>; update(job: MediaJob, patch: Partial<Pick<MediaJob, 'state' | 'providerJobId' | 'dispatchedAt' | 'manifest' | 'updatedAt'>>): Promise<MediaJob>;
+    checkpoint?(jobId: string): Promise<VerificationCheckpoint | null>;
+    saveCheckpoint?(job: MediaJob, providerJobId: string, version: number, progress: VerificationProgress): Promise<VerificationCheckpoint>;
+  };
   context: CreatorContext;
   lesson(): Promise<MediaLesson>;
   assets(): Promise<Asset[]>;

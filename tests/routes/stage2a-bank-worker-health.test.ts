@@ -1,0 +1,13 @@
+import {beforeEach,expect,it,vi} from 'vitest';
+const state=vi.hoisted(()=>({result:{processed:0,review:0,pending:0,backlog:0,uncertain:0,blocked:0,stale:0},attention:false,fail:false}));
+const observed=vi.hoisted(()=>vi.fn());
+vi.mock('@/lib/workspace/payments/worker-auth',()=>({financialWorkerAuthorized:(r:Request)=>r.headers.get('authorization')==='Bearer synthetic-local-only'}));
+vi.mock('@/lib/creator-payments/bank-validation/worker',()=>({runBankValidationWorker:async()=>{if(state.fail)throw Error('synthetic_configuration_blocked');return state.result;}}));
+vi.mock('@/lib/workspace/operations/worker',()=>({observedWorker:observed}));
+import {GET} from '@/app/api/internal/creator-bank-validations/reconcile/route';
+beforeEach(()=>{state.result={processed:0,review:0,pending:0,backlog:0,uncertain:0,blocked:0,stale:0};state.attention=false;state.fail=false;observed.mockImplementation(async(key,work,attention)=>{expect(key).toBe('bank_validations');const result=await work();state.attention=attention(result);return result;});});
+const request=()=>new Request('http://localhost/internal',{headers:{authorization:'Bearer synthetic-local-only'}});
+it('rejects unauthenticated invocations before configuration, provider or health work',async()=>{expect((await GET(new Request('http://localhost/internal'))).status).toBe(401);expect(observed).not.toHaveBeenCalled();});
+it('records a dedicated healthy run when reconciliation has no exceptions',async()=>{expect((await GET(request())).status).toBe(200);expect(observed).toHaveBeenCalledTimes(1);expect(state.attention).toBe(false);});
+it('marks uncertain, blocked, stale and review backlogs as needing attention',async()=>{for(const key of ['uncertain','blocked','stale','review'] as const){state.result={...state.result,[key]:1};await GET(request());expect(state.attention).toBe(true);state.result[key]=0;}});
+it('reports configuration failure without treating it as invalid bank evidence',async()=>{state.fail=true;const response=await GET(request());expect(response.status).toBe(503);expect(await response.text()).toContain('configuration or reconciliation');expect(observed).toHaveBeenCalledTimes(1);});

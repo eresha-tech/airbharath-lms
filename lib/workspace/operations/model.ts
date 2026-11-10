@@ -43,7 +43,8 @@ export const workerDefinitions = [
  {key:'membership',label:'Membership payment recovery',minutes:5,href:'/admin/workspace/events'},
  {key:'course_payments',label:'Course payment reconciliation',minutes:5,href:'/admin/creator-settlements?view=exceptions'},
  {key:'payouts',label:'Creator bank payments',minutes:1,href:'/admin/creator-settlements?view=exceptions'},
- {key:'media',label:'Lesson video processing',minutes:5,href:'/admin/workspace/operations?view=media'},
+ {key:'bank_validations',label:'Creator bank verification',minutes:1,href:'/admin/workspace/operations?view=bank_validations'},
+ {key:'media',label:'Lesson video processing',minutes:1,href:'/admin/workspace/operations?view=media'},
  {key:'refund_notices',label:'Membership refund email delivery',minutes:5,href:'/admin/workspace/notices'},
 ] as const;
 export function workerHealth(last: {started_at:Date|string;finished_at:Date|string|null;outcome:string;lease_until:Date|string|null}|undefined, minutes:number, now=new Date()) {

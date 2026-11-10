@@ -1,7 +1,7 @@
 import 'server-only';
 import { environment } from '../creator/model';
 import { postgresMediaStore } from './repository';
-import { mediaService, type StorageIdentity } from './service';
+import { mediaService, type StorageIdentity, type MediaStore } from './service';
 import { mediaStorageConfig, s3MediaStorage, type MediaStorage } from './provider';
 import { mediaUploads } from './uploads';
 
@@ -22,7 +22,7 @@ export function workspaceMediaStorage() { return s3MediaStorage(mediaStorageConf
 
 import { mediaProcessing } from './processing';
 import { processingConfig, processingProvider } from './processing-provider';
-export function workspaceMediaProcessing() {
+export function workspaceMediaProcessing(store:MediaStore=postgresMediaStore) {
   let provider; try { provider = processingProvider(processingConfig()); } catch { /* Provider operations fail closed. */ }
-  return mediaProcessing(postgresMediaStore, environment(), () => new Date(), provider);
+  return mediaProcessing(store, environment(), () => new Date(), provider);
 }

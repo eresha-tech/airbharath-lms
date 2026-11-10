@@ -6,7 +6,8 @@ import { MediaError, MEDIA_BODY_LIMIT, mediaId, displayName } from './model';
 import { assetReceipt } from './service';
 import { workspaceMedia, workspaceMediaUploads, workspaceMediaStorage, workspaceMediaProcessing } from './runtime';
 import { inspectMedia } from './repository';
-import { downloadable, resourceBytes } from './uploads';
+import { downloadable } from './uploads';
+import { boundedMediaRequest } from './streaming';
 
 export function mediaFailure(error: unknown) {
   const code = error instanceof MediaError ? error.code : 'unavailable';
@@ -31,7 +32,8 @@ async function body(request: Request) {
 export function resourceResponse(result: { bytes: Uint8Array; displayName: string; mimeType: string }) {
   const name = displayName(result.displayName), ext = result.mimeType === 'application/pdf' ? 'pdf' : result.mimeType === 'image/png' ? 'png' : 'jpg';
   const encoded = encodeURIComponent(name).replace(/[!'()*]/g, c => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
-  return new Response(new Uint8Array(result.bytes), { headers: {
+  let offset=0;const stream=new ReadableStream<Uint8Array>({pull(c){if(offset>=result.bytes.length){c.close();return;}const next=result.bytes.subarray(offset,offset+65536);offset+=next.length;c.enqueue(next);}},{highWaterMark:0});
+  return new Response(stream, { headers: {
     'Content-Type': 'application/octet-stream', 'Content-Length': String(result.bytes.byteLength),
     'Content-Disposition': `attachment; filename="resource.${ext}"; filename*=UTF-8''${encoded}`,
     'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; sandbox",
@@ -41,15 +43,16 @@ export function resourceResponse(result: { bytes: Uint8Array; displayName: strin
 type Action = 'collection' | 'asset' | 'upload' | 'finalize' | 'access' | 'process' | 'captions';
 export async function mediaHttp(request: Request, action: Action, id?: string) {
   try {
+    if (action === 'access') request = boundedMediaRequest(request);
     origin(request);
-    const allowed = action === 'collection' ? ['GET', 'POST'] : action === 'asset' ? ['GET', 'PATCH'] : action === 'access' ? ['GET'] : ['POST'];
+    const allowed = action === 'collection' ? ['GET', 'POST'] : action === 'asset' ? ['GET', 'PATCH'] : action === 'access' ? ['GET', 'HEAD'] : ['POST'];
     if (!allowed.includes(request.method)) return privateJson({ error: 'Method not allowed.' }, 405);
     const user = await getWorkspaceUser(); if (!user) throw new MediaError('authentication');
     if (id) mediaId(id);
     if (action === 'collection' && request.method === 'GET') return privateJson(await workspaceMedia().list(user.id, query(request, 'lessonId')));
     query(request);
     if (action === 'asset' && request.method === 'GET') return privateJson(await workspaceMedia().read(user.id, id!));
-    if (action === 'access') return resourceResponse(await workspaceMediaUploads().download(user.id, id!));
+    if (action === 'access') return await workspaceMediaUploads().downloadResponse(user.id, id!, request);
     const raw = await body(request);
     if (action === 'collection') { const result = await workspaceMediaUploads().intent(user.id, raw); return privateJson(result, result.created ? 201 : 200); }
     if (action === 'asset') return privateJson(await workspaceMedia().mutate(user.id, id!, raw));
@@ -61,25 +64,28 @@ export async function mediaHttp(request: Request, action: Action, id?: string) {
 }
 export async function adminMediaHttp(request: Request, projectId: string, assetId?: string) {
   try {
-    origin(request); if (request.method !== 'GET') return privateJson({ error: 'Method not allowed.' }, 405);
+    if (assetId) request = boundedMediaRequest(request);
+    origin(request); if (!['GET', 'HEAD'].includes(request.method)) return privateJson({ error: 'Method not allowed.' }, 405);
     const admin = await getAuthorizedAdminSession(); if (!admin) throw new MediaError('forbidden');
     mediaId(projectId);
     if (!assetId) return privateJson({ assets: (await inspectMedia(admin.id, projectId, { lessonId: query(request, 'lessonId') })).map(assetReceipt) });
     query(request); mediaId(assetId);
     const [asset] = await inspectMedia(admin.id, projectId, { assetId }); downloadable(asset);
-    const bytes = await resourceBytes(workspaceMediaStorage(), asset);
-    const [current] = await inspectMedia(admin.id, projectId, { assetId }); downloadable(current);
-    if (current.objectVersionId !== asset.objectVersionId || current.checksum !== asset.checksum) throw new MediaError('conflict');
-    return resourceResponse({ bytes, displayName: current.displayName, mimeType: current.mimeType });
+    const { sourceDelivery } = await import('./source-delivery');
+    return await sourceDelivery(request, workspaceMediaStorage(), asset, async () => {
+      const [current] = await inspectMedia(admin.id, projectId, { assetId }); downloadable(current);
+      if (current.version !== asset.version || current.objectVersionId !== asset.objectVersionId || current.checksum !== asset.checksum) throw new MediaError('conflict');
+    });
   } catch (error) { return mediaFailure(error); }
 }
 
 export async function deliveryHttp(request: Request, id: string, name: string, admin?: { id: string; project: string }) {
   try {
+    request = boundedMediaRequest(request);
     origin(request); query(request); mediaId(id);
     const actor = admin ? { admin: admin.id, project: mediaId(admin.project) } : await (async () => { const user = await getWorkspaceUser(); if (!user) throw new MediaError('authentication'); return { creator: user.id }; })();
     const { privateMediaDelivery } = await import('./delivery');
     const base = admin ? `/api/admin/workspace/course-builds/${admin.project}/media/${id}/stream` : `/api/workspace/media/${id}/stream`;
-    return await privateMediaDelivery(actor, id, name, base);
+    return await privateMediaDelivery(actor, id, name, base, request);
   } catch (error) { return mediaFailure(error); }
 }

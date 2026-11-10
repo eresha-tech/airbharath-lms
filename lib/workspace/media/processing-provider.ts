@@ -6,6 +6,10 @@ import { MediaError } from './model';
 import { mediaStorageConfig, s3MediaStorage, type MediaStorageConfig } from './provider';
 import type { Asset, MediaJob } from './service';
 import { PROCESSING_POLICY, type MediaProcessor } from './processing';
+import type { ByteRange, PrivateObject } from './streaming';
+import { storageBodyStream } from './streaming';
+import { abortable } from '@/lib/async-budget';
+import { VERIFICATION_OBJECTS_PER_PASS, VERIFICATION_BYTES_PER_PASS, VERIFICATION_PASS_MS, type OutputEntry, type VerificationProgress } from './verification-checkpoint';
 
 export type ProcessingConfig = MediaStorageConfig & { role: string; queue: string };
 export function processingConfig(env: Record<string, string | undefined> = process.env): ProcessingConfig {
@@ -25,22 +29,26 @@ export function playlistReferences(text: string) {
   }
   if (!refs.length) throw new MediaError('verification'); return refs;
 }
-export function processingProvider(c: ProcessingConfig): MediaProcessor & { read(asset: Asset, name: string, evidence: { version: string; checksum: string; size: number }): Promise<Uint8Array> } {
+export function processingProvider(c: ProcessingConfig): MediaProcessor & {
+  read(asset: Asset, name: string, evidence: { version: string; checksum: string; size: number }, signal?: AbortSignal): Promise<Uint8Array>;
+  open(asset: Asset, name: string, evidence: { version: string; checksum: string; size: number }, range: ByteRange | null, signal: AbortSignal, head: boolean): Promise<PrivateObject>;
+} {
   const credentials = { accessKeyId: c.accessKeyId, secretAccessKey: c.secretAccessKey, sessionToken: c.sessionToken };
   const options = { region: c.region, credentials, ignoreConfiguredEndpointUrls: true, maxAttempts: 1 };
   const s3 = new S3Client(options), mc = new MediaConvertClient(options), storage = s3MediaStorage(c);
-  const timeout = () => ({ abortSignal: AbortSignal.timeout(15000) });
+  const timeout = (signal?:AbortSignal) => ({ abortSignal:signal?AbortSignal.any([signal,AbortSignal.timeout(15000)]):AbortSignal.timeout(15000) });
   const target = (a: Asset, key: string) => { if (a.storageContainer !== c.bucket || a.storageAccountId !== c.accountId) throw new MediaError('unavailable'); return { Bucket: c.bucket, Key: key, ExpectedBucketOwner: c.accountId }; };
   const input = (a: Asset, j: MediaJob) => `workspace/${a.creatorProfileId}/${a.projectId}/${a.id}/jobs/${j.id}/input.mp4`;
-  async function object(a: Asset, name: string, pinned?: { version: string; checksum: string; size: number }) {
+  async function object(a: Asset, name: string, pinned?: { version: string; checksum: string; size: number }, signal?:AbortSignal, listed?:OutputEntry) {
     outputName(name); const key = outputPrefix(a) + name;
-    const head = await s3.send(new HeadObjectCommand({ ...target(a, key), ...(pinned ? { VersionId: pinned.version } : {}) }), timeout());
+    const head = await s3.send(new HeadObjectCommand({ ...target(a, key), ...(pinned ? { VersionId: pinned.version } : {}) }), timeout(signal));
     const max = name.endsWith('.m3u8') ? 1_048_576 : 32 * 1024 ** 2;
+    if (listed && (head.ContentLength!==listed.size||head.ETag!==listed.etag)) throw new MediaError('verification');
     if (!head.VersionId || head.VersionId === 'null' || !head.ContentLength || head.ContentLength > max || head.ContentEncoding || head.ServerSideEncryption !== 'AES256') throw new MediaError('verification');
-    const data = await s3.send(new GetObjectCommand({ ...target(a, key), VersionId: head.VersionId }), timeout());
+    const data = await s3.send(new GetObjectCommand({ ...target(a, key), VersionId: head.VersionId }), timeout(signal));
     if (!data.Body || data.VersionId !== head.VersionId || data.ContentLength !== head.ContentLength) throw new MediaError('verification');
-    const reader = data.Body.transformToWebStream().getReader(), chunks: Uint8Array[] = []; let size = 0;
-    try { while (true) { const { value, done } = await reader.read(); if (done) break; size += value.length; if (size > max) { await reader.cancel(); throw new MediaError('verification'); } chunks.push(value); } } finally { reader.releaseLock(); }
+    const reader = storageBodyStream(data.Body).getReader(), chunks: Uint8Array[] = []; let size = 0;
+    try { while (true) { const { value, done } = await (signal?abortable(reader.read(),signal):reader.read()); if (done) break; size += value.length; if (size > max) { await reader.cancel(); throw new MediaError('verification'); } chunks.push(value); } } catch(error) { await reader.cancel().catch(()=>undefined); throw error; } finally { reader.releaseLock(); }
     const bytes = new Uint8Array(Buffer.concat(chunks, size)), evidence = { version: head.VersionId, checksum: createHash('sha256').update(bytes).digest('hex'), size };
     if (size !== head.ContentLength || pinned && (pinned.version !== evidence.version || pinned.size !== size || pinned.checksum !== evidence.checksum)) throw new MediaError('verification');
     return { bytes, evidence };
@@ -59,28 +67,70 @@ export function processingProvider(c: ProcessingConfig): MediaProcessor & { read
       }), timeout());
       if (!response.Job?.Id) throw new MediaError('unavailable'); return response.Job.Id;
     },
-    inspect: async (a, j, providerJobId) => {
-      const { Job: job } = await mc.send(new GetJobCommand({ Id: providerJobId }), timeout());
+    inspect: async (a, j, providerJobId, pass) => {
+      const signal=pass?.signal??AbortSignal.timeout(VERIFICATION_PASS_MS),started=Date.now();
+      const { Job: job } = await abortable(mc.send(new GetJobCommand({ Id: providerJobId }), timeout(signal)),signal);
       if (!job || job.Id !== providerJobId || job.Role !== c.role || job.Queue !== c.queue || job.UserMetadata?.workspaceAsset !== a.id || job.UserMetadata?.workspaceJob !== j.id || job.UserMetadata?.sourceVersion !== j.sourceVersion || job.UserMetadata?.policy !== PROCESSING_POLICY || job.Settings?.Inputs?.[0]?.FileInput !== `s3://${c.bucket}/${input(a, j)}` || job.Settings?.OutputGroups?.[0]?.OutputGroupSettings?.HlsGroupSettings?.Destination !== `s3://${c.bucket}/${outputPrefix(a)}master`) throw new MediaError('verification');
       if (job.Status === 'ERROR' || job.Status === 'CANCELED') return { status: 'failed' };
       if (job.Status !== 'COMPLETE') return { status: 'pending' };
       try {
-      await storage.inspect(a);
-      const list = await s3.send(new ListObjectsV2Command({ Bucket: c.bucket, ExpectedBucketOwner: c.accountId, Prefix: outputPrefix(a), MaxKeys: 2001 }), timeout());
-      if (list.IsTruncated || !list.Contents || list.Contents.length > 2000) throw new MediaError('verification');
-      const names = list.Contents.map(o => outputName(o.Key!.slice(outputPrefix(a).length)));
-      if (!names.includes('master.m3u8')) throw new MediaError('verification');
-      const manifest: NonNullable<MediaJob['manifest']> = {}; let total = 0;
-      for (const name of names) {
-        const { bytes, evidence } = await object(a, name); total += bytes.length;
-        if (total > 4 * 1024 ** 3) throw new MediaError('verification');
-        if (name.endsWith('.m3u8')) { const refs = playlistReferences(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); if (refs.some(r => !names.includes(r))) throw new MediaError('verification'); }
-        else if (bytes[0] !== 0x47 || bytes.length < 188 || bytes.length % 188 !== 0) throw new MediaError('verification');
-        manifest[name] = evidence;
-      }
-      return { status: 'complete', manifest };
-      } catch(error) { if(error instanceof MediaError && error.code === 'verification') return {status:'failed'}; throw error; }
+        await abortable(storage.inspect(a,signal),signal);
+        const prior=pass?.checkpoint;
+        if(prior&&(prior.providerJobId!==providerJobId||prior.sourceVersion!==j.sourceVersion))throw new MediaError('verification');
+        let progress:VerificationProgress=prior?{phase:prior.phase,inventory:prior.inventory,continuation:prior.continuation,verified:{...prior.verified}}:{phase:'listing',inventory:[],continuation:null,verified:{}};
+        const save=async()=>{signal.throwIfAborted();await pass?.save(progress);};
+        async function list(continuation:string|null) {
+          const page=await abortable(s3.send(new ListObjectsV2Command({Bucket:c.bucket,ExpectedBucketOwner:c.accountId,Prefix:outputPrefix(a),MaxKeys:1000,...(continuation?{ContinuationToken:continuation}:{})}),timeout(signal)),signal);
+          if(!page.Contents||page.IsTruncated&&!page.NextContinuationToken)throw new MediaError('verification');
+          const entries=page.Contents.map(o=>{if(!o.Key?.startsWith(outputPrefix(a))||!o.Size||!o.ETag)throw new MediaError('verification');return {name:outputName(o.Key.slice(outputPrefix(a).length)),size:o.Size,etag:o.ETag};});
+          return {entries,next:page.IsTruncated?page.NextContinuationToken!:null};
+        }
+        for(let pages=0;progress.phase==='listing'&&pages<2;pages++) {
+          const page=await list(progress.continuation);progress={...progress,inventory:[...progress.inventory,...page.entries],continuation:page.next,phase:page.next?'listing':'verifying'};
+          if(progress.inventory.length>2000||new Set(progress.inventory.map(e=>e.name)).size!==progress.inventory.length||progress.inventory.reduce((n,e)=>n+e.size,0)>4*1024**3)throw new MediaError('verification');
+          if(!page.next&&!progress.inventory.some(e=>e.name==='master.m3u8'))throw new MediaError('verification');
+          await save();
+        }
+        if(progress.phase==='listing')return {status:'pending'};
+        const names=progress.inventory.map(e=>e.name);let count=0,bytesThisPass=0;
+        for(const entry of progress.inventory) {
+          if(progress.verified[entry.name])continue;
+          if(count>=VERIFICATION_OBJECTS_PER_PASS||bytesThisPass+entry.size>VERIFICATION_BYTES_PER_PASS||Date.now()-started>VERIFICATION_PASS_MS-16000)return {status:'pending'};
+          const objectSignal=AbortSignal.any([signal,AbortSignal.timeout(15000)]);
+          const {bytes,evidence}=await abortable(object(a,entry.name,undefined,objectSignal,entry),objectSignal);
+          if(entry.name.endsWith('.m3u8')) {if(playlistReferences(new TextDecoder('utf-8',{fatal:true}).decode(bytes)).some(r=>!names.includes(r)))throw new MediaError('verification');}
+          else if(bytes[0]!==0x47||bytes.length<188||bytes.length%188!==0)throw new MediaError('verification');
+          progress.verified={...progress.verified,[entry.name]:evidence};count++;bytesThisPass+=bytes.length;await save();
+        }
+        if(Object.keys(progress.verified).length!==names.length||names.length<3)throw new MediaError('verification');
+        // Check that the complete inventory still matches. Delivery pins every
+        // verified immutable version, never whichever version is currently latest.
+        const current:OutputEntry[]=[];let continuation:string|null=null;
+        do {const page=await list(continuation);current.push(...page.entries);continuation=page.next;if(current.length>2000)throw new MediaError('verification');}while(continuation);
+        const ordered=(entries:OutputEntry[])=>JSON.stringify([...entries].sort((a,b)=>a.name.localeCompare(b.name)).map(e=>[e.name,e.size,e.etag]));
+        if(ordered(current)!==ordered(progress.inventory))throw new MediaError('verification');
+        progress={...progress,phase:'complete'};await save();
+        return {status:'complete',manifest:progress.verified};
+      }catch(error){if(error instanceof MediaError&&error.code==='verification')return {status:'failed'};throw error;}
     },
-    read: async (a, name, evidence) => { await storage.inspect(a); return (await object(a, name, evidence)).bytes; },
+    read: async (a, name, evidence, signal = AbortSignal.timeout(45000)) => { await abortable(storage.inspect(a,signal),signal); return (await object(a, name, evidence,signal)).bytes; },
+    open: async (a, name, evidence, range, signal, headOnly) => {
+      outputName(name);
+      if (!evidence.version || evidence.version === 'null' || !/^[a-f0-9]{64}$/.test(evidence.checksum) || !Number.isSafeInteger(evidence.size) || evidence.size < 1 || evidence.size > 32 * 1024 ** 2) throw new MediaError('verification');
+      await storage.inspect(a,signal); signal.throwIfAborted();
+      const base = { ...target(a, outputPrefix(a) + name), VersionId: evidence.version };
+      const head = await s3.send(new HeadObjectCommand(base), { abortSignal: signal });
+      if (head.VersionId !== evidence.version || head.ContentLength !== evidence.size || head.ContentEncoding || head.ServerSideEncryption !== 'AES256') throw new MediaError('verification');
+      if (headOnly) return { size: evidence.size };
+      const size = range ? range.end - range.start + 1 : evidence.size;
+      const data = await s3.send(new GetObjectCommand({ ...base, ...(range ? { Range: `bytes=${range.start}-${range.end}` } : {}) }), { abortSignal: signal });
+      if (!data.Body || data.VersionId !== evidence.version || data.ContentLength !== size || data.ContentEncoding
+        || (range ? data.ContentRange !== `bytes ${range.start}-${range.end}/${evidence.size}` : !!data.ContentRange)) {
+        await data.Body?.transformToWebStream().cancel(); throw new MediaError('verification');
+      }
+      // This immutable version was fully SHA256-verified before Ready. A full
+      // delivery additionally hashes in-stream; partial delivery pins that version.
+      return { size, body: storageBodyStream(data.Body) };
+    },
   };
 }

@@ -10,7 +10,11 @@ import { coursePaymentChecks } from '@/lib/db/schema';
 import { capturedPayment, CommerceError, moneyPaise, priceEvidence } from './model';
 
 // Provider calls stay outside database locks. Tests inject a synthetic adapter.
-export function commerceService(database=db, provider=razorpay, scope=courseScope()??'test:synthetic') {
+export type CommerceProvider = {
+ orders: Pick<typeof razorpay.orders, 'create' | 'fetchPayments'>;
+ payments: Pick<typeof razorpay.payments, 'fetch'>;
+};
+export function commerceService(database=db, provider:CommerceProvider=razorpay, scope=courseScope()??'test:synthetic') {
  async function quote(actor:string,courseId:string,couponCode?:string, source=database) {
   const user=await source.query.users.findFirst({where:eq(users.id,actor)});
   if(!user) throw new CommerceError(401,'Sign in again.');

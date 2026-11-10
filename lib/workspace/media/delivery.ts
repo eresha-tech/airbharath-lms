@@ -10,6 +10,8 @@ import { workspaceMediaStorage } from './runtime';
 import { CAPTION_POLICY, validatedCaption } from './captions';
 import { PROCESSING_POLICY } from './processing';
 import { MediaError } from './model';
+import { privateBytesResponse, privateObjectResponse } from './streaming';
+import { sourceDelivery } from './source-delivery';
 export type DeliveryActor = { creator: string } | { admin: string; project: string };
 async function authorized(actor: DeliveryActor, id: string) {
   if ('admin' in actor) return (await inspectMedia(actor.admin, actor.project, { assetId: id }))[0];
@@ -18,19 +20,25 @@ async function authorized(actor: DeliveryActor, id: string) {
   });
 }
 function attached(a: Asset) { if (a.status !== 'ready' || !a.isAttached) throw new MediaError('not_ready'); }
-export async function privateMediaDelivery(actor: DeliveryActor, id: string, name: string, base: string) {
+export async function privateMediaDelivery(actor: DeliveryActor, id: string, name: string, base: string, request = new Request('http://localhost')) {
   const asset = await authorized(actor, id); attached(asset);
+  const recheck = async () => { const current = await authorized(actor, id); attached(current); if (asset.version !== current.version) throw new MediaError('conflict'); };
+  if (name === 'source.mp4') return sourceDelivery(request, workspaceMediaStorage(), asset, recheck, true);
   let bytes: Uint8Array, type: string;
   if (name === 'captions.vtt') {
     if (asset.assetKind !== 'caption' || asset.verificationPolicy !== CAPTION_POLICY || !asset.checksum) throw new MediaError('not_ready');
-    bytes = await workspaceMediaStorage().download(asset); validatedCaption(asset, bytes, asset.checksum); type = 'text/vtt; charset=utf-8';
+    bytes = await workspaceMediaStorage().download(asset,request.signal); validatedCaption(asset, bytes, asset.checksum); type = 'text/vtt; charset=utf-8';
   } else {
     outputName(name);
     if (asset.assetKind !== 'video' || asset.processingPolicy !== PROCESSING_POLICY) throw new MediaError('not_ready');
     const [job] = await db.select().from(workspaceMediaJobs).where(eq(workspaceMediaJobs.assetId, id));
     const evidence = job?.manifest?.[name];
     if (!job || job.state !== 'complete' || job.id !== asset.processingJobId || job.sourceVersion !== asset.objectVersionId || !evidence || job.manifest?.['master.m3u8']?.version !== asset.outputVersionId) throw new MediaError('not_ready');
-    bytes = await processingProvider(processingConfig()).read(asset, name, evidence);
+    const provider = processingProvider(processingConfig());
+    if (!name.endsWith('.m3u8')) return privateObjectResponse(request, { size: evidence.size, type: 'video/mp2t', checksum: evidence.checksum,
+      open: (range, signal, head) => provider.open(asset, name, evidence, range, signal, head),
+    }, recheck);
+    bytes = await provider.read(asset, name, evidence,request.signal);
     if (name.endsWith('.m3u8')) {
       const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes), refs = playlistReferences(text);
       if (refs.some(r => !job.manifest?.[r])) throw new MediaError('verification');
@@ -40,5 +48,5 @@ export async function privateMediaDelivery(actor: DeliveryActor, id: string, nam
   }
   const current = await authorized(actor, id); attached(current);
   if (asset.version !== current.version) throw new MediaError('conflict');
-  return new Response(new Uint8Array(bytes), { headers: { 'Content-Type': type, 'Content-Length': String(bytes.length), 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; sandbox", 'Cross-Origin-Resource-Policy': 'same-origin', 'Referrer-Policy': 'no-referrer', Vary: 'Cookie, Authorization' } });
+  return privateBytesResponse(request, bytes, type, undefined, recheck);
 }

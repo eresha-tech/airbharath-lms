@@ -3,12 +3,13 @@ import { randomUUID } from 'node:crypto';
 import { MediaError, emptyMediaCommand } from './model';
 import { assetReceipt, mediaTransaction, type Asset, type MediaStore, type MediaTransaction, type MediaJob } from './service';
 import { VIDEO_VERIFICATION_POLICY } from './verification';
+import { VERIFICATION_PASS_MS, type VerificationPass } from './verification-checkpoint';
 
 export const PROCESSING_POLICY = 'workspace-hls-h264-aac-v1';
 export type ProcessingResult = { status: 'pending' } | { status: 'failed' } | { status: 'complete'; manifest: NonNullable<MediaJob['manifest']> };
 export interface MediaProcessor {
   dispatch(asset: Asset, job: MediaJob): Promise<string>;
-  inspect(asset: Asset, job: MediaJob, providerJobId: string): Promise<ProcessingResult>;
+  inspect(asset: Asset, job: MediaJob, providerJobId: string, pass?: VerificationPass): Promise<ProcessingResult>;
 }
 // Shared atomic outbox insertion used by upload verification and explicit recovery.
 export async function enqueueVerifiedVideo(tx: MediaTransaction, a: Asset, now: Date) {
@@ -63,10 +64,26 @@ export function mediaProcessing(store: MediaStore, environment: string | undefin
         if (!job || asset.status !== 'processing' || ['complete', 'failed'].includes(job.state)) return null;
         const externalId = callbackId || job.providerJobId;
         if (!externalId || !/^[a-zA-Z0-9-]{1,100}$/.test(externalId) || job.providerJobId && job.providerJobId !== externalId) throw new MediaError('conflict');
-        return { asset, job, externalId };
+        const checkpoint = await tx.processing?.checkpoint?.(job.id) ?? null;
+        return { asset, job, externalId, checkpoint };
       });
       if (!prior) return;
-      const result = await processor().inspect(prior.asset, prior.job, prior.externalId);
+      let checkpoint = prior.checkpoint;
+      const signal = AbortSignal.timeout(VERIFICATION_PASS_MS);
+      const pass: VerificationPass = {
+        checkpoint, signal,
+        save: async progress => {
+          checkpoint = await observe(actor, id, async tx => {
+            if (!tx.processing?.saveCheckpoint) throw new MediaError('unavailable');
+            const job = await tx.processing.read();
+            if (!job || job.id !== prior.job.id || job.state === 'complete' || job.state === 'failed') throw new MediaError('conflict');
+            return tx.processing.saveCheckpoint(job, prior.externalId, checkpoint?.version ?? 0, progress);
+          });
+        },
+      };
+      // Legacy in-memory fixtures need not implement checkpoints. Shipping Postgres
+      // always does; the real provider refuses unbounded output verification.
+      const result = await processor().inspect(prior.asset, prior.job, prior.externalId, pass);
       await observe(actor, id, async (tx, permit) => {
         const asset = await selected(tx, id), jobs = outbox(tx), job = await jobs.read();
         if (!job || job.id !== prior.job.id || asset.status !== 'processing' || ['complete', 'failed'].includes(job.state)) return;

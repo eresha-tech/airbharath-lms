@@ -29,6 +29,14 @@ export function mediaUploads(store: MediaStore, environment: string | undefined,
   const finished = (a: Asset) => a.assetKind === 'video' ? ['verified', 'processing', 'ready'].includes(a.status) : a.status === 'ready';
   const receipt = async (tx: MediaTransaction, a: Asset) => ({ asset: assetReceipt(a), mediaRevision: (await tx.lesson()).mediaRevision });
   return {
+    downloadResponse: async (actor: string, id: string, request: Request) => {
+      const asset = await run(actor, id, false, async tx => { const a = await selected(tx, id); downloadable(a); return a; });
+      const { sourceDelivery } = await import('./source-delivery');
+      return sourceDelivery(request, storage(), asset, async () => {
+        const current = await run(actor, id, false, async tx => { const a = await selected(tx, id); downloadable(a); return a; });
+        if (current.version !== asset.version || current.objectVersionId !== asset.objectVersionId || current.checksum !== asset.checksum) throw new MediaError('conflict');
+      });
+    },
     intent: async (actor: string, raw: unknown) => {
       storage(); const command = reserveCommand(raw);
       if (command.assetKind === 'caption') throw new MediaError('validation'); // Caption source is derived in captionIntent.

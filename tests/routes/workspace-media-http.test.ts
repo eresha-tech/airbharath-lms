@@ -2,7 +2,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ user: vi.fn(), admin: vi.fn(), list: vi.fn(), read: vi.fn(), mutate: vi.fn(), intent: vi.fn(), authorize: vi.fn(), finalize: vi.fn(), download: vi.fn(), process:vi.fn(), captionIntent:vi.fn(), inspect: vi.fn(), bytes: vi.fn() }));
 vi.mock('@/lib/workspace/eligibility/service', () => ({ getWorkspaceUser: mocks.user }));
 vi.mock('@/lib/admin-authorization', () => ({ getAuthorizedAdminSession: mocks.admin }));
-vi.mock('@/lib/workspace/media/runtime', () => ({ workspaceMediaProcessing:()=>({request:mocks.process}), workspaceMedia: () => ({ list: mocks.list, read: mocks.read, mutate: mocks.mutate }), workspaceMediaUploads: () => ({ intent: mocks.intent, captionIntent:mocks.captionIntent, authorize: mocks.authorize, finalize: mocks.finalize, download: mocks.download }), workspaceMediaStorage: () => ({ download: mocks.bytes, identity: { provider: 's3', container: 'synthetic-private', accountId: '123456789012' } }) }));
+vi.mock('@/lib/workspace/media/runtime', () => ({ workspaceMediaProcessing:()=>({request:mocks.process}), workspaceMedia: () => ({ list: mocks.list, read: mocks.read, mutate: mocks.mutate }), workspaceMediaUploads: () => ({ intent: mocks.intent, captionIntent:mocks.captionIntent, authorize: mocks.authorize, finalize: mocks.finalize, download: mocks.download, downloadResponse:async(actor:string,id:string,request:Request)=>{const r=await mocks.download(actor,id);const {privateBytesResponse,attachment}=await import('@/lib/workspace/media/streaming');return privateBytesResponse(request,r.bytes,'application/octet-stream',attachment(r.displayName,r.mimeType));} }), workspaceMediaStorage: () => ({ download: mocks.bytes, open:async(asset:{byteSize:number},range:{start:number;end:number}|null,_signal:AbortSignal,head:boolean)=>{const bytes=await mocks.bytes();return {size:range?range.end-range.start+1:asset.byteSize,...(!head?{body:new ReadableStream<Uint8Array>({start(c){c.enqueue(range?bytes.subarray(range.start,range.end+1):bytes);c.close();}})}:{})};}, identity: { provider: 's3', container: 'synthetic-private', accountId: '123456789012' } }) }));
 vi.mock('@/lib/workspace/media/repository', () => ({ inspectMedia: mocks.inspect }));
 import { mediaHttp, adminMediaHttp } from '@/lib/workspace/media/http';
 import { MediaError } from '@/lib/workspace/media/model';
@@ -57,14 +57,14 @@ it.each([['object_missing',409],['verification',422],['expired',410],['conflict'
   mocks.finalize.mockRejectedValue(new MediaError(code)); const r=await mediaHttp(request('POST',{}),'finalize',key); expect(r.status).toBe(status); expect(r.headers.get('cache-control')).toBe('no-store');
   mocks.finalize.mockRejectedValue(new Error('SECRET_BUCKET_NAME credentials signed-url')); const failed=await mediaHttp(request('POST',{}),'finalize',key); expect(failed.status).toBe(503); expect(await failed.text()).not.toMatch(/SECRET|credentials|signed-url/);
 });
-it('Admin routes export only GET and deny non-Admins before inspecting Creator media', async () => {
-  expect(Object.keys(adminRoute).filter(k=>!['runtime','dynamic'].includes(k))).toEqual(['GET']); expect(Object.keys(adminAccessRoute).filter(k=>!['runtime','dynamic'].includes(k))).toEqual(['GET']);
+it('Admin metadata is GET-only and payload GET/HEAD denies non-Admins before inspecting Creator media', async () => {
+  expect(Object.keys(adminRoute).filter(k=>!['runtime','dynamic'].includes(k))).toEqual(['GET']); expect(Object.keys(adminAccessRoute).filter(k=>!['runtime','dynamic','maxDuration'].includes(k))).toEqual(['GET','HEAD']);
   mocks.admin.mockResolvedValue(null); expect((await adminRoute.GET(request('GET',undefined,{},'?lessonId='+key),{params:Promise.resolve({id:key})})).status).toBe(403); expect(mocks.inspect).not.toHaveBeenCalled();
   expect((await adminMediaHttp(request('PATCH',{}),key)).status).toBe(405);
 });
 it('Admin metadata omits storage identity; access rechecks demotion after reading provider bytes', async () => {
   const r = await adminMediaHttp(request('GET',undefined,{},'?lessonId='+key),key); const text=await r.text(); expect(text).not.toMatch(/storageKey|source-v1|checksum|synthetic-private|processingJobId/);
-  mocks.inspect.mockResolvedValueOnce((await mocks.inspect.mock.results[0].value)).mockRejectedValueOnce(new MediaError('forbidden'));
+  mocks.inspect.mockResolvedValueOnce((await mocks.inspect.mock.results[0].value)).mockResolvedValueOnce((await mocks.inspect.mock.results[0].value)).mockRejectedValueOnce(new MediaError('forbidden'));
   const failed=await adminAccessRoute.GET(request(),{params:Promise.resolve({id:key,assetId:key})}); expect(failed.status).toBe(403); expect(mocks.bytes).toHaveBeenCalledTimes(1);
 });
 
