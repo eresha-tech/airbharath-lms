@@ -500,6 +500,12 @@ export default async function CoursePage({ params }: CoursePageProps) {
                 </div>
 
                 {/* Enrollment Button */}
+                {!isEnrolled && accessInfo?.revokedReason && (
+                  <p role="status" className="rounded-xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+                    {accessInfo.revokedReason === 'refunded' ? 'Access from your fully refunded purchase has ended.' : 'Access from this purchase has ended after a confirmed payment reversal.'}
+                    {' '}Your progress and course history are saved. You can enroll again or contact AirBharath support.
+                  </p>
+                )}
                 <EnrollButton
                   courseId={course.id}
                   isEnrolled={isEnrolled}

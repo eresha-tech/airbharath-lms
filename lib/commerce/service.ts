@@ -8,6 +8,8 @@ import { recordCapture } from '@/lib/creator-payments/ledger';
 import { courseScope, requireCourseScope } from '@/lib/creator-payments/config';
 import { coursePaymentChecks } from '@/lib/db/schema';
 import { capturedPayment, CommerceError, moneyPaise, priceEvidence } from './model';
+import { effectiveEnrollment, prospectiveAcademyPolicy } from '@/lib/academy-entitlements/model';
+import { sourceRelations, isProspectiveAcademyOrder, createPurchaseSource } from '@/lib/academy-entitlements/repository';
 
 // Provider calls stay outside database locks. Tests inject a synthetic adapter.
 export type CommerceProvider = {
@@ -42,6 +44,8 @@ export function commerceService(database=db, provider:CommerceProvider=razorpay,
     return {id:pending.razorpayOrderId,amount:moneyPaise(pending.amount),currency:'INR',discountedAmount:Number(pending.amount),resumed:true};
    }
    if(initial.evidence.totalPaise<=0) throw new CommerceError(409,'This checkout requires a positive payment amount. Contact support for free enrollment.');
+   const academyPolicy = initial.course.workspaceProjectId ? null : prospectiveAcademyPolicy();
+   const purchaseEvidence = { ...initial.evidence, ...(academyPolicy ? { academyEntitlementPolicy: academyPolicy } : {}) };
    // No contact details need to leave AirBharath in provider order notes.
    const order=await provider.orders.create({amount:initial.evidence.totalPaise,currency:'INR',receipt:`lms_${randomUUID().replaceAll('-','')}`,notes:{courseId}});
    if(!order.id || Number(order.amount)!==initial.evidence.totalPaise || order.currency!=='INR') throw new CommerceError(503,'Payment order could not be confirmed.');
@@ -52,11 +56,11 @@ export function commerceService(database=db, provider:CommerceProvider=razorpay,
     await tx.select().from(courses).where(eq(courses.id,courseId)).for('share');
     const current=await quote(actor,courseId,couponCode,tx as unknown as typeof db);
     if(JSON.stringify(current.evidence)!==JSON.stringify(initial.evidence)) throw new CommerceError(409,'Course price changed. Please retry checkout.');
-    const [existing]=await tx.select().from(enrollments).where(and(eq(enrollments.userId,actor),eq(enrollments.courseId,courseId)));
-    if(existing?.status==='active'&&(!existing.expiresAt||existing.expiresAt>new Date())) throw new CommerceError(409,'You already have course access.');
+    const existing=await tx.query.enrollments.findFirst({where:and(eq(enrollments.userId,actor),eq(enrollments.courseId,courseId)),with:sourceRelations});
+    if(effectiveEnrollment(existing).enrollment) throw new CommerceError(409,'You already have course access.');
     const prior=await tx.query.orders.findFirst({where:and(eq(orders.userId,actor),eq(orders.courseId,courseId),eq(orders.status,'pending')),orderBy:[desc(orders.createdAt),desc(orders.id)]});
     if(prior) return {id:prior.razorpayOrderId,amount:moneyPaise(prior.amount),currency:'INR',discountedAmount:Number(prior.amount),resumed:true};
-    const [saved]=await tx.insert(orders).values({userId:actor,courseId,razorpayOrderId:order.id,amount:(initial.evidence.totalPaise/100).toFixed(2),status:'pending',purchaseEvidence:initial.evidence,creatorId:initial.evidence.creatorId,workspacePriceId:initial.evidence.priceId}).returning();
+    const [saved]=await tx.insert(orders).values({userId:actor,courseId,razorpayOrderId:order.id,amount:(initial.evidence.totalPaise/100).toFixed(2),status:'pending',purchaseEvidence,creatorId:initial.evidence.creatorId,workspacePriceId:initial.evidence.priceId}).returning();
     await tx.insert(coursePaymentChecks).values({orderId:saved.id,scope});
     return {...order,discountedAmount:initial.evidence.totalPaise/100,resumed:false};
    });
@@ -100,11 +104,17 @@ export function commerceService(database=db, provider:CommerceProvider=razorpay,
     // A previously issued approved quote remains valid if the course is later
     // withdrawn. Suspension still blocks delivery in hasCourseAccess.
     const days=locked.purchaseEvidence ? locked.purchaseEvidence.accessDays : course.accessDays;
-    const expiresAt=days?new Date(Date.now()+days*86400000):null;
-    const existing=await tx.query.enrollments.findFirst({where:and(eq(enrollments.userId,actor),eq(enrollments.courseId,course.id))});
+    const startsAt=new Date(),expiresAt=days?new Date(startsAt.getTime()+days*86400000):null;
+    const existing=await tx.query.enrollments.findFirst({where:and(eq(enrollments.userId,actor),eq(enrollments.courseId,course.id)),with:sourceRelations});
     if(existing && !['active','expired'].includes(existing.status)) throw new CommerceError(409,'Access was restricted. Contact support for payment review.');
-    if(!existing && !(reconciled&&Number(payment.amount_refunded)===Number(payment.amount))) await tx.insert(enrollments).values({userId:actor,courseId:course.id,status:'active',expiresAt});
-    else if(existing && !(reconciled&&Number(payment.amount_refunded)===Number(payment.amount))) {
+    const prospective=isProspectiveAcademyOrder(locked);
+    // An old pending capture remains exempt even if a new Admin grant created a managed row meanwhile.
+    const legacyCapture=!prospective&&!locked.creatorId&&!locked.purchaseEvidence?.projectId&&!!existing?.academySources?.some(source=>source.ownsEnrollment)&&!(reconciled&&Number(payment.amount_refunded)===Number(payment.amount));
+    let enrollmentId=existing?.id;
+    if(!existing && (prospective || !(reconciled&&Number(payment.amount_refunded)===Number(payment.amount)))) {
+     const [created]=await tx.insert(enrollments).values({userId:actor,courseId:course.id,status:'active',expiresAt}).returning();enrollmentId=created.id;
+    }
+    else if(existing && !prospective && !legacyCapture && !(reconciled&&Number(payment.amount_refunded)===Number(payment.amount))) {
      // Never shorten lifetime or a later existing entitlement; progress is untouched.
      const until=existing.expiresAt===null||expiresAt===null?null:new Date(Math.max(existing.expiresAt.getTime(),expiresAt.getTime()));
      await tx.update(enrollments).set({status:'active',expiresAt:until}).where(eq(enrollments.id,existing.id));
@@ -112,6 +122,7 @@ export function commerceService(database=db, provider:CommerceProvider=razorpay,
     await tx.update(orders).set({status:'paid',razorpayPaymentId:paymentId}).where(eq(orders.id,locked.id));
     if(locked.purchaseEvidence?.couponId) await tx.update(coupons).set({usedCount:sql`${coupons.usedCount}+1`}).where(eq(coupons.id,locked.purchaseEvidence.couponId));
     await recordCapture(tx,{...locked,status:'paid',razorpayPaymentId:paymentId},payment,scope,observedAt);
+    if((prospective||legacyCapture) && enrollmentId) await createPurchaseSource(tx,{...locked,razorpayPaymentId:paymentId},enrollmentId,scope,!existing,startsAt,expiresAt,legacyCapture);
     return {alreadyVerified:false,order:locked};
    });
   },

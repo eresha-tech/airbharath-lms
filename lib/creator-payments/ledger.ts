@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { orders,creatorLedger as ledger,coursePaymentChecks as checks } from '@/lib/db/schema';
 import { CommerceError } from '@/lib/commerce/model';
 import { paymentFact,proceeds,paise } from './model';
+import { recordAcademyDispute } from '@/lib/academy-entitlements/repository';
 type Tx=Parameters<Parameters<typeof db.transaction>[0]>[0];
 export async function recordCapture(tx:Tx,order:typeof orders.$inferSelect,raw:unknown,scope:string,observedAt=new Date()) {
  const p=paymentFact(raw);
@@ -35,10 +36,11 @@ export async function recordCapture(tx:Tx,order:typeof orders.$inferSelect,raw:u
  if(p.amount_refunded===p.amount&&p.amount>0)await tx.update(orders).set({status:'refunded'}).where(eq(orders.id,order.id));
  await tx.insert(checks).values({orderId:order.id,scope,paymentId:p.id,lastCheckedAt:new Date(),nextCheckAt:new Date(Date.now()+86400000),issue}).onConflictDoUpdate({target:checks.orderId,set:{paymentId:p.id,lastCheckedAt:new Date(),nextCheckAt:new Date(Date.now()+86400000),issue}});
 }
-export async function recordDispute(tx:Tx,order:typeof orders.$inferSelect,raw:unknown,scope:string) {
+export async function recordDispute(tx:Tx,order:typeof orders.$inferSelect,raw:unknown,scope:string,observedAt=new Date()) {
  const d=raw as {id:string;payment_id:string;amount:number;currency:string;status:string};
  if(!d||!/^disp_[A-Za-z0-9_]{6,100}$/.test(d.id)||d.payment_id!==order.razorpayPaymentId||d.currency!=='INR'||!['open','under_review','action_required','won','lost','closed'].includes(d.status))throw new CommerceError(409,'Dispute evidence needs review.');
  paise(d.amount,Math.round(Number(order.amount)*100));
+ await recordAcademyDispute(tx,order,d,scope,observedAt);
  if(!order.creatorId)return;
  const rows=await tx.select().from(ledger).where(and(eq(ledger.orderId,order.id),eq(ledger.kind,'dispute')));
  const prior=rows.filter(r=>r.evidence.disputeId===d.id);

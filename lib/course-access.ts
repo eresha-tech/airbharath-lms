@@ -1,6 +1,8 @@
 import { db } from '@/lib/db';
 import { courses, enrollments, courseBundleItems, users } from '@/lib/db/schema';
 import { eq, and, inArray, or, isNull, gt } from 'drizzle-orm';
+import { effectiveEnrollment, type AccessReason } from '@/lib/academy-entitlements/model';
+import { sourceRelations } from '@/lib/academy-entitlements/repository';
 
 export interface CourseAccessResult {
   hasAccess: boolean;
@@ -9,6 +11,7 @@ export interface CourseAccessResult {
   bundleTitle?: string;
   isExpired: boolean;
   expiresAt?: Date | null;
+  revokedReason?: AccessReason;
 }
 
 /**
@@ -61,12 +64,15 @@ export async function hasCourseAccess(
   const now = new Date();
 
   // 2. Direct course enrollment check
-  const directEnrollment = await db.query.enrollments.findFirst({
+  const directRaw = await db.query.enrollments.findFirst({
+    with: sourceRelations,
     where: and(
       eq(enrollments.userId, userId),
       eq(enrollments.courseId, courseId)
     ),
   });
+  const directResolution = effectiveEnrollment(directRaw, now);
+  const directEnrollment = directResolution.enrollment;
 
   if (directEnrollment) {
     const isDirectExpired =
@@ -103,13 +109,16 @@ export async function hasCourseAccess(
 
     // Query active enrollments in any of these parent bundles
     const bundleEnrollments = await db.query.enrollments.findMany({
+      with: sourceRelations,
       where: and(
         eq(enrollments.userId, userId),
         inArray(enrollments.courseId, bundleCourseIds)
       ),
     });
 
-    for (const bEnroll of bundleEnrollments) {
+    for (const raw of bundleEnrollments) {
+      const bEnroll = effectiveEnrollment(raw, now).enrollment;
+      if (!bEnroll) continue;
       const isBundleExpired =
         bEnroll.status === 'expired' ||
         (bEnroll.expiresAt !== null && new Date(bEnroll.expiresAt) <= now);
@@ -130,12 +139,13 @@ export async function hasCourseAccess(
     }
   }
 
-  const isExpired = Boolean(directEnrollment?.status === 'expired' || (directEnrollment?.expiresAt && new Date(directEnrollment.expiresAt) <= now));
+  const isExpired = Boolean(directRaw?.status === 'expired' || (directRaw?.expiresAt && new Date(directRaw.expiresAt) <= now) || directResolution.reason);
 
   return {
     hasAccess: false,
     accessType: null,
     isExpired,
+    revokedReason: directResolution.reason,
   };
 }
 
@@ -151,6 +161,7 @@ export async function getUserAccessSummary(userId: string) {
       effectiveCourseIds: [] as string[],
       bundleToCoursesMap: {} as Record<string, string[]>,
       courseToBundleMap: {} as Record<string, { bundleId: string; bundleTitle: string; expiresAt?: Date | null }>,
+      directAccessExpiry: {} as Record<string, Date | null>,
     };
   }
 
@@ -158,12 +169,13 @@ export async function getUserAccessSummary(userId: string) {
 
   // Fetch all user enrollments in one query
   const userEnrollments = await db.query.enrollments.findMany({
+    with: sourceRelations,
     where: eq(enrollments.userId, userId),
   });
 
-  const activeEnrollments = userEnrollments.filter((e) => {
-    const isExpired = e.status === 'expired' || (e.expiresAt !== null && new Date(e.expiresAt) <= now);
-    return !isExpired && e.status === 'active';
+  const activeEnrollments = userEnrollments.flatMap(row => {
+    const effective = effectiveEnrollment(row, now).enrollment;
+    return effective ? [effective] : [];
   });
 
   const activeCourseIds = activeEnrollments.map((e) => e.courseId);
@@ -175,6 +187,7 @@ export async function getUserAccessSummary(userId: string) {
       effectiveCourseIds: [],
       bundleToCoursesMap: {},
       courseToBundleMap: {},
+      directAccessExpiry: {} as Record<string, Date | null>,
     };
   }
 
@@ -223,6 +236,7 @@ export async function getUserAccessSummary(userId: string) {
     effectiveCourseIds,
     bundleToCoursesMap,
     courseToBundleMap,
+    directAccessExpiry: Object.fromEntries(activeEnrollments.map(row => [row.courseId, row.expiresAt])),
   };
 }
 

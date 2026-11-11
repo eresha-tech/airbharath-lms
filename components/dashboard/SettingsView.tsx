@@ -466,7 +466,7 @@ export function SettingsView({ initialUser, stats }: SettingsViewProps) {
               {stats.enrolledCount}
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Active learning programs
+              Course enrollment history
             </p>
           </div>
 

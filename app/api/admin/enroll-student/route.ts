@@ -3,6 +3,9 @@ import { getAuthorizedAdminSession } from '@/lib/admin-authorization';
 import { db } from '@/lib/db';
 import { enrollments, courses, users } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { prospectiveAcademyPolicy } from '@/lib/academy-entitlements/model';
+import { grantAcademyAccess, sourceRelations } from '@/lib/academy-entitlements/repository';
+import { CommerceError } from '@/lib/commerce/model';
 
 export async function POST(req: Request) {
   try {
@@ -11,7 +14,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    const { userId, courseId, customAccessDays } = await req.json();
+    const { userId, courseId, customAccessDays, requestKey } = await req.json();
     if (!userId || !courseId) {
       return NextResponse.json({ error: 'User ID and Course ID are required' }, { status: 400 });
     }
@@ -28,8 +31,14 @@ export async function POST(req: Request) {
     const expiresAt = days ? new Date(Date.now() + days * 24 * 60 * 60 * 1000) : null;
 
     const existing = await db.query.enrollments.findFirst({
+      with: sourceRelations,
       where: and(eq(enrollments.userId, userId), eq(enrollments.courseId, courseId)),
     });
+
+    if (!course.workspaceProjectId && (existing?.academySources.length || prospectiveAcademyPolicy())) {
+      const enrollment = await grantAcademyAccess(session.id, { userId, courseId, requestKey, ...(days ? { days } : {}) });
+      return NextResponse.json({ success: true, enrollment, message: 'Independent course access grant saved' });
+    }
 
     if (existing) {
       const [updated] = await db
@@ -55,6 +64,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, enrollment: inserted, message: 'Student enrolled successfully' });
   } catch (error: any) {
+    if (error instanceof CommerceError) return NextResponse.json({ error: error.message }, { status: error.status });
     return NextResponse.json({ error: error.message || 'Enrollment failed' }, { status: 500 });
   }
 }

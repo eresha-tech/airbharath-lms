@@ -1,4 +1,5 @@
 export type PurchaseEvidence = {
+  academyEntitlementPolicy?: import('@/lib/academy-entitlements/model').AcademyPolicy;
   version: 1; currency: 'INR'; listPaise: number; discountPaise: number; totalPaise: number;
   taxablePaise: number; taxPaise: number; taxRate: 18; taxInclusive: true;
   couponId: string | null; couponCode: string | null; couponType: string | null; couponValue: string | null;

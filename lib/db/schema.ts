@@ -416,7 +416,8 @@ export const lessonMaterialsRelations = relations(lessonMaterials, ({ one }) => 
   }),
 }));
 
-export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
+export const enrollmentsRelations = relations(enrollments, ({ one, many }) => ({
+  academySources: many(academyEntitlementSources),
   user: one(users, {
     fields: [enrollments.userId],
     references: [users.id],
@@ -1102,8 +1103,8 @@ export const workspacePublicationNotices=pgTable('workspace_publication_notices'
 
 // Phase 2.2: course money evidence is separate from membership billing.
 export const coursePaymentChecks=pgTable('course_payment_checks',{
- orderId:uuid('order_id').primaryKey().references(()=>orders.id,{onDelete:'restrict'}),scope:text('scope').notNull(),paymentId:text('payment_id').unique(),lastCheckedAt:timestamp('last_checked_at',{withTimezone:true}),nextCheckAt:timestamp('next_check_at',{withTimezone:true}).defaultNow().notNull(),issue:text('issue'),
-},t=>[index('course_checks_operations_idx').on(t.scope,t.issue,t.lastCheckedAt)]);
+ orderId:uuid('order_id').primaryKey().references(()=>orders.id,{onDelete:'restrict'}),scope:text('scope').notNull(),paymentId:text('payment_id').unique(),lastCheckedAt:timestamp('last_checked_at',{withTimezone:true}),nextCheckAt:timestamp('next_check_at',{withTimezone:true}).defaultNow().notNull(),issue:text('issue'),refundScanSkip:integer('refund_scan_skip').default(0).notNull(),
+},t=>[index('course_checks_operations_idx').on(t.scope,t.issue,t.lastCheckedAt),check('academy_refund_cursor_bounds',sql`${t.refundScanSkip} BETWEEN 0 AND 1000000`)]);
 export const creatorLedger=pgTable('creator_ledger',{
  id:uuid('id').defaultRandom().primaryKey(),creatorId:uuid('creator_id').notNull().references(()=>users.id,{onDelete:'restrict'}),orderId:uuid('order_id').notNull().references(()=>orders.id,{onDelete:'restrict'}),scope:text('scope').notNull(),sourceKey:text('source_key').notNull(),kind:text('kind').notNull(),grossPaise:integer('gross_paise').default(0).notNull(),taxPaise:integer('tax_paise').default(0).notNull(),feePaise:integer('fee_paise').default(0).notNull(),feeTaxPaise:integer('fee_tax_paise').default(0).notNull(),netPaise:integer('net_paise').notNull(),commissionPaise:integer('commission_paise').default(0).notNull(),evidence:jsonb('evidence').$type<Record<string,unknown>>().notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
 },t=>[unique('creator_ledger_source').on(t.orderId,t.sourceKey),index('creator_ledger_owner').on(t.creatorId,t.createdAt),check('creator_ledger_money',sql`${t.commissionPaise}=0 AND ${t.netPaise}=${t.grossPaise}-${t.taxPaise}-${t.feePaise}`)]);
@@ -1180,3 +1181,15 @@ export const creatorBankObservations = pgTable('creator_bank_observations', {
 export const creatorBankInbox = pgTable('creator_bank_inbox', {
  id:text('id').primaryKey(),scope:text('scope').notNull(),hash:text('hash').notNull(),providerId:text('provider_id').notNull(),requestId:uuid('request_id'),processedAt:timestamp('processed_at',{withTimezone:true}),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
 },t=>[index('creator_bank_inbox_pending').on(t.scope,t.createdAt).where(sql`${t.processedAt} IS NULL`)]);
+
+// Prospective Academy access only. Historical enrollments are never inferred into purchase sources.
+export const academyEntitlementSources = pgTable('academy_entitlement_sources', {
+ id:uuid('id').defaultRandom().primaryKey(),enrollmentId:uuid('enrollment_id').notNull().references(()=>enrollments.id,{onDelete:'restrict'}),userId:uuid('user_id').notNull().references(()=>users.id,{onDelete:'restrict'}),courseId:uuid('course_id').notNull().references(()=>courses.id,{onDelete:'restrict'}),
+ kind:text('kind').$type<'purchase'|'admin_grant'>().notNull(),orderId:uuid('order_id').references(()=>orders.id,{onDelete:'restrict'}).unique(),scope:text('scope'),providerPaymentId:text('provider_payment_id'),amountPaise:integer('amount_paise').default(0).notNull(),policy:text('policy').notNull(),
+ startsAt:timestamp('starts_at',{withTimezone:true}).notNull(),endsAt:timestamp('ends_at',{withTimezone:true}),ownsEnrollment:boolean('owns_enrollment').default(false).notNull(),actorId:uuid('actor_id').references(()=>users.id,{onDelete:'restrict'}),requestKey:uuid('request_key').unique(),commandHash:text('command_hash'),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[index('academy_source_owner_course').on(t.userId,t.courseId),index('academy_source_enrollment').on(t.enrollmentId),uniqueIndex('academy_source_one_aggregate_owner').on(t.enrollmentId).where(sql`${t.ownsEnrollment}`),check('academy_source_values',sql`${t.kind} IN ('purchase','admin_grant') AND ${t.policy} IN ('academy-prospective-refund-v1','legacy-capture-exempt-v1') AND (${t.endsAt} IS NULL OR ${t.endsAt}>${t.startsAt}) AND ((${t.kind}='purchase' AND ${t.orderId} IS NOT NULL AND ${t.scope} IS NOT NULL AND ${t.providerPaymentId} IS NOT NULL AND ${t.amountPaise}>0 AND ${t.actorId} IS NULL AND ${t.requestKey} IS NULL AND ${t.commandHash} IS NULL) OR (${t.kind}='admin_grant' AND ${t.policy}='academy-prospective-refund-v1' AND ${t.orderId} IS NULL AND ${t.scope} IS NULL AND ${t.providerPaymentId} IS NULL AND ${t.amountPaise}=0 AND ${t.actorId} IS NOT NULL AND ${t.requestKey} IS NOT NULL AND ${t.commandHash} ~ '^[a-f0-9]{64}$'))`)]);
+export const academyEntitlementEvents = pgTable('academy_entitlement_events', {
+ id:uuid('id').defaultRandom().primaryKey(),sourceId:uuid('source_id').notNull().references(()=>academyEntitlementSources.id,{onDelete:'restrict'}),kind:text('kind').notNull(),providerId:text('provider_id').notNull(),status:text('status').notNull(),amountPaise:integer('amount_paise').notNull(),observedAt:timestamp('observed_at',{withTimezone:true}).notNull(),evidenceHash:text('evidence_hash').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('academy_event_identity').on(t.sourceId,t.kind,t.providerId,t.status),index('academy_event_source_observed').on(t.sourceId,t.observedAt),check('academy_event_values',sql`${t.amountPaise}>0 AND ${t.evidenceHash} ~ '^[a-f0-9]{64}$' AND ((${t.kind}='refund_processed' AND ${t.status}='processed') OR (${t.kind}='full_refund' AND ${t.status}='processed') OR (${t.kind}='dispute' AND ${t.status} IN ('open','under_review','action_required','won','lost','closed')))`)]);
+export const academySourceRelations = relations(academyEntitlementSources, ({one,many})=>({enrollment:one(enrollments,{fields:[academyEntitlementSources.enrollmentId],references:[enrollments.id]}),events:many(academyEntitlementEvents)}));
+export const academyEventRelations = relations(academyEntitlementEvents, ({one})=>({source:one(academyEntitlementSources,{fields:[academyEntitlementEvents.sourceId],references:[academyEntitlementSources.id]})}));

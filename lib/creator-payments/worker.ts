@@ -10,6 +10,8 @@ import { recordDispute } from './ledger';
 import { courseRecoveryProvider, type RecoveryProvider } from './worker-provider';
 import { abortable } from '@/lib/async-budget';
 import {createFinancialWorkerDatabase} from '@/lib/workspace/payments/worker-database';
+import { reconcileAcademyRefunds } from '@/lib/academy-entitlements/refunds';
+import { isProspectiveAcademyOrder } from '@/lib/academy-entitlements/repository';
 
 type WorkerOptions={budgetMs?:number;batch?:number;signal?:AbortSignal};
 export async function runCourseFinanceWorker(database=db,injected?:RecoveryProvider,scope=requireCourseScope(),options:WorkerOptions={}) {
@@ -33,7 +35,7 @@ async function recover(database:typeof db,injected:RecoveryProvider|undefined,sc
  // Every injected or real GET is bounded. The shipping adapter also propagates
  // cancellation to HTTP and body reads; a late response cannot trigger settlement.
  const call=<T>(work:()=>Promise<T>)=>{signal.throwIfAborted();return abortable(work(),AbortSignal.any([signal,AbortSignal.timeout(6000)]));};
- const bounded:RecoveryProvider={orders:{create:async()=>{throw Error('recovery_is_read_only');},fetchPayments:id=>call(()=>provider.orders.fetchPayments(id))},payments:{fetch:id=>call(()=>provider.payments.fetch(id))},disputes:{fetch:id=>call(()=>provider.disputes.fetch(id)),all:q=>call(()=>provider.disputes.all(q))}};
+ const bounded:RecoveryProvider={orders:{create:async()=>{throw Error('recovery_is_read_only');},fetchPayments:id=>call(()=>provider.orders.fetchPayments(id))},payments:{fetch:id=>call(()=>provider.payments.fetch(id)),...(provider.payments.fetchRefunds?{fetchRefunds:(id:string,q:{count:number;skip:number})=>call(()=>provider.payments.fetchRefunds!(id,q))}:{})},disputes:{fetch:id=>call(()=>provider.disputes.fetch(id)),all:q=>call(()=>provider.disputes.all(q))}};
  async function settle(paymentId:string,disputeId?:string|null) {
   const payment=paymentFact(await bounded.payments.fetch(paymentId));signal.throwIfAborted();
   const order=await database.query.orders.findFirst({where:eq(orders.razorpayOrderId,payment.order_id)});
@@ -45,12 +47,14 @@ async function recover(database:typeof db,injected:RecoveryProvider|undefined,sc
    await database.update(checks).set({scope}).where(and(eq(checks.orderId,order.id),eq(checks.scope,'unbound')));
   }else if(check&&check.scope!==scope)throw Error('provider_scope_mismatch');
   signal.throwIfAborted();await commerceService(database,bounded,scope).verify(order.userId,order.razorpayOrderId,payment.id,true);
+  if(isProspectiveAcademyOrder(order)){signal.throwIfAborted();await reconcileAcademyRefunds(database,payment,scope,bounded.payments.fetchRefunds);}
   if(disputeId) {
-   const dispute=await bounded.disputes.fetch(disputeId);signal.throwIfAborted();
+   const observedAt=new Date(),dispute=await bounded.disputes.fetch(disputeId);signal.throwIfAborted();
+   if(dispute.id!==disputeId)throw Error('dispute_identity_mismatch');
    await database.transaction(async tx=>{
     if(order.creatorId)await tx.select().from(users).where(eq(users.id,order.creatorId)).for('update');
     const [locked]=await tx.select().from(orders).where(eq(orders.id,order.id)).for('update');
-    await recordDispute(tx,locked,dispute,scope);
+    await recordDispute(tx,locked,dispute,scope,observedAt);
    });
   }
  }

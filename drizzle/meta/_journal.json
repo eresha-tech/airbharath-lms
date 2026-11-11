@@ -316,6 +316,13 @@
       "when": 1794286384465,
       "tag": "0044_workspace_launch_runtime_remediation",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1794332699131,
+      "tag": "0045_academy_prospective_entitlements",
+      "breakpoints": true
     }
   ]
 }

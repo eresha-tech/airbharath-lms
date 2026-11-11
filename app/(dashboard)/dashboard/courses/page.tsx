@@ -59,8 +59,6 @@ export default async function MyCoursesDashboardPage() {
     userProgress.filter((p: any) => p.isCompleted).map((p: any) => p.lessonId)
   );
 
-  const now = new Date();
-
   // 4. Map courses with precise real progress, certificates, and bundle entitlement state
   const coursesData: EnrolledCourseData[] = [];
 
@@ -77,19 +75,12 @@ export default async function MyCoursesDashboardPage() {
       : undefined;
     const bundleInfo = accessSummary.courseToBundleMap[course.id];
 
-    let isExpired = false;
+    const isExpired = false; // Only courses in the authoritative effective-access summary reach this view.
     let effectiveExpiresAt: Date | string | null = null;
 
     if (directEnrollment) {
-      isExpired =
-        directEnrollment.status === "expired" ||
-        (directEnrollment.expiresAt !== null && new Date(directEnrollment.expiresAt) <= now);
-      effectiveExpiresAt = directEnrollment.expiresAt;
+      effectiveExpiresAt = accessSummary.directAccessExpiry && course.id in accessSummary.directAccessExpiry ? accessSummary.directAccessExpiry[course.id] : directEnrollment.expiresAt;
     } else if (bundleInfo) {
-      const parentEnrollment = userEnrollments.find((e: any) => e.courseId === bundleInfo.bundleId);
-      isExpired =
-        parentEnrollment?.status === "expired" ||
-        (parentEnrollment?.expiresAt !== null && parentEnrollment?.expiresAt !== undefined && new Date(parentEnrollment.expiresAt) <= now);
       effectiveExpiresAt = bundleInfo.expiresAt || null;
     }
 
