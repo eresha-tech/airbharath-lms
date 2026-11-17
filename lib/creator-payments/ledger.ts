@@ -1,3 +1,4 @@
+import {recordCommercialAllocation} from '@/lib/workspace/sponsorship/ledger';
 import 'server-only';
 import { and,eq,sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
@@ -35,6 +36,7 @@ export async function recordCapture(tx:Tx,order:typeof orders.$inferSelect,raw:u
  }
  if(p.amount_refunded===p.amount&&p.amount>0)await tx.update(orders).set({status:'refunded'}).where(eq(orders.id,order.id));
  await tx.insert(checks).values({orderId:order.id,scope,paymentId:p.id,lastCheckedAt:new Date(),nextCheckAt:new Date(Date.now()+86400000),issue}).onConflictDoUpdate({target:checks.orderId,set:{paymentId:p.id,lastCheckedAt:new Date(),nextCheckAt:new Date(Date.now()+86400000),issue}});
+ await recordCommercialAllocation(tx,order,scope);
 }
 export async function recordDispute(tx:Tx,order:typeof orders.$inferSelect,raw:unknown,scope:string,observedAt=new Date()) {
  const d=raw as {id:string;payment_id:string;amount:number;currency:string;status:string};
@@ -52,6 +54,7 @@ export async function recordDispute(tx:Tx,order:typeof orders.$inferSelect,raw:u
  const refunded=-refunds.reduce((s,r)=>s+r.grossPaise,0);
  if(refunded&&target>0)await tx.update(checks).set({issue:'refund_dispute_overlap_review'}).where(eq(checks.orderId,order.id));
  else await tx.update(checks).set({issue:null}).where(and(eq(checks.orderId,order.id),sql`${checks.issue} in ('dispute_review','refund_dispute_overlap_review')`));
+ await recordCommercialAllocation(tx,order,scope);
  // Payment refresh alone cannot remove a still-active dispute from the ledger.
 }
 export async function ledgerBalance(tx:Tx,creatorId:string,scope:string,before?:Date) {

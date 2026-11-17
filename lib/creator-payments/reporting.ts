@@ -8,6 +8,8 @@ import { dueBefore, UUID } from './model';
 import type { FinanceFilters } from './presentation';
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type Purchase = {
+    commercialArrangement?: 'standard_0'|'sponsored_20';
+    commission?: number;
     id: string;
     reference: string;
     title: string;
@@ -86,8 +88,9 @@ const purchaseCTE = (scope: string) => sql `with purchases as (
  case when bool_or(l.kind='fee') and c.issue is distinct from 'fee_evidence_missing' then sum(l.fee_tax_paise)::bigint end as "feeTax",
  coalesce(sum(l.gross_paise) filter(where l.kind in ('refund','dispute','adjustment')),0)::bigint as adjustments,
  coalesce(sum(l.net_paise),0)::bigint as net,
- case when c.issue is not null or c.last_checked_at is null or c.last_checked_at<now()-interval '24 hours' or c.scope<>${scope} or not coalesce(bool_or(l.kind='fee'),false) then 'review' else 'reconciled' end as status,
- case when bool_or(l.kind='dispute') then 'dispute' when bool_or(l.kind='refund') then 'refund' when bool_or(l.kind='adjustment') then 'adjustment' else 'sale' end as kind,c.issue,
+ coalesce(o.purchase_evidence->'commercial'->>'arrangement','standard_0') as "commercialArrangement",coalesce(sum(l.commission_paise),0)::bigint as commission,
+ case when o.purchase_evidence->'commercial'->>'arrangement'='sponsored_20' or c.issue is not null or c.last_checked_at is null or c.last_checked_at<now()-interval '24 hours' or c.scope<>${scope} or not coalesce(bool_or(l.kind='fee'),false) then 'review' else 'reconciled' end as status,
+ case when bool_or(l.kind='dispute') then 'dispute' when bool_or(l.kind='refund') then 'refund' when bool_or(l.kind='adjustment') then 'adjustment' else 'sale' end as kind,coalesce(c.issue,case when o.purchase_evidence->'commercial'->>'arrangement'='sponsored_20' then 'sponsored_accounting_approval_pending' end) as issue,
  coalesce(jsonb_agg(jsonb_build_object('kind',l.kind,'gross',l.gross_paise,'tax',l.tax_paise,'fee',l.fee_paise,'net',l.net_paise,'createdAt',l.created_at) order by l.created_at,l.id) filter(where l.id is not null),'[]'::jsonb) as records
  from orders o left join creator_ledger l on l.order_id=o.id and l.scope=${scope}
  left join course_payment_checks c on c.order_id=o.id

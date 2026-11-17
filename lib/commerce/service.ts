@@ -1,3 +1,5 @@
+import {sponsorshipSyntheticEnabled} from '@/lib/workspace/sponsorship/config';
+import {freezeCommercialQuote} from '@/lib/workspace/sponsorship/commerce';
 import 'server-only';
 import { randomUUID } from 'node:crypto';
 import { and, desc, eq, sql } from 'drizzle-orm';
@@ -45,7 +47,8 @@ export function commerceService(database=db, provider:CommerceProvider=razorpay,
    }
    if(initial.evidence.totalPaise<=0) throw new CommerceError(409,'This checkout requires a positive payment amount. Contact support for free enrollment.');
    const academyPolicy = initial.course.workspaceProjectId ? null : prospectiveAcademyPolicy();
-   const purchaseEvidence = { ...initial.evidence, ...(academyPolicy ? { academyEntitlementPolicy: academyPolicy } : {}) };
+   const baseEvidence = { ...initial.evidence, ...(academyPolicy ? { academyEntitlementPolicy: academyPolicy } : {}) };
+   const purchaseEvidence=initial.evidence.creatorId&&sponsorshipSyntheticEnabled()?await database.transaction(tx=>freezeCommercialQuote(tx,actor,courseId,baseEvidence,scope)):baseEvidence;
    // No contact details need to leave AirBharath in provider order notes.
    const order=await provider.orders.create({amount:initial.evidence.totalPaise,currency:'INR',receipt:`lms_${randomUUID().replaceAll('-','')}`,notes:{courseId}});
    if(!order.id || Number(order.amount)!==initial.evidence.totalPaise || order.currency!=='INR') throw new CommerceError(503,'Payment order could not be confirmed.');
@@ -60,7 +63,7 @@ export function commerceService(database=db, provider:CommerceProvider=razorpay,
     if(effectiveEnrollment(existing).enrollment) throw new CommerceError(409,'You already have course access.');
     const prior=await tx.query.orders.findFirst({where:and(eq(orders.userId,actor),eq(orders.courseId,courseId),eq(orders.status,'pending')),orderBy:[desc(orders.createdAt),desc(orders.id)]});
     if(prior) return {id:prior.razorpayOrderId,amount:moneyPaise(prior.amount),currency:'INR',discountedAmount:Number(prior.amount),resumed:true};
-    const [saved]=await tx.insert(orders).values({userId:actor,courseId,razorpayOrderId:order.id,amount:(initial.evidence.totalPaise/100).toFixed(2),status:'pending',purchaseEvidence,creatorId:initial.evidence.creatorId,workspacePriceId:initial.evidence.priceId}).returning();
+    const [saved]=await tx.insert(orders).values({userId:actor,courseId,razorpayOrderId:order.id,amount:(initial.evidence.totalPaise/100).toFixed(2),status:'pending',purchaseEvidence,creatorCommercialQuoteId:purchaseEvidence.commercial?.quoteId,creatorId:initial.evidence.creatorId,workspacePriceId:initial.evidence.priceId}).returning();
     await tx.insert(coursePaymentChecks).values({orderId:saved.id,scope});
     return {...order,discountedAmount:initial.evidence.totalPaise/100,resumed:false};
    });

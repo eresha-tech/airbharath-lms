@@ -323,6 +323,13 @@
       "when": 1794332699131,
       "tag": "0045_academy_prospective_entitlements",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1794911899568,
+      "tag": "0046_creator_sponsored_revenue_sharing",
+      "breakpoints": true
     }
   ]
 }

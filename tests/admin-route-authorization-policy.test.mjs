@@ -13,7 +13,7 @@ function routeFiles(directory) {
 
 test('privileged admin route handlers use persisted-role authorization', () => {
   const files = routeFiles(adminRoot);
-  assert.equal(files.length, 50);
+  assert.equal(files.length, 51);
 
   const operationsGuard = readFileSync(join(process.cwd(), 'lib/workspace/operations/http.ts'), 'utf8');
   assert.match(operationsGuard, /admin\?await getAuthorizedAdminSession\(\):await getWorkspaceUser\(\)/);
@@ -27,6 +27,14 @@ test('privileged admin route handlers use persisted-role authorization', () => {
     const authorizationCount = source.match(/await getAuthorizedAdminSession\(\)/g)?.length ?? 0;
 
     assert.doesNotMatch(source, /getSession\(|session\.role\s*[!=]==?\s*["']admin["']/);
+    if (route === 'workspace/sponsorships/route.ts') {
+      assert.match(source, /export const GET=\(request:Request\)=>sponsorshipHttp\(request,true\)/);
+      assert.match(source, /export const POST=\(request:Request\)=>sponsorshipHttp\(request,true\)/);
+      const commercialGuard=readFileSync(join(process.cwd(),'lib/workspace/sponsorship/http.ts'),'utf8');
+      assert.match(commercialGuard,/admin\?await getAuthorizedAdminSession\(\):await getSession\(\)/);
+      assert.match(commercialGuard,/if\(!actor\)return privateJson/);
+      continue;
+    }
     if (route === 'workspace/support/[id]/route.ts') {
       assert.match(source, /export const GET=async\(r:Request,c:Context\)=>supportHttp\(r,\(await c.params\).id,true\)/);
       assert.match(source, /export const POST=async\(r:Request,c:Context\)=>supportHttp\(r,\(await c.params\).id,true\)/);
