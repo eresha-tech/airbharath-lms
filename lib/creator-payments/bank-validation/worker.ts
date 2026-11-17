@@ -1,3 +1,4 @@
+import { verifyPayoutTestDatabase } from '../razorpayx/test-isolation';
 import 'server-only';
 import { randomUUID } from 'node:crypto';
 import { and, eq, sql } from 'drizzle-orm';
@@ -10,6 +11,7 @@ import { bankValidationConfiguration, requireBankValidation } from './config';
 import { validationFact } from './model';
 export async function runBankValidationWorker(database=db,c=bankValidationConfiguration(),provider:BankValidationAdapter=bankValidationAdapter(c),limit=5) {
  requireBankValidation(c);
+ await verifyPayoutTestDatabase(database,c.payout);
  if(!Number.isInteger(limit)||limit<1||limit>10)throw Error('validation_limit');
  const result={processed:0,review:0};const deadline=Date.now()+45000;
  const hints=await database.select().from(inbox).where(and(eq(inbox.scope,c.payout.scope),sql`${inbox.processedAt} is null`)).limit(100);

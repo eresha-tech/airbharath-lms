@@ -1,3 +1,4 @@
+import { verifyPayoutTestDatabase } from './test-isolation';
 import 'server-only';
 import { createHmac, createHash, timingSafeEqual } from 'node:crypto';
 import { eq } from 'drizzle-orm';
@@ -7,6 +8,7 @@ import { CommerceError } from '@/lib/commerce/model';
 import { payoutConfiguration, type PayoutConfig } from './config';
 import { providerId } from './model';
 export async function receivePayoutWebhook(request: Request, database = db, config: PayoutConfig = payoutConfiguration()) {
+    await verifyPayoutTestDatabase(database, config);
     const signature = request.headers.get('x-razorpay-signature') ?? '';
     if (!/^[a-f0-9]{64}$/i.test(signature))
         throw new CommerceError(400, 'Invalid payout webhook signature.');

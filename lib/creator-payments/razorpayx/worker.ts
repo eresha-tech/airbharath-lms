@@ -1,3 +1,4 @@
+import { verifyPayoutTestDatabase } from './test-isolation';
 import {requireVerifiedBank,payoutBankScope} from '../bank-validation/service';
 import 'server-only';
 import { randomUUID } from 'node:crypto';
@@ -18,6 +19,7 @@ function intent(j: Job, p: typeof payouts.$inferSelect, c: PayoutConfig): Payout
     throw new CommerceError(409, 'Payout request is not prepared.'); const r = decryptFinanceData(j.requestEncrypted, 'razorpayx:' + p.id) as PayoutRequest; if (hash(r) !== j.requestHash || r.amount !== p.amountPaise || r.reference_id !== p.id || r.account_number !== c.fundingAccount || r.fund_account_id !== j.fundAccountId || r.currency !== 'INR' || r.mode !== j.transferMode || r.purpose !== 'payout' || r.queue_if_low_balance !== true || r.narration !== 'AirBharath Creator')
     throw new CommerceError(409, 'Immutable payout request mismatch.'); return r; }
 export async function runPayoutWorker(database = db, config = payoutConfiguration(), provider: PayoutAdapter = razorpayXPayoutAdapter(config), limit = 10) {
+    await verifyPayoutTestDatabase(database, config);
     const result = { processed: 0, failed: 0, inbox: 0 }, deadline = Date.now() + 45000;
     // verifyFund makes two HTTP calls; reserve enough time for both 6-second timeouts.
     async function call<T>(operation: () => Promise<T>) {

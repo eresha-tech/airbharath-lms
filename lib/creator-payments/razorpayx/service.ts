@@ -1,3 +1,4 @@
+import { verifyPayoutTestDatabase } from './test-isolation';
 import {requireVerifiedBank,payoutBankScope} from '../bank-validation/service';
 import 'server-only';
 import { and, eq, sql } from 'drizzle-orm';
@@ -11,6 +12,7 @@ export type PayoutTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export async function preparePayoutJob(tx: PayoutTx, payoutId: string, collectionScope: string, config = requirePayoutExecution()) {
     if (`${config.mode}:${config.merchantId}` !== collectionScope)
         throw new CommerceError(409, 'Payout and collection merchant accounts do not match.');
+    await verifyPayoutTestDatabase(tx, config);
     await tx.insert(jobs).values({ payoutId, scope: config.scope, fundingFingerprint: config.fingerprint, transferMode: config.transferMode });
 }
 export function assertLiveOperation(config: PayoutConfig, payoutId: string, amount: number, env: Record<string, string | undefined> = process.env) {
@@ -31,6 +33,7 @@ export async function payoutControl(actor: string, command: {
     evidence?: string;
     providerPayoutId?: string;
 }, database = db, config = payoutConfiguration()) {
+    await verifyPayoutTestDatabase(database, config);
     if (!UUID.test(command.requestKey) || !UUID.test(command.creatorId) || !command.entityId || !UUID.test(command.entityId) || !command.evidence || command.evidence.trim().length < 6 || command.evidence.length > 2000)
         throw new CommerceError(400, 'Provide the payout and an independent review reference.');
     const evidence = command.evidence;

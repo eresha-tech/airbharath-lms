@@ -1,3 +1,4 @@
+import { requirePayoutTestDatabase } from './test-isolation';
 import 'server-only';
 import { CommerceError } from '@/lib/commerce/model';
 import { type PayoutConfig, requirePayoutExecution } from './config';
@@ -12,6 +13,7 @@ export class PayoutProviderError extends Error {
 }
 export function razorpayXRequest(config: PayoutConfig, transport: typeof fetch = fetch) {
     return async function request(path: string, body?: unknown, idempotency?: string) {
+        requirePayoutTestDatabase(config);
         const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 6000);
         try {
             const response = await transport('https://api.razorpay.com/v1/' + path, { method: body ? 'POST' : 'GET', headers: { Authorization: 'Basic ' + Buffer.from(config.keyId + ':' + config.secret).toString('base64'), 'Content-Type': 'application/json', ...(idempotency ? { 'X-Payout-Idempotency': idempotency } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}), signal: controller.signal, redirect: 'error', cache: 'no-store' });
@@ -53,7 +55,7 @@ export function razorpayXPayoutAdapter(config: PayoutConfig, transport: typeof f
         async fund(contactId: string, bank: Bank) { requirePayoutExecution(config); const f = await request('fund_accounts', { contact_id: contactId, account_type: 'bank_account', bank_account: { name: bank.holder, ifsc: bank.ifsc, account_number: bank.account } }); validateFund(f, contactId, bank); return providerId(f.id, 'fa'); },
         async verifyFund(id: string, contactId: string, bank: Bank) { providerId(id, 'fa'); const f = await request('fund_accounts/' + id); validateFund(f, contactId, bank); const c = await request('contacts/' + providerId(contactId, 'cont')); if (c.active !== true || c.id !== contactId)
             throw new CommerceError(409, 'Provider contact was deactivated.'); },
-        async create(body: PayoutRequest, key: string) { requirePayoutExecution(config); return request('payouts', body, key); },
+        async create(body: PayoutRequest, key: string) { requirePayoutExecution(config); if (body.account_number !== config.fundingAccount) throw new CommerceError(409, 'Payout funding account mismatch.'); return request('payouts', body, key); },
         async fetch(id: string) { return request('payouts/' + providerId(id, 'pout')); },
         async list(skip: number) { return request('payouts?' + new URLSearchParams({ account_number: config.fundingAccount, count: '100', skip: String(skip) })); },
         async inspect() { await request('contacts?count=1'); await request('fund_accounts?count=1'); await request('payouts?' + new URLSearchParams({ account_number: config.fundingAccount, count: '1' })); return { readAccess: true, creationPermissionsVerified: false, fundingBalanceVerified: false, webhookPermissionsVerified: false }; },

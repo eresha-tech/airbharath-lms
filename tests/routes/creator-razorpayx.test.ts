@@ -1,27 +1,30 @@
-import {beforeEach,expect,it,vi} from 'vitest';
+import { payoutTestFixture, testHash } from '../fixtures/payout-test-scope';
+import { verifyPayoutTestDatabase } from '@/lib/creator-payments/razorpayx/test-isolation';
+import {afterAll,beforeEach,expect,it,vi} from 'vitest';
 import {randomUUID} from 'node:crypto';
 import {payoutConfiguration,payoutReadiness,requirePayoutExecution} from '@/lib/creator-payments/razorpayx/config';
 import {razorpayXPayoutAdapter,PayoutProviderError} from '@/lib/creator-payments/razorpayx/adapter';
 import {payoutFact,matchesIntent,payoutState,mayObserve,type PayoutRequest} from '@/lib/creator-payments/razorpayx/model';
 import {assertLiveOperation} from '@/lib/creator-payments/razorpayx/service';
-const env={DATABASE_ENV:'test',RAZORPAYX_KEY_ID:'rzp_test_SYNTHETIC',RAZORPAYX_KEY_SECRET:'synthetic-only-secret',RAZORPAYX_MERCHANT_ACCOUNT_ID:'acc_synthetic',RAZORPAYX_FUNDING_ACCOUNT_NUMBER:'000000123456',RAZORPAYX_WEBHOOK_SECRET:'synthetic-webhook-secret-32-characters',RAZORPAYX_TRANSFER_MODE:'NEFT',CREATOR_RAZORPAYX_ENABLED:'true',RAZORPAYX_TEST_AUTHORIZED:'true'};
+const values={DATABASE_ENV:'test',RAZORPAYX_KEY_ID:'rzp_test_SYNTHETIC',RAZORPAYX_KEY_SECRET:'synthetic-only-secret',RAZORPAYX_MERCHANT_ACCOUNT_ID:'acc_synthetic',RAZORPAYX_FUNDING_ACCOUNT_NUMBER:'000000123456',RAZORPAYX_WEBHOOK_SECRET:'synthetic-webhook-secret-32-characters',RAZORPAYX_TRANSFER_MODE:'NEFT',CREATOR_RAZORPAYX_ENABLED:'true',RAZORPAYX_TEST_AUTHORIZED:'true'};
+const fixture=payoutTestFixture(values),env=fixture.env;afterAll(fixture.dispose);
 const bank={holder:'SYNTHETIC BANK HOLDER',account:'000000654321',ifsc:'TEST0000001'},payee='00000000-0000-4000-8000-000000000001',c=payoutConfiguration(env);
 const intent:PayoutRequest={account_number:c.fundingAccount,fund_account_id:'fa_SYNTHETIC1',amount:1000,currency:'INR',mode:'NEFT',purpose:'payout',queue_if_low_balance:true,reference_id:payee,narration:'AirBharath Creator'};
 const entity={id:'pout_SYNTHETIC1',entity:'payout',currency:'INR',amount:1000,fund_account_id:'fa_SYNTHETIC1',mode:'NEFT',reference_id:payee,status:'processed',utr:'SYNTHETICUTR1',fees:5,tax:1};
-beforeEach(()=>vi.restoreAllMocks());
+beforeEach(async()=>{vi.restoreAllMocks();fixture.write();await verifyPayoutTestDatabase(fixture.database,c);});
 it('requires separate complete payout configuration and preserves merchant/funding scope across key rotation',()=>{
  expect(payoutReadiness({}).configured).toBe(false);
  for(const key of ['RAZORPAYX_KEY_ID','RAZORPAYX_KEY_SECRET','RAZORPAYX_MERCHANT_ACCOUNT_ID','RAZORPAYX_FUNDING_ACCOUNT_NUMBER','RAZORPAYX_WEBHOOK_SECRET','RAZORPAYX_TRANSFER_MODE'])expect(()=>payoutConfiguration({...env,[key]:undefined})).toThrow();
- expect(payoutConfiguration({...env,RAZORPAYX_KEY_ID:'rzp_test_ROTATED'}).scope).toBe(c.scope);
- expect(payoutConfiguration({...env,RAZORPAYX_FUNDING_ACCOUNT_NUMBER:'000000999999'}).scope).not.toBe(c.scope);
+ fixture.write({credentialHash:testHash('rzp_test_ROTATED:'+env.RAZORPAYX_KEY_SECRET)});expect(payoutConfiguration({...env,RAZORPAYX_KEY_ID:'rzp_test_ROTATED'}).scope).toBe(c.scope);fixture.write();
+ expect(()=>payoutConfiguration({...env,RAZORPAYX_FUNDING_ACCOUNT_NUMBER:'000000999999'})).toThrow();
  expect(requirePayoutExecution(c)).toBe(c);
- expect(()=>requirePayoutExecution(payoutConfiguration({...env,RAZORPAYX_TEST_AUTHORIZED:'false'}))).toThrow();
+ expect(()=>payoutConfiguration({...env,RAZORPAYX_TEST_AUTHORIZED:'false'})).toThrow();
  expect(JSON.stringify(payoutReadiness(env))).not.toContain(env.RAZORPAYX_KEY_SECRET);
  expect(payoutReadiness(env)).toMatchObject({permissionsVerified:false,fundingVerified:false,webhookDeliveryVerified:false});
 });
 it('rejects live keys outside production and requires separately restricted founder pilot or rollout authorization',()=>{
  expect(()=>payoutConfiguration({...env,RAZORPAYX_KEY_ID:'rzp_live_SYNTHETIC'})).toThrow();
- const live=payoutConfiguration({...env,DATABASE_ENV:'production',NODE_ENV:'production',RAZORPAYX_KEY_ID:'rzp_live_SYNTHETIC',RAZORPAYX_LIVE_EXECUTION_AUTHORIZED:'true',RAZORPAYX_LIVE_PERMISSION_REVIEWED:'true'});
+ const live=payoutConfiguration({...env,DATABASE_ENV:'production',NODE_ENV:'production',RAZORPAYX_TEST_AUTHORIZED:undefined,RAZORPAYX_TEST_SCOPE_FILE:undefined,RAZORPAYX_KEY_ID:'rzp_live_SYNTHETIC',RAZORPAYX_LIVE_EXECUTION_AUTHORIZED:'true',RAZORPAYX_LIVE_PERMISSION_REVIEWED:'true'});
  expect(()=>assertLiveOperation(live,payee,100,{})).toThrow();
  const pilot={RAZORPAYX_LIVE_PILOT_PAYOUT_ID:payee,RAZORPAYX_LIVE_PILOT_MAX_PAISE:'100'};
  expect(()=>assertLiveOperation(live,payee,100,pilot)).not.toThrow();
@@ -44,7 +47,8 @@ it('uses documented HTTPS Basic authentication, immutable JSON and payout idempo
  await adapter.create(intent,key);expect(transport.mock.calls[1][1]?.body).toBe(init?.body);
 });
 it('does not call a write endpoint while execution is disabled; read reconciliation remains available',async()=>{
- const transport=vi.fn<typeof fetch>().mockResolvedValue(Response.json(entity)),adapter=razorpayXPayoutAdapter({...c,enabled:false},transport);
+ const disabled=payoutConfiguration({...env,CREATOR_RAZORPAYX_ENABLED:'false'});await verifyPayoutTestDatabase(fixture.database,disabled);
+ const transport=vi.fn<typeof fetch>().mockResolvedValue(Response.json(entity)),adapter=razorpayXPayoutAdapter(disabled,transport);
  await expect(adapter.create(intent,randomUUID())).rejects.toThrow();await expect(adapter.contact(payee)).rejects.toThrow();await expect(adapter.fund('cont_SYNTHETIC',bank)).rejects.toThrow();expect(transport).not.toHaveBeenCalled();await adapter.fetch(entity.id);expect(transport).toHaveBeenCalledOnce();
 });
 it('uses deterministic contact and bank creation contracts and refuses inactive or different accounts',async()=>{

@@ -1,3 +1,4 @@
+import { verifyPayoutTestDatabase } from '../razorpayx/test-isolation';
 import 'server-only';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
@@ -7,6 +8,7 @@ import { type PayoutTx } from '../razorpayx/service';
 import { bankValidationConfiguration, requireBankValidation, type BankValidationConfig } from './config';
 export async function requestBankValidation(tx:PayoutTx,actor:string,payeeId:string,requestKey:string,c=bankValidationConfiguration()) {
  requireBankValidation(c);
+ await verifyPayoutTestDatabase(tx,c.payout);
  const [bank]=await tx.select().from(payees).where(eq(payees.id,payeeId));
  const [admin]=await tx.select({role:users.role}).from(users).where(eq(users.id,actor)).for('share');
  if(!bank||actor===bank.creatorId||admin?.role!=='admin')throw new CommerceError(403,'Independent persisted Admin required.');

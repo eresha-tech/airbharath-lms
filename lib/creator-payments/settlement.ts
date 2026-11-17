@@ -9,6 +9,7 @@ import { CommerceError } from '@/lib/commerce/model';
 import { encryptPayee,decryptPayee } from './crypto';
 import { SETTLEMENT_POLICY,dueBefore,requiredText,UUID,paise } from './model';
 import { requireCourseScope } from './config';
+import {verifyPayoutTestDatabase} from './razorpayx/test-isolation';
 import {preparePayoutJob} from './razorpayx/service';
 import {requirePayoutExecution} from './razorpayx/config';
 import {creatorPayoutJobs,creatorBankValidations} from '@/lib/db/schema';
@@ -104,6 +105,7 @@ export function settlementService(database=db,scope= requireCourseScope(),execut
     }else if(command.action==='approve_payout') {
      if(process.env.CREATOR_BANK_SETTLEMENT_ENABLED!=='true')throw new CommerceError(503,'Bank settlement awaits launch approval and configuration.');
      const providerConfig=execution==='razorpayx'?requirePayoutExecution():null;
+     if(providerConfig)await verifyPayoutTestDatabase(tx,providerConfig);
      if(providerConfig&&Number(command.amountPaise)<100)throw new CommerceError(400,'RazorpayX requires a minimum payout of ₹1.');
      paise(command.amountPaise);if(!command.amountPaise)throw new CommerceError(400,'Enter a positive payout amount.');
      const payee=await tx.query.creatorPayees.findFirst({where:and(eq(payees.id,id),eq(payees.creatorId,command.creatorId))});
