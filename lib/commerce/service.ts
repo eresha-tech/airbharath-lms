@@ -1,4 +1,4 @@
-import {sponsorshipSyntheticEnabled} from '@/lib/workspace/sponsorship/config';
+import {sponsorshipConfigured} from '@/lib/workspace/sponsorship/config';
 import {freezeCommercialQuote} from '@/lib/workspace/sponsorship/commerce';
 import 'server-only';
 import { randomUUID } from 'node:crypto';
@@ -48,7 +48,8 @@ export function commerceService(database=db, provider:CommerceProvider=razorpay,
    if(initial.evidence.totalPaise<=0) throw new CommerceError(409,'This checkout requires a positive payment amount. Contact support for free enrollment.');
    const academyPolicy = initial.course.workspaceProjectId ? null : prospectiveAcademyPolicy();
    const baseEvidence = { ...initial.evidence, ...(academyPolicy ? { academyEntitlementPolicy: academyPolicy } : {}) };
-   const purchaseEvidence=initial.evidence.creatorId&&sponsorshipSyntheticEnabled()?await database.transaction(tx=>freezeCommercialQuote(tx,actor,courseId,baseEvidence,scope)):baseEvidence;
+   const commercialHistory=initial.evidence.creatorId?(await database.execute(sql`select 1 from creator_commercial_events where creator_id=${initial.evidence.creatorId}::uuid and action='accepted' limit 1`)).length>0:false;
+   const purchaseEvidence=initial.evidence.creatorId&&(sponsorshipConfigured()||commercialHistory)?await database.transaction(tx=>freezeCommercialQuote(tx,actor,courseId,baseEvidence,scope)):baseEvidence;
    // No contact details need to leave AirBharath in provider order notes.
    const order=await provider.orders.create({amount:initial.evidence.totalPaise,currency:'INR',receipt:`lms_${randomUUID().replaceAll('-','')}`,notes:{courseId}});
    if(!order.id || Number(order.amount)!==initial.evidence.totalPaise || order.currency!=='INR') throw new CommerceError(503,'Payment order could not be confirmed.');

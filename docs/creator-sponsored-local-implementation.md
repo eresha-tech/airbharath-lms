@@ -1,37 +1,33 @@
-# Private sponsored Creator implementation — local verification only
+# Private sponsored Creator — deferred settlement remediation
 
-Baseline: e015c261b1017a11be51ea7f8fe225f09872be54. Design reference: AB-SC-SIGNOFF-1.0.0. Public launch remains NO-GO.
+Local baseline: ed48916f12cb444e1f532fd8546af58d968def9b. The private program remains part of the coordinated release candidate; public activation is not authorized. Academy prospective activation stays OFF.
 
-## Activation boundary
+## Additive migration strategy
 
-Real offer issuance, acceptance and sponsored financial activation are unavailable. The review addendum is not registered as a canonical policy. Do not enable this feature for real Creators by setting an environment flag.
+Preserve 0046 and every historical snapshot. Draft 0047 supersedes its creator-wide payout stops. It adds one immutable settlement cutover, immutable payout source allocations and a closed Live-release review store. There is no order, entitlement, commercial or financial-history backfill.
 
-The only executable path requires a development/test runtime, DATABASE_ENV=test, CREATOR_SPONSORSHIP_SYNTHETIC=true, the existing independent RazorpayX Test scope proof and actual database-identity verification, plus an immutable, expiring commercial rollout record matching that owned loopback database. Production and hosted runtimes fail closed. Migration 0046 permits only test-scoped commercial evidence. No provider split or new payout integration exists.
+Newly recorded purchase earnings have independent source availability. Historical 0% earnings and pre-cutover payouts remain an explicitly unattributed aggregate pool, with no invented purchase ownership. The first recorded sale ledger timestamp identifies the cutover; a previously pending order captured afterward becomes a new recorded obligation. Existing 0% reservations/discharges debit only their original legacy pool. Sponsored negative amounts never reduce unrelated 0% sources.
 
-## Implemented local flows
+New payout approval reserves immutable 0% source items atomically under the existing Creator lock and independent approval. The payout amount must equal its items. Financial fingerprints and current source eligibility are checked before first dispatch. Changed evidence requires cancellation and independent reapproval before a new, unsubmitted operation. Already-submitted/uncertain operations retain the existing identity, idempotency and authoritative reconciliation rules.
 
-The existing private Admin access-grant screen has fixed 0% and 80/20 offers, 3/6/12-month terms and a separate second Admin approval. Sealed offers expire exactly 14 elapsed days after approval. The Creator membership page shows private offers, an unchecked acknowledgment, acceptance/rejection and history. Acceptance and the existing complimentary grant commit atomically. Conflicting paid or complimentary time is rejected rather than shortened.
+Sponsored amounts cannot be selected as payout items. This applies in Test and Live scope regardless of feature flags. Existing legacy unsubmitted payouts remain eligible under their original 0% aggregate obligations, rather than being blocked merely because a sponsored order later exists. Historical payouts keep their provenance; no allocation is guessed or erased.
 
-Editing entitlement and the commercial agreement are independent. Expiry alone never changes the commercial share. Verified paid fulfillment records a permanent prospective 0% replacement; subsequent expiry or refund does not undo that event. An explicit accepted, independently approved 0% replacement preserves remaining grant time. Material 80/20-to-80/20 replacement is not implemented; withdraw an unaccepted offer and issue a newly approved one. Replacing an already accepted agreement with another 80/20 agreement remains unavailable.
+## Financial evidence and correction
 
-Commercial checkout quotes freeze for 15 minutes before provider-order creation. The saved order binds learner/course/Creator, scope, quote, agreement, effective event, legal hash and calculation version. Existing pending orders retain their frozen terms. Legacy orders/grants are not backfilled.
+The accepted frozen 0%/80%-20% order evidence, integer-paise rounding, paired commission ledger, refunds/disputes and permanent paid-plan conversion remain. Full refund reverses commission. Source-specific paid/reserved amounts, unpaid balances and corrections are distinguishable. A correction is not an established legal debt and grants no bank-debit or future-earnings-offset authority. Other valid sources are assessed independently.
 
-Synthetic financial facts retain actual fee evidence separately from missing evidence. Cumulative integer-paise targets use positive half-up 20% allocation and the Creator residual. Immutable AirBharath allocation revisions pair atomically with Creator ledger deltas. Full refunds reverse commission; disputed/refunded overlap awaits review. These calculations do not establish a live tax, invoicing or loss model.
+The private earnings and Admin payment views show deferred sponsored balances and original source evidence. Mixed statements disclose frozen arrangements and recorded platform share; ordinary 0% CSV shapes remain. No public commission signup or arbitrary percentage editor exists.
 
-Creators can use existing private support to request stopping new sales without renewal. Authorized Admins use the existing unpublish control, retain the request/action audit trail and preserve valid learner access. Support does not itself change publication or commercial history.
+## Closed production activation
 
-## Financial portion deliberately stopped
+A runtime flag cannot register a commercial agreement. The shipped approved Live contract catalogue and SQL registration predicate are deliberately empty/closed. A future real collection release requires separately reviewed exact legal body/hash, accounting schedule hash, source release identity, founder approval, two independent Admin attestations, actual database/runtime-role identity and merchant scope. The release review cannot authorize sponsored payout execution. No canonical addendum is registered in this task.
 
-The current aggregate settlement balance cannot establish which historical payout discharged which purchase or legally distinguish recoverable sponsored debt from future earnings. Automatically netting negative sponsored balances would presume unapproved offset rights.
+The prepared Live path uses the existing course-collection identity; it does not require Test RazorpayX keys or weaken the approved payout isolation module. The existing protected independent Test-run/database proof is still required for synthetic execution. A missing/invalid review fails closed. Quotes/earnings recovery retain original evidence; switching new offers OFF does not reactivate a superseded agreement or remove financial obligations. A permanently converted 0% Creator can continue frozen 0% checkout with offers OFF.
 
-Therefore new payout reservations and first dispatch are blocked for a Creator with any frozen 80/20 order. Sponsored earnings are shown as review/pending and unavailable for settlement. Existing in-flight payout reconciliation remains available. Ordinary 0% Creators retain their existing payout behavior. This is a safety stop, not a completed sponsored settlement implementation.
+Real issuance, acceptance and sponsored collection activation remain blocked until the final commercial/accounting schedule is approved and its catalogue/SQL registration is separately reviewed. In particular, the existing learner-tax producer cannot be certified for sponsored sales until seller/collector, invoicing/GST, TCS/withholding, refund/chargeback tax and actual nonrefundable fee treatment are confirmed. A lawful bounded deferral/release procedure must prevent indefinite withholding. No statutory rate, deduction, invoice obligation, debt recovery or fallback transfer policy is invented here.
 
-Before financial activation, obtain the signed accountant/legal schedule for seller/collector, invoicing/GST, TCS/withholding, refund/chargeback taxes, retained gateway fees, negative balances and permissible recovery. Separately approve the exact receivable/settlement-source attribution and permitted recovery model; implement and test it without automatic bank debit or unauthorized future-earnings offsets. Do not release these guards merely by changing a flag.
+## Verification and operations
 
-## Migration and verification
+Use only fresh owned synthetic PostgreSQL fixtures with the complete reviewed chain through 0047, mocked provider transport and synthetic identities. Do not run historical launchers against an arbitrary database. The audit packet records both fresh-chain tests and an actual 0046-to-0047 upgrade preserving an independently approved unsubmitted 0% payout. Public interfaces exercise full/partial refunds, post-payment corrections, mixed balances, concurrency, duplicates, bank binding, provider reconciliation, paid conversion, private UX and the Academy boundary.
 
-0046 adds immutable commercial offers/events/quotes/rollout evidence and a separate commission ledger, nullable order/allocation references and fail-closed triggers. It changes no historical migration, enrollment or financial evidence. Apply only to an explicitly owned disposable synthetic database during this phase.
-
-Focused tests are `tests/routes/creator-sponsorship*.test.ts`, existing payout/FAV/isolation tests and `tests/postgres/creator-sponsorship*.cjs`. PostgreSQL modules consume the existing isolated multi-connection fixture, with injected provider transport. They are not commands for production databases. The local audit packet records the launcher, independently verified database identity, network restrictions, complete migration chain, real-browser evidence and exact results.
-
-Keep Academy prospective-policy activation OFF. No deployment, production migration, live FAV, actual provider payout or public feature activation is authorized.
+No production migration, real provider call, FAV, payout POST, deployment, push, merge or public activation is authorized. Sponsored payout execution stays deferred pending a separate reviewed implementation/authorization; no flag in this revision enables it. A future change must be additive and preserve source obligations and uncertain existing operations.

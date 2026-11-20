@@ -330,6 +330,13 @@
       "when": 1794911899568,
       "tag": "0046_creator_sponsored_revenue_sharing",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1795069557373,
+      "tag": "0047_sponsored_deferred_settlement",
+      "breakpoints": true
     }
   ]
 }

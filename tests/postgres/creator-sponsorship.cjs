@@ -52,7 +52,7 @@ module.exports=async({c,stacks,adminId,other,historicalCourse,ok})=>{
  payments.get(payment).amount_refunded=59000;await commerce[0].verify(buyer,order.id,payment,true);assert.deepEqual(await balances(),{creator:38112,platform:9528});await commerce[1].verify(buyer,order.id,payment,true);assert.deepEqual(await balances(),{creator:38112,platform:9528});
  payments.get(payment).amount_refunded=118000;await commerce[0].verify(buyer,order.id,payment,true);assert.deepEqual(await balances(),{creator:-2360,platform:0});
  ok('sponsorship_partial_full_refund_and_replay_original_terms_reverse_commission_once');
- await assert.rejects(c`insert into creator_payouts(creator_id,payee_id,scope,amount_paise,period_end,approved_by) values(${creator},${fixture.bank},'test:acc_synthetic',100,now(),${adminId})`,/sponsored settlement disabled/);
+ await assert.rejects(c`insert into creator_payouts(creator_id,payee_id,scope,amount_paise,period_end,approved_by) values(${creator},${fixture.bank},'test:acc_synthetic',100,now(),${adminId})`);
  assert.equal((await c`select count(*)::int n from creator_payouts where creator_id=${creator}`)[0].n,0);
  ok('sponsorship_negative_balance_cannot_inherit_automatic_future_offset_or_payout');
  await assert.rejects(c`update airbharath_commission_ledger set delta_paise=0 where order_id=${saved.id}`);await assert.rejects(c`delete from creator_commercial_agreements where id=${offer.id}`);

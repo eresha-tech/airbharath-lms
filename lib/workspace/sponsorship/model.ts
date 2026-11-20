@@ -5,7 +5,7 @@ export const SYNTHETIC_AGREEMENT_BODY = 'SYNTHETIC ONLY. Complimentary editing s
 export const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
 export const SYNTHETIC_AGREEMENT_HASH = sha256(SYNTHETIC_AGREEMENT_BODY);
 export type Arrangement = 'standard_0' | 'sponsored_20';
-export type CommercialSnapshot = { version: 1; synthetic: true; quoteId: string; arrangement: Arrangement; agreementId: string | null; effectiveEventId: string | null; scope: string; legalVersion: string; legalHash: string; calculationVersion: 'fixed-share-paise-v1' };
+export type CommercialSnapshot = { version: 1; synthetic: boolean; quoteId: string; arrangement: Arrangement; agreementId: string | null; effectiveEventId: string | null; scope: string; legalVersion: string; legalHash: string; calculationVersion: 'fixed-share-paise-v1' };
 export class SponsorshipError extends Error { constructor(public status: number, message: string) { super(message); } }
 export type AllocationEvidence = { grossPaise: number; taxPaise: number; feePaise: number | null; feeTaxPaise: number | null; refundedPaise: number; refundTaxPaise: number; confirmedLossPaise?: number; approvedAdjustmentPaise?: number };
 export function allocateSponsored(e: AllocationEvidence) {

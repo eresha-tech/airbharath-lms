@@ -3,7 +3,7 @@ import {after} from 'next/server';
 import {payoutControl} from './razorpayx/service';
 import {runPayoutWorker} from './razorpayx/worker';
 import { financeReporting } from './reporting';
-import { financeFilters, csv, financeDate } from './presentation';
+import { financeFilters, csv, financeDate, appendCommercialStatement } from './presentation';
 import { getSession } from '@/lib/auth';
 import { getAuthorizedAdminSession } from '@/lib/admin-authorization';
 import { privateJson, readJson } from '@/lib/workspace/http';
@@ -21,7 +21,7 @@ export async function financeHttp(request: Request, admin = false) {
             const q = Object.fromEntries(new URL(request.url).searchParams);
             const { rows } = await financeReporting().transactions(actor.id, q.creatorId ?? '', financeFilters(q), true);
             const value = (n: number | null) => n === null ? 'Unknown' : (Number(n) / 100).toFixed(2);
-            return new Response(csv([['Date IST', 'Course', 'Order', 'Gross INR', 'Course tax INR', 'Processing fee incl tax INR', 'Adjustment INR', 'Recorded net INR', 'Reconciliation'], ...rows.map(p => [financeDate(p.createdAt), p.title, p.reference, value(p.gross), value(p.tax), value(p.fee), value(p.adjustments), value(p.net), p.status])]), { headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="creator-transactions.csv"', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
+            return new Response(csv(appendCommercialStatement(rows,[['Date IST', 'Course', 'Order', 'Gross INR', 'Course tax INR', 'Processing fee incl tax INR', 'Adjustment INR', 'Recorded net INR', 'Reconciliation'], ...rows.map(p => [financeDate(p.createdAt), p.title, p.reference, value(p.gross), value(p.tax), value(p.fee), value(p.adjustments), value(p.net), p.status])])), { headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="creator-transactions.csv"', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
         }
         if (request.method === 'GET' && !admin) {
             const v = await financeReporting().overview(actor.id);

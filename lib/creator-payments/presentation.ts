@@ -123,3 +123,8 @@ export const creatorPayoutFilters = [
     ['pending', 'Payments not yet paid'], ['confirmed', 'Paid'],
     ['failed', 'Failed or returned'], ['cancelled', 'Cancelled'],
 ];
+// Keep the existing ordinary-0% CSV shape. Mixed statements disclose each frozen share.
+export function appendCommercialStatement(rows: {commercialArrangement?:string;commission?:number;sourcePaid?:number;sourceReserved?:number;sourceCorrection?:number;sourceProvenance?:string}[],table:unknown[][]){
+ if(!rows.some(r=>r.commercialArrangement==='sponsored_20'))return table;
+ return table.map((cells,i)=>i===0?[...cells,'Frozen arrangement','AirBharath share INR','Source paid INR','Source reserved INR','Source correction for review INR','Provenance']:[...cells,rows[i-1].commercialArrangement??'standard_0',...['commission','sourcePaid','sourceReserved','sourceCorrection'].map(k=>(Number(rows[i-1][k as 'commission'])/100||0).toFixed(2)),rows[i-1].sourceProvenance??'Unknown']);
+}

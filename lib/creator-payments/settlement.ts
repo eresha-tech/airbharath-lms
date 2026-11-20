@@ -35,8 +35,8 @@ export function settlementService(database=db,scope= requireCourseScope(),execut
    const audit=await tx.select().from(events).where(eq(events.creatorId,creatorId)).orderBy(desc(events.createdAt),desc(events.id)).limit(50);
    const [reserved]=await tx.select({n:sql<string>`coalesce(sum(${payouts.amountPaise}),0)`}).from(payouts).where(and(eq(payouts.creatorId,creatorId),eq(payouts.scope,scope),sql`${payouts.state} not in ('failed','cancelled')`));
    const issues=await tx.select({orderId:checks.orderId,issue:checks.issue,lastCheckedAt:checks.lastCheckedAt}).from(checks).innerJoin(orders,eq(orders.id,checks.orderId)).where(and(eq(orders.creatorId,creatorId),sql`(${checks.issue} is not null or ${checks.lastCheckedAt} is null or ${checks.lastCheckedAt}<now()-interval '24 hours')`)).limit(50);
-   const balance=await ledgerBalance(tx,creatorId,scope),matured=await ledgerBalance(tx,creatorId,scope,dueBefore());
-   return {creatorId,scope,netPaise:balance,reservedPaise:Number(reserved.n),availablePaise:Math.max(0,Math.min(balance,matured)-Number(reserved.n)),payees:ownPayees,payouts:history,entries,audit,issues,page};
+   const balance=await ledgerBalance(tx,creatorId,scope),[funds]=await tx.execute(sql`select coalesce(sum(available),0)::bigint available from creator_zero_sources(${creatorId}::uuid,${scope})`);
+   return {creatorId,scope,netPaise:balance,reservedPaise:Number(reserved.n),availablePaise:Number(funds.available),payees:ownPayees,payouts:history,entries,audit,issues,page};
   });
  }
  async function execute(actor:string,command:FinanceCommand) {
@@ -114,11 +114,10 @@ export function settlementService(database=db,scope= requireCourseScope(),execut
      if(!payee||payee.policyVersion!==SETTLEMENT_POLICY||verification?.action!=='verify_payee')throw new CommerceError(409,'An independently verified payee is required.');
      const run=await tx.query.courseFinanceRuns.findFirst({where:eq(runs.scope,scope)});
      if(!run?.disputesCheckedAt||run.disputesCheckedAt.getTime()<Date.now()-86400000)throw new CommerceError(409,'Run payment and dispute reconciliation before settlement.');
-     const [blocked]=await tx.select({n:sql<number>`count(*)::int`}).from(checks).innerJoin(orders,eq(orders.id,checks.orderId)).where(and(eq(orders.creatorId,command.creatorId),sql`${orders.status} in ('paid','refunded','chargeback')`,sql`(${checks.scope}<>${scope} or ${checks.issue} is not null or ${checks.lastCheckedAt} is null or ${checks.lastCheckedAt}<now()-interval '24 hours')`));
+     const [blocked]=await tx.select({n:sql<number>`count(*)::int`}).from(checks).innerJoin(orders,eq(orders.id,checks.orderId)).where(and(eq(orders.creatorId,command.creatorId),sql`${orders.status} in ('paid','refunded','chargeback')`,sql`coalesce(${orders.purchaseEvidence}->'commercial'->>'arrangement','standard_0')='standard_0'`,sql`(${checks.scope}<>${scope} or ${checks.issue} is not null or ${checks.lastCheckedAt} is null or ${checks.lastCheckedAt}<now()-interval '24 hours')`));
      if(blocked.n)throw new CommerceError(409,'Resolve the displayed payment evidence issues before settlement.');
-     const [reserved]=await tx.select({n:sql<string>`coalesce(sum(${payouts.amountPaise}),0)`}).from(payouts).where(and(eq(payouts.creatorId,command.creatorId),eq(payouts.scope,scope),sql`${payouts.state} not in ('failed','cancelled')`));
-     const balance=await ledgerBalance(tx,command.creatorId,scope),matured=await ledgerBalance(tx,command.creatorId,scope,dueBefore());
-     if(command.amountPaise>Math.min(balance,matured)-Number(reserved.n))throw new CommerceError(409,'Amount exceeds reconciled previous-month proceeds.');
+     const [funds]=await tx.execute(sql`select coalesce(sum(available),0)::bigint available from creator_zero_sources(${command.creatorId}::uuid,${scope})`);
+     if(command.amountPaise>Number(funds.available))throw new CommerceError(409,'Amount exceeds eligible previous-month 0% sources. Sponsored earnings await separate payout approval.');
      id=randomUUID();await tx.insert(payouts).values({id,creatorId:command.creatorId,payeeId:payee.id,scope,amountPaise:command.amountPaise,periodEnd:dueBefore(),approvedBy:actor});
      if(providerConfig)await preparePayoutJob(tx,id,scope,providerConfig);
     }else {

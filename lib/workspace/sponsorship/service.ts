@@ -5,8 +5,8 @@ import {db} from '@/lib/db';
 import {addCalendarMonthsIST} from '@/lib/workspace/activation/model';
 import {createAccessGrant,revokeAccessGrant} from '@/lib/workspace/access/repository';
 import {currentCreatorTerms} from '@/lib/workspace/terms/model';
-import {requireSyntheticSponsorship,sponsorshipSyntheticEnabled,type SponsorshipExecutor} from './config';
-import {SYNTHETIC_AGREEMENT_BODY,SYNTHETIC_AGREEMENT_HASH,SYNTHETIC_AGREEMENT_VERSION,SponsorshipError,offerDeadline,sha256,type Arrangement} from './model';
+import {requireSyntheticSponsorship,requireSponsorshipContext,sponsorshipConfigured,type SponsorshipExecutor} from './config';
+import {SponsorshipError,offerDeadline,sha256,type Arrangement} from './model';
 type Tx=Parameters<Parameters<typeof db.transaction>[0]>[0];
 export async function commercialRows<T extends Record<string,unknown>>(executor:SponsorshipExecutor,query:SQL){return Array.from(await executor.execute(query)) as T[];}
 type Offer=Record<string,unknown>&{id:string;creator_id:string;scope:string;arrangement:Arrangement;duration_months:number;proposed_by:string;reason:string;legal_hash:string;legal_body:string;legal_version:string;command_hash:string;created_at:Date};
@@ -25,7 +25,7 @@ function command(raw:SponsorshipCommand){
 async function lock(tx:Tx,actor:string,creator:string){const users=await commercialRows<{id:string;role:string}>(tx,sql`select id,role from users where id in (${actor}::uuid,${creator}::uuid) order by id for update`);if(!users.some(u=>u.id===actor)||!users.some(u=>u.id===creator))throw new SponsorshipError(404,'Account unavailable.');return users.find(u=>u.id===actor)!.role;}
 export function sponsorshipService(database:typeof db=db){
  async function list(actor:string,creatorId=actor){
-  if(!sponsorshipSyntheticEnabled())return {available:false,financialActivation:false,offers:[]};
+  if(!sponsorshipConfigured())return {available:false,financialActivation:false,offers:[]};
   const scope=await requireSyntheticSponsorship(database);if(!UUID.test(creatorId))throw new SponsorshipError(400,'Select an account.');
   const [user]=await commercialRows<{role:string}>(database,sql`select role from users where id=${actor}::uuid`);if(!user||actor!==creatorId&&user.role!=='admin')throw new SponsorshipError(403,'Forbidden');
   const offers=await commercialRows<Offer>(database,sql`select * from creator_commercial_agreements where creator_id=${creatorId}::uuid and scope=${scope} order by created_at desc,id limit 30`);
@@ -39,7 +39,7 @@ export function sponsorshipService(database:typeof db=db){
   return {available:true,financialActivation:false,offers:result};
  }
  async function execute(actor:string,raw:SponsorshipCommand){
-  const scope=await requireSyntheticSponsorship(database),fingerprint=command(raw);
+  const contract=await requireSponsorshipContext(database),scope=contract.scope,fingerprint=command(raw);
   return database.transaction(async tx=>{
    const [offer]=raw.offerId?await commercialRows<Offer>(tx,sql`select * from creator_commercial_agreements where id=${raw.offerId}::uuid and scope=${scope}`):[];
    if(raw.action!=='create'&&!offer)throw new SponsorshipError(404,'Private offer unavailable.');
@@ -48,7 +48,7 @@ export function sponsorshipService(database:typeof db=db){
    const [prior]=await commercialRows<{id:string;command_hash:string}>(tx,raw.action==='create'?sql`select id,command_hash from creator_commercial_agreements where proposed_by=${actor}::uuid and request_key=${raw.requestKey}::uuid`:sql`select agreement_id id,command_hash from creator_commercial_events where actor_id=${actor}::uuid and request_key=${raw.requestKey}::uuid`);
    if(prior){if(prior.command_hash!==fingerprint)throw new SponsorshipError(409,'This request key belongs to another operation.');return {id:prior.id,replayed:true};}
    if(raw.action==='create'){
-    const id=randomUUID();await tx.execute(sql`insert into creator_commercial_agreements(id,creator_id,scope,arrangement,duration_months,proposed_by,reason,legal_version,legal_body,legal_hash,request_key,command_hash) values(${id}::uuid,${creator}::uuid,${scope},${raw.arrangement},${raw.durationMonths},${actor}::uuid,${raw.reason!.trim()},${SYNTHETIC_AGREEMENT_VERSION},${SYNTHETIC_AGREEMENT_BODY},${SYNTHETIC_AGREEMENT_HASH},${raw.requestKey}::uuid,${fingerprint})`);return {id,replayed:false};
+    const id=randomUUID();await tx.execute(sql`insert into creator_commercial_agreements(id,creator_id,scope,arrangement,duration_months,proposed_by,reason,legal_version,legal_body,legal_hash,request_key,command_hash) values(${id}::uuid,${creator}::uuid,${scope},${raw.arrangement},${raw.durationMonths},${actor}::uuid,${raw.reason!.trim()},${contract.version},${contract.body},${contract.hash},${raw.requestKey}::uuid,${fingerprint})`);return {id,replayed:false};
    }
    if(!offer)throw new SponsorshipError(404,'Private offer unavailable.');
    const events=await commercialRows<Event>(tx,sql`select * from creator_commercial_events where agreement_id=${offer.id}::uuid order by sequence`),approved=events.find(e=>e.action==='approved');
@@ -63,10 +63,10 @@ export function sponsorshipService(database:typeof db=db){
     const active=await commercialRows<{id:string}>(tx,sql`select a.id from creator_commercial_agreements a join creator_commercial_events e on e.agreement_id=a.id and e.action='accepted' where a.creator_id=${creator}::uuid and a.scope=${scope} and a.arrangement='sponsored_20' and not exists(select 1 from creator_commercial_events ending where ending.agreement_id=a.id and ending.action in ('replaced_paid','released_0') and ending.effective_at<=clock_timestamp())`);
     if(active.length&&offer.arrangement==='sponsored_20')throw new SponsorshipError(409,'An accepted sponsored agreement already applies.');
     if(active.length&&offer.arrangement==='standard_0'){
-     const [old]=await commercialRows<{id:string;expires_at:Date}>(tx,sql`select id,expires_at from workspace_access_grants where user_id=${creator}::uuid and environment='test' and status='active' and expires_at>clock_timestamp()`);
+     const [old]=await commercialRows<{id:string;expires_at:Date}>(tx,sql`select id,expires_at from workspace_access_grants where user_id=${creator}::uuid and environment=${contract.synthetic?'test':'production'} and status='active' and expires_at>clock_timestamp()`);
      if(old){if(addCalendarMonthsIST(at,offer.duration_months)<new Date(old.expires_at))throw new SponsorshipError(409,'Choose a term that preserves all remaining complimentary time.');await revokeAccessGrant(offer.proposed_by,old.id,{requestKey:randomUUID(),reason:'Explicit accepted 0% replacement preserves remaining access',confirmed:true},tx as unknown as typeof db);}
     }
-    const grant=await createAccessGrant(offer.proposed_by,{targetUserId:creator,reason:'Synthetic private offer accepted: '+offer.id,durationMonths:offer.duration_months,requestKey:raw.requestKey},tx as unknown as typeof db);grantId=grant.id;at=grant.startsAt;
+    const grant=await createAccessGrant(offer.proposed_by,{targetUserId:creator,reason:(contract.synthetic?'Synthetic private offer accepted: ':'Private sponsored offer accepted: ')+offer.id,durationMonths:offer.duration_months,requestKey:raw.requestKey},tx as unknown as typeof db);grantId=grant.id;at=grant.startsAt;
     if(offer.arrangement==='standard_0')for(const old of active)await tx.execute(sql`insert into creator_commercial_events(agreement_id,creator_id,actor_id,action,request_key,command_hash,grant_id,effective_at) values(${old.id}::uuid,${creator}::uuid,${creator}::uuid,'released_0',${randomUUID()}::uuid,${sha256(offer.id)},${grantId}::uuid,${at.toISOString()}::timestamptz)`);
    }
    await tx.execute(sql`insert into creator_commercial_events(agreement_id,creator_id,actor_id,action,request_key,command_hash,grant_id,effective_at) values(${offer.id}::uuid,${creator}::uuid,${actor}::uuid,${raw.action==='approve'?'approved':raw.action==='accept'?'accepted':raw.action==='decline'?'declined':'withdrawn'},${raw.requestKey}::uuid,${fingerprint},${grantId}::uuid,${at.toISOString()}::timestamptz)`);

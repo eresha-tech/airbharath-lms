@@ -1,0 +1,58 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),{randomUUID}=require('node:crypto');
+module.exports=async({c,stacks,adminId,ok})=>{
+ const load=stacks[0].load,ref=JSON.parse(fs.readFileSync(process.env.PHASE22P_AUDIT_ROOT+'/sponsorship-reference.json')),creator=ref.creator,scope='test:acc_synthetic';
+ process.env.CREATOR_SPONSORSHIP_SYNTHETIC='true';
+ const [course]=await c`select workspace_project_id from courses where id=${ref.courseId}`,pub=stacks[0].publishing;
+ for(const action of ['resolve','restore']){const view=await pub.read(adminId,course.workspace_project_id);await pub.execute(adminId,course.workspace_project_id,{action,requestKey:randomUUID(),expectedVersion:view.version,note:'Synthetic deferred-settlement restores the authorized listing for verified checkout'});}
+ const buyer=randomUUID();await c`insert into users(id,full_name,role) values(${buyer},'SYNTHETIC INDEPENDENT ZERO EARNINGS','student')`;
+ const base=await load('@/lib/commerce/service').commerceService(stacks[0].db,{},scope).quote(buyer,ref.courseId);
+ const frozen=await stacks[0].db.transaction(tx=>load('@/lib/workspace/sponsorship/commerce').freezeCommercialQuote(tx,buyer,ref.courseId,base.evidence,scope));assert.equal(frozen.commercial.arrangement,'standard_0');
+ const providerId='order_'+randomUUID().replaceAll('-',''),payment='pay_'+randomUUID().replaceAll('-','');
+ const [order]=await c`insert into orders(user_id,course_id,razorpay_order_id,amount,status,purchase_evidence,creator_id,workspace_price_id,creator_commercial_quote_id,created_at) values(${buyer},${ref.courseId},${providerId},${frozen.totalPaise/100},'pending',${JSON.stringify(frozen)}::jsonb,${creator},${frozen.priceId},${frozen.commercial.quoteId},now()-interval '40 days') returning id`;
+ await c`insert into course_payment_checks(order_id,scope) values(${order.id},${scope})`;
+ const facts=new Map([[payment,{id:payment,order_id:providerId,amount:frozen.totalPaise,currency:'INR',status:'captured',amount_refunded:0,fee:0,tax:0}]]);
+ const provider={payments:{fetch:async id=>facts.get(id)}};
+ await load('@/lib/commerce/service').commerceService(stacks[0].db,provider,scope).verify(buyer,providerId,payment);
+ const view=await load('@/lib/creator-payments/settlement').settlementService(stacks[0].db,scope).read(creator);
+ assert.equal(view.availablePaise,100000,'Historical sponsored losses must not offset this independent matured zero-commission purchase');
+ ok('deferred_settlement_historical_sponsored_losses_do_not_offset_independent_zero_earnings');
+
+ const finance=load('@/lib/creator-payments/settlement').settlementService(stacks[0].db,scope),config=load('@/lib/creator-payments/razorpayx/config').payoutConfiguration(),second=ref.second;
+ const {initial}=require('./phase22p-provider.cjs'),{createBankTransport}=require('./phase25a-bank-provider.cjs');let state={...initial(),validations:{}};
+ const bank=(await c`select id from creator_payees where creator_id=${creator} order by created_at desc limit 1`)[0].id;
+ await require('./phase25a-bank-fixture.cjs')({load,db:stacks[0].db,actor:adminId,payeeId:bank,config,read:()=>state,write:s=>{state=s;}});
+ const command=(action,fields={})=>({action,requestKey:randomUUID(),creatorId:creator,evidence:'SYNTHETIC independent zero-source approval',...fields});
+ await finance.execute(adminId,command('verify_payee',{entityId:bank}));
+ const cmd=command('approve_payout',{entityId:bank,amountPaise:100000}),approved=await finance.execute(adminId,cmd);assert.equal((await finance.execute(adminId,cmd)).id,approved.id);
+ const reporting=load('@/lib/creator-payments/reporting').financeReporting(stacks[0].db,scope),detail=await reporting.creatorPayout(creator,approved.id);assert.equal(detail.allocations.length,1);assert.equal(detail.allocations[0].orderId,order.id);assert.equal(detail.allocations[0].amount,100000);
+ const control=(actor,input)=>load('@/lib/creator-payments/razorpayx/service').payoutControl(actor,input,stacks[0].db,config);
+ await assert.rejects(control(adminId,command('authorize_razorpayx',{entityId:approved.id})));await control(second,command('authorize_razorpayx',{entityId:approved.id}));
+ const adapter=load('@/lib/creator-payments/razorpayx/adapter').razorpayXPayoutAdapter(config,createBankTransport(()=>state,v=>{state=v;}));
+ const work=()=>load('@/lib/creator-payments/razorpayx/worker').runPayoutWorker(stacks[0].db,config,adapter,10),due=id=>c`update creator_payout_jobs set next_at=now() where payout_id=${id}`;
+ await work();let job=(await c`select * from creator_payout_jobs where payout_id=${approved.id}`)[0];assert(job.provider_id);assert.equal((await reporting.creatorPayout(creator,approved.id)).state,'uncertain');
+ state.payouts[job.provider_id].status='processed';state.payouts[job.provider_id].utr='SYNTHETIC-ATTRIBUTED-ZERO';await due(approved.id);await Promise.all([work(),work()]);assert.equal((await reporting.creatorPayout(creator,approved.id)).state,'confirmed');
+ assert.equal(state.calls.filter(x=>x.route==='payouts'&&x.method==='POST'&&x.body.reference_id===approved.id).length,1);
+ ok('deferred_zero_purchase_payout_has_immutable_binding_independent_approval_and_authoritative_once_only_confirmation');
+ facts.get(payment).amount_refunded=frozen.totalPaise;await load('@/lib/commerce/service').commerceService(stacks[0].db,provider,scope).verify(buyer,providerId,payment,true);
+ const filters=load('@/lib/creator-payments/presentation').financeFilters({}),txs=await reporting.transactions(creator,creator,filters,true),corrected=txs.rows.find(x=>x.id===order.id);assert.equal(Number(corrected.sourcePaid),100000);assert.equal(Number(corrected.sourceCorrection),100000);assert.equal(Number(corrected.net),0);
+ async function nextZero(){const b=randomUUID();await c`insert into users(id,full_name,role) values(${b},'SYNTHETIC NEXT ZERO SOURCE','student')`;const q=await load('@/lib/commerce/service').commerceService(stacks[0].db,{},scope).quote(b,ref.courseId),e=await stacks[0].db.transaction(t=>load('@/lib/workspace/sponsorship/commerce').freezeCommercialQuote(t,b,ref.courseId,q.evidence,scope));const rid='order_'+randomUUID().replaceAll('-',''),pid='pay_'+randomUUID().replaceAll('-','');const [o]=await c`insert into orders(user_id,course_id,razorpay_order_id,amount,status,purchase_evidence,creator_id,workspace_price_id,creator_commercial_quote_id,created_at) values(${b},${ref.courseId},${rid},${e.totalPaise/100},'pending',${JSON.stringify(e)}::jsonb,${creator},${e.priceId},${e.commercial.quoteId},now()-interval '40 days') returning id`;await c`insert into course_payment_checks(order_id,scope) values(${o.id},${scope})`;facts.set(pid,{id:pid,order_id:rid,amount:e.totalPaise,currency:'INR',status:'captured',amount_refunded:0,fee:0,tax:0});await load('@/lib/commerce/service').commerceService(stacks[0].db,provider,scope).verify(b,rid,pid);return {buyer:b,payment:pid,provider:rid,id:o.id};}
+ const next=await nextZero();assert.equal((await finance.read(creator)).availablePaise,100000);assert.equal((await reporting.overview(creator)).summary.available,100000);
+ ok('deferred_post_payout_full_refund_records_original_source_correction_without_seizing_next_zero_purchase');
+ const races=await Promise.allSettled(stacks.map(st=>st.load('@/lib/creator-payments/settlement').settlementService(st.db,scope).execute(adminId,command('approve_payout',{entityId:bank,amountPaise:100000}))));assert.equal(races.filter(r=>r.status==='fulfilled').length,1);const reserved=races.find(r=>r.status==='fulfilled').value;
+ await control(second,command('authorize_razorpayx',{entityId:reserved.id}));facts.get(next.payment).amount_refunded=59000;await load('@/lib/commerce/service').commerceService(stacks[0].db,provider,scope).verify(next.buyer,next.provider,next.payment,true);
+ const calls=state.calls.filter(x=>x.route==='payouts'&&x.method==='POST').length;await due(reserved.id);await work();assert.equal((await c`select submit_attempts from creator_payout_jobs where payout_id=${reserved.id}`)[0].submit_attempts,0);assert.equal(state.calls.filter(x=>x.route==='payouts'&&x.method==='POST').length,calls);
+ await finance.execute(adminId,command('cancel_payout',{entityId:reserved.id}));assert.equal((await finance.read(creator)).availablePaise,50000);
+ await assert.rejects(finance.execute(adminId,command('approve_payout',{entityId:bank,amountPaise:50001})));const half=await finance.execute(adminId,command('approve_payout',{entityId:bank,amountPaise:50000}));assert.equal((await reporting.creatorPayout(creator,half.id)).allocations[0].orderId,next.id);
+ const [sponsored]=await c`select id from orders where creator_id=${creator} and purchase_evidence->'commercial'->>'arrangement'='sponsored_20' limit 1`;
+ await assert.rejects(c`insert into creator_payout_allocations(payout_id,creator_id,scope,source_key,order_id,amount_paise,financial_hash,evidence) values(${half.id},${creator},${scope},${sponsored.id},${sponsored.id},1,${'f'.repeat(64)},${JSON.stringify({arrangement:'sponsored_20'})}::jsonb)`);
+ await finance.execute(adminId,command('cancel_payout',{entityId:half.id}));
+ ok('deferred_concurrent_reservations_partial_refund_rechecks_cancel_release_and_sponsored_payout_denial');
+ await assert.rejects(c`update creator_payout_allocations set amount_paise=1 where payout_id=${approved.id}`);
+ await assert.rejects(c`select creator_commercial_scope_guard('live:acc_synthetic')`);
+ await assert.rejects(c`insert into creator_commercial_live_releases(id,scope,legal_version,legal_body,legal_hash,accounting_hash,source_hash,founder_approval_hash,database_identity,first_admin,second_admin) values('unreviewed','live:acc_synthetic','unapproved','unapproved',${'a'.repeat(64)},${'b'.repeat(64)},${'c'.repeat(64)},${'d'.repeat(64)},'{}'::jsonb,${adminId},${second})`);
+ delete process.env.CREATOR_SPONSORSHIP_SYNTHETIC;
+ const offBuyer=randomUUID();await c`insert into users(id,full_name,role) values(${offBuyer},'SYNTHETIC OFF ZERO QUOTE','student')`;
+ const created=await load('@/lib/commerce/service').commerceService(stacks[0].db,{orders:{create:async input=>({id:'order_'+randomUUID().replaceAll('-',''),amount:input.amount,currency:'INR'})}},scope).create(offBuyer,ref.courseId);assert.equal((await c`select purchase_evidence from orders where razorpay_order_id=${created.id}`)[0].purchase_evidence.commercial.arrangement,'standard_0');
+ ok('deferred_unreviewed_live_release_rejected_and_permanent_zero_checkout_survives_offer_kill_switch');
+ fs.writeFileSync(process.env.PHASE22P_AUDIT_ROOT+'/deferred-reference.json',JSON.stringify({creator,paidPayout:approved.id,zeroOrder:order.id,potentialCorrection:100000,eligibleZero:50000,adminId,second},null,2));
+};

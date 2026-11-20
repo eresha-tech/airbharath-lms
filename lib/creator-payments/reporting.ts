@@ -10,6 +10,10 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type Purchase = {
     commercialArrangement?: 'standard_0'|'sponsored_20';
     commission?: number;
+    sourcePaid?: number;
+    sourceReserved?: number;
+    sourceCorrection?: number;
+    sourceProvenance?: 'purchase'|'legacy_aggregate';
     id: string;
     reference: string;
     title: string;
@@ -49,6 +53,7 @@ export type Payout = {
     masked: string;
     amount: number;
     state: string;
+    allocations?: {sourceKey:string;orderId:string|null;amount:number;provenance:string}[];
     provider: string|null;
     providerId: string|null;
     providerStatus: string|null;
@@ -80,6 +85,8 @@ export type Summary = {
     blocked: number;
     fresh: boolean;
     current: number;
+    deferred?: number;
+    potentialCorrection?: number;
 };
 const purchaseCTE = (scope: string) => sql `with purchases as (
  select o.id,o.creator_id,o.razorpay_order_id as reference,coalesce(o.purchase_evidence->>'courseTitle','Course purchase') as title,o.created_at as "createdAt",
@@ -89,6 +96,10 @@ const purchaseCTE = (scope: string) => sql `with purchases as (
  coalesce(sum(l.gross_paise) filter(where l.kind in ('refund','dispute','adjustment')),0)::bigint as adjustments,
  coalesce(sum(l.net_paise),0)::bigint as net,
  coalesce(o.purchase_evidence->'commercial'->>'arrangement','standard_0') as "commercialArrangement",coalesce(sum(l.commission_paise),0)::bigint as commission,
+ coalesce((select sum(a.amount_paise) from creator_payout_allocations a join creator_payouts p on p.id=a.payout_id where a.order_id=o.id and p.state='confirmed'),0)::bigint as "sourcePaid",
+ coalesce((select sum(a.amount_paise) from creator_payout_allocations a join creator_payouts p on p.id=a.payout_id where a.order_id=o.id and p.state in ('approved','initiated','uncertain')),0)::bigint as "sourceReserved",
+ greatest(0,coalesce((select sum(a.amount_paise) from creator_payout_allocations a join creator_payouts p on p.id=a.payout_id where a.order_id=o.id and p.state='confirmed'),0)-coalesce(sum(l.net_paise),0))::bigint as "sourceCorrection",
+ case when min(l.created_at) filter(where l.kind='sale')<(select installed_at from creator_settlement_epoch) then 'legacy_aggregate' else 'purchase' end as "sourceProvenance",
  case when o.purchase_evidence->'commercial'->>'arrangement'='sponsored_20' or c.issue is not null or c.last_checked_at is null or c.last_checked_at<now()-interval '24 hours' or c.scope<>${scope} or not coalesce(bool_or(l.kind='fee'),false) then 'review' else 'reconciled' end as status,
  case when bool_or(l.kind='dispute') then 'dispute' when bool_or(l.kind='refund') then 'refund' when bool_or(l.kind='adjustment') then 'adjustment' else 'sale' end as kind,coalesce(c.issue,case when o.purchase_evidence->'commercial'->>'arrangement'='sponsored_20' then 'sponsored_accounting_approval_pending' end) as issue,
  coalesce(jsonb_agg(jsonb_build_object('kind',l.kind,'gross',l.gross_paise,'tax',l.tax_paise,'fee',l.fee_paise,'net',l.net_paise,'createdAt',l.created_at) order by l.created_at,l.id) filter(where l.id is not null),'[]'::jsonb) as records
@@ -99,7 +110,7 @@ const purchaseCTE = (scope: string) => sql `with purchases as (
 )`;
 function wherePurchase(creatorId: string, f: FinanceFilters) { return sql `creator_id=${creatorId} and (${f.from}='' or "createdAt">=nullif(${f.from},'')::date::timestamp at time zone 'Asia/Kolkata') and (${f.to}='' or "createdAt"<(nullif(${f.to},'')::date+1)::timestamp at time zone 'Asia/Kolkata') and (${f.status}='' or status=${f.status}) and (${f.type}='' or kind=${f.type}) and (${f.search}='' or position(lower(${f.search}) in lower(title||' '||coalesce(reference,'')))>0)`; }
 const payeeSelect = () => sql `select p.id,p.creator_id as "creatorId",u.full_name as name,p.masked,p.policy_version as "policyVersion",p.created_at as "createdAt",(case when bv.state='valid' or bv.state='review' and exists(select 1 from creator_finance_events r where r.entity_id=bv.id and r.action='accept_bank_name') then d.action when d.action='reject_payee' then d.action else null end) as decision,bv.state as "verificationState" from creator_payees p join users u on u.id=p.creator_id left join lateral(select id,state from creator_bank_validations where payee_id=p.id order by created_at desc,id desc limit 1)bv on true left join lateral(select action from creator_finance_events e where e.creator_id=p.creator_id and e.entity_id=p.id and action in ('verify_payee','reject_payee') order by created_at desc,id desc limit 1)d on true`;
-const payoutSelect = () => sql `select p.id,p.creator_id as "creatorId",u.full_name as name,b.masked,p.amount_paise as amount,p.state,case when j.id is not null then 'razorpayx' end provider,j.provider_id as "providerId",j.provider_status as "providerStatus",j.stage as "executionStage",j.authorized_by as "authorizedBy",j.submit_attempts as "submitAttempts",j.provider_fees_paise as "providerFees",j.provider_tax_paise as "providerTax",j.last_error as "lastError",j.reason,j.last_reconciled_at as "reconciledAt",j.reversed_at as "reversedAt",p.period_end as "periodEnd",p.created_at as "createdAt",p.updated_at as "updatedAt",p.bank_reference as "bankReference",p.approved_by as "approvedBy",p.initiated_by as "initiatedBy",(select action from creator_finance_events where entity_id=b.id and creator_id=p.creator_id and action in ('verify_payee','reject_payee') order by created_at desc,id desc limit 1) as "payeeDecision",coalesce(j.first_submitted_at,(select min(created_at) from creator_finance_events where entity_id=p.id and action='initiate_payout')) as "initiatedAt",coalesce(j.processed_at,(select min(created_at) from creator_finance_events where entity_id=p.id and action='confirm_payout')) as "confirmedAt" from creator_payouts p join users u on u.id=p.creator_id join creator_payees b on b.id=p.payee_id left join creator_payout_jobs j on j.payout_id=p.id`;
+const payoutSelect = () => sql `select coalesce((select jsonb_agg(jsonb_build_object('sourceKey',a.source_key,'orderId',a.order_id,'amount',a.amount_paise,'provenance',a.evidence->>'provenance') order by a.source_key) from creator_payout_allocations a where a.payout_id=p.id),'[]'::jsonb) as allocations,p.id,p.creator_id as "creatorId",u.full_name as name,b.masked,p.amount_paise as amount,p.state,case when j.id is not null then 'razorpayx' end provider,j.provider_id as "providerId",j.provider_status as "providerStatus",j.stage as "executionStage",j.authorized_by as "authorizedBy",j.submit_attempts as "submitAttempts",j.provider_fees_paise as "providerFees",j.provider_tax_paise as "providerTax",j.last_error as "lastError",j.reason,j.last_reconciled_at as "reconciledAt",j.reversed_at as "reversedAt",p.period_end as "periodEnd",p.created_at as "createdAt",p.updated_at as "updatedAt",p.bank_reference as "bankReference",p.approved_by as "approvedBy",p.initiated_by as "initiatedBy",(select action from creator_finance_events where entity_id=b.id and creator_id=p.creator_id and action in ('verify_payee','reject_payee') order by created_at desc,id desc limit 1) as "payeeDecision",coalesce(j.first_submitted_at,(select min(created_at) from creator_finance_events where entity_id=p.id and action='initiate_payout')) as "initiatedAt",coalesce(j.processed_at,(select min(created_at) from creator_finance_events where entity_id=p.id and action='confirm_payout')) as "confirmedAt" from creator_payouts p join users u on u.id=p.creator_id join creator_payees b on b.id=p.payee_id left join creator_payout_jobs j on j.payout_id=p.id`;
 export function financeReporting(database = db, scope = requireCourseScope()) {
     async function authorized<T>(actor: string, creatorId: string | null, fn: (tx: Tx) => Promise<T>) {
         if (creatorId !== null && !UUID.test(creatorId))
@@ -115,12 +126,13 @@ export function financeReporting(database = db, scope = requireCourseScope()) {
         });
     }
     async function summary(tx: Tx, id: string): Promise<Summary> {
-        const [b] = await tx.execute(purchaseCTE(scope).append(sql ` select coalesce(sum(net),0) net,coalesce(sum(case when "createdAt"<${dueBefore().toISOString()}::timestamptz then net else least(net,0) end),0) mature,coalesce(sum(net) filter(where "createdAt">=${dueBefore().toISOString()}::timestamptz and net>0),0) current,count(*) filter(where status='review') blocked from purchases where creator_id=${id}`));
+        const [b] = await tx.execute(purchaseCTE(scope).append(sql ` select coalesce(sum(net),0) net,coalesce(sum(case when "createdAt"<${dueBefore().toISOString()}::timestamptz then net else least(net,0) end),0) mature,coalesce(sum(net) filter(where "createdAt">=${dueBefore().toISOString()}::timestamptz and net>0),0) current,count(*) filter(where status='review') blocked,count(*) filter(where status='review' and "commercialArrangement"='standard_0') zero_blocked,coalesce(sum(greatest(net,0)) filter(where "commercialArrangement"='sponsored_20'),0) deferred,coalesce(sum("sourceCorrection"),0) correction from purchases where creator_id=${id}`));
         const [p] = await tx.execute(sql `select coalesce(sum(amount_paise) filter(where state in ('approved','initiated','uncertain')),0) reserved,coalesce(sum(amount_paise) filter(where state='confirmed'),0) paid from creator_payouts where creator_id=${id} and scope=${scope}`);
         const [run] = await tx.execute(sql `select disputes_checked_at>now()-interval '24 hours' fresh from course_finance_runs where scope=${scope}`);
         const net = Number(b.net), reserved = Number(p.reserved), paid = Number(p.paid), blocked = Number(b.blocked), fresh = run?.fresh === true;
-        const available = blocked || !fresh ? 0 : Math.max(0, Math.min(net, Number(b.mature)) - reserved - paid);
-        return { net, available, pending: Math.max(0, net - reserved - paid - available), reserved, paid, blocked, fresh, current: Number(b.current) };
+        const [sources]=await tx.execute(sql`select coalesce(sum(available),0)::bigint available from creator_zero_sources(${id}::uuid,${scope})`);
+        const available = Number(b.zero_blocked)||!fresh ? 0 : Number(sources.available);
+        return { net, available, deferred:Number(b.deferred),potentialCorrection:Number(b.correction), pending: Math.max(0, net - reserved - paid - available), reserved, paid, blocked, fresh, current: Number(b.current) };
     }
     async function overview(actor: string, id = actor) { return authorized(actor, id, async (tx) => ({ creatorName: String((await tx.execute(sql`select full_name from users where id=${id}`))[0]?.full_name ?? 'Creator'), summary: await summary(tx, id), payee: (await tx.execute(payeeSelect().append(sql ` where p.creator_id=${id} order by p.created_at desc,p.id desc limit 1`)))[0] as unknown as Payee | undefined, recent: await tx.execute(purchaseCTE(scope).append(sql `select * from purchases where creator_id=${id} order by "createdAt" desc,id desc limit 5`)) as unknown as Purchase[] })); }
     async function transactions(actor: string, id: string, f: FinanceFilters, exportAll = false) {
