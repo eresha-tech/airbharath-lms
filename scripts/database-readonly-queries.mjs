@@ -60,10 +60,11 @@ export const queries = Object.freeze({
     from pg_catalog.pg_trigger t join pg_catalog.pg_class c on c.oid=t.tgrelid join pg_catalog.pg_namespace n on n.oid=c.relnamespace
     join pg_catalog.pg_proc p on p.oid=t.tgfoid join pg_catalog.pg_namespace pn on pn.oid=p.pronamespace
     where not t.tgisinternal and n.nspname='public' order by 1,2,3 limit 1001`,
+  sequences: `select n.nspname as schema,c.relname as name,s.seqtypid::regtype::text as type,s.seqstart::text as start,s.seqincrement::text as increment,s.seqmax::text as max,s.seqmin::text as min,s.seqcache::text as cache,s.seqcycle as cycle, rn.nspname as owner_schema,r.relname as owner_table,a.attname as owner_column from pg_sequence s join pg_class c on c.oid=s.seqrelid join pg_namespace n on n.oid=c.relnamespace left join pg_depend d on d.objid=c.oid and d.deptype in ('a','i') and d.classid='pg_class'::regclass left join pg_class r on r.oid=d.refobjid left join pg_namespace rn on rn.oid=r.relnamespace left join pg_attribute a on a.attrelid=r.oid and a.attnum=d.refobjsubid where n.nspname in ('public','drizzle') order by 1,2`,
   enums: `select n.nspname as schema,t.typname as name,array_agg(e.enumlabel order by e.enumsortorder) as values from pg_catalog.pg_enum e join pg_catalog.pg_type t on t.oid=e.enumtypid join pg_catalog.pg_namespace n on n.oid=t.typnamespace where n.nspname='public' group by 1,2 order by 1,2 limit 101`,
   ledgerPresence: `select pg_catalog.to_regclass('drizzle.__drizzle_migrations') is not null as present`,
   populated: `select exists(select 1 from public.users limit 1) as populated`,
-  ledger: `select id,hash,created_at::text as created_at from drizzle.__drizzle_migrations order by created_at,id limit 49`,
+  ledger: `select id,hash,created_at::text as created_at from drizzle.__drizzle_migrations order by created_at,id limit 51`,
   terms: `select exists(select 1 from public.workspace_creator_terms_versions where terms_version='workspace_creator_terms_2026_01'
     and content_hash='7263f236cc1b27df8f95ef69a2dcc706981ec2060d58758f788bfe40f6808bac' and effective_at='2026-10-12T00:00:00.000Z'::timestamptz and is_current) as ready`,
   pricing: `select (select count(*)=3 from public.workspace_membership_plans where is_current)

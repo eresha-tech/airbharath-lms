@@ -15,7 +15,7 @@ import { bankValidationConfiguration } from '@/lib/creator-payments/bank-validat
 import { payoutTestFixture, testHash } from '../fixtures/payout-test-scope';
 const values = { RAZORPAYX_KEY_ID: 'rzp_test_SYNTHETIC', RAZORPAYX_KEY_SECRET: 'synthetic-only-secret', RAZORPAYX_MERCHANT_ACCOUNT_ID: 'acc_synthetic', RAZORPAYX_FUNDING_ACCOUNT_NUMBER: '000000123456', RAZORPAYX_WEBHOOK_SECRET: 'synthetic-webhook-secret-32-characters', RAZORPAYX_TRANSFER_MODE: 'NEFT', CREATOR_RAZORPAYX_ENABLED: 'true' };
 let fixture: ReturnType<typeof payoutTestFixture>;
-beforeEach(() => { fixture = payoutTestFixture(values); });
+beforeEach(() => { fixture = payoutTestFixture(values); for(const[key,value]of Object.entries(fixture.env))vi.stubEnv(key,value); });
 afterEach(() => { fixture.dispose(); });
 it.each([
  { NODE_ENV: 'production', DATABASE_ENV: 'production' },
@@ -33,6 +33,7 @@ it.each([
  { NODE_ENV: 'test' }, { NODE_ENV: 'development' },
  { VERCEL: '1', VERCEL_ENV: 'preview', VERCEL_TARGET_ENV: 'preview' },
 ])('allows explicitly isolated nonproduction configuration %j only after actual database evidence', async flags => {
+ for(const[key,value]of Object.entries(flags))vi.stubEnv(key,value);
  const config = payoutConfiguration({ ...fixture.env, ...flags }), transport = vi.fn<typeof fetch>().mockImplementation(async () => Response.json({ entity: 'collection', items: [] }));
  const adapter = razorpayXPayoutAdapter(config, transport);
  await expect(adapter.inspect()).rejects.toThrow();expect(transport).not.toHaveBeenCalled();
@@ -100,7 +101,8 @@ it.each(['prepare', 'control', 'worker', 'webhook', 'bank-request', 'bank-worker
  const config = payoutConfiguration(fixture.env), transport = vi.fn<typeof fetch>();
  const execute = vi.fn().mockResolvedValue([]), transaction = vi.fn(), insert = vi.fn(), select = vi.fn();
  const database = { execute, transaction, insert, select } as unknown as typeof db;
- const bankConfig = bankValidationConfiguration({ ...fixture.env, CREATOR_BANK_VALIDATION_TRANSPORT: 'synthetic', RAZORPAYX_FAV_AMOUNT_PAISE: '100', RAZORPAYX_FAV_METHOD: 'pennydrop' });
+ const bankEnv={ ...fixture.env, CREATOR_BANK_VALIDATION_TRANSPORT: 'synthetic', RAZORPAYX_FAV_AMOUNT_PAISE: '100', RAZORPAYX_FAV_METHOD: 'pennydrop' };for(const[key,value]of Object.entries(bankEnv))vi.stubEnv(key,value);
+ const bankConfig = bankValidationConfiguration(bankEnv);
  const action = () => {
   if (entry === 'prepare') return preparePayoutJob(database as unknown as PayoutTx, 'synthetic', 'test:acc_synthetic', config);
   if (entry === 'control') return payoutControl('synthetic', { action: 'authorize_razorpayx', requestKey: 'synthetic', creatorId: 'synthetic' }, database, config);
@@ -114,6 +116,7 @@ it.each(['prepare', 'control', 'worker', 'webhook', 'bank-request', 'bank-worker
 });
 it('preserves legitimate Live configuration and refuses Test flags in it without any database probe', async () => {
  const env = { ...values, NODE_ENV: 'production', DATABASE_ENV: 'production', VERCEL: '1', VERCEL_ENV: 'production', RAZORPAYX_KEY_ID: 'rzp_live_SYNTHETIC', RAZORPAYX_LIVE_EXECUTION_AUTHORIZED: 'true', RAZORPAYX_LIVE_PERMISSION_REVIEWED: 'true' };
+ for(const key of ['RAZORPAYX_TEST_AUTHORIZED','RAZORPAYX_TEST_SCOPE_FILE'])vi.stubEnv(key,undefined);for(const[key,value]of Object.entries(env))vi.stubEnv(key,value);
  const config = payoutConfiguration(env), execute = vi.fn();expect(requirePayoutExecution(config)).toBe(config);
  await verifyPayoutTestDatabase({ execute } as unknown as Pick<typeof db, 'execute'>, config);expect(execute).not.toHaveBeenCalled();
  for (const flags of [{ RAZORPAYX_TEST_AUTHORIZED: 'true' }, { RAZORPAYX_TEST_SCOPE_FILE: fixture.env.RAZORPAYX_TEST_SCOPE_FILE }, { VERCEL_ENV: 'preview' }, { VERCEL_TARGET_ENV: 'preview' }, { DATABASE_ENV: 'test' }]) expect(() => payoutConfiguration({ ...env, ...flags })).toThrow();
@@ -144,4 +147,11 @@ it.each(['NODE_ENV', 'DATABASE_ENV', 'VERCEL_ENV', 'VERCEL_TARGET_ENV'])('does n
  expect(() => payoutConfiguration(fixture.env)).toThrow();
  await expect(razorpayXPayoutAdapter(config, transport).inspect()).rejects.toThrow();
  expect(transport).not.toHaveBeenCalled();
+});
+it('revoked actual Test authorization blocks retained adapters and supplied configuration before any work',async()=>{
+ const config=payoutConfiguration(fixture.env),transport=vi.fn<typeof fetch>();await verifyPayoutTestDatabase(fixture.database,config);vi.stubEnv('RAZORPAYX_TEST_AUTHORIZED','false');expect(()=>payoutConfiguration(fixture.env)).toThrow();await expect(razorpayXPayoutAdapter(config,transport).inspect()).rejects.toThrow();expect(transport).not.toHaveBeenCalled();
+});
+
+it.each([{RAZORPAYX_LIVE_EXECUTION_AUTHORIZED:'true'},{RAZORPAYX_LIVE_ROLLOUT_AUTHORIZED:'true'},{RAZORPAY_KEY_ID:'rzp_live_SYNTHETIC'},{COURSE_RAZORPAY_ACCOUNT_ID:'acc_othermerchant'}])('actual mixed financial scope cannot be concealed by supplied Test configuration %j',async patch=>{
+ const config=payoutConfiguration(fixture.env),transport=vi.fn<typeof fetch>();await verifyPayoutTestDatabase(fixture.database,config);for(const[key,value]of Object.entries(patch))vi.stubEnv(key,value);expect(()=>payoutConfiguration(fixture.env)).toThrow();await expect(razorpayXPayoutAdapter(config,transport).inspect()).rejects.toThrow();expect(transport).not.toHaveBeenCalled();
 });

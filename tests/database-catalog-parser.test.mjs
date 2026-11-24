@@ -1,0 +1,13 @@
+import{test}from'node:test';import assert from'node:assert/strict';import{expectedRoutines,signature,triggerDefinition,routineAttributes,supplementalIndexes,expectedSequences}from'../scripts/database-catalog-expectations.mjs';
+test('routine signatures include arguments, replacements and dollar-quoted bodies without phantom triggers',()=>{
+ const m=[{sql:'CREATE FUNCTION check_source(who uuid, excluding uuid DEFAULT NULL) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT false $$; CREATE TRIGGER old BEFORE UPDATE ON real_table FOR EACH ROW EXECUTE FUNCTION check_guard();'},{sql:'CREATE OR REPLACE FUNCTION check_source(who uuid, excluding uuid DEFAULT NULL) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$ SELECT true $$; DROP TRIGGER old ON real_table;'}];
+ const e=expectedRoutines(m);assert.equal(e.functions.size,1);assert.equal(e.functions.get('check_source(who uuid, excluding uuid)').attributes.volatility,'IMMUTABLE');assert.equal(e.triggers.size,0);assert.equal(signature('who uuid,excluding uuid DEFAULT NULL'),'who uuid, excluding uuid');
+});
+test('only literal reviewed identifier loops expand; trigger events, timing and definition remain bound',()=>{
+ const m=[{sql:"DO $$ BEGIN FOREACH t IN ARRAY ARRAY['table_a','table_b'] LOOP EXECUTE format('CREATE TRIGGER guarded BEFORE INSERT OR UPDATE ON %I FOR EACH ROW EXECUTE FUNCTION check_guard()',t); END LOOP; END $$;"}];const e=expectedRoutines(m);assert.deepEqual([...e.triggers.keys()],['table_a.guarded','table_b.guarded']);assert.equal(e.triggers.get('table_a.guarded').type,23);assert.equal(triggerDefinition('CREATE TRIGGER guarded BEFORE UPDATE OR INSERT ON public.table_a FOR EACH ROW EXECUTE FUNCTION public.check_guard()'),e.triggers.get('table_a.guarded').definition);
+ assert.notEqual(triggerDefinition('CREATE TRIGGER guarded BEFORE UPDATE OR INSERT ON table_a FOR EACH ROW WHEN (false) EXECUTE FUNCTION check_guard()'),e.triggers.get('table_a.guarded').definition);
+ assert.equal(expectedRoutines([{sql:m[0].sql.replace("['table_a','table_b']",'[untrusted_expression]')}]).triggers.size,0);
+});
+test('supplemental indexes and identity sequence are tied to the precise migration prefix',()=>{
+ assert.equal(supplementalIndexes([{tag:'0031_example'}]).length,0);assert.equal(supplementalIndexes([{tag:'0034_example'},{tag:'0036_example'}]).length,9);assert.equal(expectedSequences([]).length,1);assert.notDeepEqual(routineAttributes('RETURNS boolean LANGUAGE sql STABLE'),routineAttributes('RETURNS boolean LANGUAGE sql IMMUTABLE'));assert.notDeepEqual(routineAttributes('CREATE FUNCTION f(wanted uuid DEFAULT NULL) RETURNS boolean LANGUAGE sql'),routineAttributes("CREATE FUNCTION f(wanted uuid DEFAULT '00000000-0000-0000-0000-000000000001'::uuid) RETURNS boolean LANGUAGE sql"));
+});

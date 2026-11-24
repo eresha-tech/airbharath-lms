@@ -1,10 +1,11 @@
-import { expect, it, vi } from 'vitest';
+import { beforeEach, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { financialConfiguration, workspaceFinancialReadiness } from '@/lib/workspace/payments/configuration';
 import { createRazorpayAdapter } from '@/lib/workspace/payments/provider';
 import { drainFinancialWork } from '@/lib/workspace/payments/worker';
 import { financialHarness, financeNow, testContext } from './workspace-payments-fixtures';
 const environment = () => ({ NODE_ENV: 'development', DATABASE_ENV: 'development', WORKSPACE_RAZORPAY_MODE: 'test', WORKSPACE_RAZORPAY_KEY_ID: 'rzp_test_SYNTHETIC001', WORKSPACE_RAZORPAY_KEY_SECRET: 'synthetic-api-secret-not-real', WORKSPACE_RAZORPAY_WEBHOOK_SECRET: 'synthetic-webhook-secret-not-real', WORKSPACE_RAZORPAY_ACCOUNT_ID: 'acc_SYNTHETIC001', WORKSPACE_RAZORPAY_TEST_AUTHORIZED: 'true', WORKSPACE_PAYMENT_ENABLED: 'true', WORKSPACE_RAZORPAY_WEBHOOK_ENABLED: 'true', WORKSPACE_RAZORPAY_RECONCILIATION_ENABLED: 'true', WORKSPACE_RAZORPAY_REFUND_RECONCILIATION_ENABLED: 'false', WORKSPACE_REFUND_ENABLED: 'false', WORKSPACE_NOTICE_DELIVERY_ENABLED: 'false' });
+beforeEach(() => { for (const [key,value] of Object.entries(environment())) vi.stubEnv(key,value); });
 it('keeps payment capabilities available with refund mutation/reconciliation and mail off', () => {
  const env=environment(); expect(workspaceFinancialReadiness(env)).toMatchObject({testModeSafe:true,checkoutReady:true,webhookReady:true,reconciliationReady:true,refundMutationReady:false,refundReconciliationReady:false,noticeDeliveryAuthorized:false});
  for(const cap of ['checkout','webhook','reconciliation'] as const)expect(financialConfiguration(cap,env)).not.toBeNull();

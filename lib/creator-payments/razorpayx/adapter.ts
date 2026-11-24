@@ -1,7 +1,7 @@
 import { requirePayoutTestDatabase } from './test-isolation';
 import 'server-only';
 import { CommerceError } from '@/lib/commerce/model';
-import { type PayoutConfig, requirePayoutExecution } from './config';
+import { type PayoutConfig, requirePayoutExecution, requirePayoutIdentity } from './config';
 import { providerId, type PayoutRequest } from './model';
 type Bank = {
     holder: string;
@@ -13,6 +13,7 @@ export class PayoutProviderError extends Error {
 }
 export function razorpayXRequest(config: PayoutConfig, transport: typeof fetch = fetch) {
     return async function request(path: string, body?: unknown, idempotency?: string) {
+        requirePayoutIdentity(config);
         requirePayoutTestDatabase(config);
         const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 6000);
         try {

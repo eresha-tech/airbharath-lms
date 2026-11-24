@@ -1,0 +1,12 @@
+import {beforeEach,it,expect,vi}from'vitest';
+const m=vi.hoisted(()=>({user:vi.fn(),withdraw:vi.fn()}));
+vi.mock('@/lib/workspace/eligibility/service',()=>({getWorkspaceUser:m.user}));
+vi.mock('@/lib/mentorship/repository',()=>({mentorRepository:()=>({withdraw:m.withdraw})}));
+import {POST}from'@/app/api/mentorship/applications/withdraw/route';
+import {withdrawalInput}from'@/lib/mentorship/model';
+const req=(origin='http://localhost:3030',body='{}')=>new Request('http://localhost:3030/api/mentorship/applications/withdraw',{method:'POST',headers:{origin,'content-type':'application/json'},body});
+beforeEach(()=>{m.user.mockResolvedValue({id:'owner'});m.withdraw.mockResolvedValue({id:'reference'});});
+it('requires same origin and authenticated applicant before repository access',async()=>{expect((await POST(req('https://evil.example'))).status).toBe(403);m.user.mockResolvedValue(null);expect((await POST(req())).status).toBe(401);expect(m.withdraw).not.toHaveBeenCalled();});
+it('uses persisted identity and returns a private receipt without deletion claims',async()=>{const r=await POST(req());expect(r.status).toBe(200);expect(r.headers.get('cache-control')).toBe('no-store');expect(m.withdraw).toHaveBeenCalledWith('owner',{});expect(await r.json()).toMatchObject({withdrawn:true,reference:'reference'});});
+it('bounds input and sanitizes storage errors',async()=>{expect((await POST(req(undefined,'x'.repeat(1200)))).status).toBe(400);m.withdraw.mockRejectedValueOnce(Error('private applicant data'));const r=await POST(req());expect(r.status).toBe(503);expect(await r.text()).not.toContain('private applicant');});
+it('requires an explicit confirmed command with no target-account override',()=>{const c={requestKey:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',confirmed:true};expect(withdrawalInput(c)).toEqual({requestKey:c.requestKey});for(const patch of[{confirmed:false},{owner:'other'},{requestKey:'bad'},{confirmed:undefined}])expect(()=>withdrawalInput({...c,...patch})).toThrow();});

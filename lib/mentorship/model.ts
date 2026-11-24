@@ -28,3 +28,9 @@ export function applicationInput(raw:unknown):ApplicationInput{
 }
 export function reviewInput(raw:unknown){if(!plain(raw))throw new MentorError(400,'Check the review action.');const r=raw as Record<string,unknown>;if(Object.keys(r).some(k=>!['requestKey','expectedVersion','status','note'].includes(k))||!UUID.test(String(r.requestKey))||!Number.isSafeInteger(r.expectedVersion)||Number(r.expectedVersion)<1||!(REVIEW_STATUSES as readonly unknown[]).includes(r.status)||r.status==='submitted'||typeof r.note!=='string'||r.note.trim().length<3||r.note.length>2000||/[\u0000-\u0008\u000b-\u001f\u007f]/.test(r.note))throw new MentorError(400,'Choose a review status and add a private screening note (3–2000 characters).');return {requestKey:String(r.requestKey),expectedVersion:Number(r.expectedVersion),status:r.status as ReviewStatus,note:r.note.trim()};}
 export function mentorFilters(q:Record<string,string|string[]|undefined>){const page=Number(q.page??1),search=q.q??'',status=q.status??'all',specialisation=q.specialisation??'all';if(!Number.isInteger(page)||page<1||page>500||typeof search!=='string'||search.length>120||typeof status!=='string'||status!=='all'&&!(REVIEW_STATUSES as readonly string[]).includes(status)||typeof specialisation!=='string'||specialisation!=='all'&&!SPECIALISATIONS.some(([key])=>key===specialisation))throw new MentorError(400,'Check the search filters.');return {page,search,status,specialisation};}
+
+export function withdrawalInput(raw:unknown){
+ if(!plain(raw))throw new MentorError(400,'Confirm that you want to withdraw.');const r=raw as Record<string,unknown>;
+ if(Object.keys(r).some(k=>!['requestKey','confirmed'].includes(k))||!UUID.test(String(r.requestKey))||r.confirmed!==true)throw new MentorError(400,'Confirm that you want to withdraw.');
+ return {requestKey:String(r.requestKey)};
+}

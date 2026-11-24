@@ -1,4 +1,4 @@
-import { it, expect, vi } from 'vitest';
+import { beforeEach, it, expect, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { workspaceFinancialReadiness, financialConfiguration } from '@/lib/workspace/payments/configuration';
@@ -9,6 +9,7 @@ import { refundHarness } from './workspace-refunds-fixtures';
 import { activationReviewReason, resolveMembershipAccess } from '@/lib/workspace/activation/model';
 
 import { liveEnv } from './workspace-live-fixtures';
+beforeEach(() => { for (const [key,value] of Object.entries(liveEnv)) vi.stubEnv(key,value); });
 
 it('recognizes coherent production only with server deployment and database evidence; exposes no secrets', () => {
   const r = workspaceFinancialReadiness(liveEnv);
@@ -60,6 +61,7 @@ it('normal persisted-admin refund workflow operates with charging disabled using
   const h = await refundHarness();
   h.order.providerMode = 'live'; h.order.commercialPolicyVersion = 'workspace-live-commercial-v1';
   const env = { ...liveEnv, WORKSPACE_PAYMENT_ENABLED: 'false', WORKSPACE_RAZORPAY_ACCOUNT_ID: h.order.providerAccountId };
+  for (const [key,value] of Object.entries(env)) vi.stubEnv(key,value);
   const responses: Record<string, unknown>[] = [];
   const http = vi.fn<typeof fetch>(async (url, init) => {
     const path = String(url);
@@ -82,6 +84,7 @@ it('normal persisted-admin refund workflow operates with charging disabled using
 });
 it('a reconciliation-only provider cannot initiate approval, consume a prepared intent or blind-retry', async () => {
   const h = await refundHarness(), env = { ...liveEnv, WORKSPACE_PAYMENT_ENABLED: 'false', WORKSPACE_REFUND_ENABLED: 'false', WORKSPACE_RAZORPAY_ACCOUNT_ID: h.order.providerAccountId };
+  for (const [key,value] of Object.entries(env)) vi.stubEnv(key,value);
   h.order.providerMode = 'live'; await h.requested();
   const http = vi.fn<typeof fetch>(), service = createRefundService(h.store, createRazorpayAdapter(env, http));
   await expect(service.decide(h.adminId, h.order.id, { action: 'approve', confirmed: true })).rejects.toMatchObject({ code: 'unavailable' });

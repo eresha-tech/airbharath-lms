@@ -337,6 +337,20 @@
       "when": 1795069557373,
       "tag": "0047_sponsored_deferred_settlement",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1795521600000,
+      "tag": "0048_mentor_withdrawal_suppression",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1795608000000,
+      "tag": "0049_workspace_staging_grants",
+      "breakpoints": true
     }
   ]
 }

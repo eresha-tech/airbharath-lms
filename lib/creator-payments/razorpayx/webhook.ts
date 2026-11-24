@@ -5,9 +5,10 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { creatorPayoutInbox, creatorBankInbox } from '@/lib/db/schema';
 import { CommerceError } from '@/lib/commerce/model';
-import { payoutConfiguration, type PayoutConfig } from './config';
+import { payoutConfiguration, requirePayoutIdentity, type PayoutConfig } from './config';
 import { providerId } from './model';
 export async function receivePayoutWebhook(request: Request, database = db, config: PayoutConfig = payoutConfiguration()) {
+    requirePayoutIdentity(config);
     await verifyPayoutTestDatabase(database, config);
     const signature = request.headers.get('x-razorpay-signature') ?? '';
     if (!/^[a-f0-9]{64}$/i.test(signature))

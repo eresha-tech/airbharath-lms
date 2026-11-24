@@ -1,5 +1,5 @@
 import type { NoticeReadiness } from '../refund-notifications/configuration-core.mjs';
-export type WorkspaceRuntime = 'production' | 'development' | 'test' | 'preview' | 'unclassified';
+export type WorkspaceRuntime = 'production' | 'staging' | 'development' | 'test' | 'preview' | 'unclassified';
 export function classifyWorkspaceRuntime(env?: Record<string, string | undefined>): WorkspaceRuntime;
 export interface FinancialReadiness extends NoticeReadiness {
   runtime: WorkspaceRuntime;

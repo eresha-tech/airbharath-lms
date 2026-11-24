@@ -981,7 +981,7 @@ export const workspaceEmailNoticeBindings = pgTable('workspace_email_notice_bind
 export const workspaceAccessGrants = pgTable('workspace_access_grants', {
   id: uuid('id').defaultRandom().primaryKey(), userId: uuid('user_id').notNull().references(()=>users.id,{onDelete:'restrict'}), creatorProfileId: uuid('creator_profile_id').notNull(),
   eligibilityAttemptId: uuid('eligibility_attempt_id').notNull().references(()=>workspaceEligibilityAttempts.id,{onDelete:'restrict'}),
-  source: text('source').default('admin_complimentary').notNull(), scope: text('scope').default('creator_workspace').notNull(), environment: text('environment').$type<'development'|'test'|'production'>().notNull(),
+  source: text('source').default('admin_complimentary').notNull(), scope: text('scope').default('creator_workspace').notNull(), environment: text('environment').$type<'development'|'test'|'staging'|'production'>().notNull(),
   status: text('status').$type<'active'|'revoked'|'expired'>().default('active').notNull(), startsAt: timestamp('starts_at',{withTimezone:true}).notNull(), expiresAt: timestamp('expires_at',{withTimezone:true}).notNull(),
   reason: text('reason').notNull(), grantedBy: uuid('granted_by').notNull().references(()=>users.id,{onDelete:'restrict'}), requestKey: uuid('request_key').notNull(), payloadHash: text('payload_hash').notNull(),
   termsVersion: text('terms_version').notNull(), termsContentHash: text('terms_content_hash').notNull(), createdAt: timestamp('created_at',{withTimezone:true}).notNull(),
@@ -991,7 +991,7 @@ export const workspaceAccessGrants = pgTable('workspace_access_grants', {
   uniqueIndex('workspace_grant_open_owner_idx').on(t.userId,t.environment).where(sql`${t.status}='active'`),index('workspace_grant_owner_expiry_idx').on(t.userId,t.environment,t.expiresAt),index('workspace_grant_created_idx').on(t.createdAt,t.id),
   foreignKey({columns:[t.creatorProfileId,t.userId],foreignColumns:[workspaceCreatorProfiles.id,workspaceCreatorProfiles.userId],name:'workspace_grant_profile_owner_fk'}).onDelete('restrict'),
   foreignKey({columns:[t.termsVersion,t.termsContentHash],foreignColumns:[workspaceCreatorTermsVersions.termsVersion,workspaceCreatorTermsVersions.contentHash],name:'workspace_grant_terms_fk'}).onDelete('restrict'),
-  check('workspace_grant_context_check',sql`${t.source}='admin_complimentary' AND ${t.scope}='creator_workspace' AND ${t.environment} IN ('development','test','production') AND ${t.payloadHash} ~ '^[a-f0-9]{64}$' AND length(btrim(${t.reason})) BETWEEN 10 AND 1000`),
+  check('workspace_grant_context_check',sql`${t.source}='admin_complimentary' AND ${t.scope}='creator_workspace' AND ${t.environment} IN ('development','test','staging','production') AND ${t.payloadHash} ~ '^[a-f0-9]{64}$' AND length(btrim(${t.reason})) BETWEEN 10 AND 1000`),
   check('workspace_grant_term_check',sql`${t.startsAt}>=${t.createdAt} AND ${t.startsAt}<=${t.createdAt}+interval '30 days' AND ${t.expiresAt}>${t.startsAt} AND ${t.expiresAt}<=(((${t.startsAt} AT TIME ZONE 'Asia/Kolkata')+interval '12 months') AT TIME ZONE 'Asia/Kolkata')`),
   check('workspace_grant_status_check',sql`(${t.status}='active' AND ${t.closedAt} IS NULL AND ${t.closedBy} IS NULL AND ${t.closeReason} IS NULL) OR (${t.status} IN ('revoked','expired') AND ${t.closedAt} IS NOT NULL AND ${t.closedAt}>=${t.createdAt} AND ${t.closedBy} IS NOT NULL AND length(btrim(${t.closeReason})) BETWEEN 10 AND 1000 AND (${t.status}<>'expired' OR ${t.closedAt}>=${t.expiresAt}))`),
 ]);
@@ -1223,3 +1223,10 @@ export const creatorPayoutAllocations = pgTable('creator_payout_allocations', {
 export const creatorCommercialLiveReleases=pgTable('creator_commercial_live_releases',{
  id:text('id').primaryKey(),scope:text('scope').notNull().unique(),legalVersion:text('legal_version').notNull(),legalBody:text('legal_body').notNull(),legalHash:text('legal_hash').notNull(),accountingHash:text('accounting_hash').notNull(),sourceHash:text('source_hash').notNull(),founderApprovalHash:text('founder_approval_hash').notNull(),databaseIdentity:jsonb('database_identity').$type<Record<string,unknown>>().notNull(),firstAdmin:uuid('first_admin').notNull().references(()=>users.id,{onDelete:'restrict'}),secondAdmin:uuid('second_admin').notNull().references(()=>users.id,{onDelete:'restrict'}),payoutExecution:boolean('payout_execution').default(false).notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
 },t=>[check('commercial_live_release_gate',sql`${t.scope} LIKE 'live:%' AND ${t.firstAdmin}<>${t.secondAdmin} AND ${t.payoutExecution}=false AND ${t.legalHash} ~ '^[a-f0-9]{64}$' AND ${t.accountingHash} ~ '^[a-f0-9]{64}$' AND ${t.sourceHash} ~ '^[a-f0-9]{64}$' AND ${t.founderApprovalHash} ~ '^[a-f0-9]{64}$'`)]);
+
+// Minimal purpose-specific withdrawal evidence; not deletion or a retention policy.
+export const mentorWithdrawals=pgTable('mentor_withdrawals',{
+ applicationId:uuid('application_id').primaryKey().references(()=>mentorApplications.id,{onDelete:'restrict'}),
+ ownerId:uuid('owner_id').notNull().references(()=>users.id,{onDelete:'restrict'}),requestKey:uuid('request_key').notNull(),
+ createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+});

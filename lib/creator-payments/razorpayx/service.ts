@@ -6,10 +6,11 @@ import { db } from '@/lib/db';
 import { creatorPayouts as payouts, creatorPayoutJobs as jobs, creatorFinanceEvents as events, users } from '@/lib/db/schema';
 import { CommerceError } from '@/lib/commerce/model';
 import { UUID } from '../model';
-import { type PayoutConfig, payoutConfiguration, requirePayoutExecution } from './config';
+import { type PayoutConfig, payoutConfiguration, requirePayoutExecution, requirePayoutIdentity } from './config';
 import { providerId } from './model';
 export type PayoutTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export async function preparePayoutJob(tx: PayoutTx, payoutId: string, collectionScope: string, config = requirePayoutExecution()) {
+    requirePayoutExecution(config);
     if (`${config.mode}:${config.merchantId}` !== collectionScope)
         throw new CommerceError(409, 'Payout and collection merchant accounts do not match.');
     await verifyPayoutTestDatabase(tx, config);
@@ -19,6 +20,8 @@ export function assertLiveOperation(config: PayoutConfig, payoutId: string, amou
     requirePayoutExecution(config);
     if (config.mode !== 'live')
         return;
+    if (['RAZORPAYX_LIVE_ROLLOUT_AUTHORIZED','RAZORPAYX_LIVE_PILOT_PAYOUT_ID','RAZORPAYX_LIVE_PILOT_MAX_PAISE'].some(key => env[key] !== process.env[key]))
+        throw new CommerceError(503, 'Live payout authorization contradicts the actual process.');
     if (env.RAZORPAYX_LIVE_ROLLOUT_AUTHORIZED === 'true')
         return;
     const max = Number(env.RAZORPAYX_LIVE_PILOT_MAX_PAISE);
@@ -33,6 +36,7 @@ export async function payoutControl(actor: string, command: {
     evidence?: string;
     providerPayoutId?: string;
 }, database = db, config = payoutConfiguration()) {
+    requirePayoutIdentity(config);
     await verifyPayoutTestDatabase(database, config);
     if (!UUID.test(command.requestKey) || !UUID.test(command.creatorId) || !command.entityId || !UUID.test(command.entityId) || !command.evidence || command.evidence.trim().length < 6 || command.evidence.length > 2000)
         throw new CommerceError(400, 'Provide the payout and an independent review reference.');

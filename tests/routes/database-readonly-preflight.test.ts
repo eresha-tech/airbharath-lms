@@ -6,6 +6,7 @@ import { loadReviewedSource, preflightConfiguration, reconcileLedger, assessCata
 import { main } from '../../scripts/database-readonly-preflight.mjs';
 const providerMock = vi.hoisted(()=>({factory:vi.fn()}));
 vi.mock('postgres',()=>({default:providerMock.factory}));
+import {expectedSequences} from '../../scripts/database-catalog-expectations.mjs';
 import { queries } from '../../scripts/database-readonly-queries.mjs';
 interface SnapshotTable {
   name:string; isRLSEnabled:boolean;
@@ -38,6 +39,7 @@ function catalog(count=7) {
       ...(Object.values(t.columns).some(c=>c.primaryKey)?[{schema:'public',table:t.name,name:t.name+'_pkey',type:'p',validated:true,definition:'synthetic primary key'}]:[]),
     ]),
     indexes: Object.values(snapshot.tables).flatMap(t=>Object.values(t.indexes).map(i=>({schema:'public',table:t.name,name:i.name.slice(0,63),valid:true,ready:true,unique:i.isUnique,definition:'synthetic index'}))),
+    sequences:expectedSequences(source.migrations.slice(0,count)),
     functions: [] as {schema:string;name:string;arguments:string;body:string;definition:string;security_definer:boolean}[],
     triggers: [] as {schema:string;table:string;name:string;function:string;function_schema:string;enabled:string}[],
     enums: Object.values(snapshot.enums).map(e=>({schema:e.schema,name:e.name,values:e.values})),
@@ -61,8 +63,8 @@ function harness(count=7) {
   const connect = vi.fn(()=>client);
   return { data, unsafe, client, connect, run:(env:Record<string,string|undefined>=environment())=>inspectDatabase({env,connect,source}) };
 }
-it('pins all 48 reviewed SQL sources and 98 source/schema files without network or database use',()=>{
-  expect(source.manifest).toHaveLength(48); expect(source.snapshots).toHaveLength(48); expect(source.manifest[31].tag).toBe('0031_workspace_phone_only_onboarding'); expect(source.manifest[32].tag).toBe('0032_workspace_course_media');expect(source.manifest[40].tag).toBe('0040_creator_analytics_paid_origin');expect(source.manifest[41].tag).toBe('0041_workspace_launch_operations');expect(source.manifest[42].tag).toBe('0042_mentor_preregistration');expect(source.manifest[45].tag).toBe('0045_academy_prospective_entitlements');expect(source.manifest[46].tag).toBe('0046_creator_sponsored_revenue_sharing');expect(source.manifest[47].tag).toBe('0047_sponsored_deferred_settlement');
+it('pins all 50 reviewed SQL sources and 102 source/schema files without network or database use',()=>{
+  expect(source.manifest).toHaveLength(50); expect(source.snapshots).toHaveLength(50); expect(source.manifest[31].tag).toBe('0031_workspace_phone_only_onboarding'); expect(source.manifest[32].tag).toBe('0032_workspace_course_media');expect(source.manifest[40].tag).toBe('0040_creator_analytics_paid_origin');expect(source.manifest[41].tag).toBe('0041_workspace_launch_operations');expect(source.manifest[42].tag).toBe('0042_mentor_preregistration');expect(source.manifest[45].tag).toBe('0045_academy_prospective_entitlements');expect(source.manifest[46].tag).toBe('0046_creator_sponsored_revenue_sharing');expect(source.manifest[47].tag).toBe('0047_sponsored_deferred_settlement');
 });
 it('fails before connection construction without separate opt-in or explicit production manifest',async()=>{
   const h=harness(); for(const overrides of [{ALLOW_PRODUCTION_READONLY_PREFLIGHT:undefined},{DATABASE_ENV:'development'},{PREFLIGHT_NEON_BRANCH_ID:undefined},{PREFLIGHT_EXPECTED_DATABASE:undefined},{ALLOW_DATABASE_MIGRATION:'true'}]) await expect(h.run({...environment(),...overrides})).rejects.toThrow(/^preflight_/);
@@ -105,19 +107,19 @@ it.each(['CONNECTION_DESTROYED','ECONNRESET','CONNECT_TIMEOUT','ERR_TLS_CERT_ALT
   expect(JSON.stringify(preflightFailure({code,message:'private-synthetic-message'},'transaction_begin'))).not.toContain('private-synthetic');
 });
 it.each([1,7,31,32,33])('reconciles the exact contiguous prefix of %i migrations',count=>{
-  const r=reconcileLedger(ledger(count),source,true,true); expect(r.state).toBe('MATCHED_PREFIX'); expect(r.installed).toHaveLength(count); expect(r.pending).toHaveLength(48-count);
+  const r=reconcileLedger(ledger(count),source,true,true); expect(r.state).toBe('MATCHED_PREFIX'); expect(r.installed).toHaveLength(count); expect(r.pending).toHaveLength(50-count);
 });
-it('reads the complete reviewed 48-migration ledger rather than truncating at the old 32-entry ceiling',async()=>{
-  const h=harness(48), report=await h.run();
+it('reads the complete reviewed 50-migration ledger rather than truncating at the old 32-entry ceiling',async()=>{
+  const h=harness(50), report=await h.run();
   expect(report.ledger.state).toBe('MATCHED_PREFIX');
-  expect(report.ledger.installed).toHaveLength(48);
+  expect(report.ledger.installed).toHaveLength(50);
   expect(report.ledger.pending).toEqual([]);
   expect(report.limitations).not.toContain('ledger:catalog_limit_exceeded');
-  expect(queries.ledger).toContain('limit 49'); // Read one beyond the 48-entry chain to detect unknown migrations.
+  expect(queries.ledger).toContain('limit 51'); // Read one beyond the 50-entry chain to detect unknown migrations.
 });
 it('fails closed on a ledger extending beyond the reviewed migration chain',async()=>{
-  const h=harness(48);
-  h.data.ledger=[...ledger(48),{id:49,hash:'b'.repeat(64),created_at:'9999999999999'}];
+  const h=harness(50);
+  h.data.ledger=[...ledger(50),{id:51,hash:'b'.repeat(64),created_at:'9999999999999'}];
   const report=await h.run();
   expect(report.ledger.state).toBe('UNKNOWN');
   expect(report.limitations).toContain('ledger:catalog_limit_exceeded');
@@ -276,10 +278,10 @@ it('redacts invalid ledger values while preserving the divergent-ledger blocker'
 it('refuses altered SQL, journal metadata and snapshots after the reviewed 0041 repin',()=>{
   const root=mkdtempSync(join(tmpdir(),'preflight-source-pin-'));
   try {
-    mkdirSync(join(root,'drizzle/meta'),{recursive:true}); mkdirSync(join(root,'lib/db'),{recursive:true});
+    mkdirSync(join(root,'drizzle/meta'),{recursive:true}); mkdirSync(join(root,'lib/db'),{recursive:true}); mkdirSync(join(root,'scripts'),{recursive:true});
     const paths=['drizzle/meta/_journal.json','lib/db/schema.ts',...source.manifest.flatMap(e=>['drizzle/'+e.tag+'.sql','drizzle/meta/'+e.tag.slice(0,4)+'_snapshot.json'])];
     for(const path of paths)writeFileSync(join(root,path),readFileSync(path));
-    expect(loadReviewedSource(root).manifest).toHaveLength(48);
+    expect(loadReviewedSource(root).manifest).toHaveLength(50);
     for(const path of ['drizzle/0006_great_kate_bishop.sql','drizzle/0031_workspace_phone_only_onboarding.sql','drizzle/meta/0031_snapshot.json','drizzle/0032_workspace_course_media.sql','drizzle/meta/0032_snapshot.json','lib/db/schema.ts','drizzle/meta/_journal.json','drizzle/0045_academy_prospective_entitlements.sql','drizzle/meta/0045_snapshot.json','drizzle/0046_creator_sponsored_revenue_sharing.sql','drizzle/meta/0046_snapshot.json','drizzle/0047_sponsored_deferred_settlement.sql','drizzle/meta/0047_snapshot.json']) {
       const original=readFileSync(join(root,path));writeFileSync(join(root,path),Buffer.concat([original,Buffer.from('\n ')]));
       expect(()=>loadReviewedSource(root)).toThrow('preflight_source_unreviewed');writeFileSync(join(root,path),original);

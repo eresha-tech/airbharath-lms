@@ -1,0 +1,15 @@
+**
+!.next/
+!.next/standalone/
+!.next/standalone/**
+!.next/static/
+!.next/static/**
+!public/
+!public/**
+!.next/workers/
+!.next/workers/worker.cjs
+!Dockerfile
+**/.env*
+**/.aws/**
+**/*.pem
+**/*.key
