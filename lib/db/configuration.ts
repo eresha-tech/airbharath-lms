@@ -1,3 +1,4 @@
+import { vercelPreviewRequested, vercelStagingConfiguration } from '../runtime/vercel-staging-core.mjs';
 import { isIP } from 'node:net';
 import postgres from 'postgres';
 
@@ -13,6 +14,7 @@ type Purpose = 'web' | 'worker';
 
 // Parse before constructing a driver: never let postgres.js infer a target from PG* or OS defaults.
 export function databaseConfiguration(env: Environment, purpose: Purpose = 'web', applicationName = 'airbharath_web'): DatabaseConfiguration {
+  if (vercelPreviewRequested(env)) vercelStagingConfiguration(env);
   const invalid = (): never => { throw new Error('database_configuration_invalid'); };
   if (!['development', 'test', 'staging', 'production'].includes(env.DATABASE_ENV ?? '')) invalid();
   const production = env.NODE_ENV === 'production' || ['staging', 'production'].includes(env.DATABASE_ENV!);

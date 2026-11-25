@@ -1,0 +1,18 @@
+import { beforeEach, expect, it, vi } from 'vitest';
+import { PREVIEW_DISABLED_FLAGS } from '@/lib/runtime/vercel-staging-core.mjs';
+const probe=vi.hoisted(()=>{const query=Object.assign(vi.fn(),{end:vi.fn(async()=>{})});return{query,configuration:vi.fn(()=>({max:1})),create:vi.fn(()=>query)}});
+vi.mock('@/lib/db/configuration',()=>({createDatabaseClient:probe.create,databaseConfiguration:probe.configuration}));
+import { verifyVercelStagingDatabase } from '@/lib/runtime/vercel-staging';
+import { register } from '@/instrumentation';
+const identity='a'.repeat(64),user='airbharath_staging_runtime_scoped',host='ep-fixture.ap-southeast-1.aws.neon.tech',database='airbharath_staging_lms';
+const row={environment:'staging',identity,database,role:user,authenticated_role:user,marker_owner:'airbharath_staging_migrator',marker_writable:false,marker_owner_member:false,restricted:true,parents:0,owns:0,migrator_nologin:true,migrations:50};
+beforeEach(()=>{
+ for(const [k,v] of Object.entries({...Object.fromEntries(PREVIEW_DISABLED_FLAGS.map(k=>[k,'false'])),NODE_ENV:'production',DATABASE_ENV:'staging',VERCEL:'1',VERCEL_ENV:'preview',VERCEL_TARGET_ENV:'preview',VERCEL_GIT_COMMIT_REF:'staging',WORKSPACE_DEPLOYMENT_PROVIDER:'vercel',WORKSPACE_DEPLOYMENT_ENV:'staging',WORKSPACE_VERCEL_STAGING_AUTHORIZED:'true',DATABASE_URL:`postgresql://${user}:SYNTHETIC_ONLY@${host}/${database}?sslmode=verify-full`,STAGING_EXPECTED_DATABASE_HOST:host,STAGING_EXPECTED_DATABASE_NAME:database,STAGING_EXPECTED_DATABASE_USER:user,STAGING_DATABASE_IDENTITY:identity,NEXT_RUNTIME:'nodejs'}))vi.stubEnv(k,v);
+ probe.query.mockResolvedValue([row]);probe.query.end.mockClear();probe.configuration.mockClear();probe.create.mockClear();
+});
+it('uses framework initialization and a genuine independent marker read without ECS wrapper',async()=>{await register();expect(probe.configuration).toHaveBeenCalledOnce();expect(probe.create).toHaveBeenCalledOnce();expect(probe.query).toHaveBeenCalledOnce();expect(probe.query.end).toHaveBeenCalledWith({timeout:3});});
+it.each([{WORKSPACE_PAYMENT_ENABLED:'true'},{VERCEL_ENV:'production'},{DATABASE_ENV:'production'},{VERCEL_GIT_COMMIT_REF:'main'},{STAGING_EXPECTED_DATABASE_HOST:'ep-other.neon.tech'}])('rejects %j before connection creation',async patch=>{for(const[k,v]of Object.entries(patch))vi.stubEnv(k,v);await expect(verifyVercelStagingDatabase()).rejects.toThrow('vercel_staging_configuration_rejected');expect(probe.create).not.toHaveBeenCalled();expect(probe.query).not.toHaveBeenCalled();});
+it.each([{identity:'b'.repeat(64)},{environment:'production'},{role:'neondb_owner'},{marker_writable:true},{parents:1},{migrations:49}])('rejects mismatched actual database evidence %j',async patch=>{probe.query.mockResolvedValue([{...row,...patch}]);await expect(register()).rejects.toThrow('vercel_staging_database_identity_rejected');expect(probe.query.end).toHaveBeenCalledOnce();});
+it('sanitizes provider/driver failures and closes the verification connection',async()=>{probe.query.mockRejectedValueOnce(new Error('SYNTHETIC_PRIVATE_CONNECTION'));await expect(register()).rejects.toThrow(/^vercel_staging_database_identity_rejected$/);expect(probe.query.end).toHaveBeenCalledOnce();});
+it('does not initialize a PostgreSQL connection in Edge runtime',async()=>{vi.stubEnv('NEXT_RUNTIME','edge');await register();expect(probe.create).not.toHaveBeenCalled();});
+it('preserves existing production startup without Preview configuration',async()=>{vi.stubEnv('WORKSPACE_VERCEL_STAGING_AUTHORIZED',undefined);vi.stubEnv('VERCEL_ENV','production');await register();expect(probe.create).not.toHaveBeenCalled();});

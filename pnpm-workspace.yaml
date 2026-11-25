@@ -1,10 +1,11 @@
 pmOnFail: warn
 verifyDepsBeforeRun: false
 
-# Next's Sharp 0.34.5 copy crashes on the local Linux runtime.
-# Reuse the application's working Sharp version without disabling image optimization.
+# Keep the patched native decoder and CSS/map parsers consistent in all dependency paths.
 overrides:
-  'next@15.5.19>sharp': 0.35.4
+  sharp: 0.35.5
+  postcss: 8.5.28
+  source-map-js: 1.2.2
 
 allowBuilds:
   core-js: true
