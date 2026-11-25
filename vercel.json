@@ -1,29 +1,3 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "crons": [
-    {
-      "path": "/api/internal/workspace/reconcile",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/internal/course-payments/reconcile",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/internal/creator-payouts/reconcile",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/internal/creator-bank-validations/reconcile",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/internal/workspace/media",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/internal/workspace/refund-notices",
-      "schedule": "*/5 * * * *"
-    }
-  ]
+  "$schema": "https://openapi.vercel.sh/vercel.json"
 }

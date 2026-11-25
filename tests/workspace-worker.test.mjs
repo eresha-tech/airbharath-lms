@@ -1,9 +1,17 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 import {workerConfiguration, workerSchedule, createWorker} from '../scripts/workspace-worker.mjs';
 const env = {WORKSPACE_WORKER_ENABLED: 'true', CRON_SECRET: 'synthetic-worker-authorization-32-characters'};
-const schedule = workerSchedule(JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url))).crons);
+// Exercise the unchanged standalone worker with a synthetic schedule. Vercel
+// Preview deliberately has no scheduler declarations and never starts a worker.
+const schedule = workerSchedule([
+  {path: '/api/internal/workspace/reconcile', schedule: '*/5 * * * *'},
+  {path: '/api/internal/course-payments/reconcile', schedule: '*/5 * * * *'},
+  {path: '/api/internal/creator-payouts/reconcile', schedule: '* * * * *'},
+  {path: '/api/internal/creator-bank-validations/reconcile', schedule: '* * * * *'},
+  {path: '/api/internal/workspace/media', schedule: '* * * * *'},
+  {path: '/api/internal/workspace/refund-notices', schedule: '*/5 * * * *'},
+]);
 const flush = () => new Promise(resolve => setImmediate(resolve));
 test('worker refuses missing authorization, external destinations and malformed schedules', () => {
   assert.throws(() => workerConfiguration({}));
