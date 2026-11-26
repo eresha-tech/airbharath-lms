@@ -1,3 +1,4 @@
+import { measureBuilderRead, withBuilderReadTiming } from './read-timing';
 import { getWorkspaceUser } from '../eligibility/service';
 import { getAuthorizedAdminSession } from '@/lib/admin-authorization';
 import { readJson, isSameOrigin, privateJson } from '../http';
@@ -16,9 +17,12 @@ function selected(request: Request) {
   return { moduleId: buildId(query.get('moduleId')), lessonId: buildId(query.get('lessonId')) };
 }
 export async function builderHttp(request: Request, draftId: string) {
+  return withBuilderReadTiming(request, () => handleBuilder(request, draftId));
+}
+async function handleBuilder(request: Request, draftId: string) {
   try {
     const edit = request.method !== 'GET'; if (edit && !isSameOrigin(request)) return privateJson({ error: 'This request is not allowed.' }, 403);
-    const user = await getWorkspaceUser(); if (!user) throw new BuildError('authentication'); buildId(draftId);
+    const user = await measureBuilderRead('authentication', () => getWorkspaceUser()); if (!user) throw new BuildError('authentication'); buildId(draftId);
     const service = workspaceBuilder();
     if (!edit) { const selection = selected(request); return privateJson(selection ? { lesson: await service.lesson(user.id, draftId, selection.moduleId, selection.lessonId) } : { tree: await service.read(user.id, draftId) }); }
     let body: unknown; try { body = await readJson(request, BUILDER_BODY_LIMIT); } catch (error) { throw new BuildError(error instanceof Error && error.message === 'BODY_TOO_LARGE' ? 'too_large' : 'validation'); }

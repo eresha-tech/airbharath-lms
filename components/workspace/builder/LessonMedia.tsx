@@ -5,6 +5,7 @@ import { FileVideo, Paperclip, Subtitles } from 'lucide-react';
 import { FileDropzone, UploadStatus, formatBytes, type UploadStage } from '@/components/media/UploadStatus';
 import { prepareVideo, type PreparedVideo } from '@/lib/workspace/media/prepare-video';
 import { putPrivateFile, type TransferProgress } from '@/lib/workspace/media/upload-transfer';
+import { mediaNeedsRefresh, startMediaReadRefresh } from '@/lib/workspace/media/read-refresh';
 import { lessonReadiness } from '@/lib/workspace/builder/readiness';
 import { fileChecksum } from '@/lib/workspace/media/file-checksum';
 import { MAX_VIDEO_BYTES, MAX_RESOURCE_BYTES, MAX_CAPTION_BYTES, RESOURCE_TYPES } from '@/lib/workspace/media/model';
@@ -13,8 +14,8 @@ import type { lessonReceipt } from '@/lib/workspace/builder/service';
 const control = 'min-h-11 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-40';
 const field = 'min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm';
 type SavedLesson = ReturnType<typeof lessonReceipt>;
-async function json(url: string, method = 'GET', command?: unknown) {
-  const response = await fetch(url, { method, cache: 'no-store', signal: AbortSignal.timeout(20000), ...(command === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(command) }) });
+async function json(url: string, method = 'GET', command?: unknown, signal?: AbortSignal) {
+  const response = await fetch(url, { method, cache: 'no-store', signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(20000)]) : AbortSignal.timeout(20000), ...(command === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(command) }) });
   const body = await response.json(); if (!response.ok) throw new Error(body.error || 'This private media request could not complete. Reload and retry.'); return body;
 }
 export function LessonMedia({ lesson, projectId, editable, admin, dirty, onChanged, onBusy, onOperation, onProcessing, previewOnly = false }: { lesson: SavedLesson; projectId: string; editable: boolean; admin: boolean; dirty: boolean; onChanged: () => Promise<void>; onBusy: (busy: boolean) => void; onOperation?: (cancel:(()=>void)|null)=>void; onProcessing?: (processing:boolean)=>void; previewOnly?: boolean }) {
@@ -26,11 +27,15 @@ export function LessonMedia({ lesson, projectId, editable, admin, dirty, onChang
   const fileInput = useRef<HTMLInputElement>(null), abort = useRef<AbortController | null>(null), working = useRef(false), currentRevision = useRef(lesson.mediaRevision);
   const base = useCallback((id: string) => admin ? `/api/admin/workspace/course-builds/${projectId}/media/${id}` : `/api/workspace/media/${id}`, [admin, projectId]);
   const collection = admin ? `/api/admin/workspace/course-builds/${projectId}/media` : '/api/workspace/media';
-  const load = useCallback(async () => {
-    const body = await json(`${collection}?lessonId=${lesson.id}`); if(!mounted.current)return;setAssets(body.assets);const tracked=body.assets.find((a:StudioAsset)=>a.id===watched.current);if(tracked?.status==='ready'){setStage('ready');setStatus('Your video is ready. Choose Use this video below to add it to the lesson.');watched.current=null;}else if(tracked?.status==='failed'){setStage('failed');setError('Video processing could not finish. Your current video is unchanged. Upload a new file to retry safely.');watched.current=null;} const next = body.mediaRevision ?? lesson.mediaRevision; setRevision(next); setLoaded(true);
+  const load = useCallback(async (signal?: AbortSignal) => {
+    const body = await json(`${collection}?lessonId=${lesson.id}`, 'GET', undefined, signal); if(!mounted.current || signal?.aborted)return false;setAssets(body.assets);const tracked=body.assets.find((a:StudioAsset)=>a.id===watched.current);if(tracked?.status==='ready'){setStage('ready');setStatus('Your video is ready. Choose Use this video below to add it to the lesson.');watched.current=null;}else if(tracked?.status==='failed'){setStage('failed');setError('Video processing could not finish. Your current video is unchanged. Upload a new file to retry safely.');watched.current=null;} const next = body.mediaRevision ?? lesson.mediaRevision; setRevision(next); setLoaded(true);
     if (currentRevision.current !== next) { currentRevision.current = next; await onChanged(); }
+    return mediaNeedsRefresh(body.assets);
   }, [collection,lesson.id,lesson.mediaRevision,onChanged]);
-  useEffect(() => { let live = true; void load().catch(e => { if(live) setError(e.message); }); const timer = setInterval(() => { if(!working.current) void load().catch(e => { if(live) setError(e.message); }); }, 5000); return () => { live = false; clearInterval(timer); }; }, [load]);
+  useEffect(() => {
+    if (busy) return;
+    return startMediaReadRefresh(load, error => setError(error instanceof Error ? error.message : 'Could not refresh saved media.'));
+  }, [load, busy]);
   useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;abort.current?.abort();};},[]);
   useEffect(()=>{onOperation?.(busy?()=>abort.current?.abort():null);},[busy,onOperation]);
   const processing=assets.some(a=>a.status==='processing');
@@ -89,6 +94,7 @@ export function LessonMedia({ lesson, projectId, editable, admin, dirty, onChang
   return <section className="ph-no-capture mt-8 space-y-6 border-t border-border pt-8" aria-label="Lesson media" aria-busy={busy}>
     <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs uppercase tracking-widest text-primary">Lesson files</p><h3 className="mt-2 font-outfit text-2xl">Lesson media</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">Video, supporting resources and captions stay private while you build.</p></div><button type="button" className={control} disabled={busy || !loaded} onClick={() => setShowPreview(v => !v)}>{showPreview ? 'Close preview' : 'Preview saved lesson'}</button></div>
     {error&&!stage&&<p role="alert" className="rounded-xl border border-destructive/30 p-4 text-sm text-destructive">{error}</p>}
+    {!busy&&<button type="button" className={control} onClick={() => void work(async () => { setStatus(''); })}>Refresh saved media</button>}
     {!loaded&&<p role="status" className="text-sm text-muted-foreground">Loading your saved lesson files. Uploads will be available in a moment.</p>}
     {dirty&&<p className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm">Save or cancel your text changes before changing media. Your saved preview stays separate.</p>}
     {stage&&<UploadStatus stage={stage} detail={error||status} progress={transfer?.percent??progress??undefined} loaded={transfer?.loaded} total={transfer?.total} speed={transfer?.bytesPerSecond}>
