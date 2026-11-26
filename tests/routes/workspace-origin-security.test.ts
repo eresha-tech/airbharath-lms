@@ -2,7 +2,7 @@ import {beforeEach,expect,it,vi} from 'vitest';
 import {isSameOrigin} from '@/lib/workspace/http';
 const origin='https://staging.airbharath.in';
 const request=(headers:Record<string,string>={},url='https://0.0.0.0:3000/api/workspace/course-drafts')=>new Request(url,{method:'POST',headers:{origin,host:'staging.airbharath.in','x-forwarded-proto':'https',...headers}});
-beforeEach(()=>{vi.stubEnv('NEXT_PUBLIC_BASE_URL',origin);vi.stubEnv('NODE_ENV','production');});
+beforeEach(()=>{vi.stubEnv('NEXT_PUBLIC_BASE_URL',origin);vi.stubEnv('NODE_ENV','production');vi.stubEnv('VERCEL',undefined);vi.stubEnv('VERCEL_ENV',undefined);});
 it('accepts the configured external ALB HTTPS origin without retaining internal port 3000',()=>{
  expect(isSameOrigin(request())).toBe(true);
 });
@@ -68,4 +68,41 @@ it('retains originless same-site media/server requests while rejecting spoofed m
  const url='https://internal:3000/api/workspace/media';
  expect(isSameOrigin(new Request(url,{headers:{host:'staging.airbharath.in','x-forwarded-proto':'https'}}))).toBe(true);
  expect(isSameOrigin(new Request(url,{headers:{host:'foreign.invalid'}}))).toBe(false);
+});
+
+const matchingForwarded='for=192.0.2.10;host=staging.airbharath.in;proto=https;sig=synthetic-signature==;exp=1795665842';
+it.each(['preview','production'])('accepts matching single Vercel %s proxy metadata without trusting its signature as authorization',environment=>{
+ vi.stubEnv('VERCEL','1');vi.stubEnv('VERCEL_ENV',environment);
+ expect(isSameOrigin(request({'x-forwarded-host':'staging.airbharath.in','x-forwarded-port':'443',forwarded:matchingForwarded}))).toBe(true);
+ expect(isSameOrigin(request({'x-forwarded-host':'staging.airbharath.in',forwarded:'for="[2001:db8::1]";host="staging.airbharath.in";proto="https"'}))).toBe(true);
+});
+it.each([
+ 'host=foreign.invalid;proto=https',
+ 'host=staging.airbharath.in;proto=http',
+ 'host=staging.airbharath.in;host=foreign.invalid;proto=https',
+ 'host=staging.airbharath.in;Host=staging.airbharath.in;proto=https',
+ matchingForwarded+',host=staging.airbharath.in;proto=https',
+ 'for=192.0.2.10;proto=https',
+ 'host=staging.airbharath.in',
+ matchingForwarded+';unexpected=value',
+ 'host="staging.airbharath.in;proto=https',
+ 'host=staging%2eairbharath.in;proto=https',
+ 'host=user@staging.airbharath.in;proto=https',
+ 'host=staging.airbharath.in/path;proto=https',
+ matchingForwarded+';for='+'x'.repeat(8200),
+])('rejects conflicting, ambiguous or malformed Vercel Forwarded metadata: %s',forwarded=>{
+ vi.stubEnv('VERCEL','1');vi.stubEnv('VERCEL_ENV','preview');
+ expect(isSameOrigin(request({'x-forwarded-host':'staging.airbharath.in',forwarded}))).toBe(false);
+});
+it.each(attacks.filter(h=>!Object.hasOwn(h,'forwarded')))('matching Vercel metadata cannot override any independent CSRF check %j',headers=>{
+ vi.stubEnv('VERCEL','1');vi.stubEnv('VERCEL_ENV','preview');
+ expect(isSameOrigin(request({'x-forwarded-host':'staging.airbharath.in',forwarded:matchingForwarded,...headers}))).toBe(false);
+});
+it('keeps Forwarded rejected outside Vercel and requires matching independent Host and proxy metadata',()=>{
+ const headers={'x-forwarded-host':'staging.airbharath.in',forwarded:matchingForwarded};
+ expect(isSameOrigin(request(headers))).toBe(false);
+ vi.stubEnv('VERCEL','1');vi.stubEnv('VERCEL_ENV','development');expect(isSameOrigin(request(headers))).toBe(false);
+ vi.stubEnv('VERCEL_ENV','preview');
+ const missing=new Request('https://internal:3000/api/action',{method:'POST',headers:{origin,host:'staging.airbharath.in',forwarded:matchingForwarded,'x-forwarded-proto':'https'}});
+ expect(isSameOrigin(missing)).toBe(false);
 });

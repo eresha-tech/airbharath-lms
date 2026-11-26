@@ -30,10 +30,35 @@ function matchesAuthority(value: string, expected: URL): boolean {
   try { return new URL(`${expected.protocol}//${value}`).host === expected.host; }
   catch { return false; }
 }
+// Never derive trust from Forwarded: validate only against the configured origin.
+// Vercel adds a single proxy element; other runtimes retain their existing rejection.
+function matchingVercelForwarded(request: Request, expected: URL): boolean {
+  if (process.env.VERCEL !== '1' || !['preview', 'production'].includes(process.env.VERCEL_ENV || '')) return false;
+  const value = request.headers.get('forwarded');
+  if (!value || value.length > 8192 || /[\x00-\x1f\x7f,]/.test(value)) return false;
+  const fields = new Map<string, string>();
+  for (const part of value.split(';')) {
+    const match = /^([a-z][a-z0-9_-]*)=(.+)$/i.exec(part.trim());
+    if (!match) return false;
+    const key = match[1].toLowerCase();
+    if (!['host', 'proto', 'for', 'by', 'sig', 'exp'].includes(key) || fields.has(key)) return false;
+    let entry = match[2];
+    if (entry.startsWith('"')) {
+      if (!/^"[\x21\x23-\x5b\x5d-\x7e]*"$/.test(entry)) return false;
+      entry = entry.slice(1, -1);
+    } else if (!/^[\x21-\x7e]+$/.test(entry) || /["\\]/.test(entry)) return false;
+    fields.set(key, entry);
+  }
+  const host = fields.get('host');
+  if (!host || !matchesAuthority(host, expected) || fields.get('proto') !== expected.protocol.slice(0, -1)) return false;
+  const directHost = request.headers.get('host'), proxyHost = request.headers.get('x-forwarded-host');
+  return !!directHost && !!proxyHost && matchesAuthority(directHost, expected) && matchesAuthority(proxyHost, expected)
+    && request.headers.get('x-forwarded-proto') === expected.protocol.slice(0, -1);
+}
 export function isSameOrigin(request: Request): boolean {
   const expected = applicationOrigin(request);
   if (!expected || request.headers.get('sec-fetch-site') === 'cross-site'
-    || request.headers.has('forwarded')) return false;
+    || (request.headers.has('forwarded') && !matchingVercelForwarded(request, expected))) return false;
   for (const key of ['host', 'x-forwarded-host']) {
     const value = request.headers.get(key);
     if (value !== null && !matchesAuthority(value, expected)) return false;
