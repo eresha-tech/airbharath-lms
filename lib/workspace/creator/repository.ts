@@ -23,8 +23,10 @@ export const postgresCreatorStore: CreatorStore = {
       draft: async id => (await tx.select().from(drafts).where(and(owner, eq(drafts.id, id))).limit(1).for(lock))[0] || null,
       request: async key => (await tx.select().from(drafts).where(and(owner, eq(drafts.requestKey, key))).limit(1))[0] || null,
       list: async page => {
-        const [total] = await tx.select({ value: count() }).from(drafts).where(owner);
-        const rows = await tx.select().from(drafts).where(owner).orderBy(desc(drafts.updatedAt), desc(drafts.id)).limit(21).offset((page - 1) * 20);
+        const [[total], rows] = await Promise.all([
+          tx.select({ value: count() }).from(drafts).where(owner),
+          tx.select().from(drafts).where(owner).orderBy(desc(drafts.updatedAt), desc(drafts.id)).limit(21).offset((page - 1) * 20),
+        ]);
         return { drafts: rows.slice(0, 20), total: total.value, hasNext: rows.length > 20 };
       },
       summary: async () => {

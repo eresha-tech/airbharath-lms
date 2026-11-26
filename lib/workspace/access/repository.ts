@@ -35,11 +35,13 @@ export async function revokeAccessGrant(actor:string,id:string,raw:unknown,execu
 export async function readGrantEvidence(userId:string,executor:Tx|typeof db=db):Promise<GrantEvidence|null>{
  const env=grantEnvironment(classifyWorkspaceRuntime()),now=new Date(),terms=currentCreatorTerms();
  const [g]=await executor.select().from(grants).where(and(eq(grants.userId,userId),eq(grants.environment,env))).orderBy(desc(grants.createdAt),desc(grants.id)).limit(1);if(!g)return null;
- const [profile]=await executor.select().from(profiles).where(and(eq(profiles.id,g.creatorProfileId),eq(profiles.userId,userId)));
- const [latest]=await executor.select().from(attempts).where(eq(attempts.userId,userId)).orderBy(desc(attempts.decidedAt),desc(attempts.id)).limit(1);
- const [frozen]=await executor.select().from(attempts).where(eq(attempts.id,g.eligibilityAttemptId));
- const [version]=await executor.select().from(versions).where(eq(versions.isCurrent,true));
- const [accepted]=await executor.select().from(acceptances).where(and(eq(acceptances.userId,userId),eq(acceptances.termsVersion,terms.version)));
- const [original]=await executor.select().from(acceptances).where(and(eq(acceptances.userId,userId),eq(acceptances.termsVersion,g.termsVersion),eq(acceptances.termsContentHash,g.termsContentHash)));
+ const [[profile],[latest],[frozen],[version],[accepted],[original]]=await Promise.all([
+  executor.select().from(profiles).where(and(eq(profiles.id,g.creatorProfileId),eq(profiles.userId,userId))),
+  executor.select().from(attempts).where(eq(attempts.userId,userId)).orderBy(desc(attempts.decidedAt),desc(attempts.id)).limit(1),
+  executor.select().from(attempts).where(eq(attempts.id,g.eligibilityAttemptId)),
+  executor.select().from(versions).where(eq(versions.isCurrent,true)),
+  executor.select().from(acceptances).where(and(eq(acceptances.userId,userId),eq(acceptances.termsVersion,terms.version))),
+  executor.select().from(acceptances).where(and(eq(acceptances.userId,userId),eq(acceptances.termsVersion,g.termsVersion),eq(acceptances.termsContentHash,g.termsContentHash))),
+ ]);
  return{...g,profileStatus:profile?.status||'unavailable',eligibilityValid:!!frozen&&frozen.userId===userId&&frozen.result==='eligible'&&!!frozen.eligibleUntil&&frozen.eligibleUntil>g.startsAt&&latest?.result==='eligible',termsAccepted:version?.termsVersion===terms.version&&version?.contentHash===terms.contentHash&&version.effectiveAt<=now&&acceptanceMatches(accepted,userId,terms,now),legalHistory:!!original&&original.acceptedAt<=now&&original.acceptedAt<g.expiresAt&&(!g.closedAt||original.acceptedAt<=g.closedAt)};
 }

@@ -17,9 +17,13 @@ export const postgresPublishingStore:PublishingStore={transaction:(actor,project
  const access=await readWorkspaceAccess(p.userId,tx),grant=await readGrantEvidence(p.userId,tx),cap=creatorCapabilities(access.row?{refundedAt:access.row.refund?.confirmedAt,profileStatus:access.row.profile.status,activationState:access.row.order.activationState,providerMode:access.row.order.providerMode,commercialPolicyVersion:access.row.order.commercialPolicyVersion,membership:access.row.membership}:null,new Date(),environment(),access.latestOrder?.activationState==='held_for_review',grant);
  const admin=requester.role==='admin';if(!admin&&(actor!==p.userId||!cap.canViewCreatorWorkspace))throw new PublishingError('forbidden');
  const source=p.sourceSnapshot??(await tx.select().from(submissions).where(eq(submissions.id,p.approvedSubmissionId!)))[0];if(!source)throw new PublishingError('not_ready');
- const [d]=await tx.select().from(details).where(eq(details.creatorProfileId,p.creatorProfileId));
- const [state]=await tx.select().from(states).where(eq(states.projectId,project)).for(lock);const [t]=await tx.select().from(trust).where(eq(trust.creatorProfileId,p.creatorProfileId));
- const revisionRows=await tx.select().from(revisions).where(eq(revisions.projectId,project)).orderBy(desc(revisions.number));const priceRows=await tx.select().from(prices).where(eq(prices.projectId,project)).orderBy(desc(prices.number));
+ const [[d],[state],[t],revisionRows,priceRows]=await Promise.all([
+  tx.select().from(details).where(eq(details.creatorProfileId,p.creatorProfileId)),
+  tx.select().from(states).where(eq(states.projectId,project)).for(lock),
+  tx.select().from(trust).where(eq(trust.creatorProfileId,p.creatorProfileId)),
+  tx.select().from(revisions).where(eq(revisions.projectId,project)).orderBy(desc(revisions.number)),
+  tx.select().from(prices).where(eq(prices.projectId,project)).orderBy(desc(prices.number)),
+ ]);
  const defaults:PublicationMetadata={title:source.title,shortDescription:source.description.slice(0,300),description:source.description,targetLearner:source.targetLearner,learningOutcomes:source.learningOutcomes,artworkAssetId:null};
  const scopedAssets=()=>tx.select().from(assets).where(eq(assets.projectId,project)).orderBy(asc(assets.lessonId),asc(assets.createdAt),asc(assets.id));
  const guard=()=>tx.execute(sql`select set_config('airbharath.workspace_publishing',${project},true)`);

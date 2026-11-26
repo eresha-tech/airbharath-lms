@@ -18,7 +18,11 @@ async function source(tx: Tx, id: string, userId?: string, draftId?: string): Pr
 const lessonColumns = { id: lessons.id, projectId: lessons.projectId, moduleId: lessons.moduleId, userId: lessons.userId, title: lessons.title, summary: lessons.summary, position: lessons.position, version: lessons.version, contentFormat: lessons.contentFormat, mediaRevision: lessons.mediaRevision, createdAt: lessons.createdAt, updatedAt: lessons.updatedAt };
 async function structure(tx: Tx, project: Project) {
   const scoped = and(eq(modules.projectId, project.id), eq(modules.userId, project.userId));
-  return { modules: await tx.select().from(modules).where(scoped).orderBy(asc(modules.position)), lessons: await tx.select(lessonColumns).from(lessons).where(and(eq(lessons.projectId, project.id), eq(lessons.userId, project.userId))).orderBy(asc(lessons.moduleId), asc(lessons.position)) };
+  const [moduleRows, lessonRows] = await Promise.all([
+    tx.select().from(modules).where(scoped).orderBy(asc(modules.position)),
+    tx.select(lessonColumns).from(lessons).where(and(eq(lessons.projectId, project.id), eq(lessons.userId, project.userId))).orderBy(asc(lessons.moduleId), asc(lessons.position)),
+  ]);
+  return { modules: moduleRows, lessons: lessonRows };
 }
 export const postgresBuildStore: BuildStore = {
   transaction: (userId, work, readOnly) => {

@@ -38,15 +38,17 @@ export function createPostgresActivationStore(db: typeof import('@/lib/db').db):
 export const postgresActivationStore = createPostgresActivationStore(db);
 // Private server projection; every consumer supplies a persisted, authenticated owner.
 export async function readWorkspaceAccess(userId: string, reader: Pick<typeof db, 'select'> = db) {
-  const history = await reader.select({ membership: memberships, profile: profiles, order: orders, refund: refunds }).from(memberships)
-    .innerJoin(profiles, and(eq(profiles.id, memberships.creatorProfileId), eq(profiles.userId, memberships.userId)))
-    .innerJoin(orders, and(eq(orders.id, memberships.membershipOrderId), eq(orders.userId, memberships.userId)))
-    .leftJoin(refunds,eq(refunds.membershipOrderId,orders.id))
-    .where(eq(memberships.userId, userId)).orderBy(desc(memberships.endsAt), desc(memberships.id));
+  const [history, [latestOrder]] = await Promise.all([
+    reader.select({ membership: memberships, profile: profiles, order: orders, refund: refunds }).from(memberships)
+      .innerJoin(profiles, and(eq(profiles.id, memberships.creatorProfileId), eq(profiles.userId, memberships.userId)))
+      .innerJoin(orders, and(eq(orders.id, memberships.membershipOrderId), eq(orders.userId, memberships.userId)))
+      .leftJoin(refunds,eq(refunds.membershipOrderId,orders.id))
+      .where(eq(memberships.userId, userId)).orderBy(desc(memberships.endsAt), desc(memberships.id)),
+    reader.select({ activationState: orders.activationState, financialState: orders.financialState }).from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt), desc(orders.id)).limit(1),
+  ]);
   // Prefer a presently started, unrefunded term. A future renewal must not hide the current paid term.
   const valid = history.filter(r=>!r.refund && r.order.activationState==='fulfilled');
   const row = valid.find(r=>r.membership.startsAt<=new Date()) ?? (new Date()<new Date('2026-11-08T18:30:00.000Z')?valid[0]:history.find(r=>r.membership.startsAt<=new Date())) ?? valid[0] ?? history[0];
-  const [latestOrder] = await reader.select({ activationState: orders.activationState, financialState: orders.financialState }).from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt), desc(orders.id)).limit(1);
   return { row: row || null, history, latestOrder: latestOrder || null };
 }
 export async function listWorkspaceCreators() {
