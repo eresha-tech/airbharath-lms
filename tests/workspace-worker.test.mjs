@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {workerConfiguration, workerSchedule, createWorker} from '../scripts/workspace-worker.mjs';
+import {workerConfiguration, workerSchedule, createWorker, loadWorkerSchedule, DEFAULT_WORKER_CRONS} from '../scripts/workspace-worker.mjs';
 const env = {WORKSPACE_WORKER_ENABLED: 'true', CRON_SECRET: 'synthetic-worker-authorization-32-characters'};
 // Exercise the unchanged standalone worker with a synthetic schedule. Vercel
 // Preview deliberately has no scheduler declarations and never starts a worker.
@@ -20,6 +20,52 @@ test('worker refuses missing authorization, external destinations and malformed 
   assert.throws(() => workerSchedule([]));
   assert.throws(() => workerSchedule(schedule));
   assert.equal(workerConfiguration({...env, NODE_ENV: 'production'}).base.hostname, '127.0.0.1');
+});
+test('worker loads dedicated schedule independently of vercel.json with exact 1m and 5m intervals', () => {
+  const loaded = loadWorkerSchedule({});
+  assert.equal(loaded.length, 6);
+  assert.deepEqual(loaded.map(j => j.path).sort(), [
+    '/api/internal/course-payments/reconcile',
+    '/api/internal/creator-bank-validations/reconcile',
+    '/api/internal/creator-payouts/reconcile',
+    '/api/internal/workspace/media',
+    '/api/internal/workspace/reconcile',
+    '/api/internal/workspace/refund-notices',
+  ]);
+  const oneMinuteJobs = loaded.filter(j => j.intervalMs === 60000).map(j => j.path);
+  assert.deepEqual(oneMinuteJobs.sort(), [
+    '/api/internal/creator-bank-validations/reconcile',
+    '/api/internal/creator-payouts/reconcile',
+    '/api/internal/workspace/media',
+  ]);
+  const fiveMinuteJobs = loaded.filter(j => j.intervalMs === 300000).map(j => j.path);
+  assert.deepEqual(fiveMinuteJobs.sort(), [
+    '/api/internal/course-payments/reconcile',
+    '/api/internal/workspace/reconcile',
+    '/api/internal/workspace/refund-notices',
+  ]);
+  assert.deepEqual(workerSchedule(), loaded);
+  assert.deepEqual(workerSchedule(DEFAULT_WORKER_CRONS), loaded);
+});
+test('loadWorkerSchedule validates custom schedule and fails safely on invalid input', () => {
+  const custom = loadWorkerSchedule({
+    WORKER_SCHEDULE_JSON: JSON.stringify(DEFAULT_WORKER_CRONS),
+  });
+  assert.equal(custom.length, 6);
+  assert.throws(() => loadWorkerSchedule({ WORKER_SCHEDULE_JSON: 'not-json' }), /Unsupported worker schedule/);
+  assert.throws(() => loadWorkerSchedule({ WORKER_SCHEDULE_JSON: '' }), /Unsupported worker schedule/);
+  assert.throws(() => loadWorkerSchedule({ WORKER_SCHEDULE_JSON: '   ' }), /Unsupported worker schedule/);
+  assert.throws(() => loadWorkerSchedule({ WORKER_SCHEDULE_JSON: '[]' }), /Unsupported worker schedule/);
+  assert.throws(() => loadWorkerSchedule({ WORKER_SCHEDULE_JSON: '{}' }), /Unsupported worker schedule/);
+  assert.throws(() => loadWorkerSchedule({ WORKER_SCHEDULE_JSON: 'null' }), /Unsupported worker schedule/);
+  assert.throws(() => loadWorkerSchedule({
+    WORKER_SCHEDULE_JSON: JSON.stringify([{ path: '/api/internal/workspace/media', schedule: '* * * * *' }]),
+  }), /Unsupported worker schedule/);
+  assert.throws(() => loadWorkerSchedule({
+    WORKER_SCHEDULE_JSON: JSON.stringify(DEFAULT_WORKER_CRONS.map(c => ({ ...c, schedule: '*/10 * * * *' }))),
+  }), /Unsupported worker schedule/);
+  assert.throws(() => workerSchedule(null), /Unsupported worker schedule/);
+  assert.throws(() => workerSchedule(123), /Unsupported worker schedule/);
 });
 test('worker reproduces one/five minute intervals, contains failures and never logs authorization', async () => {
   const calls = [], logs = [];

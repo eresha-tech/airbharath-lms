@@ -6,8 +6,7 @@ import {GET as payouts} from '../app/api/internal/creator-payouts/reconcile/rout
 import {GET as bankValidations} from '../app/api/internal/creator-bank-validations/reconcile/route.ts';
 import {GET as media} from '../app/api/internal/workspace/media/route.ts';
 import {GET as refundNotices} from '../app/api/internal/workspace/refund-notices/route.ts';
-import {createWorker,workerConfiguration,workerSchedule} from './workspace-worker.mjs';
-import schedule from '../vercel.json';
+import {createWorker,workerConfiguration,loadWorkerSchedule} from './workspace-worker.mjs';
 const handlers=new Map([
  ['/api/internal/workspace/reconcile',membership],['/api/internal/course-payments/reconcile',coursePayments],
  ['/api/internal/creator-payouts/reconcile',payouts],['/api/internal/creator-bank-validations/reconcile',bankValidations],
@@ -15,7 +14,7 @@ const handlers=new Map([
 ]);
 try {
  const config=workerConfiguration();
- const worker=createWorker(config,workerSchedule(schedule.crons),async(url,init)=>{
+ const worker=createWorker(config,loadWorkerSchedule(),async(url,init)=>{
   const handler=handlers.get(new URL(url).pathname);if(!handler)throw Error('Unknown worker');
   return handler(new Request(url,init));
  });

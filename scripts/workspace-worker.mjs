@@ -6,6 +6,14 @@ const paths = new Set([
   '/api/internal/creator-payouts/reconcile', '/api/internal/creator-bank-validations/reconcile',
   '/api/internal/workspace/media', '/api/internal/workspace/refund-notices',
 ]);
+export const DEFAULT_WORKER_CRONS = Object.freeze([
+  { path: '/api/internal/workspace/reconcile', schedule: '*/5 * * * *' },
+  { path: '/api/internal/course-payments/reconcile', schedule: '*/5 * * * *' },
+  { path: '/api/internal/creator-payouts/reconcile', schedule: '* * * * *' },
+  { path: '/api/internal/creator-bank-validations/reconcile', schedule: '* * * * *' },
+  { path: '/api/internal/workspace/media', schedule: '* * * * *' },
+  { path: '/api/internal/workspace/refund-notices', schedule: '*/5 * * * *' },
+]);
 export function workerConfiguration(env = process.env) {
   const base = new URL(env.WORKER_APP_URL || 'http://127.0.0.1:3000');
   if (env.WORKSPACE_WORKER_ENABLED !== 'true' || !env.CRON_SECRET || env.CRON_SECRET.length < 32 ||
@@ -13,12 +21,23 @@ export function workerConfiguration(env = process.env) {
     base.pathname !== '/' || base.search || base.hash) throw new Error('Worker requires explicit enablement, loopback target and existing cron authorization.');
   return {base, secret: env.CRON_SECRET};
 }
-export function workerSchedule(crons) {
+export function workerSchedule(crons = DEFAULT_WORKER_CRONS) {
   if (!Array.isArray(crons) || crons.length !== paths.size || new Set(crons.map(c => c.path)).size !== paths.size) throw new Error('Unsupported worker schedule.');
   return crons.map(c => {
-    if (!paths.has(c.path) || !['* * * * *', '*/5 * * * *'].includes(c.schedule)) throw new Error('Unsupported worker schedule.');
+    if (!c || typeof c !== 'object' || !paths.has(c.path) || !['* * * * *', '*/5 * * * *'].includes(c.schedule)) throw new Error('Unsupported worker schedule.');
     return {path: c.path, intervalMs: c.schedule === '* * * * *' ? 60000 : 300000};
   });
+}
+export function loadWorkerSchedule(env = process.env) {
+  const custom = env?.WORKER_SCHEDULE_JSON;
+  if (custom !== undefined) {
+    if (typeof custom !== 'string' || !custom.trim()) throw new Error('Unsupported worker schedule.');
+    let parsed;
+    try { parsed = JSON.parse(custom); }
+    catch { throw new Error('Unsupported worker schedule.'); }
+    return workerSchedule(parsed);
+  }
+  return workerSchedule(DEFAULT_WORKER_CRONS);
 }
 export function createWorker(config, schedule, transport = fetch, report = console.log) {
   const jobs = schedule.map(job => ({...job, next: 0, running: null, controller: null}));
