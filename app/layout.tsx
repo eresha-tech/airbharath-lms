@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Inter, Outfit, Plus_Jakarta_Sans } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PostHogProvider } from "@/components/providers/PostHogProvider";
@@ -9,10 +10,12 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-const outfit = Outfit({
+const outfit = localFont({
+  src: "./fonts/Outfit-Variable.ttf",
   variable: "--font-outfit",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: "400 800",
+  style: "normal",
+  display: "swap",
 });
 
 const plusJakarta = Plus_Jakarta_Sans({

@@ -1,0 +1,17 @@
+Outfit variable font, unmodified official Google Fonts distribution.
+
+Source repository: https://github.com/google/fonts
+Pinned revision: 8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5
+Original path: ofl/outfit/Outfit[wght].ttf
+Git blob SHA-1: 466d6245f9582df39bf73da91a8b3c938fd061cd
+SHA-256: fc7287273e66929776e2ba54f144fe699080bec29f61bf649d70d871468aeade
+Size: 110884 bytes
+Font version: 1.100; gftools[0.9.27]
+Variable weight axis: 100-900. Application retains its existing 400-800 range.
+
+License: SIL Open Font License 1.1, reproduced in Outfit-OFL.txt.
+Copyright 2021 The Outfit Project Authors.
+
+Bundled locally to avoid Next.js 15.5.29's Google font URL-extension parser
+failing during hosted builds. Served by next/font/local with display swap.
+No runtime third-party font request or new package dependency is required.
