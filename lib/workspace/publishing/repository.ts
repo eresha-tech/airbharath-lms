@@ -7,17 +7,18 @@ import { readGrantEvidence } from '../access/repository';
 import { creatorCapabilities,environment } from '../creator/model';
 import { publishingService,type PublishingStore,type State } from './service';
 import { metadata as validateMetadata, rupees, PublishingError,publishingEnabled,type FrozenCourse,type PublicationMetadata } from './model';
-export const postgresPublishingStore:PublishingStore={transaction:(actor,project,work)=>db.transaction(async tx=>{
+export const postgresPublishingStore:PublishingStore={transaction:(actor,project,work,readOnly)=>db.transaction(async tx=>{
+ const lock = readOnly ? 'share' as const : 'update' as const;
  const [p]=await tx.select().from(projects).where(eq(projects.id,project));if(!p)throw new PublishingError('not_found');
- const people=await tx.select().from(users).where(inArray(users.id,[actor,p.userId])).orderBy(asc(users.id)).for('update');const requester=people.find(u=>u.id===actor),owner=people.find(u=>u.id===p.userId);if(!requester||!owner)throw new PublishingError('authentication');
- await tx.select({id:orders.id}).from(orders).where(eq(orders.userId,p.userId)).orderBy(orders.id).for('update');
- const [profile]=await tx.select().from(profiles).where(eq(profiles.id,p.creatorProfileId)).for('update');if(!profile)throw new PublishingError('not_found');
- await tx.select({id:projects.id}).from(projects).where(eq(projects.id,project)).for('update');
+ const people=await tx.select().from(users).where(inArray(users.id,[actor,p.userId])).orderBy(asc(users.id)).for(lock);const requester=people.find(u=>u.id===actor),owner=people.find(u=>u.id===p.userId);if(!requester||!owner)throw new PublishingError('authentication');
+ await tx.select({id:orders.id}).from(orders).where(eq(orders.userId,p.userId)).orderBy(orders.id).for(lock);
+ const [profile]=await tx.select().from(profiles).where(eq(profiles.id,p.creatorProfileId)).for(lock);if(!profile)throw new PublishingError('not_found');
+ await tx.select({id:projects.id}).from(projects).where(eq(projects.id,project)).for(lock);
  const access=await readWorkspaceAccess(p.userId,tx),grant=await readGrantEvidence(p.userId,tx),cap=creatorCapabilities(access.row?{refundedAt:access.row.refund?.confirmedAt,profileStatus:access.row.profile.status,activationState:access.row.order.activationState,providerMode:access.row.order.providerMode,commercialPolicyVersion:access.row.order.commercialPolicyVersion,membership:access.row.membership}:null,new Date(),environment(),access.latestOrder?.activationState==='held_for_review',grant);
  const admin=requester.role==='admin';if(!admin&&(actor!==p.userId||!cap.canViewCreatorWorkspace))throw new PublishingError('forbidden');
  const source=p.sourceSnapshot??(await tx.select().from(submissions).where(eq(submissions.id,p.approvedSubmissionId!)))[0];if(!source)throw new PublishingError('not_ready');
  const [d]=await tx.select().from(details).where(eq(details.creatorProfileId,p.creatorProfileId));
- const [state]=await tx.select().from(states).where(eq(states.projectId,project)).for('update');const [t]=await tx.select().from(trust).where(eq(trust.creatorProfileId,p.creatorProfileId));
+ const [state]=await tx.select().from(states).where(eq(states.projectId,project)).for(lock);const [t]=await tx.select().from(trust).where(eq(trust.creatorProfileId,p.creatorProfileId));
  const revisionRows=await tx.select().from(revisions).where(eq(revisions.projectId,project)).orderBy(desc(revisions.number));const priceRows=await tx.select().from(prices).where(eq(prices.projectId,project)).orderBy(desc(prices.number));
  const defaults:PublicationMetadata={title:source.title,shortDescription:source.description.slice(0,300),description:source.description,targetLearner:source.targetLearner,learningOutcomes:source.learningOutcomes,artworkAssetId:null};
  const scopedAssets=()=>tx.select().from(assets).where(eq(assets.projectId,project)).orderBy(asc(assets.lessonId),asc(assets.createdAt),asc(assets.id));

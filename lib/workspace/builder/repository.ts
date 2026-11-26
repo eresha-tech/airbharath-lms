@@ -21,34 +21,35 @@ async function structure(tx: Tx, project: Project) {
   return { modules: await tx.select().from(modules).where(scoped).orderBy(asc(modules.position)), lessons: await tx.select(lessonColumns).from(lessons).where(and(eq(lessons.projectId, project.id), eq(lessons.userId, project.userId))).orderBy(asc(lessons.moduleId), asc(lessons.position)) };
 }
 export const postgresBuildStore: BuildStore = {
-  transaction: (userId, work) => {
+  transaction: (userId, work, readOnly) => {
     const started = performance.now();
+    const lock = readOnly ? 'share' as const : 'update' as const;
     return measureBuilderRead('transaction', () => db.transaction(async tx => {
     recordBuilderReadTime('connection_and_begin', started);
-    // Same persisted owner/access locks as creator mutations; no external HTTP.
-    const [user] = await measureBuilderRead('owner_lock', () => tx.select({ id: users.id, fullName: users.fullName }).from(users).where(eq(users.id, userId)).for('update'));
+    // ponytail: reads use FOR SHARE to avoid exclusive-lock contention on cross-region DB; mutations keep FOR UPDATE.
+    const [user] = await measureBuilderRead('owner_lock', () => tx.select({ id: users.id, fullName: users.fullName }).from(users).where(eq(users.id, userId)).for(lock));
     if (!user) throw new BuildError('authentication');
-    await measureBuilderRead('order_lock', () => tx.select({ id: orders.id }).from(orders).where(eq(orders.userId, userId)).orderBy(orders.id).for('update'));
-    const [profile] = await measureBuilderRead('profile_lock', () => tx.select().from(profiles).where(eq(profiles.userId, userId)).for('update'));
+    await measureBuilderRead('order_lock', () => tx.select({ id: orders.id }).from(orders).where(eq(orders.userId, userId)).orderBy(orders.id).for(lock));
+    const [profile] = await measureBuilderRead('profile_lock', () => tx.select().from(profiles).where(eq(profiles.userId, userId)).for(lock));
     const access = await measureBuilderRead('membership_evidence', () => readWorkspaceAccess(userId, tx));
     const grant = await measureBuilderRead('grant_evidence', () => readGrantEvidence(userId, tx));
     const owner = (project: Project) => and(eq(modules.projectId, project.id), eq(modules.userId, userId));
     const lessonOwner = (project: Project, moduleId?: string) => and(eq(lessons.projectId, project.id), eq(lessons.userId, userId), moduleId ? eq(lessons.moduleId, moduleId) : undefined);
     return work({
       context: async () => ({ user, grant, profileId: profile?.id || null, evidence: access.row ? { refundedAt: access.row.refund?.confirmedAt, profileStatus: access.row.profile.status, activationState: access.row.order.activationState, providerMode: access.row.order.providerMode, commercialPolicyVersion: access.row.order.commercialPolicyVersion, membership: access.row.membership } : null, financialReview: access.latestOrder?.activationState === 'held_for_review', planName: access.row?.order.planSnapshot.displayName || null }),
-      fromDraft:async draftId=>{const [d]=await tx.select().from(drafts).where(and(eq(drafts.id,draftId),eq(drafts.userId,userId))).for('update');return d?{...d,draftId:d.id,direct:true,submissionNumber:0,reviewCompletedAt:null,approvalExists:false}:null;},
+      fromDraft:async draftId=>{const [d]=await tx.select().from(drafts).where(and(eq(drafts.id,draftId),eq(drafts.userId,userId))).for(lock);return d?{...d,draftId:d.id,direct:true,submissionNumber:0,reviewCompletedAt:null,approvalExists:false}:null;},
       source: async (id, draftId) => {
         // Match the established creator/review order: draft before submission.
-        await tx.select({ id: drafts.id }).from(drafts).where(and(eq(drafts.id, draftId), eq(drafts.userId, userId))).for('update');
+        await tx.select({ id: drafts.id }).from(drafts).where(and(eq(drafts.id, draftId), eq(drafts.userId, userId))).for(lock);
         return source(tx, id, userId, draftId);
       },
-      project: async draftId => (await measureBuilderRead('project', () => tx.select().from(projects).where(and(eq(projects.userId, userId), eq(projects.draftId, draftId))).orderBy(desc(projects.createdAt), desc(projects.id)).limit(1).for('update')))[0] || null,
-      existing: async id => (await tx.select().from(projects).where(and(eq(projects.userId, userId), eq(projects.approvedSubmissionId, id))).for('update'))[0] || null,
+      project: async draftId => (await measureBuilderRead('project', () => tx.select().from(projects).where(and(eq(projects.userId, userId), eq(projects.draftId, draftId))).orderBy(desc(projects.createdAt), desc(projects.id)).limit(1).for(lock)))[0] || null,
+      existing: async id => (await tx.select().from(projects).where(and(eq(projects.userId, userId), eq(projects.approvedSubmissionId, id))).for(lock))[0] || null,
       createProject: async (s, now) => (await tx.insert(projects).values({ userId, creatorProfileId: s.creatorProfileId, draftId: s.draftId, approvedSubmissionId: s.direct?null:s.id, sourceSnapshot:s.direct?s:null, createdAt: now, updatedAt: now }).returning())[0],
       modules: async project => tx.select().from(modules).where(owner(project)).orderBy(asc(modules.position)),
       lessons: async project => tx.select(lessonColumns).from(lessons).where(lessonOwner(project)).orderBy(asc(lessons.moduleId), asc(lessons.position)),
-      module: async (project, id) => (await tx.select().from(modules).where(and(owner(project), eq(modules.id, id))).for('update'))[0] || null,
-      lesson: async (project, moduleId, id) => (await measureBuilderRead('lesson', () => tx.select().from(lessons).where(and(lessonOwner(project, moduleId), eq(lessons.id, id))).for('update')))[0] || null,
+      module: async (project, id) => (await tx.select().from(modules).where(and(owner(project), eq(modules.id, id))).for(lock))[0] || null,
+      lesson: async (project, moduleId, id) => (await measureBuilderRead('lesson', () => tx.select().from(lessons).where(and(lessonOwner(project, moduleId), eq(lessons.id, id))).for(lock)))[0] || null,
       createModule: async (project, content, position, now) => (await tx.insert(modules).values({ ...content, projectId: project.id, userId, position, createdAt: now, updatedAt: now }).returning())[0],
       createLesson: async (project, module, content, position, now) => (await tx.insert(lessons).values({ ...content, projectId: project.id, moduleId: module.id, userId, position, createdAt: now, updatedAt: now }).returning())[0],
       updateModule: async (project, id, expected, content, now) => (await tx.update(modules).set({ ...content, version: expected + 1, updatedAt: now }).where(and(owner(project), eq(modules.id, id), eq(modules.version, expected))).returning())[0] || null,

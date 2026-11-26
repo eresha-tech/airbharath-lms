@@ -33,7 +33,7 @@ export interface BuildTransaction {
   deleteLesson(project: Project, moduleId: string, id: string, expected: number): Promise<boolean>;
   positions(project: Project, kind: 'module' | 'lesson', rows: { id: string; position: number; version: number }[], now: Date): Promise<void>;
 }
-export interface BuildStore { transaction<T>(userId: string, work: (tx: BuildTransaction) => Promise<T>): Promise<T> }
+export interface BuildStore { transaction<T>(userId: string, work: (tx: BuildTransaction) => Promise<T>, readOnly?: boolean): Promise<T> }
 function approved(source: ApprovedSource | null, project?: Project) {
   if (!source) throw new BuildError('not_found');
   if (project && (project.userId !== source.userId || project.creatorProfileId !== source.creatorProfileId || project.draftId !== source.draftId || (project.approvedSubmissionId??project.sourceSnapshot?.id) !== source.id)) throw new BuildError('not_found');
@@ -49,7 +49,7 @@ export function builderService(store: BuildStore, environment: string | undefine
       const context = await tx.context();
       const permit = () => { const now = clock(), c = creatorCapabilities(context.evidence, now, environment, context.financialReview, context.grant); if (context.user.id !== userId || !context.profileId || !(edit ? c.canEditWorkspace : c.canViewCreatorWorkspace)) throw new BuildError('forbidden'); return now; };
       permit(); return work(tx, context, permit);
-    });
+    }, !edit);
   }
   async function owned<T>(userId: string, draftId: string, edit: boolean, work: (tx: BuildTransaction, project: Project, source: ApprovedSource, permit: () => Date, canEdit: boolean) => Promise<T>) {
     buildId(draftId);

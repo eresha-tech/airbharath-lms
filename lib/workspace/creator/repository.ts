@@ -7,19 +7,20 @@ import { readWorkspaceAccess } from '../activation/repository';
 import { CreatorError, environment } from './model';
 import { creatorService, type CreatorStore } from './service';
 export const postgresCreatorStore: CreatorStore = {
-  transaction: (userId, work) => db.transaction(async tx => {
+  transaction: (userId, work, readOnly) => db.transaction(async tx => {
+    const lock = readOnly ? 'share' as const : 'update' as const;
     // Same lock order as financial/activation paths; sample time in service after all locks.
-    const [user] = await tx.select({ id: users.id, fullName: users.fullName }).from(users).where(eq(users.id, userId)).for('update');
+    const [user] = await tx.select({ id: users.id, fullName: users.fullName }).from(users).where(eq(users.id, userId)).for(lock);
     if (!user) throw new CreatorError('authentication');
-    await tx.select({ id: orders.id }).from(orders).where(eq(orders.userId, userId)).orderBy(orders.id).for('update');
-    const [profile] = await tx.select().from(profiles).where(eq(profiles.userId, userId)).for('update');
+    await tx.select({ id: orders.id }).from(orders).where(eq(orders.userId, userId)).orderBy(orders.id).for(lock);
+    const [profile] = await tx.select().from(profiles).where(eq(profiles.userId, userId)).for(lock);
     const access = await readWorkspaceAccess(userId, tx);
     const grant = await readGrantEvidence(userId, tx);
     const owner = eq(drafts.userId, userId);
     return work({
       reviews: submissionTransaction(tx, userId),
       context: async () => ({ user, grant, profileId: profile?.id || null, evidence: access.row ? { refundedAt: access.row.refund?.confirmedAt, profileStatus: access.row.profile.status, activationState: access.row.order.activationState, providerMode: access.row.order.providerMode, commercialPolicyVersion: access.row.order.commercialPolicyVersion, membership: access.row.membership } : null, financialReview: access.latestOrder?.activationState === 'held_for_review', planName: access.row?.order.planSnapshot.displayName || null }),
-      draft: async id => (await tx.select().from(drafts).where(and(owner, eq(drafts.id, id))).limit(1).for('update'))[0] || null,
+      draft: async id => (await tx.select().from(drafts).where(and(owner, eq(drafts.id, id))).limit(1).for(lock))[0] || null,
       request: async key => (await tx.select().from(drafts).where(and(owner, eq(drafts.requestKey, key))).limit(1))[0] || null,
       list: async page => {
         const [total] = await tx.select({ value: count() }).from(drafts).where(owner);

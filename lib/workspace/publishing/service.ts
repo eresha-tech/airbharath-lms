@@ -26,13 +26,13 @@ export interface PublishingTx{
  history():Promise<{action:string;createdAt:Date;note:string}[]>;
  artwork():Promise<{id:string;displayName:string}[]>;
 }
-export interface PublishingStore{transaction<T>(actor:string,project:string,work:(tx:PublishingTx)=>Promise<T>):Promise<T>}
+export interface PublishingStore{transaction<T>(actor:string,project:string,work:(tx:PublishingTx)=>Promise<T>,readOnly?:boolean):Promise<T>}
 export function publishingService(store:PublishingStore,clock=()=>new Date(),enabled=()=>false){
  return {
  read:(actor:string,project:string)=>store.transaction(actor,project,async tx=>{
   if(!tx.context.admin&&(!tx.context.canView||tx.context.ownerId!==actor))throw new PublishingError('forbidden');
   return {projectId:project,version:tx.state?.version??0,metadata:tx.state?.metadata??tx.context.defaults,status:tx.state?.status??'draft',courseId:tx.state?.courseId??null,currentRevisionId:tx.state?.currentRevisionId??null,currentPriceId:tx.state?.currentPriceId??null,canRespond:tx.context.ownerId===actor&&tx.context.canView&&tx.context.profileStatus==='enabled',canEdit:tx.context.ownerId===actor&&tx.context.canEdit,admin:tx.context.admin,independentAdmin:tx.context.admin&&tx.context.ownerId!==actor,publishingEnabled:enabled(),guidelines:PUBLISHING_GUIDELINES,guidelineHash:GUIDELINE_HASH,guidelinesAccepted:currentGuidelines(tx.state?.guidelines,tx.context.ownerId),moderation:tx.state?.moderation??null,notices:await tx.notices?.()??[],revisions:tx.revisions.map(revisionReceipt),prices:tx.prices,history:await tx.history(),artwork:await tx.artwork()};
- }),
+ },true),
  execute:(actor:string,project:string,raw:unknown)=>{
   const c=command(raw),digest=hash({project,...c});
   return store.transaction(actor,project,async tx=>{
