@@ -4,6 +4,8 @@ import { users, courses, enrollments, certificates, orders, progress } from "@/l
 import { eq, desc } from "drizzle-orm";
 import StudentsTable from "@/components/admin/StudentsTable";
 import { Users, GraduationCap, ShieldCheck } from "lucide-react";
+import { effectiveEnrollment } from "@/lib/academy-entitlements/model";
+import { sourceRelations } from "@/lib/academy-entitlements/repository";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +33,7 @@ export default async function AdminStudents() {
       },
     }),
     db.query.enrollments.findMany({
+      with: sourceRelations,
       orderBy: [desc(enrollments.enrolledAt)],
     }),
     db.query.certificates.findMany({
@@ -64,6 +67,12 @@ export default async function AdminStudents() {
     };
   });
 
+  const formattedEnrollments = enrollmentsList.map(row => {
+    const resolved = effectiveEnrollment(row).enrollment;
+    const effective = resolved ?? row;
+    return { id: row.id, userId: row.userId, courseId: row.courseId, enrolledAt: row.enrolledAt.toISOString(), expiresAt: effective.expiresAt?.toISOString() ?? null, status: effective.status, accessEnded: row.academySources.length > 0 && !resolved };
+  });
+
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
       {/* Top Banner */}
@@ -93,14 +102,7 @@ export default async function AdminStudents() {
           created_at: s.createdAt.toISOString(),
         }))}
         courses={formattedCourses}
-        enrollments={enrollmentsList.map((e) => ({
-          id: e.id,
-          userId: e.userId,
-          courseId: e.courseId,
-          enrolledAt: e.enrolledAt.toISOString(),
-          expiresAt: e.expiresAt ? e.expiresAt.toISOString() : null,
-          status: e.status,
-        }))}
+        enrollments={formattedEnrollments}
         certificates={certificatesList.map((c) => ({
           id: c.id,
           userId: c.userId,

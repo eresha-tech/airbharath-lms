@@ -89,9 +89,9 @@ export default async function CoursePage({ params }: CoursePageProps) {
   let firstLessonId: string | null = null;
 
   for (const section of sortedSections) {
-    const sModules = (section.modules || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+    const sModules = (section.modules || []).filter((m: any) => !m.workspaceRetired).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
     for (const mod of sModules) {
-      const sLessons = (mod.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+      const sLessons = (mod.lessons || []).filter((l: any) => !l.workspaceRetired).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
       if (sLessons.length > 0) {
         firstLessonId = sLessons[0].id;
         break;
@@ -101,10 +101,10 @@ export default async function CoursePage({ params }: CoursePageProps) {
   }
 
   if (!firstLessonId) {
-    const courseModules = (courseObj.modules as any[]) || [];
+    const courseModules = ((courseObj.modules as any[]) || []).filter((m: any) => !m.workspaceRetired);
     const sortedModules = courseModules.sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
     for (const mod of sortedModules) {
-      const sLessons = (mod.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+      const sLessons = (mod.lessons || []).filter((l: any) => !l.workspaceRetired).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
       if (sLessons.length > 0) {
         firstLessonId = sLessons[0].id;
         break;

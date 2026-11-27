@@ -115,6 +115,8 @@ export interface CourseEditorProps {
     id: string;
     title: string;
     slug?: string | null;
+    category?: string;
+    difficulty?: string;
     description: string;
     short_description?: string | null;
     about_course?: string | null;
@@ -173,6 +175,8 @@ export default function CourseEditor({
   const [showOverviewPreview, setShowOverviewPreview] = useState(false);
 
   const [thumbnailUrl, setThumbnailUrl] = useState(course.thumbnail_url || "");
+  const [category,setCategory] = useState(course.category || "general");
+  const [difficulty,setDifficulty] = useState(course.difficulty || "all_levels");
   const [price, setPrice] = useState(course.price ? String(course.price) : "");
   const [accessDays, setAccessDays] = useState(
     course.access_days !== null && course.access_days !== undefined ? String(course.access_days) : ""
@@ -510,6 +514,7 @@ export default function CourseEditor({
           seoTitle: seoTitle.trim() || null,
           seoDescription: seoDescription.trim() || null,
           thumbnailUrl: thumbnailUrl.trim() || null,
+          category, difficulty,
           price: parseFloat(price),
           accessDays: accessDays ? parseInt(accessDays) : null,
           isPublished,
@@ -553,6 +558,7 @@ export default function CourseEditor({
           seoTitle: seoTitle.trim() || null,
           seoDescription: seoDescription.trim() || null,
           thumbnailUrl: thumbnailUrl.trim() || null,
+          category, difficulty,
           price: parseFloat(price),
           accessDays: accessDays ? parseInt(accessDays) : null,
           isPublished: nextPublished,

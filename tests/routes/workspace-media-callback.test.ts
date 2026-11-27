@@ -1,0 +1,12 @@
+import { beforeEach,expect,it,vi } from 'vitest';
+const mock=vi.hoisted(()=>({authorized:vi.fn(),reconcile:vi.fn(),rows:vi.fn()}));
+vi.mock('@/lib/db',()=>({db:{select:()=>({from:()=>({where:mock.rows})})}}));
+vi.mock('@/lib/workspace/media/worker',()=>({mediaWorkerAuthorized:mock.authorized}));
+vi.mock('@/lib/workspace/media/runtime',()=>({workspaceMediaProcessing:()=>({reconcile:mock.reconcile})}));
+import { POST } from '@/app/api/workspace/media/transcoded/route';
+import { owner,key } from './workspace-creator-fixtures';
+const request=(body:string)=>new Request('https://example.test/api/workspace/media/transcoded',{method:'POST',headers:{'content-type':'application/json'},body});
+beforeEach(()=>{vi.clearAllMocks();mock.authorized.mockReturnValue(true);mock.rows.mockResolvedValue([{actor:owner}]);});
+it('denies unauthenticated machine callbacks before parsing or database access',async()=>{mock.authorized.mockReturnValue(false);expect((await POST(request('bad json'))).status).toBe(401);expect(mock.rows).not.toHaveBeenCalled();});
+it('bounds and validates callback JSON without accepting output or readiness evidence',async()=>{expect((await POST(request('bad json'))).status).toBe(400);expect((await POST(request(JSON.stringify({x:'x'.repeat(9000)})))).status).toBe(413);expect((await POST(request(JSON.stringify({assetId:key,jobId:'job-123',status:'ready',outputKey:'private'})))).status).toBe(400);expect(mock.reconcile).not.toHaveBeenCalled();});
+it('derives the owner from the asset and only forwards the provider ID for authoritative verification',async()=>{const response=await POST(request(JSON.stringify({assetId:key,jobId:'job-123'})));expect(response.status).toBe(200);expect(mock.reconcile).toHaveBeenCalledWith(owner,key,'job-123');expect(await response.text()).not.toContain(owner);});

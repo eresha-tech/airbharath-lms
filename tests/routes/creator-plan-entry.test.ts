@@ -1,0 +1,15 @@
+import {beforeEach,expect,it,vi} from 'vitest';
+const mocks=vi.hoisted(()=>({user:vi.fn(),journey:vi.fn(),plans:vi.fn()}));
+vi.mock('@/lib/workspace/eligibility/service',()=>({getWorkspaceUser:mocks.user,getWorkspaceJourneyState:mocks.journey}));
+vi.mock('@/lib/workspace/membership/service',()=>({getCurrentPlans:mocks.plans}));
+import {GET} from '@/app/(user)/workspace/choose-plan/route';
+const request=(plan='yearly')=>new Request('http://localhost:3030/workspace/choose-plan?plan='+plan);
+beforeEach(()=>{vi.stubEnv('NEXT_PUBLIC_BASE_URL','http://localhost:3030');mocks.plans.mockResolvedValue([{code:'yearly',available:true}]);mocks.user.mockResolvedValue(null);});
+it('preserves selected intent through a safe same-origin login callback and HttpOnly cookie',async()=>{const r=await GET(request());expect(r.status).toBe(303);expect(r.headers.get('location')).toBe('http://localhost:3030/login?callbackUrl=%2Fworkspace%2Fchoose-plan%3Fplan%3Dyearly');expect(r.headers.get('set-cookie')).toContain('ab_workspace_plan=yearly');expect(r.headers.get('set-cookie')).toContain('HttpOnly');});
+it('routes a new eligible account to the existing activation checkout',async()=>{mocks.user.mockResolvedValue({id:'user'});mocks.journey.mockResolvedValue({state:'eligibility_active'});expect((await GET(request())).headers.get('location')).toBe('http://localhost:3030/workspace/activate');});
+it.each(['expired','financial_review','activation_pending','complimentary','active'])('routes existing %s access through guarded renewal or financial recovery',async state=>{mocks.user.mockResolvedValue({id:'user'});mocks.journey.mockResolvedValue({state,hasCreatorAccess:state==='complimentary'||state==='active',destination:'/workspace/dashboard'});expect((await GET(request())).headers.get('location')).toBe('http://localhost:3030'+(['financial_review','activation_pending'].includes(state)?'/workspace/member':'/workspace/apply?renew=1'));});
+it('keeps incomplete eligibility in the existing guarded journey',async()=>{mocks.user.mockResolvedValue({id:'user'});mocks.journey.mockResolvedValue({state:'not_started',destination:'/workspace/apply'});expect((await GET(request())).headers.get('location')).toBe('http://localhost:3030/workspace/apply');});
+it('fails closed when catalogue is unavailable and never invents a price',async()=>{mocks.plans.mockRejectedValueOnce(Error('private_db_error'));const r=await GET(request());expect(r.status).toBe(503);expect(await r.text()).not.toContain('private_db_error');});
+it('rejects arbitrary plans and handles unavailable current selection',async()=>{expect((await GET(request('invalid'))).status).toBe(400);mocks.plans.mockResolvedValue([{code:'yearly',available:false}]);expect((await GET(request())).headers.get('location')).toBe('http://localhost:3030/workspace/pricing?availability=changed');});
+
+it('uses the configured public origin rather than a different internal server hostname',async()=>{vi.stubEnv('NEXT_PUBLIC_BASE_URL','http://127.0.0.1:3030');const r=await GET(request());expect(r.headers.get('location')).toBe('http://127.0.0.1:3030/login?callbackUrl=%2Fworkspace%2Fchoose-plan%3Fplan%3Dyearly');});

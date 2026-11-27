@@ -31,9 +31,9 @@ it('load error exposes an actionable retry without inventing an empty financial 
   const result = html(createElement(WorkspaceErrorState, { title: 'Financial evidence unavailable', href: '/admin/workspace/reports' }));
   expect(result).toContain('role="alert"'); expect(result).toContain('Reload this page'); expect(result).not.toContain('₹0');
 });
-it('launch notice separates Early Access preparation from planned publication and selling', () => {
+it('launch notice describes independent publishing without promising a release date', () => {
   const result = html(createElement(WorkspaceLaunchNotice));
-  expect(result).toContain('Full AirBharath Workspace is targeted for 9 November 2026, subject to release readiness.'); expect(result).toContain('not available during Early Access');
+  expect(result).toContain('coordinated launch verification');expect(result).toContain('independent course building');expect(result).toContain('Admin moderation');expect(result).not.toContain('9 November');
 });
 it('saved legal history does not pre-check or auto-acknowledge current purchase consent', () => {
   const accepted = vi.fn();
@@ -54,8 +54,8 @@ it('expired paid term remains expired while an independent valid grant still per
   const result = html(await MemberPage()); expect(result).toContain('Membership expired'); expect(result).toContain('independent complimentary grant continues to allow Creator editing'); expect(result).not.toContain('Creator access is no longer active'); expect(result).toContain('₹5,898.82');
 });
 it('course review list uses established review wording without changing generic refund labels', async () => {
-  const result = html(await WorkspaceList({ kind: 'reviews', searchParams: Promise.resolve({}) })); expect(result).toContain('Submitted for Review'); expect(result).toContain('AirBharath Course Review Approved');
-  const other = html(await WorkspaceList({ kind: 'refunds', searchParams: Promise.resolve({}) })); expect(other).not.toContain('AirBharath Course Review Approved');
+  const result = html(await WorkspaceList({ kind: 'reviews', searchParams: Promise.resolve({}) })); expect(result).toContain('Awaiting idea approval'); expect(result).toContain('Course idea approved');
+  const other = html(await WorkspaceList({ kind: 'refunds', searchParams: Promise.resolve({}) })); expect(other).not.toContain('Course idea approved');
 });
 
 it('coupon code constraint remains valid under modern native unicode-set validation', () => {

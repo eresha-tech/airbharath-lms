@@ -1,7 +1,7 @@
 import type { ProviderContext } from '../payments/model';
 import type { Order, Payment, Redemption } from '../payments/repository';
 import type { workspaceCreatorProfiles, workspaceMemberships } from '@/lib/db/schema';
-import { activationReviewReason, membershipTerm } from './model';
+import { activationReviewReason, membershipTerm, prepaidRenewalTerm } from './model';
 export type CreatorProfile = typeof workspaceCreatorProfiles.$inferSelect;
 export type Membership = typeof workspaceMemberships.$inferSelect;
 export interface ActivationTransaction {
@@ -11,6 +11,7 @@ export interface ActivationTransaction {
   membership(): Promise<Membership | null>;
   payment(): Promise<Payment | null>;
   redemption(): Promise<Redemption | null>;
+  renewalEnds?(): Promise<Date[]>;
   otherMemberships(): Promise<Membership[]>;
   createProfile(now: Date): Promise<CreatorProfile>;
   createMembership(values: Omit<Membership, 'id'>): Promise<Membership>;
@@ -45,8 +46,9 @@ export function createWorkspaceActivationService(store: ActivationStore, environ
       if (reason) { await tx.hold(reason); return { state: 'held_for_review' as const }; }
       let profile = await tx.profile();
       if (profile && profile.status !== 'enabled') { await tx.hold(`creator_${profile.status}`); return { state: 'held_for_review' as const }; }
-      const term = membershipTerm(order.paidAt!, order.durationMonths);
-      const overlaps = (await tx.otherMemberships()).some(m => m.endsAt > now || (m.startsAt < term.endsAt && term.startsAt < m.endsAt));
+      if(order.purchaseKind==='renewal'&&!tx.renewalEnds){await tx.hold('renewal_history_unavailable');return {state:'held_for_review' as const};}
+      const term = order.purchaseKind === 'renewal' ? prepaidRenewalTerm(order.paidAt!, order.durationMonths, await tx.renewalEnds?.() ?? []) : membershipTerm(order.paidAt!, order.durationMonths);
+      const overlaps = order.purchaseKind !== 'renewal' && (await tx.otherMemberships()).some(m => m.endsAt > now || (m.startsAt < term.endsAt && term.startsAt < m.endsAt));
       if (overlaps) { await tx.hold('membership_overlap'); return { state: 'held_for_review' as const }; }
       // No profile exists until every payment, context, identity and overlap check passes.
       profile ||= await tx.createProfile(now);

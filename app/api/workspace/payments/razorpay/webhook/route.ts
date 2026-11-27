@@ -17,12 +17,14 @@ export async function POST(request: Request) {
     const received = await runtime.store.receiveEvent(runtime.config, { eventId, type: parsed.type, hash: createHash('sha256').update(bytes).digest('hex'), evidence: parsed.evidence }, new Date());
     // Durable inbox receipt is committed. Kick worker after responding to immediately reconcile and grant access.
     if (!received.anomaly) {
-      after(async () => {
-        try {
-          const { runWorkspaceFinancialWorker } = await import('@/lib/workspace/payments/worker');
-          await runWorkspaceFinancialWorker();
-        } catch { /* Bounded worker error caught; background/daily cron will recover. */ }
-      });
+      try {
+        after(async () => {
+          try {
+            const { runWorkspaceFinancialWorker } = await import('@/lib/workspace/payments/worker');
+            await runWorkspaceFinancialWorker();
+          } catch { /* Bounded worker error caught; background/daily cron will recover. */ }
+        });
+      } catch { /* Receipt is durable; scheduled reconciliation recovers a failed kick. */ }
     }
     return privateJson({ received: true, state: received.anomaly ? 'needs_review' : received.event.processingState }, received.anomaly ? 409 : ['processed', 'ignored'].includes(received.event.processingState) ? 200 : 202);
   } catch (error) { return paymentFailure(error); }

@@ -1,0 +1,26 @@
+// Audit fixture only. No application overrides, provider traffic or historical relabelling.
+const assert=require('node:assert/strict'),{randomUUID,createHash}=require('node:crypto'),{req}=require('./workspace-financial-loader.cjs');
+module.exports=async function({c,stacks,adminId,phone="910000004299"}){
+ const load=stacks[0].load,owner=randomUUID();
+ await c`insert into users(id,full_name,phone,role) values(${owner},'SYNTHETIC PRIVATE SPONSORED CREATOR',${phone},'student')`;
+ const [settings]=await c`select id from workspace_eligibility_settings where is_current`,[policy]=await c`select id from workspace_policy_versions where is_current`;
+ const eligibility=load('@/lib/workspace/eligibility/model'),parsed=eligibility.validateSubmission({submissionKey:randomUUID(),settingsId:settings.id,policyId:policy.id,category:'pilot_flight_crew',aviationProfession:'',experienceOption:'two_years',professionalStatus:'retired',professionalStatusDetail:'',professionalProfileUrl:'https://example.com/synthetic-live-creator',teachingCategory:'flight_operations',courseIdea:'Independent synthetic Live classification course',declarations:Object.fromEntries(Object.keys(eligibility.DECLARATIONS).map(k=>[k,true]))});assert(parsed.success);
+ await load('@/lib/workspace/eligibility/service').submitEligibility(owner,parsed.data);
+ const terms=load('@/lib/workspace/terms/model').currentCreatorTerms();await load('@/lib/workspace/terms/service').createCreatorTermsService(load('@/lib/workspace/terms/repository').postgresCreatorTermsStore).accept(owner,{acknowledged:true},'"'+terms.contentHash+'"');
+ const grant=await load('@/lib/workspace/access/repository').createAccessGrant(adminId,{targetUserId:owner,reason:'Independent synthetic Live classification fixture only',expiresAt:new Date(Date.now()+86400000).toISOString(),requestKey:randomUUID()});assert.equal(grant.environment,'test');
+ const creator=load('@/lib/workspace/creator/repository').workspaceContent(),builder=load('@/lib/workspace/builder/repository').workspaceBuilder(),pub=load('@/lib/workspace/publishing/service').publishingService(load('@/lib/workspace/publishing/repository').postgresPublishingStore,()=>new Date(),()=>true);
+ const draft=await creator.create(owner,randomUUID(),{title:'Synthetic independent Live course',category:'cabin_crew',description:'Isolated synthetic course for independently scoped mocked Live payout verification only.',targetLearner:'Synthetic learner',learningOutcomes:['Understand independent synthetic finance scope'],outline:[],tentativePricePaise:null});
+ const started=await builder.start(owner,draft.id,{}),project=started.project.id;
+ await builder.mutate(owner,draft.id,{action:'create_module',content:{title:'Synthetic foundations',description:''}});let tree=await builder.read(owner,draft.id);await builder.mutate(owner,draft.id,{action:'create_lesson',moduleId:tree.modules[0].id,content:{title:'Synthetic introduction',summary:'',content:'Synthetic isolated lesson',contentFormat:'plain_text'}});
+ const png=await req('sharp')({create:{width:1200,height:675,channels:3,background:'#9985dd'}}).png().toBuffer(),identity={provider:'s3',container:'synthetic-private',accountId:'123456789012'},store=load('@/lib/workspace/media/repository').postgresMediaStore;
+ const media=load('@/lib/workspace/media/service').mediaService(store,'test',()=>new Date(),identity),uploads=load('@/lib/workspace/media/uploads').mediaUploads(store,'test',()=>new Date(),{identity,authorize:async()=>{throw Error('unused');},inspect:async()=>({versionId:'synthetic-live-source',checksum:createHash('sha256').update(png).digest('hex'),prefix:png.slice(0,4096),bytes:png}),download:async()=>png});
+ const cover=await media.reserve(owner,{lessonId:project,assetKind:'resource',filename:'synthetic-live-cover.png',mimeType:'image/png',byteSize:png.length,expectedMediaRevision:0,requestKey:randomUUID()},project);await uploads.finalize(owner,cover.asset.id,{});
+ const act=async(action,fields={})=>{const view=await pub.read(owner,project);return pub.execute(owner,project,{action,requestKey:randomUUID(),expectedVersion:view.version,...fields});};
+ let view=await pub.read(owner,project);await act('save_metadata',{metadata:{...view.metadata,artworkAssetId:cover.asset.id}});await act('set_price',{amountPaise:149900,currency:'INR'});view=await pub.read(owner,project);await act('accept_guidelines',{acknowledged:true,guidelineVersion:view.guidelines.version,guidelineHash:view.guidelineHash});const published=await act('publish');
+ const finance=load('@/lib/creator-payments/settlement').settlementService(stacks[0].db,'test:acc_synthetic');
+ const bank=await finance.execute(owner,{action:'save_payee',creatorId:owner,requestKey:randomUUID(),holder:'SYNTHETIC PRIVATE SPONSORED CREATOR',account:'000000004199',confirmAccount:'000000004199',ifsc:'HDFC0001234',acknowledged:true});
+ assert.equal((await c`select count(*)::int n from orders where creator_id=${owner}`)[0].n,0);
+ assert.equal((await c`select creator_id from creator_payees where id=${bank.id}`)[0].creator_id,owner);
+ assert.equal((await c`select instructor_id from courses where id=${published.courseId}`)[0].instructor_id,owner);
+ return {owner,bank:bank.id,courseId:published.courseId};
+};

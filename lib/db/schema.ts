@@ -1,5 +1,5 @@
 import { CATEGORIES } from '@/lib/workspace/eligibility/model';
-import { pgTable, pgEnum, uuid, text, numeric, boolean, integer, timestamp, uniqueIndex, unique, index, jsonb, check, primaryKey, foreignKey } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, bigint, uuid, text, numeric, boolean, integer, timestamp, uniqueIndex, unique, index, jsonb, check, primaryKey, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import type { SetupState, FinancialState, ActivationState, ReservationState, PaymentState, EventState, WebhookEvidence } from '@/lib/workspace/payments/model';
 import type { PlanCode, CouponStatus, CouponDefinition } from '@/lib/workspace/membership/model';
@@ -96,7 +96,11 @@ export const courses = pgTable('courses', {
   accessDays: integer('access_days'), // null means lifetime access
   isPublished: boolean('is_published').default(false).notNull(),
   isBundle: boolean('is_bundle').default(false).notNull(),
+  category: text('category').default('general').notNull(),
+  difficulty: text('difficulty').default('all_levels').notNull(),
   instructorId: uuid('instructor_id').references(() => users.id),
+  workspaceProjectId: uuid('workspace_project_id').references(() => workspaceCourseProjects.id, { onDelete: 'restrict' }).unique(),
+  workspaceState: text('workspace_state').$type<'live'|'unpublished'|'suspended'>(),
   certificateStatus: text('certificate_status').default('disabled').notNull(), // 'disabled' | 'active' | 'paused'
   certificateActivatedAt: timestamp('certificate_activated_at', { withTimezone: true }),
   certificateActivatedBy: uuid('certificate_activated_by').references(() => users.id),
@@ -132,6 +136,7 @@ export const modules = pgTable('modules', {
   sectionId: uuid('section_id').references(() => courseSections.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
   description: text('description'),
+  workspaceRetired: boolean('workspace_retired').default(false).notNull(),
   practicalTask: text('practical_task'),
   orderIndex: integer('order_index').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -159,6 +164,9 @@ export const lessons = pgTable('lessons', {
   summary: text('summary'),
   content: text('content'),
   formulas: text('formulas'),
+  workspaceRevisionId: uuid('workspace_revision_id').references(() => workspacePublicationRevisions.id, { onDelete: 'restrict' }),
+  workspaceRetired: boolean('workspace_retired').default(false).notNull(),
+  contentFormat: text('content_format').$type<'plain_text'|'markdown'>().default('markdown').notNull(),
   videoUrl: text('video_url'),
   isFreePreview: boolean('is_free_preview').default(false).notNull(),
   orderIndex: integer('order_index').notNull(),
@@ -213,8 +221,12 @@ export const orders = pgTable('orders', {
   razorpayPaymentId: text('razorpay_payment_id'),
   amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
   status: text('status').default('pending').notNull(), // 'pending' | 'paid' | 'failed'
+  creatorCommercialQuoteId: uuid('creator_commercial_quote_id').references(()=>creatorCommercialQuotes.id,{onDelete:'restrict'}).unique(),
+  purchaseEvidence: jsonb('purchase_evidence').$type<import('@/lib/commerce/model').PurchaseEvidence>(),
+  creatorId: uuid('creator_id').references(() => users.id, { onDelete: 'restrict' }),
+  workspacePriceId: uuid('workspace_price_id').references(() => workspacePublicationPrices.id, { onDelete: 'restrict' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}, t => [index('orders_paid_origin_idx').on(t.userId, t.courseId).where(sql`${t.status} IN ('paid','refunded','chargeback') AND ${t.razorpayPaymentId} IS NOT NULL AND ${t.amount}>0`)]);
 
 // Invoices Table
 export const invoices = pgTable('invoices', {
@@ -334,6 +346,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 }));
 
 export const coursesRelations = relations(courses, ({ one, many }) => ({
+  discoveryStats: one(courseDiscoveryStats, { fields: [courses.id], references: [courseDiscoveryStats.courseId] }),
   instructor: one(users, {
     fields: [courses.instructorId],
     references: [users.id],
@@ -404,7 +417,8 @@ export const lessonMaterialsRelations = relations(lessonMaterials, ({ one }) => 
   }),
 }));
 
-export const enrollmentsRelations = relations(enrollments, ({ one }) => ({
+export const enrollmentsRelations = relations(enrollments, ({ one, many }) => ({
+  academySources: many(academyEntitlementSources),
   user: one(users, {
     fields: [enrollments.userId],
     references: [users.id],
@@ -655,7 +669,7 @@ export const workspaceMembershipOrders = pgTable('workspace_membership_orders', 
   check('workspace_orders_terms_snapshot_check', sql`(${t.creatorTermsAcceptanceId} IS NULL AND ${t.creatorTermsVersion} IS NULL AND ${t.creatorTermsContentHash} IS NULL AND ${t.creatorTermsAcceptedAt} IS NULL) OR (${t.creatorTermsAcceptanceId} IS NOT NULL AND ${t.creatorTermsVersion} IS NOT NULL AND ${t.creatorTermsContentHash} IS NOT NULL AND ${t.creatorTermsAcceptedAt} IS NOT NULL AND ${t.creatorTermsAcceptedAt} <= ${t.createdAt})`),
   foreignKey({ columns: [t.refundPolicyAcceptanceId, t.userId, t.refundPolicyVersion, t.refundPolicyContentHash, t.refundPolicyAcceptedAt], foreignColumns: [workspaceRefundPolicyAcceptances.id, workspaceRefundPolicyAcceptances.userId, workspaceRefundPolicyAcceptances.policyVersion, workspaceRefundPolicyAcceptances.policyContentHash, workspaceRefundPolicyAcceptances.acceptedAt], name: 'workspace_orders_refund_policy_snapshot_fk' }).onDelete('restrict'),
   check('workspace_orders_refund_policy_snapshot_check', sql`(${t.refundPolicyAcceptanceId} IS NULL AND ${t.refundPolicyVersion} IS NULL AND ${t.refundPolicyContentHash} IS NULL AND ${t.refundPolicyAcceptedAt} IS NULL) OR (${t.refundPolicyAcceptanceId} IS NOT NULL AND ${t.refundPolicyVersion} IS NOT NULL AND ${t.refundPolicyContentHash} IS NOT NULL AND ${t.refundPolicyAcceptedAt} IS NOT NULL AND ${t.refundPolicyAcceptedAt} <= ${t.createdAt})`),
-  uniqueIndex('workspace_orders_unresolved_user_idx').on(t.userId).where(sql`${t.providerSetupState} <> 'closed' OR ${t.financialState} = 'captured'`),
+  uniqueIndex('workspace_orders_unresolved_user_idx').on(t.userId).where(sql`${t.activationState} <> 'fulfilled' AND (${t.providerSetupState} <> 'closed' OR ${t.financialState} = 'captured')`),
   uniqueIndex('workspace_orders_receipt_idx').on(t.providerAccountId, t.providerMode, t.providerReceipt),
   uniqueIndex('workspace_orders_provider_order_idx').on(t.providerAccountId, t.providerMode, t.providerOrderId),
   uniqueIndex('workspace_orders_owner_idx').on(t.id, t.userId),
@@ -663,7 +677,7 @@ export const workspaceMembershipOrders = pgTable('workspace_membership_orders', 
   uniqueIndex('workspace_orders_owner_provider_idx').on(t.id, t.userId, t.providerAccountId, t.providerMode, t.providerOrderId),
   index('workspace_orders_recovery_idx').on(t.providerSetupState, t.createdAt), index('workspace_orders_financial_idx').on(t.financialState, t.activationState, t.createdAt),
   check('workspace_orders_economics_check', sql`${t.basePricePaise} BETWEEN 1 AND 100000000 AND ${t.discountPaise} >= 0 AND ${t.discountPaise} < ${t.basePricePaise} AND ${t.taxableAmountPaise} = ${t.basePricePaise} - ${t.discountPaise} AND ${t.gstRateBps} = 1800 AND ${t.gstAmountPaise} = round(${t.taxableAmountPaise}::numeric * 1800 / 10000) AND ${t.totalPaise} = ${t.taxableAmountPaise} + ${t.gstAmountPaise} AND ${t.totalPaise} > 0 AND ${t.currency} = 'INR' AND ((${t.planCode} = 'quarterly' AND ${t.durationMonths} = 3) OR (${t.planCode} = 'half_yearly' AND ${t.durationMonths} = 6) OR (${t.planCode} = 'yearly' AND ${t.durationMonths} = 12))`),
-  check('workspace_orders_context_check', sql`${t.purchaseKind} = 'initial' AND ${t.provider} = 'razorpay' AND ((${t.providerMode} = 'test' AND ${t.commercialPolicyVersion} = 'workspace-test-noncommercial-v1') OR (${t.providerMode} = 'live' AND ${t.commercialPolicyVersion} = 'workspace-live-commercial-v1')) AND ${t.quoteHash} ~ '^[a-f0-9]{64}$' AND ${t.contextHash} ~ '^[a-f0-9]{64}$' AND ${t.requestPayloadHash} ~ '^[a-f0-9]{64}$' AND ${t.providerReceipt} ~ '^wso[a-f0-9]{32}$' AND length(${t.providerAccountId}) BETWEEN 1 AND 100 AND ${t.version} > 0 AND ((${t.couponId} IS NULL AND ${t.couponCode} IS NULL AND ${t.couponSnapshot} IS NULL AND ${t.discountPaise} = 0) OR (${t.couponId} IS NOT NULL AND ${t.couponCode} IS NOT NULL AND ${t.couponSnapshot} IS NOT NULL AND ${t.discountPaise} > 0))`),
+  check('workspace_orders_context_check', sql`${t.purchaseKind} IN ('initial','renewal') AND ${t.provider} = 'razorpay' AND ((${t.providerMode} = 'test' AND ${t.commercialPolicyVersion} = 'workspace-test-noncommercial-v1') OR (${t.providerMode} = 'live' AND ${t.commercialPolicyVersion} = 'workspace-live-commercial-v1')) AND ${t.quoteHash} ~ '^[a-f0-9]{64}$' AND ${t.contextHash} ~ '^[a-f0-9]{64}$' AND ${t.requestPayloadHash} ~ '^[a-f0-9]{64}$' AND ${t.providerReceipt} ~ '^wso[a-f0-9]{32}$' AND length(${t.providerAccountId}) BETWEEN 1 AND 100 AND ${t.version} > 0 AND ((${t.couponId} IS NULL AND ${t.couponCode} IS NULL AND ${t.couponSnapshot} IS NULL AND ${t.discountPaise} = 0) OR (${t.couponId} IS NOT NULL AND ${t.couponCode} IS NOT NULL AND ${t.couponSnapshot} IS NOT NULL AND ${t.discountPaise} > 0))`),
   check('workspace_orders_fulfillment_check', sql`(${t.fulfilledAt} IS NULL AND ${t.activationState} <> 'fulfilled') OR (${t.fulfilledAt} IS NOT NULL AND ${t.activationState} IN ('fulfilled','held_for_review') AND ${t.financialState} = 'captured' AND ${t.paidAt} IS NOT NULL AND ${t.refundEligibleUntil} = ${t.paidAt} + interval '72 hours' AND ${t.fulfilledAt} >= ${t.paidAt})`),
   check('workspace_orders_state_check', sql`${t.providerSetupState} IN ('creating','ready','recovery_required','closed') AND ${t.financialState} IN ('unpaid','captured') AND ${t.activationState} IN ('pending_activation','held_for_review','fulfilled') AND (${t.providerCreateFailureHash} IS NULL OR ${t.providerCreateFailureHash} ~ '^[a-f0-9]{64}$') AND ${t.providerRequestCount} BETWEEN 0 AND 1 AND ((${t.providerRequestCount} = 0 AND ${t.providerCreateStartedAt} IS NULL AND ${t.providerOrderId} IS NULL) OR (${t.providerRequestCount} = 1 AND ${t.providerCreateStartedAt} IS NOT NULL)) AND ((${t.providerOrderId} IS NULL AND ${t.providerOrderCreatedAt} IS NULL) OR (${t.providerOrderId} IS NOT NULL AND ${t.providerOrderCreatedAt} IS NOT NULL AND ${t.providerOrderId} ~ '^order_[A-Za-z0-9]{6,80}$')) AND (${t.providerSetupState} <> 'ready' OR ${t.providerOrderId} IS NOT NULL) AND ((${t.financialState} = 'unpaid' AND ${t.winningPaymentId} IS NULL AND ${t.paidAt} IS NULL AND ${t.refundEligibleUntil} IS NULL) OR (${t.financialState} = 'captured' AND ${t.winningPaymentId} IS NOT NULL AND ((${t.paidAt} IS NOT NULL AND ${t.refundEligibleUntil} IS NOT NULL AND ${t.refundEligibleUntil} = ${t.paidAt} + interval '72 hours') OR (${t.paidAt} IS NULL AND ${t.refundEligibleUntil} IS NULL AND ${t.activationState} = 'held_for_review')))) AND (${t.activationState} <> 'held_for_review' OR ${t.reviewReason} IS NOT NULL) AND (${t.providerSetupState} <> 'closed' OR (${t.closedAt} IS NOT NULL AND ${t.closeReason} IS NOT NULL AND ${t.closeReason} IN ('never_submitted','provider_definitive_rejection')))`),
 ]);
@@ -829,12 +843,17 @@ export const workspaceCourseReviewEvents = pgTable('workspace_course_review_even
 // Private approved-submission builder. No LMS/storefront/payment relationships.
 export const workspaceCourseProjects = pgTable('workspace_course_projects', {
   id: uuid('id').defaultRandom().primaryKey(), userId: uuid('user_id').notNull(), creatorProfileId: uuid('creator_profile_id').notNull(),
-  draftId: uuid('draft_id').notNull(), approvedSubmissionId: uuid('approved_submission_id').notNull(),
+  draftId: uuid('draft_id').notNull(), approvedSubmissionId: uuid('approved_submission_id'),
+  sourceSnapshot: jsonb('source_snapshot').$type<import('@/lib/workspace/builder/service').ApprovedSource>(),
   status: text('status').$type<'building'>().default('building').notNull(), version: integer('version').default(1).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(), updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, t => [
+  uniqueIndex('workspace_projects_media_owner_idx').on(t.id, t.userId, t.creatorProfileId),
   uniqueIndex('workspace_projects_source_idx').on(t.approvedSubmissionId), uniqueIndex('workspace_projects_owner_idx').on(t.id, t.userId),
   index('workspace_projects_draft_idx').on(t.userId, t.draftId),
+  uniqueIndex('workspace_projects_direct_draft_idx').on(t.draftId).where(sql`${t.sourceSnapshot} IS NOT NULL`),
+  foreignKey({columns:[t.draftId,t.userId,t.creatorProfileId],foreignColumns:[workspaceCourseDrafts.id,workspaceCourseDrafts.userId,workspaceCourseDrafts.creatorProfileId],name:'workspace_project_draft_owner_fk'}).onDelete('restrict'),
+  check('workspace_project_source_check',sql`(${t.approvedSubmissionId} IS NOT NULL AND ${t.sourceSnapshot} IS NULL) OR (${t.approvedSubmissionId} IS NULL AND ${t.sourceSnapshot} IS NOT NULL)`),
   foreignKey({ columns: [t.approvedSubmissionId, t.userId, t.creatorProfileId, t.draftId], foreignColumns: [workspaceCourseSubmissions.id, workspaceCourseSubmissions.userId, workspaceCourseSubmissions.creatorProfileId, workspaceCourseSubmissions.draftId], name: 'workspace_projects_approved_owner_fk' }).onDelete('restrict'),
   foreignKey({ columns: [t.creatorProfileId, t.userId], foreignColumns: [workspaceCreatorProfiles.id, workspaceCreatorProfiles.userId], name: 'workspace_projects_profile_owner_fk' }).onDelete('restrict'),
   check('workspace_projects_state_check', sql`${t.status} = 'building' AND ${t.version} > 0 AND ${t.updatedAt} >= ${t.createdAt}`),
@@ -852,12 +871,58 @@ export const workspaceCourseModules = pgTable('workspace_course_modules', {
 export const workspaceCourseLessons = pgTable('workspace_course_lessons', {
   id: uuid('id').defaultRandom().primaryKey(), projectId: uuid('project_id').notNull(), moduleId: uuid('module_id').notNull(), userId: uuid('user_id').notNull(),
   title: text('title').notNull(), summary: text('summary').default('').notNull(), content: text('content').default('').notNull(), position: integer('position').notNull(), version: integer('version').default(1).notNull(),
+  contentFormat: text('content_format').$type<import('@/lib/workspace/media/model').ContentFormat>().default('plain_text').notNull(),
+  mediaRevision: integer('media_revision').default(0).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(), updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, t => [
+  uniqueIndex('workspace_lessons_media_owner_idx').on(t.id, t.projectId, t.userId),
+  check('workspace_lessons_format_media_check', sql`${t.contentFormat} IN ('plain_text','markdown') AND ${t.mediaRevision} BETWEEN 0 AND 2147483646`),
   unique('workspace_lessons_position_unique').on(t.moduleId, t.position),
   foreignKey({ columns: [t.moduleId, t.projectId, t.userId], foreignColumns: [workspaceCourseModules.id, workspaceCourseModules.projectId, workspaceCourseModules.userId], name: 'workspace_lessons_module_owner_fk' }).onDelete('restrict'),
   check('workspace_lessons_content_check', sql`length(btrim(${t.title})) BETWEEN 2 AND 200 AND length(${t.summary}) <= 1000 AND length(${t.content}) <= 20000`),
   check('workspace_lessons_version_time_check', sql`${t.position} >= 0 AND ${t.version} > 0 AND ${t.updatedAt} >= ${t.createdAt}`),
+]);
+
+// Private authoring assets. No learner course/video/enrollment relationship.
+export const workspaceCourseAssets = pgTable('workspace_course_assets', {
+  id: uuid('id').defaultRandom().primaryKey(), userId: uuid('user_id').notNull(), creatorProfileId: uuid('creator_profile_id').notNull(),
+  projectId: uuid('project_id').notNull(), lessonId: uuid('lesson_id'),
+  assetKind: text('asset_kind').$type<import('@/lib/workspace/media/model').AssetKind>().notNull(),
+  status: text('status').$type<import('@/lib/workspace/media/model').AssetState>().default('pending_upload').notNull(),
+  filename: text('filename').notNull(), displayName: text('display_name').notNull(), mimeType: text('mime_type').notNull(), byteSize: bigint('byte_size', { mode: 'number' }).notNull(),
+  storageProvider: text('storage_provider').$type<'s3'>().notNull(), storageContainer: text('storage_container').notNull(), storageAccountId: text('storage_account_id').notNull(), storageKey: text('storage_key').notNull(),
+  objectVersionId: text('object_version_id'), checksum: text('checksum'), verificationPolicy: text('verification_policy'),
+  processingJobId: text('processing_job_id'), processingSourceVersion: text('processing_source_version'), processingPolicy: text('processing_policy'),
+  outputKey: text('output_key'), outputVersionId: text('output_version_id'),
+  replacesAssetId: uuid('replaces_asset_id'), replacementVersion: integer('replacement_version'),
+  captionVideoId: uuid('caption_video_id'), captionSourceVersion: text('caption_source_version'), language: text('language'),
+  isAttached: boolean('is_attached').default(false).notNull(), resourcePosition: integer('resource_position'),
+  requestKey: uuid('request_key').notNull(), contextHash: text('context_hash').notNull(), version: integer('version').default(1).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(), updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(), uploadedAt: timestamp('uploaded_at', { withTimezone: true }),
+  verifiedAt: timestamp('verified_at', { withTimezone: true }), readyAt: timestamp('ready_at', { withTimezone: true }), detachedAt: timestamp('detached_at', { withTimezone: true }),
+}, t => [
+  check('workspace_asset_cover_scope',sql`${t.lessonId} IS NOT NULL OR (${t.assetKind}='resource' AND ${t.mimeType} IN ('image/png','image/jpeg') AND NOT ${t.isAttached})`),
+  uniqueIndex('workspace_assets_owner_idx').on(t.id, t.lessonId, t.projectId, t.userId),
+  uniqueIndex('workspace_assets_request_idx').on(t.userId, t.requestKey),
+  uniqueIndex('workspace_assets_object_idx').on(t.storageProvider, t.storageContainer, t.storageKey),
+  uniqueIndex('workspace_assets_video_current_idx').on(t.lessonId).where(sql`${t.assetKind}='video' AND ${t.isAttached}`),
+  uniqueIndex('workspace_assets_video_pending_idx').on(t.lessonId).where(sql`${t.assetKind}='video' AND ${t.status} IN ('pending_upload','uploaded','verified','processing','ready') AND NOT ${t.isAttached}`),
+  uniqueIndex('workspace_assets_replacement_version_idx').on(t.lessonId, t.replacementVersion),
+  uniqueIndex('workspace_assets_caption_current_idx').on(t.captionVideoId, t.language).where(sql`${t.assetKind}='caption' AND ${t.isAttached}`),
+  unique('workspace_assets_resource_position_unique').on(t.lessonId, t.resourcePosition),
+  index('workspace_assets_lesson_idx').on(t.lessonId, t.createdAt, t.id),
+  index('workspace_assets_operations_idx').on(t.status,t.updatedAt,t.expiresAt).where(sql`${t.status} IN ('pending_upload','processing','failed')`),
+  foreignKey({ columns: [t.lessonId, t.projectId, t.userId], foreignColumns: [workspaceCourseLessons.id, workspaceCourseLessons.projectId, workspaceCourseLessons.userId], name: 'workspace_assets_lesson_owner_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [t.projectId, t.userId, t.creatorProfileId], foreignColumns: [workspaceCourseProjects.id, workspaceCourseProjects.userId, workspaceCourseProjects.creatorProfileId], name: 'workspace_assets_project_owner_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [t.replacesAssetId, t.lessonId, t.projectId, t.userId], foreignColumns: [t.id, t.lessonId, t.projectId, t.userId], name: 'workspace_assets_replaces_owner_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [t.captionVideoId, t.lessonId, t.projectId, t.userId], foreignColumns: [t.id, t.lessonId, t.projectId, t.userId], name: 'workspace_assets_caption_owner_fk' }).onDelete('restrict'),
+  check('workspace_assets_file_check', sql`length(btrim(${t.filename})) BETWEEN 1 AND 180 AND length(btrim(${t.displayName})) BETWEEN 1 AND 180 AND ((${t.assetKind}='video' AND ${t.mimeType}='video/mp4' AND ${t.byteSize} BETWEEN 1 AND 2147483648) OR (${t.assetKind}='resource' AND ${t.mimeType} IN ('application/pdf','image/png','image/jpeg') AND ${t.byteSize} BETWEEN 1 AND 20971520) OR (${t.assetKind}='caption' AND ${t.mimeType}='text/vtt' AND ${t.byteSize} BETWEEN 1 AND 1048576))`),
+  check('workspace_assets_storage_check', sql`${t.storageProvider}='s3' AND length(btrim(${t.storageContainer}))>0 AND ${t.storageAccountId} ~ '^[0-9]{12}$' AND ${t.storageKey}='workspace/'||${t.creatorProfileId}::text||'/'||${t.projectId}::text||'/'||${t.id}::text||'/source' AND ${t.contextHash} ~ '^[a-f0-9]{64}$'`),
+  check('workspace_assets_kind_check', sql`((${t.assetKind}='video' AND ${t.replacementVersion} IS NOT NULL AND ${t.replacementVersion}>0) OR (${t.assetKind}<>'video' AND ${t.replacementVersion} IS NULL AND ${t.replacesAssetId} IS NULL)) AND ((${t.assetKind}='caption' AND ${t.captionVideoId} IS NOT NULL AND ${t.captionSourceVersion} IS NOT NULL AND length(${t.captionSourceVersion})>0 AND ${t.language} IS NOT NULL AND ${t.language} ~ '^[a-z]{2,3}(-[A-Z]{2})?$') OR (${t.assetKind}<>'caption' AND ${t.captionVideoId} IS NULL AND ${t.captionSourceVersion} IS NULL AND ${t.language} IS NULL))`),
+  check('workspace_assets_state_check', sql`${t.status} IN ('pending_upload','uploaded','verified','processing','ready','failed','detached') AND (NOT ${t.isAttached} OR ${t.status}='ready') AND ((${t.assetKind}='resource' AND ${t.isAttached} AND ${t.resourcePosition} IS NOT NULL AND ${t.resourcePosition}>=0) OR (NOT (${t.assetKind}='resource' AND ${t.isAttached}) AND ${t.resourcePosition} IS NULL)) AND (${t.status}<>'processing' OR ${t.assetKind}='video')`),
+  check('workspace_assets_evidence_check', sql`(${t.status} NOT IN ('uploaded','verified','processing','ready') OR (${t.objectVersionId} IS NOT NULL AND length(${t.objectVersionId})>0 AND ${t.objectVersionId}<>'null' AND ${t.uploadedAt} IS NOT NULL)) AND (${t.status} NOT IN ('verified','processing','ready') OR (${t.verifiedAt} IS NOT NULL AND ${t.checksum} IS NOT NULL AND ${t.checksum} ~ '^[a-f0-9]{64}$' AND ${t.verificationPolicy} IS NOT NULL AND length(${t.verificationPolicy})>0)) AND (${t.status}<>'ready' OR ${t.readyAt} IS NOT NULL) AND (${t.status}<>'detached' OR (${t.detachedAt} IS NOT NULL AND NOT ${t.isAttached})) AND (${t.status}<>'processing' AND NOT (${t.assetKind}='video' AND ${t.status}='ready') OR (${t.processingJobId} IS NOT NULL AND length(${t.processingJobId})>0 AND ${t.processingSourceVersion} IS NOT NULL AND ${t.processingSourceVersion}=${t.objectVersionId} AND ${t.processingPolicy} IS NOT NULL AND length(${t.processingPolicy})>0)) AND (${t.assetKind}<>'video' OR ${t.status}<>'ready' OR (${t.outputKey} IS NOT NULL AND ${t.outputVersionId} IS NOT NULL AND length(${t.outputVersionId})>0))`),
+  check('workspace_assets_time_check', sql`${t.version} BETWEEN 1 AND 2147483646 AND ${t.updatedAt}>=${t.createdAt} AND ${t.expiresAt}>${t.createdAt} AND (${t.uploadedAt} IS NULL OR ${t.uploadedAt}>=${t.createdAt}) AND (${t.verifiedAt} IS NULL OR (${t.uploadedAt} IS NOT NULL AND ${t.verifiedAt}>=${t.uploadedAt})) AND (${t.readyAt} IS NULL OR (${t.verifiedAt} IS NOT NULL AND ${t.readyAt}>=${t.verifiedAt})) AND (${t.detachedAt} IS NULL OR ${t.detachedAt}>=${t.createdAt})`),
 ]);
 
 // Decisions, execution and financial completion are separate; no historical membership mutation.
@@ -916,7 +981,7 @@ export const workspaceEmailNoticeBindings = pgTable('workspace_email_notice_bind
 export const workspaceAccessGrants = pgTable('workspace_access_grants', {
   id: uuid('id').defaultRandom().primaryKey(), userId: uuid('user_id').notNull().references(()=>users.id,{onDelete:'restrict'}), creatorProfileId: uuid('creator_profile_id').notNull(),
   eligibilityAttemptId: uuid('eligibility_attempt_id').notNull().references(()=>workspaceEligibilityAttempts.id,{onDelete:'restrict'}),
-  source: text('source').default('admin_complimentary').notNull(), scope: text('scope').default('creator_workspace').notNull(), environment: text('environment').$type<'development'|'test'|'production'>().notNull(),
+  source: text('source').default('admin_complimentary').notNull(), scope: text('scope').default('creator_workspace').notNull(), environment: text('environment').$type<'development'|'test'|'staging'|'production'>().notNull(),
   status: text('status').$type<'active'|'revoked'|'expired'>().default('active').notNull(), startsAt: timestamp('starts_at',{withTimezone:true}).notNull(), expiresAt: timestamp('expires_at',{withTimezone:true}).notNull(),
   reason: text('reason').notNull(), grantedBy: uuid('granted_by').notNull().references(()=>users.id,{onDelete:'restrict'}), requestKey: uuid('request_key').notNull(), payloadHash: text('payload_hash').notNull(),
   termsVersion: text('terms_version').notNull(), termsContentHash: text('terms_content_hash').notNull(), createdAt: timestamp('created_at',{withTimezone:true}).notNull(),
@@ -926,7 +991,7 @@ export const workspaceAccessGrants = pgTable('workspace_access_grants', {
   uniqueIndex('workspace_grant_open_owner_idx').on(t.userId,t.environment).where(sql`${t.status}='active'`),index('workspace_grant_owner_expiry_idx').on(t.userId,t.environment,t.expiresAt),index('workspace_grant_created_idx').on(t.createdAt,t.id),
   foreignKey({columns:[t.creatorProfileId,t.userId],foreignColumns:[workspaceCreatorProfiles.id,workspaceCreatorProfiles.userId],name:'workspace_grant_profile_owner_fk'}).onDelete('restrict'),
   foreignKey({columns:[t.termsVersion,t.termsContentHash],foreignColumns:[workspaceCreatorTermsVersions.termsVersion,workspaceCreatorTermsVersions.contentHash],name:'workspace_grant_terms_fk'}).onDelete('restrict'),
-  check('workspace_grant_context_check',sql`${t.source}='admin_complimentary' AND ${t.scope}='creator_workspace' AND ${t.environment} IN ('development','test','production') AND ${t.payloadHash} ~ '^[a-f0-9]{64}$' AND length(btrim(${t.reason})) BETWEEN 10 AND 1000`),
+  check('workspace_grant_context_check',sql`${t.source}='admin_complimentary' AND ${t.scope}='creator_workspace' AND ${t.environment} IN ('development','test','staging','production') AND ${t.payloadHash} ~ '^[a-f0-9]{64}$' AND length(btrim(${t.reason})) BETWEEN 10 AND 1000`),
   check('workspace_grant_term_check',sql`${t.startsAt}>=${t.createdAt} AND ${t.startsAt}<=${t.createdAt}+interval '30 days' AND ${t.expiresAt}>${t.startsAt} AND ${t.expiresAt}<=(((${t.startsAt} AT TIME ZONE 'Asia/Kolkata')+interval '12 months') AT TIME ZONE 'Asia/Kolkata')`),
   check('workspace_grant_status_check',sql`(${t.status}='active' AND ${t.closedAt} IS NULL AND ${t.closedBy} IS NULL AND ${t.closeReason} IS NULL) OR (${t.status} IN ('revoked','expired') AND ${t.closedAt} IS NOT NULL AND ${t.closedAt}>=${t.createdAt} AND ${t.closedBy} IS NOT NULL AND length(btrim(${t.closeReason})) BETWEEN 10 AND 1000 AND (${t.status}<>'expired' OR ${t.closedAt}>=${t.expiresAt}))`),
 ]);
@@ -936,3 +1001,232 @@ export const workspaceAccessGrantEvents = pgTable('workspace_access_grant_events
 },t=>[uniqueIndex('workspace_grant_event_actor_key_idx').on(t.actorId,t.requestKey),uniqueIndex('workspace_grant_event_action_idx').on(t.grantId,t.action),index('workspace_grant_event_created_idx').on(t.createdAt,t.id),
   foreignKey({columns:[t.grantId,t.userId],foreignColumns:[workspaceAccessGrants.id,workspaceAccessGrants.userId],name:'workspace_grant_event_owner_fk'}).onDelete('restrict'),
   check('workspace_grant_event_context_check',sql`${t.action} IN ('granted','revoked','expired') AND length(btrim(${t.reason})) BETWEEN 10 AND 1000 AND ${t.payloadHash} ~ '^[a-f0-9]{64}$'`)]);
+
+// Durable private processing outbox. Never an LMS video/job identity.
+export const workspaceMediaJobs = pgTable('workspace_media_jobs', {
+  id: uuid('id').primaryKey(),
+  assetId: uuid('asset_id').notNull().references(() => workspaceCourseAssets.id, { onDelete: 'restrict' }).unique(),
+  state: text('state').$type<'queued' | 'dispatching' | 'submitted' | 'complete' | 'failed' | 'uncertain'>().notNull(),
+  sourceVersion: text('source_version').notNull(),
+  policy: text('policy').notNull(),
+  providerJobId: text('provider_job_id'),
+  dispatchedAt: timestamp('dispatched_at', { withTimezone: true }),
+  manifest: jsonb('manifest').$type<Record<string, { version: string; checksum: string; size: number }>>(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+}, t => [
+  check('workspace_media_jobs_state_check', sql`${t.state} IN ('queued','dispatching','submitted','complete','failed','uncertain') AND length(${t.sourceVersion})>0 AND ${t.sourceVersion}<>'null' AND length(${t.policy})>0 AND ${t.updatedAt}>=${t.createdAt} AND (${t.state}<>'complete' OR (${t.manifest} IS NOT NULL AND ${t.providerJobId} IS NOT NULL))`),
+  index('workspace_media_jobs_pending_idx').on(t.state, t.updatedAt),
+]);
+
+// Partial output verification never occupies the final Ready manifest.
+export const workspaceMediaVerifications = pgTable('workspace_media_verifications', {
+ jobId:uuid('job_id').primaryKey().references(()=>workspaceMediaJobs.id,{onDelete:'restrict'}),
+ providerJobId:text('provider_job_id').notNull(),sourceVersion:text('source_version').notNull(),
+ phase:text('phase').$type<'listing'|'verifying'|'complete'>().notNull(),
+ inventory:jsonb('inventory').$type<{name:string;size:number;etag:string}[]>().notNull(),
+ continuation:text('continuation'),verified:jsonb('verified').$type<Record<string,{version:string;checksum:string;size:number}>>().notNull(),
+ version:integer('version').notNull(),updatedAt:timestamp('updated_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[check('workspace_media_verification_values',sql`${t.phase} IN ('listing','verifying','complete') AND ${t.version}>0 AND jsonb_typeof(${t.inventory})='array' AND jsonb_array_length(${t.inventory})<=2000 AND jsonb_typeof(${t.verified})='object' AND (${t.phase}='listing' OR ${t.continuation} IS NULL)`)]);
+
+// Creator publishing is an adapter into the existing LMS, not a parallel LMS.
+export const workspaceTrustedCreators=pgTable('workspace_trusted_creators',{
+ creatorProfileId:uuid('creator_profile_id').primaryKey().references(()=>workspaceCreatorProfiles.id,{onDelete:'restrict'}),userId:uuid('user_id').notNull().references(()=>users.id,{onDelete:'restrict'}),trusted:boolean('trusted').default(false).notNull(),version:integer('version').notNull(),updatedAt:timestamp('updated_at',{withTimezone:true}).notNull(),
+},t=>[foreignKey({columns:[t.creatorProfileId,t.userId],foreignColumns:[workspaceCreatorProfiles.id,workspaceCreatorProfiles.userId],name:'workspace_trust_owner_fk'}).onDelete('restrict'),check('workspace_trust_version_check',sql`${t.version}>0`)]);
+export const workspacePublicationStates=pgTable('workspace_publication_states',{
+ projectId:uuid('project_id').primaryKey().references(()=>workspaceCourseProjects.id,{onDelete:'restrict'}),userId:uuid('user_id').notNull().references(()=>users.id,{onDelete:'restrict'}),version:integer('version').default(0).notNull(),metadata:jsonb('metadata').$type<import('@/lib/workspace/publishing/model').PublicationMetadata>().notNull(),guidelines:jsonb('guidelines').$type<import('@/lib/workspace/publishing/policy').GuidelineAcceptance>(),moderation:jsonb('moderation').$type<import('@/lib/workspace/publishing/policy').Moderation>(),status:text('status').$type<'draft'|'live'|'unpublished'|'suspended'>().default('draft').notNull(),courseId:uuid('course_id').references(()=>courses.id,{onDelete:'restrict'}).unique(),currentRevisionId:uuid('current_revision_id').references(()=>workspacePublicationRevisions.id,{onDelete:'restrict'}),currentPriceId:uuid('current_price_id').references(()=>workspacePublicationPrices.id,{onDelete:'restrict'}),updatedAt:timestamp('updated_at',{withTimezone:true}).notNull(),
+},t=>[index('workspace_publication_moderation_idx').on(t.updatedAt,t.projectId).where(sql`${t.moderation}->>'restriction'<>'none'`),foreignKey({columns:[t.projectId,t.userId],foreignColumns:[workspaceCourseProjects.id,workspaceCourseProjects.userId],name:'workspace_publication_owner_fk'}).onDelete('restrict'),check('workspace_publication_state_check',sql`${t.version}>=0 AND ${t.status} IN ('draft','live','unpublished','suspended') AND (${t.status}<>'live' OR (${t.courseId} IS NOT NULL AND ${t.currentRevisionId} IS NOT NULL AND ${t.currentPriceId} IS NOT NULL))`)]);
+export const workspacePublicationRevisions=pgTable('workspace_publication_revisions',{
+ id:uuid('id').defaultRandom().primaryKey(),projectId:uuid('project_id').notNull().references(()=>workspaceCourseProjects.id,{onDelete:'restrict'}),userId:uuid('user_id').notNull().references(()=>users.id,{onDelete:'restrict'}),number:integer('number').notNull(),snapshot:jsonb('snapshot').$type<import('@/lib/workspace/publishing/model').FrozenCourse>().notNull(),contentHash:text('content_hash').notNull(),status:text('status').$type<'submitted'|'under_review'|'changes_requested'|'approved'|'creator'>().default('submitted').notNull(),feedback:text('feedback').default('').notNull(),decidedBy:uuid('decided_by').references(()=>users.id,{onDelete:'restrict'}),createdAt:timestamp('created_at',{withTimezone:true}).notNull(),updatedAt:timestamp('updated_at',{withTimezone:true}).notNull(),
+},t=>[unique('workspace_publication_revision_number').on(t.projectId,t.number),foreignKey({columns:[t.projectId,t.userId],foreignColumns:[workspaceCourseProjects.id,workspaceCourseProjects.userId],name:'workspace_revision_owner_fk'}).onDelete('restrict'),check('workspace_publication_revision_check',sql`${t.number}>0 AND ${t.contentHash} ~ '^[a-f0-9]{64}$' AND ${t.status} IN ('submitted','under_review','changes_requested','approved','creator') AND (${t.decidedBy} IS NULL OR ${t.decidedBy}<>${t.userId}) AND (${t.status} NOT IN ('approved','changes_requested') OR ${t.decidedBy} IS NOT NULL)`)]);
+export const workspacePublicationPrices=pgTable('workspace_publication_prices',{
+ id:uuid('id').defaultRandom().primaryKey(),projectId:uuid('project_id').notNull().references(()=>workspaceCourseProjects.id,{onDelete:'restrict'}),userId:uuid('user_id').notNull().references(()=>users.id,{onDelete:'restrict'}),number:integer('number').notNull(),amountPaise:integer('amount_paise').notNull(),currency:text('currency').default('INR').notNull(),status:text('status').$type<'proposed'|'approved'|'rejected'|'creator'>().default('proposed').notNull(),decidedBy:uuid('decided_by').references(()=>users.id,{onDelete:'restrict'}),note:text('note').default('').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).notNull(),decidedAt:timestamp('decided_at',{withTimezone:true}),
+},t=>[unique('workspace_publication_price_number').on(t.projectId,t.number),foreignKey({columns:[t.projectId,t.userId],foreignColumns:[workspaceCourseProjects.id,workspaceCourseProjects.userId],name:'workspace_price_owner_fk'}).onDelete('restrict'),check('workspace_publication_price_check',sql`${t.number}>0 AND ${t.amountPaise} BETWEEN 1 AND 100000000 AND ${t.currency}='INR' AND ${t.status} IN ('proposed','approved','rejected','creator') AND (${t.decidedBy} IS NULL OR ${t.decidedBy}<>${t.userId}) AND ((${t.status} IN ('proposed','creator') AND ${t.decidedBy} IS NULL AND ${t.decidedAt} IS NULL) OR (${t.status} IN ('approved','rejected') AND ${t.decidedBy} IS NOT NULL AND ${t.decidedAt} IS NOT NULL))`)]);
+export const workspacePublicationModules=pgTable('workspace_publication_modules',{
+ projectId:uuid('project_id').notNull().references(()=>workspaceCourseProjects.id,{onDelete:'restrict'}),sourceId:uuid('source_id').notNull(),lmsId:uuid('lms_id').notNull().references(()=>modules.id,{onDelete:'restrict'}).unique(),
+},t=>[primaryKey({columns:[t.projectId,t.sourceId]})]);
+export const workspacePublicationLessons=pgTable('workspace_publication_lessons',{
+ projectId:uuid('project_id').notNull().references(()=>workspaceCourseProjects.id,{onDelete:'restrict'}),sourceId:uuid('source_id').notNull(),lmsId:uuid('lms_id').notNull().references(()=>lessons.id,{onDelete:'restrict'}).unique(),
+},t=>[primaryKey({columns:[t.projectId,t.sourceId]})]);
+export const workspacePublicationReleases=pgTable('workspace_publication_releases',{
+ id:uuid('id').defaultRandom().primaryKey(),projectId:uuid('project_id').notNull().references(()=>workspaceCourseProjects.id,{onDelete:'restrict'}),courseId:uuid('course_id').notNull().references(()=>courses.id,{onDelete:'restrict'}),revisionId:uuid('revision_id').notNull().references(()=>workspacePublicationRevisions.id,{onDelete:'restrict'}),priceId:uuid('price_id').notNull().references(()=>workspacePublicationPrices.id,{onDelete:'restrict'}),actorId:uuid('actor_id').notNull().references(()=>users.id,{onDelete:'restrict'}),number:integer('number').notNull(),authority:text('authority').$type<'admin_approved'|'trusted'|'creator'>().notNull(),trustVersion:integer('trust_version'),createdAt:timestamp('created_at',{withTimezone:true}).notNull(),
+},t=>[unique('workspace_publication_release_number').on(t.projectId,t.number)]);
+export const workspacePublicationEvents=pgTable('workspace_publication_events',{
+ id:uuid('id').defaultRandom().primaryKey(),projectId:uuid('project_id').notNull().references(()=>workspaceCourseProjects.id,{onDelete:'restrict'}),actorId:uuid('actor_id').notNull().references(()=>users.id,{onDelete:'restrict'}),action:text('action').notNull(),requestKey:uuid('request_key').notNull(),commandHash:text('command_hash').notNull(),note:text('note').default('').notNull(),result:jsonb('result').$type<Record<string,unknown>>().notNull(),createdAt:timestamp('created_at',{withTimezone:true}).notNull(),
+},t=>[unique('workspace_publication_event_request').on(t.actorId,t.requestKey),index('workspace_publication_event_project').on(t.projectId,t.createdAt)]);
+export const workspaceTrustEvents=pgTable('workspace_trust_events',{
+ id:uuid('id').defaultRandom().primaryKey(),creatorProfileId:uuid('creator_profile_id').notNull().references(()=>workspaceCreatorProfiles.id,{onDelete:'restrict'}),actorId:uuid('actor_id').notNull().references(()=>users.id,{onDelete:'restrict'}),trusted:boolean('trusted').notNull(),version:integer('version').notNull(),reason:text('reason').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).notNull(),
+},t=>[unique('workspace_trust_event_version').on(t.creatorProfileId,t.version)]);
+
+// Shared learner feedback. Creator publication approval remains a separate domain.
+export const courseReviews = pgTable('course_reviews', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  courseId: uuid('course_id').notNull().references(() => courses.id, { onDelete: 'restrict' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  rating: integer('rating').notNull(), content: text('content').notNull(),
+  showName: boolean('show_name').default(false).notNull(),
+  status: text('status').$type<'pending' | 'published' | 'hidden' | 'deleted'>().default('pending').notNull(),
+  version: integer('version').default(1).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, t => [unique('course_review_learner_unique').on(t.courseId, t.userId),
+  index('course_review_public_idx').on(t.courseId, t.status, t.updatedAt, t.id),
+  check('course_review_valid', sql`${t.rating} BETWEEN 1 AND 5 AND length(${t.content}) BETWEEN 20 AND 3000 AND ${t.version}>0 AND ${t.status} IN ('pending','published','hidden','deleted')`)]);
+export const courseReviewReports = pgTable('course_review_reports', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  reviewId: uuid('review_id').notNull().references(() => courseReviews.id, { onDelete: 'restrict' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  reason: text('reason').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, t => [unique('course_review_report_unique').on(t.reviewId, t.userId), check('course_review_report_reason', sql`length(${t.reason}) BETWEEN 10 AND 1000`)]);
+export const courseReviewEvents = pgTable('course_review_events', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  reviewId: uuid('review_id').notNull().references(() => courseReviews.id, { onDelete: 'restrict' }),
+  actorId: uuid('actor_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  action: text('action').notNull(), reason: text('reason').default('').notNull(),
+  version: integer('version').notNull(),
+  snapshot: jsonb('snapshot').$type<{rating:number;content:string;showName:boolean;status:string}>().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, t => [unique('course_review_event_version').on(t.reviewId, t.version), index('course_review_actor_time_idx').on(t.actorId,t.createdAt)]);
+export const courseDiscoveryStats = pgTable('course_discovery_stats', {
+  courseId: uuid('course_id').primaryKey().references(() => courses.id, { onDelete: 'cascade' }),
+  reviewCount: integer('review_count').default(0).notNull(), ratingSum: integer('rating_sum').default(0).notNull(),
+  distribution: jsonb('distribution').$type<number[]>().default([0,0,0,0,0]).notNull(),
+  learners: integer('learners').default(0).notNull(), engaged: integer('engaged').default(0).notNull(), completed: integer('completed').default(0).notNull(),
+  lessons: integer('lessons').default(0).notNull(), modules: integer('modules').default(0).notNull(),
+  publishedAt: timestamp('published_at', { withTimezone: true }).notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const workspacePublicationNotices=pgTable('workspace_publication_notices',{
+ id:uuid('id').defaultRandom().primaryKey(),projectId:uuid('project_id').notNull().references(()=>workspaceCourseProjects.id,{onDelete:'restrict'}),userId:uuid('user_id').notNull().references(()=>users.id,{onDelete:'restrict'}),eventId:uuid('event_id').notNull().references(()=>workspacePublicationEvents.id,{onDelete:'restrict'}).unique(),message:text('message').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).notNull(),
+},t=>[index('workspace_notice_owner_idx').on(t.userId,t.createdAt),foreignKey({columns:[t.projectId,t.userId],foreignColumns:[workspaceCourseProjects.id,workspaceCourseProjects.userId],name:'workspace_notice_owner_fk'}).onDelete('restrict')]);
+
+// Phase 2.2: course money evidence is separate from membership billing.
+export const coursePaymentChecks=pgTable('course_payment_checks',{
+ orderId:uuid('order_id').primaryKey().references(()=>orders.id,{onDelete:'restrict'}),scope:text('scope').notNull(),paymentId:text('payment_id').unique(),lastCheckedAt:timestamp('last_checked_at',{withTimezone:true}),nextCheckAt:timestamp('next_check_at',{withTimezone:true}).defaultNow().notNull(),issue:text('issue'),refundScanSkip:integer('refund_scan_skip').default(0).notNull(),
+},t=>[index('course_checks_operations_idx').on(t.scope,t.issue,t.lastCheckedAt),check('academy_refund_cursor_bounds',sql`${t.refundScanSkip} BETWEEN 0 AND 1000000`)]);
+export const creatorLedger=pgTable('creator_ledger',{
+ commercialAllocationId:uuid('commercial_allocation_id').references(()=>airbharathCommissionLedger.id,{onDelete:'restrict'}).unique(),
+ id:uuid('id').defaultRandom().primaryKey(),creatorId:uuid('creator_id').notNull().references(()=>users.id,{onDelete:'restrict'}),orderId:uuid('order_id').notNull().references(()=>orders.id,{onDelete:'restrict'}),scope:text('scope').notNull(),sourceKey:text('source_key').notNull(),kind:text('kind').notNull(),grossPaise:integer('gross_paise').default(0).notNull(),taxPaise:integer('tax_paise').default(0).notNull(),feePaise:integer('fee_paise').default(0).notNull(),feeTaxPaise:integer('fee_tax_paise').default(0).notNull(),netPaise:integer('net_paise').notNull(),commissionPaise:integer('commission_paise').default(0).notNull(),evidence:jsonb('evidence').$type<Record<string,unknown>>().notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('creator_ledger_source').on(t.orderId,t.sourceKey),index('creator_ledger_owner').on(t.creatorId,t.createdAt),check('creator_ledger_money',sql`(${t.kind}<>'commercial_share' AND ${t.commercialAllocationId} IS NULL AND ${t.commissionPaise}=0 AND ${t.netPaise}=${t.grossPaise}-${t.taxPaise}-${t.feePaise}) OR (${t.kind}='commercial_share' AND ${t.commercialAllocationId} IS NOT NULL AND ${t.grossPaise}=0 AND ${t.taxPaise}=0 AND ${t.feePaise}=0 AND ${t.feeTaxPaise}=0 AND ${t.netPaise}=-${t.commissionPaise})`)]);
+export const coursePaymentInbox=pgTable('course_payment_inbox',{
+ id:text('id').primaryKey(),scope:text('scope').notNull(),hash:text('hash').notNull(),paymentId:text('payment_id').notNull(),disputeId:text('dispute_id'),state:text('state').default('pending').notNull(),attempts:integer('attempts').default(0).notNull(),nextAttemptAt:timestamp('next_attempt_at',{withTimezone:true}).defaultNow().notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),error:text('error'),
+},t=>[index('course_inbox_due').on(t.state,t.nextAttemptAt),index('course_inbox_operations_idx').on(t.scope,t.createdAt).where(sql`${t.state}<>'done' OR ${t.error} IS NOT NULL`)]);
+export const creatorPayees=pgTable('creator_payees',{
+ id:uuid('id').defaultRandom().primaryKey(),creatorId:uuid('creator_id').notNull().references(()=>users.id,{onDelete:'restrict'}),encrypted:text('encrypted').notNull(),masked:text('masked').notNull(),policyVersion:text('policy_version').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+});
+export const creatorFinanceEvents=pgTable('creator_finance_events',{
+ id:uuid('id').defaultRandom().primaryKey(),creatorId:uuid('creator_id').notNull().references(()=>users.id,{onDelete:'restrict'}),actorId:uuid('actor_id').notNull().references(()=>users.id,{onDelete:'restrict'}),requestKey:uuid('request_key').notNull(),commandHash:text('command_hash').notNull(),action:text('action').notNull(),entityId:uuid('entity_id').notNull(),evidence:text('evidence').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('creator_finance_request').on(t.actorId,t.requestKey),index('creator_finance_owner_time_idx').on(t.creatorId,t.createdAt,t.id)]);
+export const creatorPayouts=pgTable('creator_payouts',{
+ id:uuid('id').defaultRandom().primaryKey(),creatorId:uuid('creator_id').notNull().references(()=>users.id,{onDelete:'restrict'}),payeeId:uuid('payee_id').notNull().references(()=>creatorPayees.id,{onDelete:'restrict'}),scope:text('scope').notNull(),amountPaise:integer('amount_paise').notNull(),periodEnd:timestamp('period_end',{withTimezone:true}).notNull(),approvedBy:uuid('approved_by').notNull().references(()=>users.id,{onDelete:'restrict'}),state:text('state').default('approved').notNull(),bankReference:text('bank_reference'),initiatedBy:uuid('initiated_by').references(()=>users.id,{onDelete:'restrict'}),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),updatedAt:timestamp('updated_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('creator_payout_bank_reference').on(t.bankReference),index('creator_payout_owner_time_idx').on(t.creatorId,t.scope,t.createdAt,t.id),index('creator_payout_operations_idx').on(t.scope,t.state,t.updatedAt),check('creator_payout_money',sql`${t.amountPaise}>0 AND ${t.approvedBy}<>${t.creatorId} AND ${t.state} IN ('approved','initiated','uncertain','confirmed','failed','cancelled')`)]);
+export const courseFinanceRuns=pgTable('course_finance_runs',{
+ scope:text('scope').primaryKey(),disputeSkip:integer('dispute_skip').default(0).notNull(),disputesCheckedAt:timestamp('disputes_checked_at',{withTimezone:true}),
+ leaseToken:uuid('lease_token'),leaseUntil:timestamp('lease_until',{withTimezone:true}),disputeNextAt:timestamp('dispute_next_at',{withTimezone:true}).defaultNow().notNull(),phase:integer('phase').default(0).notNull(),lastError:text('last_error'),
+},t=>[check('course_finance_run_lease',sql`((${t.leaseToken} IS NULL)=(${t.leaseUntil} IS NULL)) AND ${t.phase} IN (0,1,2)`)]);
+
+// Phase 2.2P: the existing payout reservation binds one durable provider operation.
+export const creatorPayoutJobs=pgTable('creator_payout_jobs',{
+ id:uuid('id').defaultRandom().primaryKey(),payoutId:uuid('payout_id').notNull().unique().references(()=>creatorPayouts.id,{onDelete:'restrict'}),scope:text('scope').notNull(),fundingFingerprint:text('funding_fingerprint').notNull(),transferMode:text('transfer_mode').notNull(),idempotencyKey:uuid('idempotency_key').defaultRandom().notNull().unique(),authorizedBy:uuid('authorized_by').references(()=>users.id,{onDelete:'restrict'}),stage:text('stage').default('awaiting_authorization').notNull(),contactId:text('contact_id'),fundAccountId:text('fund_account_id'),requestEncrypted:text('request_encrypted'),requestHash:text('request_hash'),providerId:text('provider_id').unique(),providerStatus:text('provider_status'),providerFeesPaise:integer('provider_fees_paise'),providerTaxPaise:integer('provider_tax_paise'),reason:text('reason'),utr:text('utr'),submitAttempts:integer('submit_attempts').default(0).notNull(),firstSubmittedAt:timestamp('first_submitted_at',{withTimezone:true}),attempts:integer('attempts').default(0).notNull(),nextAt:timestamp('next_at',{withTimezone:true}).defaultNow().notNull(),leaseUntil:timestamp('lease_until',{withTimezone:true}),leaseToken:uuid('lease_token'),lastError:text('last_error'),scanSkip:integer('scan_skip').default(0).notNull(),lastReconciledAt:timestamp('last_reconciled_at',{withTimezone:true}),processedAt:timestamp('processed_at',{withTimezone:true}),reversedAt:timestamp('reversed_at',{withTimezone:true}),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),updatedAt:timestamp('updated_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[index('creator_payout_job_due').on(t.stage,t.nextAt),check('creator_payout_job_stage',sql`${t.stage} in ('awaiting_authorization','ready','tracking','blocked','done') and ${t.submitAttempts}>=0 and ${t.attempts}>=0 and ${t.scanSkip}>=0`)]);
+export const creatorPayoutObservations=pgTable('creator_payout_observations',{
+ id:uuid('id').defaultRandom().primaryKey(),jobId:uuid('job_id').notNull().references(()=>creatorPayoutJobs.id,{onDelete:'restrict'}),providerId:text('provider_id').notNull(),source:text('source').notNull(),status:text('status').notNull(),fact:jsonb('fact').$type<Record<string,unknown>>().notNull(),hash:text('hash').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('creator_payout_observation_identity').on(t.jobId,t.source,t.hash),index('creator_payout_status_time_idx').on(t.jobId,t.source,t.status,t.createdAt,t.id),check('creator_payout_observation_source',sql`${t.source} in ('create','reconcile')`)]);
+export const creatorPayoutInbox=pgTable('creator_payout_inbox',{
+ id:text('id').primaryKey(),scope:text('scope').notNull(),hash:text('hash').notNull(),providerId:text('provider_id').notNull(),state:text('state').default('pending').notNull(),attempts:integer('attempts').default(0).notNull(),nextAt:timestamp('next_at',{withTimezone:true}).defaultNow().notNull(),leaseUntil:timestamp('lease_until',{withTimezone:true}),leaseToken:uuid('lease_token'),lastError:text('last_error'),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[index('creator_payout_inbox_due').on(t.state,t.nextAt)]);
+
+// Phase 2.4: support conversations and operational evidence, reusing domain histories.
+export const workspaceSupportRequests = pgTable('workspace_support_requests', {
+ id:uuid('id').defaultRandom().primaryKey(),ownerId:uuid('owner_id').notNull().references(()=>users.id,{onDelete:'restrict'}),
+ kind:text('kind').default('support').notNull(),category:text('category').notNull(),title:text('title').notNull(),status:text('status').default('open').notNull(),priority:text('priority').default('normal').notNull(),
+ referenceKind:text('reference_kind').default('none').notNull(),referenceId:uuid('reference_id'),assigneeId:uuid('assignee_id').references(()=>users.id,{onDelete:'restrict'}),version:integer('version').default(1).notNull(),
+ createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),updatedAt:timestamp('updated_at',{withTimezone:true}).defaultNow().notNull(),resolvedAt:timestamp('resolved_at',{withTimezone:true}),
+},t=>[index('workspace_support_owner_idx').on(t.ownerId,t.updatedAt,t.id),index('workspace_support_queue_idx').on(t.status,t.priority,t.updatedAt,t.id),index('workspace_support_created_idx').on(t.ownerId,t.createdAt),
+ check('workspace_support_values',sql`${t.kind} IN ('support','course_report') AND ${t.category} IN ('account','publishing','media','access','finance','moderation','technical') AND ${t.status} IN ('open','waiting','action_needed','resolved','closed') AND ${t.priority} IN ('normal','urgent') AND length(${t.title}) BETWEEN 5 AND 160 AND ${t.version}>0 AND ${t.updatedAt}>=${t.createdAt} AND ((${t.referenceKind}='none' AND ${t.referenceId} IS NULL) OR (${t.referenceKind} IN ('course','order','payout','reported_course') AND ${t.referenceId} IS NOT NULL)) AND ((${t.status} IN ('resolved','closed'))=(${t.resolvedAt} IS NOT NULL))`),
+]);
+export const workspaceSupportMessages = pgTable('workspace_support_messages',{
+ id:uuid('id').defaultRandom().primaryKey(),requestId:uuid('request_id').notNull().references(()=>workspaceSupportRequests.id,{onDelete:'restrict'}),actorId:uuid('actor_id').notNull().references(()=>users.id,{onDelete:'restrict'}),internal:boolean('internal').default(false).notNull(),body:text('body').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[index('workspace_support_message_idx').on(t.requestId,t.createdAt,t.id),index('workspace_support_message_actor_idx').on(t.actorId,t.createdAt),check('workspace_support_message_length',sql`length(${t.body}) BETWEEN 10 AND 4000`)]);
+export const workspaceOperationEvents=pgTable('workspace_operation_events',{
+ id:uuid('id').defaultRandom().primaryKey(),actorId:uuid('actor_id').notNull().references(()=>users.id,{onDelete:'restrict'}),requestKey:uuid('request_key').notNull(),entityId:uuid('entity_id').notNull(),action:text('action').notNull(),commandHash:text('command_hash').notNull(),result:jsonb('result').$type<Record<string,unknown>>().notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('workspace_operation_command_unique').on(t.actorId,t.requestKey),index('workspace_operation_history_idx').on(t.entityId,t.createdAt,t.id),check('workspace_operation_values',sql`${t.action} IN ('create','report','reply','note','update','media_recheck') AND ${t.commandHash} ~ '^[a-f0-9]{64}$'`)]);
+export const workspaceNotificationReceipts=pgTable('workspace_notification_receipts',{
+ userId:uuid('user_id').notNull().references(()=>users.id,{onDelete:'restrict'}),sourceKey:text('source_key').notNull(),readAt:timestamp('read_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[primaryKey({columns:[t.userId,t.sourceKey]}),check('workspace_notification_key',sql`${t.sourceKey} ~ '^[a-z_]+:[a-f0-9-]{36}(:[a-z_]+)?$'`)]);
+export const workspaceWorkerHealth=pgTable('workspace_worker_health',{
+ key:text('key').primaryKey(),token:uuid('token').notNull(),startedAt:timestamp('started_at',{withTimezone:true}).notNull(),finishedAt:timestamp('finished_at',{withTimezone:true}),succeededAt:timestamp('succeeded_at',{withTimezone:true}),leaseUntil:timestamp('lease_until',{withTimezone:true}),outcome:text('outcome').notNull(),counts:jsonb('counts').$type<Record<string,number>>().default({}).notNull(),
+},t=>[check('workspace_worker_health_values',sql`${t.key} IN ('membership','course_payments','payouts','bank_validations','media','refund_notices') AND ${t.outcome} IN ('running','success','attention','failed') AND ((${t.outcome}='running')=(${t.leaseUntil} IS NOT NULL))`)]);
+
+// Mentor screening is independent from Creator membership, courses and payouts.
+export const mentorApplications=pgTable('mentor_applications',{
+ id:uuid('id').defaultRandom().primaryKey(),ownerId:uuid('owner_id').notNull().references(()=>users.id,{onDelete:'restrict'}),submissionKey:uuid('submission_key').notNull(),payloadHash:text('payload_hash').notNull(),
+ fullName:text('full_name').notNull(),email:text('email').notNull(),phone:text('phone').default('').notNull(),specialisation:text('specialisation').notNull(),professionalRole:text('professional_role').notNull(),yearsExperience:integer('years_experience').notNull(),profileUrl:text('profile_url').default('').notNull(),description:text('description').notNull(),
+ adult:boolean('adult').default(true).notNull(),consent:boolean('consent').default(true).notNull(),consentVersion:text('consent_version').notNull(),consentText:text('consent_text').notNull(),adultText:text('adult_text').notNull(),status:text('status').default('submitted').notNull(),version:integer('version').default(1).notNull(),submittedAt:timestamp('submitted_at',{withTimezone:true}).defaultNow().notNull(),updatedAt:timestamp('updated_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[uniqueIndex('mentor_owner_unique').on(t.ownerId),uniqueIndex('mentor_email_unique').on(t.email),uniqueIndex('mentor_submission_unique').on(t.submissionKey),index('mentor_queue_idx').on(t.status,t.specialisation,t.submittedAt,t.id),index('mentor_time_idx').on(t.submittedAt,t.id),check('mentor_application_values',sql`${t.status} IN ('submitted','under_review','shortlisted','not_selected','contacted') AND ${t.specialisation} IN ('flight_operations','cabin_crew','ground_operations','safety_quality','maintenance','training','management_other') AND ${t.yearsExperience} BETWEEN 0 AND 70 AND length(${t.fullName}) BETWEEN 2 AND 120 AND length(${t.email}) BETWEEN 3 AND 254 AND ${t.email}=lower(${t.email}) AND length(${t.phone})<=24 AND length(${t.professionalRole}) BETWEEN 2 AND 160 AND length(${t.profileUrl})<=2048 AND length(${t.description}) BETWEEN 30 AND 2000 AND ${t.adult} AND ${t.consent} AND length(${t.consentVersion}) BETWEEN 1 AND 120 AND length(${t.consentText}) BETWEEN 20 AND 1000 AND length(${t.adultText}) BETWEEN 20 AND 1000 AND ${t.payloadHash} ~ '^[a-f0-9]{64}$' AND ${t.version}>0 AND ${t.updatedAt}>=${t.submittedAt}`)]);
+export const mentorReviewEvents=pgTable('mentor_review_events',{
+ id:uuid('id').defaultRandom().primaryKey(),applicationId:uuid('application_id').notNull().references(()=>mentorApplications.id,{onDelete:'restrict'}),actorId:uuid('actor_id').notNull().references(()=>users.id,{onDelete:'restrict'}),requestKey:uuid('request_key').notNull(),commandHash:text('command_hash').notNull(),version:integer('version').notNull(),status:text('status').notNull(),note:text('note').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[uniqueIndex('mentor_review_request_unique').on(t.actorId,t.requestKey),uniqueIndex('mentor_review_version_unique').on(t.applicationId,t.version),check('mentor_review_values',sql`${t.status} IN ('under_review','shortlisted','not_selected','contacted') AND ${t.version}>1 AND ${t.commandHash} ~ '^[a-f0-9]{64}$' AND length(${t.note}) BETWEEN 3 AND 2000`)]);
+export const mentorSubmissionLimits=pgTable('mentor_submission_limits',{
+ userId:uuid('user_id').primaryKey().references(()=>users.id,{onDelete:'restrict'}),windowStart:timestamp('window_start',{withTimezone:true}).notNull(),attempts:integer('attempts').notNull(),
+},t=>[check('mentor_limit_values',sql`${t.attempts} BETWEEN 1 AND 21`)]);
+
+// Phase 2.5A: one billable validation intent per immutable bank version and funding scope.
+export const creatorBankValidations = pgTable('creator_bank_validations', {
+ id:uuid('id').defaultRandom().primaryKey(),payeeId:uuid('payee_id').notNull().references(()=>creatorPayees.id,{onDelete:'restrict'}),scope:text('scope').notNull(),mode:text('mode').notNull(),method:text('method').notNull(),amountPaise:integer('amount_paise').notNull(),policy:text('policy').default('mandatory-fav-v1').notNull(),requestedBy:uuid('requested_by').notNull().references(()=>users.id,{onDelete:'restrict'}),requestKey:uuid('request_key').notNull().unique(),contactId:text('contact_id'),fundAccountId:text('fund_account_id'),providerId:text('provider_id').unique(),state:text('state').default('prepared').notNull(),accountStatus:text('account_status').default('unknown').notNull(),nameDecision:text('name_decision').default('missing').notNull(),submitCount:integer('submit_count').default(0).notNull(),submittedAt:timestamp('submitted_at',{withTimezone:true}),recoveryRound:integer('recovery_round').default(0).notNull(),attempts:integer('attempts').default(0).notNull(),scanSkip:integer('scan_skip').default(0).notNull(),nextAt:timestamp('next_at',{withTimezone:true}).defaultNow().notNull(),leaseUntil:timestamp('lease_until',{withTimezone:true}),leaseToken:uuid('lease_token'),lastError:text('last_error'),checkedAt:timestamp('checked_at',{withTimezone:true}),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('creator_bank_validation_version_scope').on(t.payeeId,t.scope),index('creator_bank_validation_due').on(t.scope,t.state,t.nextAt),check('creator_bank_validation_state',sql`${t.mode} IN ('synthetic','live') AND ${t.method}='pennydrop' AND ${t.policy}='mandatory-fav-v1' AND ${t.amountPaise}>0 AND ${t.amountPaise}<=10000 AND ${t.submitCount} BETWEEN 0 AND 1 AND ${t.recoveryRound} BETWEEN 0 AND 3 AND ${t.attempts} BETWEEN 0 AND 20 AND ${t.scanSkip} BETWEEN 0 AND 10000 AND ${t.state} IN ('prepared','pending','valid','invalid','review') AND ${t.accountStatus} IN ('active','invalid','unknown') AND ${t.nameDecision} IN ('match','review','mismatch','missing')`)]);
+export const creatorBankObservations = pgTable('creator_bank_observations', {
+ id:uuid('id').defaultRandom().primaryKey(),validationId:uuid('validation_id').notNull().references(()=>creatorBankValidations.id,{onDelete:'restrict'}),source:text('source').notNull(),providerId:text('provider_id').notNull(),fact:jsonb('fact').$type<Record<string,unknown>>().notNull(),hash:text('hash').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('creator_bank_observation_identity').on(t.validationId,t.source,t.hash),check('creator_bank_observation_source',sql`${t.source} IN ('create','reconcile') AND ${t.hash} ~ '^[a-f0-9]{64}$'`)]);
+export const creatorBankInbox = pgTable('creator_bank_inbox', {
+ id:text('id').primaryKey(),scope:text('scope').notNull(),hash:text('hash').notNull(),providerId:text('provider_id').notNull(),requestId:uuid('request_id'),processedAt:timestamp('processed_at',{withTimezone:true}),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[index('creator_bank_inbox_pending').on(t.scope,t.createdAt).where(sql`${t.processedAt} IS NULL`)]);
+
+// Prospective Academy access only. Historical enrollments are never inferred into purchase sources.
+export const academyEntitlementSources = pgTable('academy_entitlement_sources', {
+ id:uuid('id').defaultRandom().primaryKey(),enrollmentId:uuid('enrollment_id').notNull().references(()=>enrollments.id,{onDelete:'restrict'}),userId:uuid('user_id').notNull().references(()=>users.id,{onDelete:'restrict'}),courseId:uuid('course_id').notNull().references(()=>courses.id,{onDelete:'restrict'}),
+ kind:text('kind').$type<'purchase'|'admin_grant'>().notNull(),orderId:uuid('order_id').references(()=>orders.id,{onDelete:'restrict'}).unique(),scope:text('scope'),providerPaymentId:text('provider_payment_id'),amountPaise:integer('amount_paise').default(0).notNull(),policy:text('policy').notNull(),
+ startsAt:timestamp('starts_at',{withTimezone:true}).notNull(),endsAt:timestamp('ends_at',{withTimezone:true}),ownsEnrollment:boolean('owns_enrollment').default(false).notNull(),actorId:uuid('actor_id').references(()=>users.id,{onDelete:'restrict'}),requestKey:uuid('request_key').unique(),commandHash:text('command_hash'),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[index('academy_source_owner_course').on(t.userId,t.courseId),index('academy_source_enrollment').on(t.enrollmentId),uniqueIndex('academy_source_one_aggregate_owner').on(t.enrollmentId).where(sql`${t.ownsEnrollment}`),check('academy_source_values',sql`${t.kind} IN ('purchase','admin_grant') AND ${t.policy} IN ('academy-prospective-refund-v1','legacy-capture-exempt-v1') AND (${t.endsAt} IS NULL OR ${t.endsAt}>${t.startsAt}) AND ((${t.kind}='purchase' AND ${t.orderId} IS NOT NULL AND ${t.scope} IS NOT NULL AND ${t.providerPaymentId} IS NOT NULL AND ${t.amountPaise}>0 AND ${t.actorId} IS NULL AND ${t.requestKey} IS NULL AND ${t.commandHash} IS NULL) OR (${t.kind}='admin_grant' AND ${t.policy}='academy-prospective-refund-v1' AND ${t.orderId} IS NULL AND ${t.scope} IS NULL AND ${t.providerPaymentId} IS NULL AND ${t.amountPaise}=0 AND ${t.actorId} IS NOT NULL AND ${t.requestKey} IS NOT NULL AND ${t.commandHash} ~ '^[a-f0-9]{64}$'))`)]);
+export const academyEntitlementEvents = pgTable('academy_entitlement_events', {
+ id:uuid('id').defaultRandom().primaryKey(),sourceId:uuid('source_id').notNull().references(()=>academyEntitlementSources.id,{onDelete:'restrict'}),kind:text('kind').notNull(),providerId:text('provider_id').notNull(),status:text('status').notNull(),amountPaise:integer('amount_paise').notNull(),observedAt:timestamp('observed_at',{withTimezone:true}).notNull(),evidenceHash:text('evidence_hash').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('academy_event_identity').on(t.sourceId,t.kind,t.providerId,t.status),index('academy_event_source_observed').on(t.sourceId,t.observedAt),check('academy_event_values',sql`${t.amountPaise}>0 AND ${t.evidenceHash} ~ '^[a-f0-9]{64}$' AND ((${t.kind}='refund_processed' AND ${t.status}='processed') OR (${t.kind}='full_refund' AND ${t.status}='processed') OR (${t.kind}='dispute' AND ${t.status} IN ('open','under_review','action_required','won','lost','closed')))`)]);
+export const academySourceRelations = relations(academyEntitlementSources, ({one,many})=>({enrollment:one(enrollments,{fields:[academyEntitlementSources.enrollmentId],references:[enrollments.id]}),events:many(academyEntitlementEvents)}));
+export const academyEventRelations = relations(academyEntitlementEvents, ({one})=>({source:one(academyEntitlementSources,{fields:[academyEntitlementEvents.sourceId],references:[academyEntitlementSources.id]})}));
+
+// Private, synthetic-only commercial groundwork. Real financial/legal activation is unavailable.
+export const creatorCommercialRollouts=pgTable('creator_commercial_rollout_events',{
+ id:uuid('id').defaultRandom().primaryKey(),scope:text('scope').notNull().unique(),runId:uuid('run_id').notNull(),databaseIdentity:jsonb('database_identity').$type<Record<string,unknown>>().notNull(),legalHash:text('legal_hash').notNull(),expiresAt:timestamp('expires_at',{withTimezone:true}).notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),synthetic:boolean('synthetic').default(true).notNull(),
+},t=>[check('commercial_rollout_synthetic',sql`${t.synthetic}=true AND ${t.scope} LIKE 'test:%' AND ${t.expiresAt}>${t.createdAt} AND ${t.expiresAt}<=${t.createdAt}+interval '4 hours' AND ${t.legalHash} ~ '^[a-f0-9]{64}$'`)]);
+export const creatorCommercialAgreements=pgTable('creator_commercial_agreements',{
+ id:uuid('id').defaultRandom().primaryKey(),creatorId:uuid('creator_id').notNull().references(()=>users.id,{onDelete:'restrict'}),scope:text('scope').notNull(),arrangement:text('arrangement').notNull(),durationMonths:integer('duration_months').notNull(),proposedBy:uuid('proposed_by').notNull().references(()=>users.id,{onDelete:'restrict'}),reason:text('reason').notNull(),legalVersion:text('legal_version').notNull(),legalBody:text('legal_body').notNull(),legalHash:text('legal_hash').notNull(),requestKey:uuid('request_key').notNull(),commandHash:text('command_hash').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('commercial_offer_request').on(t.proposedBy,t.requestKey),index('commercial_offer_owner').on(t.creatorId,t.createdAt),check('commercial_offer_fixed',sql`${t.arrangement} IN ('standard_0','sponsored_20') AND ${t.durationMonths} IN (3,6,12) AND (${t.scope} LIKE 'test:%' OR ${t.scope} LIKE 'live:%') AND length(${t.reason}) BETWEEN 10 AND 1000`)]);
+export const creatorCommercialEvents=pgTable('creator_commercial_events',{
+ id:uuid('id').defaultRandom().primaryKey(),sequence:bigint('sequence',{mode:'number'}).generatedAlwaysAsIdentity().notNull(),agreementId:uuid('agreement_id').notNull().references(()=>creatorCommercialAgreements.id,{onDelete:'restrict'}),creatorId:uuid('creator_id').notNull().references(()=>users.id,{onDelete:'restrict'}),actorId:uuid('actor_id').notNull().references(()=>users.id,{onDelete:'restrict'}),action:text('action').notNull(),requestKey:uuid('request_key').notNull(),commandHash:text('command_hash').notNull(),grantId:uuid('grant_id').references(()=>workspaceAccessGrants.id,{onDelete:'restrict'}),membershipId:uuid('membership_id').references(()=>workspaceMemberships.id,{onDelete:'restrict'}),effectiveAt:timestamp('effective_at',{withTimezone:true}).defaultNow().notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('commercial_event_request').on(t.actorId,t.requestKey),unique('commercial_event_transition').on(t.agreementId,t.action),index('commercial_event_owner').on(t.creatorId,t.sequence),check('commercial_event_action',sql`${t.action} IN ('approved','accepted','declined','withdrawn','replaced_paid','released_0')`)]);
+export const creatorCommercialQuotes=pgTable('creator_course_commercial_quotes',{
+ id:uuid('id').defaultRandom().primaryKey(),learnerId:uuid('learner_id').notNull().references(()=>users.id,{onDelete:'restrict'}),creatorId:uuid('creator_id').notNull().references(()=>users.id,{onDelete:'restrict'}),courseId:uuid('course_id').notNull().references(()=>courses.id,{onDelete:'restrict'}),agreementId:uuid('agreement_id').references(()=>creatorCommercialAgreements.id,{onDelete:'restrict'}),effectiveEventId:uuid('effective_event_id').references(()=>creatorCommercialEvents.id,{onDelete:'restrict'}),scope:text('scope').notNull(),arrangement:text('arrangement').notNull(),evidence:jsonb('evidence').$type<Record<string,unknown>>().notNull(),createdAt:timestamp('created_at',{withTimezone:true}).notNull(),expiresAt:timestamp('expires_at',{withTimezone:true}).notNull(),
+},t=>[index('commercial_quote_owner').on(t.creatorId,t.createdAt),check('commercial_quote_lifetime',sql`${t.expiresAt}=${t.createdAt}+interval '15 minutes' AND (${t.scope} LIKE 'test:%' OR ${t.scope} LIKE 'live:%') AND ${t.arrangement} IN ('standard_0','sponsored_20')`)]);
+export const airbharathCommissionLedger=pgTable('airbharath_commission_ledger',{
+ id:uuid('id').defaultRandom().primaryKey(),orderId:uuid('order_id').notNull().references(()=>orders.id,{onDelete:'restrict'}),creatorId:uuid('creator_id').notNull().references(()=>users.id,{onDelete:'restrict'}),scope:text('scope').notNull(),revision:integer('revision').notNull(),financialHash:text('financial_hash').notNull(),distributablePaise:integer('distributable_paise').notNull(),creatorPaise:integer('creator_paise').notNull(),commissionPaise:integer('commission_paise').notNull(),deltaPaise:integer('delta_paise').notNull(),evidence:jsonb('evidence').$type<Record<string,unknown>>().notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('commission_financial_fact').on(t.orderId,t.financialHash),unique('commission_revision').on(t.orderId,t.revision),index('commission_creator').on(t.creatorId,t.createdAt),check('commission_conservation',sql`${t.creatorPaise}+${t.commissionPaise}=${t.distributablePaise} AND ${t.commissionPaise}>=0 AND ${t.revision}>0 AND (${t.scope} LIKE 'test:%' OR ${t.scope} LIKE 'live:%')`)]);
+
+// One immutable cutover distinguishes old aggregate 0% discharges from new source-bound payouts.
+export const creatorSettlementEpoch = pgTable('creator_settlement_epoch', {
+ id:text('id').primaryKey(),installedAt:timestamp('installed_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[check('creator_settlement_epoch_identity',sql`${t.id}='purchase-attribution-v1'`)]);
+export const creatorPayoutAllocations = pgTable('creator_payout_allocations', {
+ id:uuid('id').defaultRandom().primaryKey(),payoutId:uuid('payout_id').notNull().references(()=>creatorPayouts.id,{onDelete:'restrict'}),creatorId:uuid('creator_id').notNull().references(()=>users.id,{onDelete:'restrict'}),scope:text('scope').notNull(),sourceKey:text('source_key').notNull(),orderId:uuid('order_id').references(()=>orders.id,{onDelete:'restrict'}),amountPaise:integer('amount_paise').notNull(),financialHash:text('financial_hash').notNull(),evidence:jsonb('evidence').$type<Record<string,unknown>>().notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[unique('creator_payout_source_once').on(t.payoutId,t.sourceKey),index('creator_payout_allocation_source').on(t.creatorId,t.scope,t.sourceKey),check('creator_payout_allocation_values',sql`${t.amountPaise}>0 AND ${t.financialHash} ~ '^[a-f0-9]{64}$' AND ((${t.sourceKey}='legacy_zero_pool' AND ${t.orderId} IS NULL) OR ${t.sourceKey}=${t.orderId}::text)`)]);
+export const creatorCommercialLiveReleases=pgTable('creator_commercial_live_releases',{
+ id:text('id').primaryKey(),scope:text('scope').notNull().unique(),legalVersion:text('legal_version').notNull(),legalBody:text('legal_body').notNull(),legalHash:text('legal_hash').notNull(),accountingHash:text('accounting_hash').notNull(),sourceHash:text('source_hash').notNull(),founderApprovalHash:text('founder_approval_hash').notNull(),databaseIdentity:jsonb('database_identity').$type<Record<string,unknown>>().notNull(),firstAdmin:uuid('first_admin').notNull().references(()=>users.id,{onDelete:'restrict'}),secondAdmin:uuid('second_admin').notNull().references(()=>users.id,{onDelete:'restrict'}),payoutExecution:boolean('payout_execution').default(false).notNull(),createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+},t=>[check('commercial_live_release_gate',sql`${t.scope} LIKE 'live:%' AND ${t.firstAdmin}<>${t.secondAdmin} AND ${t.payoutExecution}=false AND ${t.legalHash} ~ '^[a-f0-9]{64}$' AND ${t.accountingHash} ~ '^[a-f0-9]{64}$' AND ${t.sourceHash} ~ '^[a-f0-9]{64}$' AND ${t.founderApprovalHash} ~ '^[a-f0-9]{64}$'`)]);
+
+// Minimal purpose-specific withdrawal evidence; not deletion or a retention policy.
+export const mentorWithdrawals=pgTable('mentor_withdrawals',{
+ applicationId:uuid('application_id').primaryKey().references(()=>mentorApplications.id,{onDelete:'restrict'}),
+ ownerId:uuid('owner_id').notNull().references(()=>users.id,{onDelete:'restrict'}),requestKey:uuid('request_key').notNull(),
+ createdAt:timestamp('created_at',{withTimezone:true}).defaultNow().notNull(),
+});

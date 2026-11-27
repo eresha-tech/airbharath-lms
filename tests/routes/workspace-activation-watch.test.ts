@@ -51,3 +51,11 @@ it('aborts a stalled status request at the overall deadline instead of leaving a
   const result = waitForWorkspaceActivation({ signal: new AbortController().signal, http, timeoutMs: 5000 });
   await vi.advanceTimersByTimeAsync(5000); expect(await result).toBe('timeout'); expect(http).toHaveBeenCalledTimes(1);
 });
+
+it('waits for the specific renewal order even when another membership is already active',async()=>{
+ vi.useRealTimers();
+ const id='11111111-1111-4111-8111-111111111111';
+ const http=vi.fn<typeof fetch>().mockResolvedValueOnce(Response.json({hasCreatorAccess:true,hasPaidEntitlement:true,order:{id,financialState:'unpaid',activationState:'pending_activation'}})).mockResolvedValueOnce(Response.json({order:{id,financialState:'captured',activationState:'fulfilled',financialRefundState:'not_refunded'}}));
+ expect(await waitForWorkspaceActivation({orderId:id,signal:new AbortController().signal,http,intervalMs:1,timeoutMs:1000})).toBe('ready');
+ expect(http).toHaveBeenCalledTimes(2);expect(http.mock.calls[0][0]).toBe('/api/workspace/membership/orders/'+id);
+});

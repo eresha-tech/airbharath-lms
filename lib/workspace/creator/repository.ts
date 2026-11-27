@@ -7,40 +7,37 @@ import { readWorkspaceAccess } from '../activation/repository';
 import { CreatorError, environment } from './model';
 import { creatorService, type CreatorStore } from './service';
 export const postgresCreatorStore: CreatorStore = {
-  transaction: (userId, work) => db.transaction(async tx => {
+  transaction: (userId, work, readOnly) => db.transaction(async tx => {
+    const lock = readOnly ? 'share' as const : 'update' as const;
     // Same lock order as financial/activation paths; sample time in service after all locks.
-    const [user] = await tx.select({ id: users.id, fullName: users.fullName }).from(users).where(eq(users.id, userId)).for('update');
+    const [user] = await tx.select({ id: users.id, fullName: users.fullName }).from(users).where(eq(users.id, userId)).for(lock);
     if (!user) throw new CreatorError('authentication');
-    await tx.select({ id: orders.id }).from(orders).where(eq(orders.userId, userId)).orderBy(orders.id).for('update');
-    const [profile] = await tx.select().from(profiles).where(eq(profiles.userId, userId)).for('update');
+    await tx.select({ id: orders.id }).from(orders).where(eq(orders.userId, userId)).orderBy(orders.id).for(lock);
+    const [profile] = await tx.select().from(profiles).where(eq(profiles.userId, userId)).for(lock);
     const access = await readWorkspaceAccess(userId, tx);
     const grant = await readGrantEvidence(userId, tx);
     const owner = eq(drafts.userId, userId);
     return work({
       reviews: submissionTransaction(tx, userId),
       context: async () => ({ user, grant, profileId: profile?.id || null, evidence: access.row ? { refundedAt: access.row.refund?.confirmedAt, profileStatus: access.row.profile.status, activationState: access.row.order.activationState, providerMode: access.row.order.providerMode, commercialPolicyVersion: access.row.order.commercialPolicyVersion, membership: access.row.membership } : null, financialReview: access.latestOrder?.activationState === 'held_for_review', planName: access.row?.order.planSnapshot.displayName || null }),
-      draft: async id => (await tx.select().from(drafts).where(and(owner, eq(drafts.id, id))).limit(1).for('update'))[0] || null,
+      draft: async id => (await tx.select().from(drafts).where(and(owner, eq(drafts.id, id))).limit(1).for(lock))[0] || null,
       request: async key => (await tx.select().from(drafts).where(and(owner, eq(drafts.requestKey, key))).limit(1))[0] || null,
       list: async page => {
-        const [total] = await tx.select({ value: count() }).from(drafts).where(owner);
-        const rows = await tx.select().from(drafts).where(owner).orderBy(desc(drafts.updatedAt), desc(drafts.id)).limit(21).offset((page - 1) * 20);
+        const [[total], rows] = await Promise.all([
+          tx.select({ value: count() }).from(drafts).where(owner),
+          tx.select().from(drafts).where(owner).orderBy(desc(drafts.updatedAt), desc(drafts.id)).limit(21).offset((page - 1) * 20),
+        ]);
         return { drafts: rows.slice(0, 20), total: total.value, hasNext: rows.length > 20 };
       },
       summary: async () => {
-        const rows = await tx.execute(sql`with latest as (
-          select distinct on (draft_id) draft_id,review_status from ${submissions}
-          where user_id=${userId} order by draft_id,submission_number desc
-        ) select count(*)::int as total,
-          count(*) filter(where latest.review_status is null)::int as drafts,
-          count(*) filter(where latest.review_status in ('submitted','under_review'))::int as "underReview",
-          count(*) filter(where latest.review_status='changes_requested')::int as "changesRequested",
-          count(*) filter(where latest.review_status='approved')::int as approved,
-          count(*) filter(where latest.review_status='approved' and exists(
-            select 1 from ${projects} where user_id=${userId} and draft_id=d.id
-          ))::int as building
-          from ${drafts} d left join latest on latest.draft_id=d.id where d.user_id=${userId}`);
-        const row = rows[0] as { total: number; drafts: number; underReview: number; changesRequested: number; approved: number; building: number };
-        if (!row || row.total !== row.drafts+row.underReview+row.changesRequested+row.approved || row.building>row.approved) throw new Error('Course summary unavailable');
+        const rows=await tx.execute(sql`select count(*)::int as total,
+         count(*) filter(where not exists(select 1 from workspace_course_projects p where p.draft_id=d.id))::int as drafts,
+         count(*) filter(where exists(select 1 from workspace_course_projects p where p.draft_id=d.id))::int as building,
+         count(*) filter(where exists(select 1 from workspace_course_projects p join workspace_publication_states s on s.project_id=p.id where p.draft_id=d.id and s.status='live'))::int as published,
+         0::int as "underReview",0::int as "changesRequested",0::int as approved
+         from ${drafts} d where d.user_id=${userId}`);
+        const row=rows[0] as {total:number;drafts:number;building:number;published:number;underReview:number;changesRequested:number;approved:number};
+        if(!row||row.total!==row.drafts+row.building)throw Error('Course summary unavailable');
         return row;
       },
       details: async () => (await tx.select().from(details).where(eq(details.userId, userId)).limit(1))[0] || null,

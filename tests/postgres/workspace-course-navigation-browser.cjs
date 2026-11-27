@@ -1,0 +1,86 @@
+// Focused UI verification on the already retained, identity-checked synthetic fixture.
+const fs=require('node:fs'),assert=require('node:assert/strict');
+const {req}=require('./workspace-financial-loader.cjs');
+const {browserRuntime}=require('../../scripts/workspace-media-local-session.cjs');
+assert.equal(process.env.WORKSPACE_COURSE_NAVIGATION_VERIFY,'true');
+const f=JSON.parse(fs.readFileSync('/tmp/airbharath-self-publishing/fixture.json'));
+const root=fs.realpathSync(f.root),origin='http://localhost:3000';
+assert.match(root,/^\/tmp\/airbharath-media-pg-self-publishing-[A-Za-z0-9_-]+$/);
+assert.match(f.database,/^phase19b_[a-f0-9]{32}$/);
+const project=f.browserProject??f.projectId,draft=f.browserDraft??f.draftId,base=`/workspace/courses/${draft}`,api=`/api/workspace/publishing/${project}`;
+const report={checks:[]},ok=name=>{report.checks.push(name);console.log('PASS '+name);};
+let browser,db,page,stage='setup';
+(async()=>{try{
+ db=req('postgres')({host:root+'/socket',port:55439,user:'phase19b',database:f.database,prepare:false,max:1});
+ const [identity]=await db`select current_setting('data_directory') directory,inet_server_addr() address`;
+ assert.equal(fs.realpathSync(identity.directory),root+'/data');assert.equal(identity.address,null);
+ const [owner]=await db`select full_name,role from users where id=${f.owner}`;
+ assert(owner.full_name.startsWith('SYNTHETIC '));assert.equal(owner.role,'student');
+ browser=await browserRuntime().chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true,args:['--no-sandbox']});
+ const context=await browser.newContext({viewport:{width:1440,height:1000}});
+ await context.route('**/*',r=>new URL(r.request().url()).origin===origin?r.continue():r.fulfill({status:200,body:''}));
+ const token=await new(req('jose').SignJWT)({id:f.owner,role:'student',fullName:owner.full_name,phone:''}).setProtectedHeader({alg:'HS256'}).setIssuedAt().setExpirationTime('1h').sign(new TextEncoder().encode(fs.readFileSync(root+'/self-publishing-test-seed','utf8')));
+ await context.addCookies([{name:'ab_session',value:token,url:origin,httpOnly:true,sameSite:'Lax'}]);
+ page=await context.newPage();
+ const footer=()=>page.getByRole('navigation',{name:'Course step navigation',exact:true});
+ const open=route=>page.goto(origin+route,{waitUntil:'networkidle',timeout:120000});
+ const nextButton=()=>footer().getByRole('button',{name:'Next',exact:true});
+ async function floatingFooter(){
+  await page.evaluate(()=>window.scrollTo(0,0));
+  const top=await footer().boundingBox(),viewport=page.viewportSize();
+  assert(top&&top.y>=0&&top.y+top.height<=viewport.height&&top.x>=0&&top.x+top.width<=viewport.width);
+  assert.equal(await footer().evaluate(el=>getComputedStyle(el).position),'fixed');
+  if(viewport.width>=1024)assert(top.x>=256,'Floating controls must clear the desktop sidebar');
+  await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+  const bottom=await footer().boundingBox();assert(Math.abs(top.y-bottom.y)<2,'Step controls must stay visible while scrolling');
+ }
+ stage='save failure';await open(base+'/publishing?stage=details');
+ await floatingFooter();await page.evaluate(()=>window.scrollTo(0,0));fs.mkdirSync('output/playwright',{recursive:true});await page.screenshot({path:'output/playwright/course-floating-desktop.png'});
+ const title=page.getByLabel('Course title',{exact:true}),originalTitle=await title.inputValue();
+ await title.fill(originalTitle+' navigation check');
+ const rejectSave=route=>route.request().method()==='POST'&&route.request().postDataJSON().action==='save_metadata'?route.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'Synthetic save conflict. Reload before retrying.'})}):route.continue();
+ await page.route('**'+api,rejectSave);await nextButton().click();
+ await page.getByRole('alert').filter({hasText:'Synthetic save conflict.'}).waitFor();
+ assert(new URL(page.url()).searchParams.get('stage')==='details');assert.equal(await title.inputValue(),originalTitle+' navigation check');
+ await page.unroute('**'+api,rejectSave);ok('failed_next_save_preserves_the_current_step_and_unsaved_text');
+ stage='details to build';await title.fill(originalTitle+' navigation check');await nextButton().click();
+ await page.waitForURL('**'+base+'/build',{timeout:120000});
+ assert.equal((await db`select metadata from workspace_publication_states where project_id=${project}`)[0].metadata.title,originalTitle+' navigation check');
+ // Restore the original details through the same actual UI; retain append-only audit history.
+ await footer().getByRole('link',{name:'Back',exact:true}).click();await page.waitForURL('**stage=details');
+ await page.getByLabel('Course title',{exact:true}).fill(originalTitle);await nextButton().click();await page.waitForURL('**'+base+'/build');
+ ok('next_saves_course_details_before_opening_the_builder');
+ stage='build price preview';await footer().getByRole('link',{name:'Next',exact:true}).click();await page.waitForURL('**stage=pricing');
+ const [originalPrice]=await db`select amount_paise from workspace_publication_prices where project_id=${project} and status in ('creator','approved') order by number desc limit 1`;
+ const changedPrice=originalPrice.amount_paise===100000000?99999900:originalPrice.amount_paise+100;
+ await page.getByLabel('Course price (INR)',{exact:true}).fill('invalid');assert(await nextButton().isDisabled());
+ await page.getByLabel('Course price (INR)',{exact:true}).fill((changedPrice/100).toFixed(2));await nextButton().click();
+ await page.waitForURL('**'+base+'/preview',{timeout:120000});
+ assert.equal((await db`select amount_paise from workspace_publication_prices where project_id=${project} order by number desc limit 1`)[0].amount_paise,changedPrice);
+ await footer().getByRole('link',{name:'Back',exact:true}).click();await page.waitForURL('**stage=pricing');
+ await page.getByLabel('Course price (INR)',{exact:true}).fill((originalPrice.amount_paise/100).toFixed(2));await nextButton().click();await page.waitForURL('**'+base+'/preview');
+ await footer().getByRole('link',{name:'Next',exact:true}).click();await page.waitForURL('**stage=guidelines');
+ const acknowledgment=page.getByRole('checkbox',{name:'I acknowledge and agree to follow these publishing guidelines.',exact:true});
+ if(await acknowledgment.count()){assert(await nextButton().isDisabled());await acknowledgment.check();}
+ await nextButton().click();await page.waitForURL('**stage=publish');
+ ok('next_validates_and_saves_price_then_visits_preview_guidelines_and_publish');
+ stage='confirmation';let publishRequests=0;
+ const rejectPublish=route=>{if(route.request().method()==='POST'&&route.request().postDataJSON().action==='publish'){publishRequests++;return route.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'Synthetic readiness rejection; nothing published.'})});}return route.continue();};
+ await page.route('**'+api,rejectPublish);
+ const publish=footer().getByRole('button',{name:/^Publish course/});await publish.click();
+ const dialog=page.getByRole('dialog',{name:/Are you sure|Publish this course update/});await dialog.waitFor();
+ assert.equal(publishRequests,0);assert.equal(await page.evaluate(()=>document.activeElement?.textContent),'Cancel');
+ await dialog.getByRole('button',{name:'Cancel',exact:true}).click();await dialog.waitFor({state:'hidden'});assert.equal(publishRequests,0);
+ await publish.click();await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});assert.equal(publishRequests,0);
+ ok('publish_confirmation_cancel_and_escape_send_no_publication_request');
+ stage='mobile confirmation';for(const viewport of [{width:390,height:568},{width:390,height:844}]){await page.setViewportSize(viewport);await floatingFooter();}
+ ok('floating_controls_remain_visible_at_top_and_bottom_on_desktop_and_short_mobile_screens');
+ await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:'output/playwright/course-floating-mobile.png'});
+ await publish.click();await dialog.waitFor();await dialog.evaluate(el=>Promise.all(el.getAnimations().map(animation=>animation.finished)));
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
+ fs.mkdirSync('output/playwright',{recursive:true});await page.screenshot({path:'output/playwright/course-next-confirmation.png',fullPage:false});
+ await dialog.getByRole('button',{name:/^Yes, publish/}).click();await page.getByRole('alert').filter({hasText:'Synthetic readiness rejection'}).waitFor();
+ assert.equal(publishRequests,1);await dialog.waitFor({state:'hidden'});
+ ok('only_explicit_confirmation_submits_once_and_server_rejection_stays_visible_on_mobile');
+ fs.writeFileSync('output/playwright/course-next.json',JSON.stringify(report,null,2));
+}finally{await browser?.close();await db?.end({timeout:2});}})().catch(e=>{console.error('Course navigation browser check failed at '+stage+': '+String(e.message).replace(/https?:\/\/\S+/g,'[URL]').slice(0,350));process.exitCode=1;});

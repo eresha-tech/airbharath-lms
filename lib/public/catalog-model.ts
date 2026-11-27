@@ -1,4 +1,7 @@
 export type PublicCourse = {
+    averageRating?: number | null;
+    reviewCount?: number;
+    creatorName?: string | null;
     slug: string;
     title: string;
     description: string | null;

@@ -1,0 +1,21 @@
+const assert=require('node:assert/strict'),{randomUUID,createHmac}=require('node:crypto');
+module.exports=async({c,stacks,creator,offerId,ok})=>{
+ const load=stacks[0].load,db=stacks[0].db,context={accountId:'acc_synthetic',mode:'test'},externalOrders=[],payments=[];let now=new Date();
+ await c`update users set email='synthetic-sponsored-paid@example.invalid' where id=${creator}`;
+ const policy=load('@/lib/workspace/refund-policy/model').currentRefundPolicy();await load('@/lib/workspace/refund-policy/service').createRefundPolicyService(load('@/lib/workspace/refund-policy/repository').postgresRefundPolicyStore).accept(creator,{acknowledged:true},'"'+policy.contentHash+'"');
+ now=new Date();
+ const provider={context,createOrder:async input=>{const o={...context,id:'order_'+randomUUID().replaceAll('-',''),receipt:input.receipt,amountPaise:input.amountPaise,currency:'INR',status:'created',createdAt:now};externalOrders.push(o);return o;},findOrders:async receipt=>externalOrders.filter(o=>o.receipt===receipt),fetchOrder:async id=>externalOrders.find(o=>o.id===id),fetchPayment:async id=>payments.find(p=>p.id===id),fetchOrderPayments:async id=>payments.filter(p=>p.orderId===id)};
+ const services=stacks.map(s=>s.load('@/lib/workspace/payments/service').createWorkspacePaymentService(s.load('@/lib/workspace/payments/repository').createPostgresFinanceStore(s.db),provider,()=>now)),activators=stacks.map(s=>s.load('@/lib/workspace/activation/service').createWorkspaceActivationService(s.load('@/lib/workspace/activation/repository').createPostgresActivationStore(s.db),'test',()=>now,context));
+ const plan=(await load('@/lib/workspace/membership/service').getCurrentPlans())[0],q=await load('@/lib/workspace/membership/service').getWorkspaceMembershipQuote(creator,{planCode:plan.code,planVersionId:plan.id},()=>now),order=await services[0].acceptOrder(creator,{planCode:q.planCode,planVersionId:q.planVersionId,quoteHash:q.quoteHash,requestKey:randomUUID()});
+ await services[0].ensureProviderOrder(creator,order.id);const o=await load('@/lib/workspace/payments/repository').createPostgresFinanceStore(db).readOrder(order.id);
+ const payment={...context,id:'pay_'+randomUUID().replaceAll('-',''),orderId:o.providerOrderId,amountPaise:o.totalPaise,currency:'INR',state:'captured',providerCreatedAt:now,capturedAt:now,captureTimeSource:'test_authoritative',refundedPaise:0};payments.push(payment);
+ await services[0].confirmPayment(creator,o.id,payment.id,createHmac('sha256','synthetic-membership-secret').update(o.providerOrderId+'|'+payment.id).digest('hex'),'synthetic-membership-secret');
+ const result=await Promise.all(activators.map(a=>a.fulfill(creator,o.id)));assert.equal(result.filter(r=>r.state==='fulfilled').length,1);
+ const [replacement]=await c`select * from creator_commercial_events where agreement_id=${offerId} and action='replaced_paid'`;assert(replacement);const [membership]=await c`select * from workspace_memberships where membership_order_id=${o.id}`;assert.equal(new Date(replacement.effective_at).getTime(),Math.max(new Date(membership.starts_at).getTime(),now.getTime()));
+ ok('sponsorship_verified_paid_fulfillment_permanently_replaces_agreement_once');
+ payment.refundedPaise=o.totalPaise;payment.refundStatus='full';const refund={...context,id:'rfnd_'+randomUUID().replaceAll('-',''),paymentId:payment.id,amountPaise:o.totalPaise,currency:'INR',status:'processed',createdAt:new Date()};
+ const refunds=load('@/lib/workspace/refunds/service').createRefundService(load('@/lib/workspace/refunds/repository').createPostgresRefundStore(db),{...provider,fetchRefunds:async id=>id===payment.id?[refund]:[]});await refunds.reconcile(o.id);
+ assert((await c`select id from workspace_refund_completions where membership_order_id=${o.id}`).length);assert.equal((await c`select count(*)::int n from creator_commercial_events where agreement_id=${offerId} and action='replaced_paid'`)[0].n,1);
+ ok('sponsorship_paid_membership_refund_does_not_revive_old_commercial_terms');
+ return membership;
+};

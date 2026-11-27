@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -68,6 +68,7 @@ export interface EnrollmentRecord {
   enrolledAt: string;
   expiresAt: string | null;
   status: string;
+  accessEnded?: boolean;
 }
 
 export interface CertificateRecord {
@@ -115,6 +116,12 @@ export default function StudentsTable({
   orders = [],
   progressRecords = [],
 }: StudentsTableProps) {
+  const grantRequests = useRef(new Map<string, string>());
+  function grantRequest(action: string, fields: unknown) {
+    const intent = JSON.stringify([action, fields]);
+    if (!grantRequests.current.has(intent)) grantRequests.current.set(intent, crypto.randomUUID());
+    return grantRequests.current.get(intent)!;
+  }
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTab, setFilterTab] = useState<"all" | "enrolled" | "certified" | "no-enrollment">("all");
   const [selectedCourseFilter, setSelectedCourseFilter] = useState<string>("all");
@@ -153,12 +160,12 @@ export default function StudentsTable({
 
   const activeEnrollmentsCount = useMemo(() => {
     const now = new Date();
-    return enrollmentsList.filter((e) => !e.expiresAt || new Date(e.expiresAt) >= now).length;
+    return enrollmentsList.filter((e) => !e.accessEnded && (!e.expiresAt || new Date(e.expiresAt) >= now)).length;
   }, [enrollmentsList]);
 
   const expiredEnrollmentsCount = useMemo(() => {
     const now = new Date();
-    return enrollmentsList.filter((e) => e.expiresAt && new Date(e.expiresAt) < now).length;
+    return enrollmentsList.filter((e) => e.accessEnded || (e.expiresAt && new Date(e.expiresAt) < now)).length;
   }, [enrollmentsList]);
 
   const certifiedStudentsCount = useMemo(() => {
@@ -285,6 +292,7 @@ export default function StudentsTable({
           userId: selectedStudentId,
           courseId: selectedCourseId,
           customAccessDays: customDays ? Number(customDays) : undefined,
+          requestKey: grantRequest('enroll', [selectedStudentId, selectedCourseId, customDays]),
         }),
       });
 
@@ -309,11 +317,13 @@ export default function StudentsTable({
               ? new Date(data.enrollment.expiresAt).toISOString()
               : null,
             status: data.enrollment.status,
+            accessEnded: false,
           },
         ]);
       }
 
       setIsEnrollModalOpen(false);
+      grantRequests.current.clear();
       setSelectedStudentId("");
       setSelectedCourseId("");
       setCustomDays("");
@@ -339,6 +349,7 @@ export default function StudentsTable({
         body: JSON.stringify({
           enrollmentId: targetEnrollment.id,
           additionalDays: Number(additionalDays),
+          requestKey: grantRequest('extend', [targetEnrollment.id, additionalDays]),
         }),
       });
 
@@ -355,6 +366,7 @@ export default function StudentsTable({
                     ? new Date(data.enrollment.expiresAt).toISOString()
                     : null,
                   status: data.enrollment.status,
+                  accessEnded: false,
                 }
               : item
           )
@@ -362,6 +374,7 @@ export default function StudentsTable({
       }
 
       setIsExtendModalOpen(false);
+      grantRequests.current.clear();
       setTargetEnrollment(null);
     } catch (err: any) {
       setExtendError(err.message || "Failed to extend duration");
@@ -829,7 +842,7 @@ export default function StudentsTable({
                             {studentEnrollments.map((enr) => {
                               const course = courses.find((c) => c.id === enr.courseId);
                               const isExpired =
-                                enr.expiresAt && new Date(enr.expiresAt) < new Date();
+                                enr.accessEnded || (enr.expiresAt && new Date(enr.expiresAt) < new Date());
                               const progress = getStudentCourseProgress(student.id, enr.courseId);
 
                               return (
@@ -869,7 +882,7 @@ export default function StudentsTable({
                                             : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
                                         )}
                                       >
-                                        {isExpired ? "Expired" : "Active"}
+                                        {isExpired ? (enr.accessEnded ? "Access ended" : "Expired") : "Active"}
                                       </Badge>
                                       <button
                                         type="button"
@@ -1116,7 +1129,7 @@ export default function StudentsTable({
                   {studentEnrollments.length > 0 ? (
                     studentEnrollments.map((enr) => {
                       const course = courses.find((c) => c.id === enr.courseId);
-                      const isExpired = enr.expiresAt && new Date(enr.expiresAt) < new Date();
+                      const isExpired = enr.accessEnded || (enr.expiresAt && new Date(enr.expiresAt) < new Date());
                       const progress = getStudentCourseProgress(student.id, enr.courseId);
 
                       return (
@@ -1156,7 +1169,7 @@ export default function StudentsTable({
                                     : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
                                 )}
                               >
-                                {isExpired ? "Expired" : "Active"}
+                                {isExpired ? (enr.accessEnded ? "Access ended" : "Expired") : "Active"}
                               </Badge>
                               <button
                                 type="button"
@@ -1444,7 +1457,7 @@ export default function StudentsTable({
 
                     return studentEnrollments.map((enr) => {
                       const course = courses.find((c) => c.id === enr.courseId);
-                      const isExpired = enr.expiresAt && new Date(enr.expiresAt) < new Date();
+                      const isExpired = enr.accessEnded || (enr.expiresAt && new Date(enr.expiresAt) < new Date());
                       const progress = getStudentCourseProgress(activeDossierStudent.id, enr.courseId);
 
                       return (
@@ -1495,7 +1508,7 @@ export default function StudentsTable({
                                     : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
                                 )}
                               >
-                                {isExpired ? "Expired" : "Active"}
+                                {isExpired ? (enr.accessEnded ? "Access ended" : "Expired") : "Active"}
                               </Badge>
                               <Button
                                 type="button"

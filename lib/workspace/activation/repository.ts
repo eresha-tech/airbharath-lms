@@ -19,6 +19,7 @@ export function createPostgresActivationStore(db: typeof import('@/lib/db').db):
           membership: async () => (await tx.select().from(memberships).where(eq(memberships.membershipOrderId, orderId)))[0] || null,
           payment: async () => order.winningPaymentId ? (await tx.select().from(payments).where(and(eq(payments.membershipOrderId, orderId), eq(payments.providerPaymentId, order.winningPaymentId), eq(payments.winner, true))))[0] || null : null,
           redemption: async () => (await tx.select().from(redemptions).where(eq(redemptions.membershipOrderId, orderId)))[0] || null,
+          renewalEnds: async () => (await tx.select({end:memberships.endsAt}).from(memberships).innerJoin(orders,and(eq(orders.id,memberships.membershipOrderId),eq(orders.userId,memberships.userId))).leftJoin(refunds,eq(refunds.membershipOrderId,orders.id)).where(and(eq(memberships.userId,userId),eq(orders.providerAccountId,order.providerAccountId),eq(orders.providerMode,order.providerMode),eq(orders.activationState,'fulfilled'),sql`${refunds.id} is null`))).map(r=>r.end),
           otherMemberships: async () => tx.select().from(memberships).where(eq(memberships.userId, userId)),
           createProfile: async now => (await tx.insert(profiles).values({ userId, createdAt: now, firstActivatedAt: now }).returning())[0],
           createMembership: async values => (await tx.insert(memberships).values(values).returning())[0],
@@ -37,13 +38,18 @@ export function createPostgresActivationStore(db: typeof import('@/lib/db').db):
 export const postgresActivationStore = createPostgresActivationStore(db);
 // Private server projection; every consumer supplies a persisted, authenticated owner.
 export async function readWorkspaceAccess(userId: string, reader: Pick<typeof db, 'select'> = db) {
-  const [row] = await reader.select({ membership: memberships, profile: profiles, order: orders, refund: refunds }).from(memberships)
-    .innerJoin(profiles, and(eq(profiles.id, memberships.creatorProfileId), eq(profiles.userId, memberships.userId)))
-    .innerJoin(orders, and(eq(orders.id, memberships.membershipOrderId), eq(orders.userId, memberships.userId)))
-    .leftJoin(refunds,eq(refunds.membershipOrderId,orders.id))
-    .where(eq(memberships.userId, userId)).orderBy(desc(memberships.endsAt), desc(memberships.id)).limit(1);
-  const [latestOrder] = await reader.select({ activationState: orders.activationState, financialState: orders.financialState }).from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt), desc(orders.id)).limit(1);
-  return { row: row || null, latestOrder: latestOrder || null };
+  const [history, [latestOrder]] = await Promise.all([
+    reader.select({ membership: memberships, profile: profiles, order: orders, refund: refunds }).from(memberships)
+      .innerJoin(profiles, and(eq(profiles.id, memberships.creatorProfileId), eq(profiles.userId, memberships.userId)))
+      .innerJoin(orders, and(eq(orders.id, memberships.membershipOrderId), eq(orders.userId, memberships.userId)))
+      .leftJoin(refunds,eq(refunds.membershipOrderId,orders.id))
+      .where(eq(memberships.userId, userId)).orderBy(desc(memberships.endsAt), desc(memberships.id)),
+    reader.select({ activationState: orders.activationState, financialState: orders.financialState }).from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt), desc(orders.id)).limit(1),
+  ]);
+  // Prefer a presently started, unrefunded term. A future renewal must not hide the current paid term.
+  const valid = history.filter(r=>!r.refund && r.order.activationState==='fulfilled');
+  const row = valid.find(r=>r.membership.startsAt<=new Date()) ?? (new Date()<new Date('2026-11-08T18:30:00.000Z')?valid[0]:history.find(r=>r.membership.startsAt<=new Date())) ?? valid[0] ?? history[0];
+  return { row: row || null, history, latestOrder: latestOrder || null };
 }
 export async function listWorkspaceCreators() {
   return db.select({ profile: profiles, membership: memberships, order: orders, userName: users.fullName }).from(memberships)

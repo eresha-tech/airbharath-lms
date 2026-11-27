@@ -1,0 +1,15 @@
+import {beforeEach,expect,it,vi} from 'vitest';
+const mocks=vi.hoisted(()=>({user:vi.fn(),admin:vi.fn(),submit:vi.fn(),review:vi.fn()}));
+vi.mock('@/lib/workspace/eligibility/service',()=>({getWorkspaceUser:mocks.user}));
+vi.mock('@/lib/admin-authorization',()=>({getAuthorizedAdminSession:mocks.admin}));
+vi.mock('@/lib/mentorship/repository',()=>({mentorRepository:()=>mocks}));
+import {POST} from '@/app/api/mentorship/applications/route';
+import {POST as review} from '@/app/api/admin/mentor-applications/[id]/route';
+const origin='http://localhost:3030',request=(headers:Record<string,string>={})=>new Request(origin+'/api/mentorship/applications',{method:'POST',headers:{origin,'Content-Type':'application/json',...headers},body:'{}'}),context={params:Promise.resolve({id:'application'})};
+beforeEach(()=>{mocks.user.mockResolvedValue({id:'persisted'});mocks.admin.mockResolvedValue(null);mocks.submit.mockResolvedValue({id:'saved-reference',created:true});});
+it('requires sign-in independently of Creator access',async()=>{mocks.user.mockResolvedValue(null);expect((await POST(request())).status).toBe(401);expect(mocks.submit).not.toHaveBeenCalled();});
+it('denies cross-origin submissions',async()=>{expect((await POST(request({origin:'https://evil.example'}))).status).toBe(403);expect(mocks.submit).not.toHaveBeenCalled();});
+it('returns a saved receipt without claiming email or mentor activation',async()=>{const r=await POST(request());expect(r.status).toBe(201);expect(r.headers.get('cache-control')).toBe('no-store');const body=await r.json();expect(body.reference).toBe('saved-reference');expect(body.message).toContain('no email acknowledgement');expect(mocks.submit).toHaveBeenCalledWith('persisted',{});});
+it('requires persisted Admin and rejects arbitrary session-role claims',async()=>{expect((await review(request(),context)).status).toBe(403);expect(mocks.review).not.toHaveBeenCalled();});
+it('authorizes an Admin before review and still requires origin protection',async()=>{mocks.admin.mockResolvedValue({id:'admin'});expect((await review(request({origin:'https://evil.example'}),context)).status).toBe(403);expect(mocks.review).not.toHaveBeenCalled();});
+it('sanitizes persistence errors without applicant/provider details',async()=>{mocks.submit.mockRejectedValueOnce(Error('private email and bank'));const r=await POST(request());expect(r.status).toBe(503);expect(await r.text()).not.toContain('private email');});

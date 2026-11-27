@@ -72,7 +72,7 @@ export function createPostgresFinanceStore(db: typeof import('@/lib/db').db) : F
             return tx.query.workspaceCreatorTermsAcceptances.findFirst({ where: and(eq(termsAcceptances.userId, userId), eq(termsAcceptances.termsVersion, terms.version), eq(termsAcceptances.termsContentHash, terms.contentHash)) });
           },
           findRequest: (userId, key) => tx.query.workspaceMembershipOrders.findFirst({ where: and(eq(orders.userId, userId), eq(orders.requestKey, key)) }),
-          findUnresolved: userId => tx.query.workspaceMembershipOrders.findFirst({ where: and(eq(orders.userId, userId), or(sql`${orders.providerSetupState} <> 'closed'`, eq(orders.financialState, 'captured'))) }),
+          findUnresolved: userId => tx.query.workspaceMembershipOrders.findFirst({ where: and(eq(orders.userId, userId), sql`${orders.activationState} <> 'fulfilled' AND (${orders.providerSetupState} <> 'closed' OR ${orders.financialState} = 'captured')`) }),
           async readQuote(userId, input, clock) {
             await tx.select({ id: plans.id }).from(plans).where(and(eq(plans.code, input.planCode), eq(plans.isCurrent, true))).for('share');
             await tx.select({ id: settings.id }).from(settings).where(eq(settings.isCurrent, true)).for('share');

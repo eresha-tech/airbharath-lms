@@ -74,16 +74,18 @@ it('keeps hero course-first with linked published courses and the approved secon
     expect(result).not.toMatch(/₹|aria-hidden="true"[^>]*>.*Explore Program/);
     expect(readFileSync('components/landing/HeroBanner.tsx', 'utf8')).not.toMatch(/setInterval|useEffect|HERO_SLIDES/);
 });
-it('uses real fixed Masterclass artwork and destination without timers or carousel controls', () => {
+it('renders the ecosystem bento grid without timers or carousel controls', () => {
     const featured = { ...course, slug: 'actual bundle', thumbnailUrl: 'https://example.invalid/masterclass.webp' };
     const result = html(React.createElement(HeroBanner, { featured }));
-    expect(result.match(/href="\/courses\/actual%20bundle"/g)).toHaveLength(3);
-    expect(result).toContain('masterclass.webp');
+    expect(result).toContain('href="/courses/actual%20bundle"');
+    expect(result).toContain('Aviator');
+    expect(result).toContain('Chatterbox AI');
+    expect(result).toContain('1:1 Aviation Mentorship');
     expect(result).not.toMatch(/carousel|Previous featured|Next featured|Pause|Play|₹/);
     expect(readFileSync('components/landing/HeroBanner.tsx', 'utf8')).not.toMatch(/setInterval|setTimeout|useEffect|useState/);
 });
 it('does not invent a featured course when the bundle is unavailable, and preserves standard-only pricing', () => {
-    expect(html(React.createElement(HeroBanner))).toContain('Choose your next learning path');
+    expect(html(React.createElement(HeroBanner))).toContain('AirBharath Academy Masterclasses');
     const result = html(React.createElement(PublicCourseCard, { course: { ...course, offerPrice: null } }));
     expect(result).not.toContain('<del>');
     expect(result).not.toContain('₹1,900');
@@ -92,7 +94,7 @@ it('does not invent a featured course when the bundle is unavailable, and preser
 it('keeps the bundle fixed even when an individual course precedes it in the published catalog', async () => {
     mocks.courses.mockResolvedValueOnce([{ ...course, slug: 'individual', title: 'Individual', isBundle: false }, { ...course, title: 'All-in-One Masterclass' }]);
     const result = html(await Home());
-    const hero = result.slice(result.indexOf('<figure'), result.indexOf('</figure>'));
+    const hero = result.slice(result.indexOf('public-bento-grid'), result.indexOf('public-ecosystem-bar'));
     expect(hero).toContain('All-in-One Masterclass');
     expect(hero).not.toContain('Individual');
 });
@@ -103,20 +105,20 @@ it('renders eight purposeful homepage sections with courses followed by Workspac
     expect(result).toContain('Explore Creator Workspace');
     expect(result).not.toMatch(/IIM|30\+|lifetime|365 Days Access/);
 });
-it('publishes current policy and exact inclusive prices without internal IDs or private evidence', async () => {
+it('reads exact authoritative prices and publishes current criteria with a dedicated Creator pricing link', async () => {
     const info = await readPublicWorkspaceInfo();
     expect(info.plans?.map(p => p.totalPaise)).toEqual([589900, 999900, 1769900]);
     expect(JSON.stringify(info)).not.toContain('private');
     expect(info.eligibility?.categories).toEqual(['Pilot / Flight Crew']);
     const result = html(React.createElement(WorkspaceLanding, { info }));
     expect(result.match(/<section\b/g)).toHaveLength(8);
-    for (const text of ['₹5,899', '₹9,999', '₹17,699', '24 months', '18 or older', 'HTTPS', 'verified payment time', '72 elapsed hours', '00:00 IST', 'Admin-issued', 'proposal approval', 'Check Eligibility'])
+    for (const text of ['24 months', 'at least 18', 'HTTPS', 'verified payment time', 'complimentary grants', 'No routine course-proposal approval', 'Check Eligibility', 'href="/workspace/pricing"'])
         expect(result).toContain(text);
     expect(result).not.toMatch(/Pay Now|checkout\.js/);
     expect(result).toContain('href="/workspace/creator-terms"');
     expect(result).toContain('href="/workspace/refund-policy"');
 });
-it('uses changed published criteria and retains independent prices when policy reads fail', async () => {
+it('uses changed published criteria and retains the pricing path when policy reads fail', async () => {
     mocks.policy.mockResolvedValueOnce({ settings: { config: { minimumExperienceMonths: 36, profileRequired: false, allowedCategories: ['cabin_crew'] } } });
     const current = await readPublicWorkspaceInfo();
     expect(html(React.createElement(WorkspaceLanding, { info: current }))).toContain('36 months');
@@ -124,16 +126,16 @@ it('uses changed published criteria and retains independent prices when policy r
     mocks.policy.mockRejectedValueOnce(new Error('private'));
     const partial = await readPublicWorkspaceInfo();
     const result = html(React.createElement(WorkspaceLanding, { info: partial }));
-    expect(result).toContain('Eligibility requirements are temporarily unavailable');
-    expect(result).toContain('₹5,899');
+    expect(result).toContain('Current requirements are temporarily unavailable');
+    expect(partial.plans?.[0].totalPaise).toBe(589900);expect(result).toContain('href="/workspace/pricing"');
     expect(result).not.toContain('private-policy');
 });
 it('does not fabricate public prices when current catalog is unavailable', async () => {
     mocks.plans.mockRejectedValueOnce(new Error('private'));
     const result = html(React.createElement(WorkspaceLanding, { info: await readPublicWorkspaceInfo() }));
-    expect(result).toContain('Membership prices are temporarily unavailable');
+    expect(result).toContain('Current plan information is temporarily unavailable');
     expect(result).not.toMatch(/₹5,899|₹9,999|₹17,699/);
-    expect(result).toContain('Payments not yet enabled');
+    expect(result).toContain('coordinated launch verification');
 });
 it('exposes separate footer learner/Creator/legal paths without fabricated proof/social links', () => {
     const result = html(React.createElement(Footer));

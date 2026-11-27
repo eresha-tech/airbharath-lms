@@ -42,6 +42,6 @@ it.each([
   ['eligibility_active','/workspace/activate'],['ineligible_cooldown','/workspace/eligibility-result'],['financial_review','/workspace/member'],
 ])('Creator entry delegates %s to the existing authoritative destination', async (state, destination) => {
   m.journey.mockResolvedValue({ state, destination });
-  await expect(EligibilityPage()).rejects.toThrow('REDIRECT:' + destination);
+  await expect(EligibilityPage({})).rejects.toThrow('REDIRECT:' + destination);
   expect(m.config).not.toHaveBeenCalled();
 });

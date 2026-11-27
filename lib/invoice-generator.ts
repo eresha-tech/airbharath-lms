@@ -17,10 +17,12 @@ export async function generateAndSaveInvoice(orderId: string) {
   const course = order.courseId ? await db.query.courses.findFirst({ where: eq(courses.id, order.courseId) }) : null;
 
   const totalAmount = Number(order.amount) || 0;
-  const baseAmount = Math.round((totalAmount / 1.18) * 100) / 100;
-  const gstAmount = Math.round((totalAmount - baseAmount) * 100) / 100;
+  const baseAmount = order.purchaseEvidence ? order.purchaseEvidence.taxablePaise / 100 : Math.round((totalAmount / 1.18) * 100) / 100;
+  const gstAmount = order.purchaseEvidence ? order.purchaseEvidence.taxPaise / 100 : Math.round((totalAmount - baseAmount) * 100) / 100;
 
-  const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
+  const existingInvoice = await db.query.invoices.findFirst({where:eq(invoices.orderId,orderId)});
+  if(existingInvoice) return existingInvoice;
+  const invoiceNumber = `INV-${order.id}`;
   const orderDate = order.createdAt ? new Date(order.createdAt) : new Date();
   const formattedDate = orderDate.toLocaleDateString('en-US', {
     month: 'short',
@@ -213,7 +215,7 @@ export async function generateAndSaveInvoice(orderId: string) {
     color: brandLightBg,
   });
 
-  const courseTitle = course?.title || 'Airbharath Course Enrollment';
+  const courseTitle = order.purchaseEvidence?.courseTitle || course?.title || 'Airbharath Course Enrollment';
   const truncatedTitle = courseTitle.length > 30 ? courseTitle.slice(0, 30) + '...' : courseTitle;
 
   page.drawText(`1. ${truncatedTitle}`, { x: 50, y: rowY + 7, size: 8.5, font: fontBold, color: darkColor });

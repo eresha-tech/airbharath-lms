@@ -24,7 +24,7 @@ beforeEach(() => {
         modules: async p => copy(ms(p)), lessons: async p => copy(ls(p).map(({ content: _content, ...row }) => row)),
         module: async (p,id) => copy(ms(p).find(m => m.id === id) || null), lesson: async (p,m,id) => copy(ls(p).find(l => l.moduleId === m && l.id === id) || null),
         createModule: async (p,c,position,at) => { if (failBootstrap && position === 1) throw new Error('bootstrap failure'); const m = { ...c, id: randomUUID(), projectId: p.id, userId, position, version: 1, createdAt: at, updatedAt: at }; modules.push(m); return copy(m); },
-        createLesson: async (p,m,c,position,at) => { const l = { ...c, id: randomUUID(), projectId: p.id, moduleId: m.id, userId, position, version: 1, createdAt: at, updatedAt: at }; lessons.push(l); return copy(l); },
+        createLesson: async (p,m,c,position,at) => { const l = { ...c, contentFormat: c.contentFormat ?? 'plain_text', mediaRevision: 0, id: randomUUID(), projectId: p.id, moduleId: m.id, userId, position, version: 1, createdAt: at, updatedAt: at }; lessons.push(l); return copy(l); },
         updateModule: async (p,id,v,c,at) => { const m=ms(p).find(m => m.id===id && m.version===v); if(!m)return null; Object.assign(m,c,{version:v+1,updatedAt:at}); return copy(m); },
         updateLesson: async (p,m,id,v,c,at) => { const l=ls(p).find(l=>l.id===id&&l.moduleId===m&&l.version===v); if(!l)return null; Object.assign(l,c,{version:v+1,updatedAt:at}); return copy(l); },
         deleteModule: async (p,id,v) => { const m=ms(p).find(m=>m.id===id&&m.version===v); if(!m)return false; modules=modules.filter(row=>row!==m);return true; },
@@ -46,9 +46,9 @@ it('uses only approved source, bootstraps once and concurrent retry converges to
 it('outline failure rolls back project and first module; retry creates the complete outline',async()=>{
  source.outline.push({title:'Second approved module',description:'Outline only',ordering:1});failBootstrap=true;await expect(start()).rejects.toThrow('bootstrap failure');expect(projects).toEqual([]);expect(modules).toEqual([]);failBootstrap=false;await start();expect(modules.map(m=>m.position)).toEqual([0,1]);
 });
-it.each(['submitted','under_review','changes_requested'] as const)('rejects %s source',async status=>{source.reviewStatus=status;await expect(start()).rejects.toMatchObject({code:'not_approved'});expect(projects).toEqual([]);});
+it.each(['submitted','under_review','changes_requested'] as const)('allows owned legacy %s source without an approval gate',async status=>{source.reviewStatus=status;await start();expect(projects).toHaveLength(1);});
 it('rejects approval without event, another creator/profile/draft and client ownership fields',async()=>{
- source.approvalExists=false;await expect(start()).rejects.toMatchObject({code:'not_approved'});source.approvalExists=true;await expect(service().start(other,draftId,{approvedSubmissionId:key})).rejects.toMatchObject({code:'not_found'});await expect(service().start(owner,other,{approvedSubmissionId:key})).rejects.toMatchObject({code:'not_found'});context.profileId=other;await expect(start()).rejects.toMatchObject({code:'not_found'});
+ source.approvalExists=false;await expect(service().start(other,draftId,{approvedSubmissionId:key})).rejects.toMatchObject({code:'not_found'});await expect(service().start(owner,other,{approvedSubmissionId:key})).rejects.toMatchObject({code:'not_found'});context.profileId=other;await expect(start()).rejects.toMatchObject({code:'not_found'});
  expect(()=>service().start(owner,draftId,{approvedSubmissionId:key,userId:owner})).toThrow('validation');expect(projects).toEqual([]);
 });
 it('independent module and lesson edits persist; stale writes never overwrite',async()=>{

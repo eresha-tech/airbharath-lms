@@ -88,6 +88,7 @@ describe('Public Workspace application endpoint', () => {
     expect(mocks.insert).not.toHaveBeenCalled();
   });
   it('accepts the public host when Next reconstructs an internal request URL', async () => {
+    vi.stubEnv('NEXT_PUBLIC_BASE_URL', 'http://127.0.0.1:3100');
     const response = await POST(new Request('http://localhost:3100/api/workspace/applications', {
       method: 'POST', headers: { 'Content-Type': 'application/json', host: '127.0.0.1:3100', origin: 'http://127.0.0.1:3100' },
       body: JSON.stringify(applicant),

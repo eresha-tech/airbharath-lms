@@ -7,7 +7,7 @@ const require = createRequire(import.meta.url);
 
 async function start() {
   const args = process.argv.slice(2);
-  if (args.some(arg => !['--providers', '--payments-only'].includes(arg)) || args.length > 1) throw new Error('uat_invalid_arguments');
+  if (args.some(arg => !['--providers', '--payments-only', '--media'].includes(arg)) || args.length > 1) throw new Error('uat_invalid_arguments');
   if (process.env.NODE_ENV === 'production') throw new Error('uat_production_refused');
   const nextRequire = createRequire(require.resolve('next/package.json'));
   nextRequire('@next/env').loadEnvConfig(process.cwd(), true, { info() {}, error() {} });
@@ -28,18 +28,26 @@ async function start() {
       || (identity.address !== null && !['127.0.0.1', '::1'].includes(identity.address))) throw new Error('uat_database_identity_refused');
   } finally { await client.end({ timeout: 2 }); }
 
+  const media = args.includes('--media');
   const providers = args.includes('--providers'), paymentsOnly = args.includes('--payments-only'), payments = providers || paymentsOnly;
   Object.assign(env, {
     WORKSPACE_LOCAL_UAT_OTP_ENABLED: 'true', WORKSPACE_LOCAL_UAT_ELIGIBILITY_LIMITER_ENABLED: 'true',
     UPSTASH_REDIS_REST_URL: '', UPSTASH_REDIS_REST_TOKEN: '', NEXT_PUBLIC_POSTHOG_ENABLE_DEV: 'false',
     NEXT_PUBLIC_BASE_URL: 'http://localhost:3000', WORKSPACE_RAZORPAY_LIVE_AUTHORIZED: 'false',
     WORKSPACE_PAYMENT_ENABLED: String(payments), WORKSPACE_RAZORPAY_TEST_AUTHORIZED: String(payments),
+    WORKSPACE_MEDIA_STORAGE_ENABLED: String(media), WORKSPACE_MEDIA_PROCESSING_ENABLED: String(media),
     WORKSPACE_LOCAL_UAT_PAYMENTS_ONLY: String(paymentsOnly), WORKSPACE_RAZORPAY_REFUND_RECONCILIATION_ENABLED: String(providers),
     WORKSPACE_REFUND_ENABLED: String(providers), WORKSPACE_RAZORPAY_WEBHOOK_ENABLED: String(payments),
     WORKSPACE_RAZORPAY_RECONCILIATION_ENABLED: String(payments), WORKSPACE_EMAIL_VERIFICATION_ENABLED: String(providers),
     WORKSPACE_EMAIL_SENDER_VERIFIED: String(providers), WORKSPACE_NOTICE_DELIVERY_ENABLED: String(providers),
     WORKSPACE_NOTICE_SENDER_VERIFIED: String(providers), WORKSPACE_NOTICE_PROVIDER_SCOPE: 'workspace-local-uat',
   });
+  if(media) {
+    const mediaLoad = createLoader({'server-only': {}});
+    mediaLoad('@/lib/workspace/media/processing-provider').processingConfig(env);
+    env.WORKSPACE_MEDIA_WORKER_SECRET ||= randomBytes(32).toString('hex');
+    if(env.WORKSPACE_MEDIA_WORKER_SECRET.length < 32) throw new Error('uat_media_worker_secret_invalid');
+  }
   if (payments) {
     // The owner must separately authorize Test transactions and their verified sender/inboxes.
     if (env.WORKSPACE_RAZORPAY_MODE !== 'test') throw new Error('uat_test_mode_required');
@@ -51,15 +59,15 @@ async function start() {
     const ready = workspaceFinancialReadiness(env);
     if (!ready.testModeSafe || !ready.checkoutReady || !ready.webhookReady || !ready.reconciliationReady || (providers && (!ready.refundMutationReady || !ready.refundReconciliationReady || !ready.noticeConfigurationReady)) || (paymentsOnly && (ready.refundMutationReady || ready.refundReconciliationReady || ready.noticeDeliveryAuthorized))) throw new Error('uat_provider_configuration_invalid');
   }
-  console.log(paymentsOnly ? 'Local UAT: Test payments only; refunds/refund reconciliation/email/Redis/SMS/analytics disabled.' : providers ? 'Local UAT: Test payments/email enabled; Redis/SMS/analytics disabled.' : 'Local UAT: demo phone/eligibility enabled; external providers disabled.');
+  console.log(media ? 'Local UAT: dedicated private Workspace media enabled; payments/email/Redis/SMS/analytics disabled.' : paymentsOnly ? 'Local UAT: Test payments only; refunds/refund reconciliation/email/Redis/SMS/analytics disabled.' : providers ? 'Local UAT: Test payments/email enabled; Redis/SMS/analytics disabled.' : 'Local UAT: demo phone/eligibility enabled; external providers disabled.');
   const child = spawn('pnpm', ['dev', '--hostname', '127.0.0.1', '--port', '3000'], { env, stdio: 'inherit' });
-  const worker = payments ? spawn(process.execPath, ['scripts/workspace-local-uat-worker.cjs'], { env: { ...env, WORKSPACE_LOCAL_UAT_FINANCIAL_WORKER_ENABLED: 'true' }, stdio: 'inherit' }) : null;
+  const worker = payments ? spawn(process.execPath, ['scripts/workspace-local-uat-worker.cjs'], { env: { ...env, WORKSPACE_LOCAL_UAT_FINANCIAL_WORKER_ENABLED: 'true' }, stdio: 'inherit' }) : media ? spawn(process.execPath, ['scripts/workspace-media-local-worker.mjs'], {env: {...env, WORKSPACE_MEDIA_LOCAL_WORKER_ENABLED:'true', WORKSPACE_MEDIA_LOCAL_APP_URL:'http://localhost:3000'},stdio:'inherit'}) : null;
   process.on('SIGTERM', () => { child.kill('SIGTERM'); worker?.kill('SIGTERM'); });
   process.on('SIGINT', () => worker?.kill('SIGINT'));
   child.on('error', () => { console.error('Local UAT application could not start.'); process.exitCode = 1; });
   child.on('exit', code => { worker?.kill('SIGTERM'); process.exitCode = code ?? 1; });
   worker?.on('error', () => { console.error('Local UAT worker could not start.'); child.kill('SIGTERM'); process.exitCode = 1; });
-  worker?.on('exit', code => { if (code) { console.error('Local UAT worker stopped; application stopped to avoid unprocessed payments.'); child.kill('SIGTERM'); process.exitCode = 1; } });
+  worker?.on('exit', code => { if (code) { console.error('Local UAT worker stopped; application stopped to avoid unprocessed work.'); child.kill('SIGTERM'); process.exitCode = 1; } });
 }
 start().catch(error => {
   const reason = /^uat_[a-z_]+$/.test(error?.message || '') ? error.message : 'uat_preflight_failed';

@@ -1,0 +1,6 @@
+// Credential-free copies for this policy change. Never reads .env or a DB URL.
+const fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process');
+const mode=process.argv[2]??'source';if(!['source','validation','build'].includes(mode))throw Error('Invalid purpose');const target=mode==='build'?path.resolve('output/audits/workspace-self-publishing/build'):'/tmp/airbharath-self-publishing/'+mode;fs.mkdirSync(target,{recursive:true});
+const files=execFileSync('git',['ls-files','--cached','--others','--exclude-standard','-z'],{encoding:'utf8'}).split('\0').filter(Boolean);
+for(const name of files){if((name.startsWith('output/')&&!['output/audits/workspace-f6r/coverage-review.json','output/audits/workspace-f6/catalog-before.json'].includes(name))||/(^|\/)(\.env[^/]*|\.aws|\.codex|\.agents|\.git|\.postgres_data|node_modules|\.next)(\/|$)/.test(name)||/\.(pem|key|log)$/.test(name))continue;if(!fs.existsSync(name)||!fs.statSync(name).isFile())continue;const dest=path.join(target,name);fs.mkdirSync(path.dirname(dest),{recursive:true});if(!fs.existsSync(dest)||!fs.readFileSync(dest).equals(fs.readFileSync(name)))fs.copyFileSync(name,dest);}
+if(!fs.existsSync(target+'/node_modules'))fs.symlinkSync(path.resolve('node_modules'),target+'/node_modules','dir');console.log(target);

@@ -1,6 +1,7 @@
-import { db } from "@/lib/db";
-import { courses } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { getSession } from '@/lib/auth';
+import { discoverCourses } from '@/lib/discovery/repository';
+import { catalogParams } from '@/lib/discovery/model';
+import Link from 'next/link';
 import {
   GraduationCap,
   CheckCircle2,
@@ -21,90 +22,11 @@ export const metadata = {
     "Explore AirBharath professional certificate courses in AI Skills, Digital Marketing, Entrepreneurship, and Technical Essentials.",
 };
 
-export default async function CoursesPage() {
-  let dbCourseList: any[] = [];
-  try {
-    dbCourseList = await db.query.courses.findMany({
-      where: eq(courses.isPublished, true),
-      with: {
-        bundleItems: {
-          with: {
-            course: {
-              with: {
-                modules: {
-                  with: {
-                    lessons: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        modules: {
-          with: {
-            lessons: true,
-          },
-        },
-      },
-    });
-
-    // Place combo/featured pack first, then alphabetical or standard order
-    dbCourseList.sort((a: any, b: any) => {
-      if (a.isBundle || a.slug === "combo-pack") return -1;
-      if (b.isBundle || b.slug === "combo-pack") return 1;
-      return 0;
-    });
-  } catch (err) {
-    console.error("Failed to load courses from DB:", err);
-  }
-
-  // Transform real DB courses into uniform CatalogCourseItem format
-  const formattedCourses: CatalogCourseItem[] = dbCourseList.map((c: any) => {
-    const isBundle = Boolean(c.isBundle || (c.bundleItems && c.bundleItems.length > 0));
-    let modulesCount = c.modules?.length || 0;
-    let lessonsCount =
-      c.modules?.reduce(
-        (acc: number, m: any) => acc + (m.lessons?.length || 0),
-        0
-      ) || 0;
-
-    if (isBundle && c.bundleItems && c.bundleItems.length > 0 && lessonsCount === 0) {
-      c.bundleItems.forEach((bi: any) => {
-        const bCourse = bi.course;
-        if (bCourse) {
-          modulesCount += bCourse.modules?.length || 0;
-          bCourse.modules?.forEach((m: any) => {
-            lessonsCount += m.lessons?.length || 0;
-          });
-        }
-      });
-    }
-
-    return {
-      id: c.id,
-      title: c.title,
-      slug: c.slug || c.id,
-      description: c.description || null,
-      shortDescription: c.shortDescription || null,
-      thumbnailUrl: c.thumbnailUrl || null,
-      price: Number(c.price) || 0,
-      accessDays: c.accessDays || null,
-      modulesCount,
-      lessonsCount,
-      badge: isBundle || c.slug?.includes("combo")
-        ? "Combo Pass"
-        : "Certificate Program",
-    };
-  });
-
-  // Extract unique category tags from real data
-  const categories = Array.from(
-    new Set(
-      formattedCourses
-        .map((c) => c.badge || "Certificate Program")
-        .filter(Boolean)
-    )
-  );
+export default async function CoursesPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}) {
+  const [raw,session] = await Promise.all([searchParams,getSession()]);
+  const params = catalogParams(raw);
+  let catalog: Awaited<ReturnType<typeof discoverCourses>> | null = null;
+  try { catalog = await discoverCourses(params,session?.id); } catch { /* Render an honest retry state. */ }
 
   return (
     <main className="flex-1 pb-20 space-y-10 sm:space-y-12">
@@ -144,10 +66,7 @@ export default async function CoursesPage() {
 
       {/* Catalog Directory Section */}
       <section className="container mx-auto px-4 max-w-6xl space-y-12">
-        <CourseCatalogClient
-          courses={formattedCourses}
-          categories={categories}
-        />
+        {catalog ? <CourseCatalogClient {...catalog} /> : <div role="alert" className="rounded-2xl border bg-card p-8 text-center"><h2 className="text-xl font-bold">Course discovery is temporarily unavailable</h2><p className="my-3 text-muted-foreground">Your learning access is unchanged. Please try again shortly.</p><Link href="/courses" className="text-primary underline">Try again</Link></div>}
 
         {/* Airbharath Trust Banner */}
         <div className="relative overflow-hidden rounded-3xl bg-card border border-border text-foreground p-8 sm:p-12 text-center space-y-3 shadow-md">

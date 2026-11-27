@@ -14,10 +14,10 @@ import { CourseCard } from '@/components/CourseCard';
 
 const render = (node: React.ReactElement) => renderToStaticMarkup(node);
 describe('Scoped F.8C commercial copy and private metadata', () => {
-  it('qualifies feature release while keeping Early Access preparation private', () => {
+  it('qualifies coordinated activation and describes current independent publication', () => {
     const html = render(React.createElement(WorkspaceLaunchNotice));
-    expect(html).toContain('Full AirBharath Workspace is targeted for 9 November 2026, subject to release readiness.');
-    expect(html).toContain('not available during Early Access');
+    expect(html).toContain('coordinated launch verification');
+    expect(html).toContain('independent course building');
     expect(html).not.toContain('Workspace launches 9 November');
   });
   it('removes blanket pricing duration promises while preserving catalog prices and destinations', () => {

@@ -63,9 +63,9 @@ it('rechecks expiry after waiting for the owned draft lock', async () => {
   const original = creators.transaction; creators.transaction = (id, work) => original(id, tx => work({ ...tx, draft: async id => { const row = await tx.draft(id); clock = evidence.membership.endsAt; return row; } }));
   await expect(submit()).rejects.toMatchObject({ code: 'forbidden' }); expect(rows).toEqual([]);
 });
-it.each(['submitted', 'under_review', 'approved'] as const)('service blocks draft editing in %s', async status => {
+it.each(['submitted', 'under_review', 'approved'] as const)('legacy %s review never blocks owned draft editing', async status => {
   const row = await submit(); if (status !== 'submitted') await review(row.id, 'start_review'); if (status === 'approved') await review(row.id, 'approve');
-  await expect(creatorService(creators, 'test', () => clock).update(owner, draftId, 1, { ...content, title: 'Changed title' })).rejects.toMatchObject({ code: 'review_locked' }); expect(draft.version).toBe(1);
+  const before=structuredClone(rows);await creatorService(creators,'test',()=>clock).update(owner,draftId,1,{...content,title:'Changed title'});expect(draft.version).toBe(2);expect(rows).toEqual(before);
 });
 it('changes-requested unlocks editing; identical content cannot resubmit; new version preserves history', async () => {
   const row = await submit(); await review(row.id, 'start_review'); await review(row.id, 'request_changes'); const historical = structuredClone({ row: rows[0], events });

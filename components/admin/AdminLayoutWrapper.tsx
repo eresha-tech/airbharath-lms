@@ -24,7 +24,7 @@ export function AdminLayoutWrapper({ children }: { children: React.ReactNode }) 
       {/* Main Content Frame */}
       <div
         className={cn(
-          "flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out",
+          "flex-1 flex flex-col min-h-screen transition-none lg:transition-all duration-300 ease-in-out",
           isCollapsed ? "lg:pl-20" : "lg:pl-64"
         )}
       >

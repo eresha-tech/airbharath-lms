@@ -45,8 +45,8 @@ export async function getCourseLessonIds(courseId: string): Promise<string[]> {
 
   const lessonIds: string[] = [];
   courseModules.forEach((m) => {
-    if (m.lessons) {
-      m.lessons.forEach((l) => lessonIds.push(l.id));
+    if (!m.workspaceRetired && m.lessons) {
+      m.lessons.forEach((l) => { if (!l.workspaceRetired) lessonIds.push(l.id); });
     }
   });
 

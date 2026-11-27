@@ -1,9 +1,8 @@
 import { getWorkspaceUser } from '../eligibility/service';
 import { getAuthorizedAdminSession } from '@/lib/admin-authorization';
-import { isSameOrigin, privateJson, readJson } from '../http';
+import { isSameOrigin, privateJson } from '../http';
 import { UUID } from '../eligibility/model';
 import { ReviewError } from './model';
-import { workspaceReviews } from './repository';
 import type { Submission, ReviewEvent } from './service';
 export function submissionReceipt(row: Submission) {
   const { id, submissionNumber, draftVersion, reviewStatus, submittedAt, reviewStartedAt, reviewCompletedAt } = row;
@@ -19,11 +18,7 @@ export async function reviewHttp(request: Request, kind: 'submit' | 'review', id
     const actor = kind === 'submit' ? await getWorkspaceUser() : await getAuthorizedAdminSession();
     if (!actor) throw new ReviewError(kind === 'submit' ? 'authentication' : 'forbidden');
     if (!UUID.test(id)) throw new ReviewError('not_found');
-    let body: unknown;
-    try { body = await readJson(request, 16_384); } catch (error) { throw new ReviewError(error instanceof Error && error.message === 'BODY_TOO_LARGE' ? 'too_large' : 'validation'); }
-    const service = workspaceReviews();
-    const row = kind === 'submit' ? await service.submit(actor.id, id, body) : await service.review(actor.id, id, body);
-    return privateJson({ submission: submissionReceipt(row) });
+    return privateJson({code:'retired',error:'Course approvals are no longer required. Create and publish from your Course Studio. Legacy review history is retained.'},410);
   } catch (error) {
     const code = error instanceof ReviewError ? error.code : 'unavailable';
     const status = code === 'authentication' ? 401 : code === 'forbidden' ? 403 : code === 'not_found' ? 404 : code === 'validation' || code === 'invalid_transition' ? 400 : code === 'too_large' ? 413 : code === 'unavailable' ? 503 : 409;

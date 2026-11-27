@@ -12,7 +12,7 @@ import { WorkspaceCoupons } from '@/components/workspace/WorkspaceCoupons';
 import { calculatePrice, membershipStartInfo } from '@/lib/workspace/membership/model';
 import { plans, now } from './workspace-membership-fixtures';
 it('renders all approved plans, exclusive GST and advisory unreserved quote with disabled payment', () => {
-  const initialQuote = { quoteVersion: 'workspace-pricing-v1', planCode: plans[0].code, planVersionId: plans[0].id, planVersion: 1, planName: plans[0].displayName, durationMonths: 3, currency: 'INR' as const, ...calculatePrice(499900, 1800), couponApplied: false, couponCode: null, generatedAt: now.toISOString(), expiresAt: new Date(now.getTime() + 600000).toISOString(), membershipStart: membershipStartInfo('2026-11-08T18:30:00.000Z', now), advisory: true as const, reserved: false as const, quoteHash: 'opaque' };
+  const initialQuote = { quoteVersion: 'workspace-pricing-v1', planCode: plans[0].code, planVersionId: plans[0].id, planVersion: 1, planName: plans[0].displayName, durationMonths: 3, currency: 'INR' as const, ...calculatePrice(499900, 1800), purchaseKind:'initial' as const,couponApplied: false, couponCode: null, generatedAt: now.toISOString(), expiresAt: new Date(now.getTime() + 600000).toISOString(), membershipStart: membershipStartInfo('2026-11-08T18:30:00.000Z', now), advisory: true as const, reserved: false as const, quoteHash: 'opaque' };
   const html = renderToStaticMarkup(React.createElement(ActivationPreview, { plans, initialQuote }));
   expect(html.match(/type="radio"/g)).toHaveLength(3); expect(html).toContain('₹5,898.82'); expect(html).toContain('₹10,618.82'); expect(html).toContain('₹20,058.82');
   expect(html).toContain('GST @ 18%'); expect(html).toContain('Taxable amount'); expect(html).toContain('does not reserve'); expect(html).toContain('successful payment date');
@@ -33,7 +33,7 @@ it('keeps the authenticated activation page out of search indexes', () => {
 
 it('advertises F.1 inclusive totals from supplied successor rows with an exact server breakdown', () => {
   const current = plans.map((plan, i) => ({ ...plan, basePricePaise: [499915, 847373, 1499915][i], version: i === 0 ? 5 : 2 }));
-  const initialQuote = { quoteVersion: 'workspace-pricing-v1', planCode: current[0].code, planVersionId: current[0].id, planVersion: current[0].version, planName: current[0].displayName, durationMonths: 3, currency: 'INR' as const, ...calculatePrice(current[0].basePricePaise, 1800), couponApplied: false, couponCode: null, generatedAt: now.toISOString(), expiresAt: new Date(now.getTime() + 600000).toISOString(), membershipStart: membershipStartInfo('2026-11-08T18:30:00.000Z', now), advisory: true as const, reserved: false as const, quoteHash: 'opaque' };
+  const initialQuote = { quoteVersion: 'workspace-pricing-v1', planCode: current[0].code, planVersionId: current[0].id, planVersion: current[0].version, planName: current[0].displayName, durationMonths: 3, currency: 'INR' as const, ...calculatePrice(current[0].basePricePaise, 1800), purchaseKind:'initial' as const,couponApplied: false, couponCode: null, generatedAt: now.toISOString(), expiresAt: new Date(now.getTime() + 600000).toISOString(), membershipStart: membershipStartInfo('2026-11-08T18:30:00.000Z', now), advisory: true as const, reserved: false as const, quoteHash: 'opaque' };
   const html = renderToStaticMarkup(React.createElement(ActivationPreview, { plans: current, initialQuote }));
   for (const total of ['₹5,899.00', '₹9,999.00', '₹17,699.00']) expect(html).toContain(`font-semibold tabular-nums">${total}`);
   expect(html.match(/Inclusive of 18% GST/g)).toHaveLength(3);
@@ -42,16 +42,17 @@ it('advertises F.1 inclusive totals from supplied successor rows with an exact s
   expect(html).toContain('Payments not yet enabled'); expect(html.match(/type="checkbox"/g)).toHaveLength(2);
 });
 
-it('describes release targets without announcing open payments or current uploads and publication', () => {
+it('prepares independent launch copy without changing canonical or historical billing records', () => {
   for (const file of ['components/workspace/WorkspaceLanding.tsx', 'app/(user)/workspace/activate/page.tsx']) {
     const source = readFileSync(file, 'utf8');
-    expect(source).toContain('14 October 2026, subject to launch verification');
+    expect(source).not.toContain('14 October 2026');
     expect(source).toMatch(/FULL_WORKSPACE_LAUNCH|WorkspaceLaunchNotice/);
-    expect(source).toContain('publication and course sales');
+    expect(source).toContain('/workspace/pricing');
   }
   const landing = renderToStaticMarkup(React.createElement(WorkspaceLanding));
-  expect(landing).toContain('Full AirBharath Workspace is targeted for 9 November 2026, subject to release readiness.');
-  expect(landing).toContain('Workspace payments are awaiting launch verification');
+  expect(landing).toContain('coordinated launch verification');
+  expect(landing).toContain('No routine course-proposal approval is required');
+  expect(landing).not.toContain('Targeted for 9 November');
   const member = readFileSync('app/(workspace)/workspace/(membership)/member/page.tsx', 'utf8');
   expect(member).toContain("['Original payment amount', formatPaise(row.order.totalPaise)]");
   expect(member).not.toContain('getCurrentPlans');

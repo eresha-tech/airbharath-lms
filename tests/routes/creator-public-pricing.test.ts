@@ -1,0 +1,12 @@
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {beforeEach,expect,it,vi} from 'vitest';
+import {plans} from './workspace-membership-fixtures';
+const mocks=vi.hoisted(()=>({plans:vi.fn()}));
+vi.mock('next/navigation',()=>({useRouter:()=>({refresh:vi.fn()})}));
+vi.mock('@/lib/workspace/membership/service',()=>({getCurrentPlans:mocks.plans}));
+import Page from '@/app/(user)/workspace/pricing/page';
+beforeEach(()=>mocks.plans.mockResolvedValue(plans.map((p,i)=>({...p,basePricePaise:[499915,847373,1499915][i]}))));
+it('uses exact authoritative inclusive GST totals and existing plan-entry paths',async()=>{const html=renderToStaticMarkup(await Page());for(const price of ['₹5,899.00','₹9,999.00','₹17,699.00'])expect(html).toContain(price);for(const code of ['quarterly','half_yearly','yearly'])expect(html).toContain('/workspace/choose-plan?plan='+code);expect(html).toContain('₹899.85 GST');expect(html).toContain('0% AirBharath');expect(html).toContain('evidenced gateway fees');expect(html).toContain('href="/pricing"');expect(html).not.toContain('checkout.js');});
+it('does not invent a price or checkout when catalogue reads fail',async()=>{mocks.plans.mockRejectedValueOnce(Error('private'));const html=renderToStaticMarkup(await Page());expect(html).toContain('Creator plans are temporarily unavailable');expect(html).not.toContain('/workspace/choose-plan?');expect(html).not.toContain('₹');});
+it('renders unavailable plan without a purchase link',async()=>{mocks.plans.mockResolvedValueOnce(plans.map(p=>({...p,available:false})));const html=renderToStaticMarkup(await Page());expect(html).toContain('Currently unavailable');expect(html).not.toContain('/workspace/choose-plan?');});

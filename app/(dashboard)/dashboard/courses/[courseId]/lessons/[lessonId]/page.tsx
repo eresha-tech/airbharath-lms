@@ -9,6 +9,8 @@ import { hasCourseAccess } from "@/lib/course-access";
 import { LessonCompleteButton } from "@/components/LessonCompleteButton";
 import { LessonComments } from "@/components/LessonComments";
 import { LessonNavigation } from "@/components/classroom/LessonNavigation";
+import { PublishedVideo } from '@/components/workspace/builder/PublishedVideo';
+import { publishedVideoView } from '@/lib/workspace/publishing/delivery';
 import { HlsPlayer } from "@/components/video-player/HlsPlayer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -64,7 +66,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
     with: { module: { columns: { courseId: true } } },
   }).catch(() => null);
 
-  if (!lessonObj?.module) {
+  if (!lessonObj?.module || lessonObj.workspaceRetired) {
     return redirect(`/dashboard/courses/${courseId}`);
   }
 
@@ -118,6 +120,8 @@ export default async function LessonPage({ params }: LessonPageProps) {
     return redirect(`/dashboard/courses/${courseObj.id}`);
   }
 
+  if (courseObj.workspaceState === 'suspended') return redirect('/dashboard/courses');
+
   // Check enrollment unless free preview or admin
   let isEnrolled = lessonObj.isFreePreview || isAdmin;
 
@@ -131,6 +135,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
   if (!isEnrolled) {
     return redirect(`/courses/${courseObj.slug || courseObj.id}`);
   }
+  const publishedAssets = lessonObj.workspaceRevisionId ? await publishedVideoView(session, courseObj.id, lessonObj.id) : null;
   const materialsList = await db.query.lessonMaterials.findMany({
     where: eq(lessonMaterials.lessonId, lessonId),
   }).catch(() => []);
@@ -151,9 +156,9 @@ export default async function LessonPage({ params }: LessonPageProps) {
   if (courseSections.length > 0) {
     const sortedSections = courseSections.sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
     sortedSections.forEach((sec: any) => {
-      const secModules = (sec.modules || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+      const secModules = (sec.modules || []).filter((m: any) => !m.workspaceRetired).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
       secModules.forEach((m: any) => {
-        const modLessons = (m.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+        const modLessons = (m.lessons || []).filter((l: any) => !l.workspaceRetired).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
         modLessons.forEach((l: any) => {
           allLessonsInOrder.push({
             id: l.id,
@@ -170,10 +175,10 @@ export default async function LessonPage({ params }: LessonPageProps) {
     });
     // Also include unassigned modules if present
     const unassignedModules = ((courseObj.modules as any[]) || [])
-      .filter((m: any) => !m.sectionId)
+      .filter((m: any) => !m.sectionId && !m.workspaceRetired)
       .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
     unassignedModules.forEach((m: any) => {
-      const modLessons = (m.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
+      const modLessons = (m.lessons || []).filter((l: any) => !l.workspaceRetired).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0));
       modLessons.forEach((l: any) => {
         allLessonsInOrder.push({
           id: l.id,
@@ -187,12 +192,12 @@ export default async function LessonPage({ params }: LessonPageProps) {
       });
     });
   } else {
-    const courseModules = (courseObj.modules as any[]) || [];
+    const courseModules = ((courseObj.modules as any[]) || []).filter((m: any) => !m.workspaceRetired);
     const sortedModules = courseModules
       .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
       .map((mod: any) => ({
         ...mod,
-        lessons: (mod.lessons || []).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0)),
+        lessons: (mod.lessons || []).filter((l: any) => !l.workspaceRetired).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0)),
       }));
 
     sortedModules.forEach((m: any) => {
@@ -365,7 +370,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
           </div>
         ) : activeVideoId ? (
           <div className="overflow-hidden rounded-2xl sm:rounded-3xl bg-black border border-border/80 shadow-md relative">
-            <HlsPlayer
+            <>{publishedAssets ? <PublishedVideo assets={publishedAssets} basePath={`/api/courses/${courseObj.id}/lessons/${lessonObj.id}/media`} /> : <HlsPlayer
               videoId={activeVideoId}
               courseId={courseObj.id}
               lessonId={lessonObj.id}
@@ -374,7 +379,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
               watermarkEmail={session.email || session.fullName || "student@airbharath.in"}
               watermarkPhone={session.phone || undefined}
               captionAvailable={captionAvailable}
-            />
+            />}</>
           </div>
         ) : null}
 
@@ -419,7 +424,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
                     <Sparkles className="h-4 w-4 text-primary" />
                     <span>Lesson Summary</span>
                   </h2>
-                  <MarkdownContent content={lessonObj.summary} />
+                  {lessonObj.workspaceRevisionId ? <p className="whitespace-pre-wrap">{lessonObj.summary}</p> : <MarkdownContent content={lessonObj.summary} />}
                 </div>
               )}
 
@@ -430,7 +435,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
                     <FileText className="h-4 w-4 text-primary" />
                     <span>Lesson Notes</span>
                   </h2>
-                  <MarkdownContent content={lessonObj.content} />
+                  {lessonObj.contentFormat === 'plain_text' ? <div className="whitespace-pre-wrap leading-8">{lessonObj.content}</div> : <MarkdownContent content={lessonObj.content} privateWorkspace={!!lessonObj.workspaceRevisionId} />}
                 </div>
               )}
 

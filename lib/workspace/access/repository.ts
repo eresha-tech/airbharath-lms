@@ -11,7 +11,7 @@ const hash=(v:unknown)=>createHash('sha256').update(JSON.stringify(v)).digest('h
 async function lock(tx:Tx, actor:string, owner:string){const rows=await tx.select({id:users.id,role:users.role}).from(users).where(inArray(users.id,[actor,owner])).orderBy(users.id).for('update');if(rows.find(r=>r.id===actor)?.role!=='admin')throw new GrantError('forbidden');if(!rows.some(r=>r.id===owner))throw new GrantError('not_found');}
 async function time(tx:Tx){const rows=await tx.execute(sql`select date_trunc('milliseconds',clock_timestamp()) as now`);return rows[0].now instanceof Date?new Date(rows[0].now):new Date(String(rows[0].now));}
 async function close(tx:Tx,g:typeof grants.$inferSelect,actor:string,action:'revoked'|'expired',reason:string,key:string,payloadHash:string,now:Date){await tx.update(grants).set({status:action,closedAt:now,closedBy:actor,closeReason:reason}).where(eq(grants.id,g.id));await tx.insert(events).values({grantId:g.id,userId:g.userId,actorId:actor,action,reason,requestKey:key,payloadHash,createdAt:now});}
-export async function createAccessGrant(actor:string,raw:unknown){const c=grantCommand(raw),payloadHash=hash(c),environment=grantEnvironment(classifyWorkspaceRuntime()),terms=currentCreatorTerms();return db.transaction(async tx=>{
+export async function createAccessGrant(actor:string,raw:unknown,executor:typeof db=db){const c=grantCommand(raw),payloadHash=hash(c),environment=grantEnvironment(classifyWorkspaceRuntime()),terms=currentCreatorTerms();return executor.transaction(async tx=>{
  await lock(tx,actor,c.targetUserId);const now=await time(tx);
  const prior=await tx.query.workspaceAccessGrants.findFirst({where:and(eq(grants.grantedBy,actor),eq(grants.requestKey,c.requestKey))});if(prior){if(prior.payloadHash!==payloadHash)throw new GrantError('conflict');return prior;}
  const [a]=await tx.select().from(attempts).where(eq(attempts.userId,c.targetUserId)).orderBy(desc(attempts.decidedAt),desc(attempts.id)).limit(1);
@@ -26,7 +26,7 @@ export async function createAccessGrant(actor:string,raw:unknown){const c=grantC
  const [g]=await tx.insert(grants).values({userId:c.targetUserId,creatorProfileId:profile.id,eligibilityAttemptId:a.id,environment,...term,reason:c.reason,grantedBy:actor,requestKey:c.requestKey,payloadHash,termsVersion:terms.version,termsContentHash:terms.contentHash,createdAt:now}).returning();
  await tx.insert(events).values({grantId:g.id,userId:g.userId,actorId:actor,action:'granted',reason:c.reason,requestKey:c.requestKey,payloadHash,createdAt:now});return g;
  });}
-export async function revokeAccessGrant(actor:string,id:string,raw:unknown){const c=revokeCommand(raw),payloadHash=hash({id,...c});return db.transaction(async tx=>{
+export async function revokeAccessGrant(actor:string,id:string,raw:unknown,executor:typeof db=db){const c=revokeCommand(raw),payloadHash=hash({id,...c});return executor.transaction(async tx=>{
  const g=await tx.query.workspaceAccessGrants.findFirst({where:eq(grants.id,id)});if(!g)throw new GrantError('not_found');await lock(tx,actor,g.userId);
  const prior=await tx.query.workspaceAccessGrantEvents.findFirst({where:and(eq(events.actorId,actor),eq(events.requestKey,c.requestKey))});if(prior){if(prior.payloadHash!==payloadHash||prior.grantId!==id||prior.action!=='revoked')throw new GrantError('conflict');return await tx.query.workspaceAccessGrants.findFirst({where:eq(grants.id,id)});}
  const current=await tx.query.workspaceAccessGrants.findFirst({where:eq(grants.id,id)});if(!current||current.status!=='active')throw new GrantError('conflict');const now=await time(tx);if(now>=current.expiresAt)throw new GrantError('conflict');await close(tx,current,actor,'revoked',c.reason,c.requestKey,payloadHash,now);return await tx.query.workspaceAccessGrants.findFirst({where:eq(grants.id,id)});
@@ -35,11 +35,13 @@ export async function revokeAccessGrant(actor:string,id:string,raw:unknown){cons
 export async function readGrantEvidence(userId:string,executor:Tx|typeof db=db):Promise<GrantEvidence|null>{
  const env=grantEnvironment(classifyWorkspaceRuntime()),now=new Date(),terms=currentCreatorTerms();
  const [g]=await executor.select().from(grants).where(and(eq(grants.userId,userId),eq(grants.environment,env))).orderBy(desc(grants.createdAt),desc(grants.id)).limit(1);if(!g)return null;
- const [profile]=await executor.select().from(profiles).where(and(eq(profiles.id,g.creatorProfileId),eq(profiles.userId,userId)));
- const [latest]=await executor.select().from(attempts).where(eq(attempts.userId,userId)).orderBy(desc(attempts.decidedAt),desc(attempts.id)).limit(1);
- const [frozen]=await executor.select().from(attempts).where(eq(attempts.id,g.eligibilityAttemptId));
- const [version]=await executor.select().from(versions).where(eq(versions.isCurrent,true));
- const [accepted]=await executor.select().from(acceptances).where(and(eq(acceptances.userId,userId),eq(acceptances.termsVersion,terms.version)));
- const [original]=await executor.select().from(acceptances).where(and(eq(acceptances.userId,userId),eq(acceptances.termsVersion,g.termsVersion),eq(acceptances.termsContentHash,g.termsContentHash)));
+ const [[profile],[latest],[frozen],[version],[accepted],[original]]=await Promise.all([
+  executor.select().from(profiles).where(and(eq(profiles.id,g.creatorProfileId),eq(profiles.userId,userId))),
+  executor.select().from(attempts).where(eq(attempts.userId,userId)).orderBy(desc(attempts.decidedAt),desc(attempts.id)).limit(1),
+  executor.select().from(attempts).where(eq(attempts.id,g.eligibilityAttemptId)),
+  executor.select().from(versions).where(eq(versions.isCurrent,true)),
+  executor.select().from(acceptances).where(and(eq(acceptances.userId,userId),eq(acceptances.termsVersion,terms.version))),
+  executor.select().from(acceptances).where(and(eq(acceptances.userId,userId),eq(acceptances.termsVersion,g.termsVersion),eq(acceptances.termsContentHash,g.termsContentHash))),
+ ]);
  return{...g,profileStatus:profile?.status||'unavailable',eligibilityValid:!!frozen&&frozen.userId===userId&&frozen.result==='eligible'&&!!frozen.eligibleUntil&&frozen.eligibleUntil>g.startsAt&&latest?.result==='eligible',termsAccepted:version?.termsVersion===terms.version&&version?.contentHash===terms.contentHash&&version.effectiveAt<=now&&acceptanceMatches(accepted,userId,terms,now),legalHistory:!!original&&original.acceptedAt<=now&&original.acceptedAt<g.expiresAt&&(!g.closedAt||original.acceptedAt<=g.closedAt)};
 }

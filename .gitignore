@@ -58,3 +58,7 @@ fileing.md
 
 # local Codex runtime/configuration
 .codex/
+
+# Local-only Phase 1.9 founder fixtures, logs and generated sample media
+/output/audits/workspace-phase19-local/
+/output/workspace-phase19-samples/

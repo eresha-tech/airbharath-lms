@@ -118,25 +118,19 @@ export const getStudentDashboardData = cache(
     );
 
     const coursesWithStatus: DashboardCourseStatus[] = learningCourses.map((courseObj: any) => {
-      const directEnrollment = studentEnrollments.find((e: any) => e.courseId === courseObj.id);
+      const directEnrollment = accessSummary.directCourseIds.includes(courseObj.id) ? studentEnrollments.find((e: any) => e.courseId === courseObj.id) : undefined;
       const bundleInfo = accessSummary.courseToBundleMap[courseObj.id];
 
-      let isExpired = false;
+      const isExpired = false;
       let effectiveExpiresAt: Date | string | null = null;
       let enrollmentId = directEnrollment?.id || `bundle_${courseObj.id}`;
 
       if (directEnrollment) {
-        isExpired =
-          directEnrollment.status === "expired" ||
-          (directEnrollment.expiresAt !== null && new Date(directEnrollment.expiresAt) <= now);
-        effectiveExpiresAt = directEnrollment.expiresAt;
+        effectiveExpiresAt = accessSummary.directAccessExpiry && courseObj.id in accessSummary.directAccessExpiry ? accessSummary.directAccessExpiry[courseObj.id] : directEnrollment.expiresAt;
       } else if (bundleInfo) {
         const parentEnrollment = studentEnrollments.find((e: any) => e.courseId === bundleInfo.bundleId);
         if (parentEnrollment) {
           enrollmentId = parentEnrollment.id;
-          isExpired =
-            parentEnrollment.status === "expired" ||
-            (parentEnrollment.expiresAt !== null && new Date(parentEnrollment.expiresAt) <= now);
         }
         effectiveExpiresAt = bundleInfo.expiresAt || null;
       }

@@ -30,6 +30,8 @@ export interface UserSession {
   fullName?: string | null;
   email?: string | null;
   role: string;
+  /** Set only by successful OTP authentication; profile/session renewal must preserve it. */
+  authenticatedAt?: number;
 }
 
 export async function createSessionToken(user: UserSession): Promise<string> {

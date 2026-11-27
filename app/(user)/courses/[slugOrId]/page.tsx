@@ -1,4 +1,7 @@
+import {operationsEnabled} from '@/lib/workspace/operations/model';
 import Image from "next/image";
+import { Suspense } from "react";
+import { ReviewSection } from "@/components/reviews/ReviewSection";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -65,6 +68,9 @@ export async function generateMetadata({ params }: CoursePageProps) {
           where: eq(courses.id, slugOrId),
           columns: {
             title: true,
+            workspaceProjectId: true,
+            workspaceState: true,
+            isPublished: true,
             seoTitle: true,
             seoDescription: true,
             shortDescription: true,
@@ -75,13 +81,16 @@ export async function generateMetadata({ params }: CoursePageProps) {
           where: eq(courses.slug, slugOrId),
           columns: {
             title: true,
+            workspaceProjectId: true,
+            workspaceState: true,
+            isPublished: true,
             seoTitle: true,
             seoDescription: true,
             shortDescription: true,
             description: true,
           },
         });
-    if (course) {
+    if (course?.isPublished && (!course.workspaceProjectId || course.workspaceState === "live")) {
       if (course.title) courseTitle = course.title;
       seoTitle = course.seoTitle;
       seoDescription = course.seoDescription;
@@ -156,7 +165,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
     console.error("Course fetch error:", err);
   }
 
-  if (!course) {
+  if (!course || !course.isPublished || (course.workspaceProjectId && (!course.isPublished || course.workspaceState !== "live"))) {
     return (
       <div className="container mx-auto px-4 pt-28 pb-16 text-center min-h-[60vh] flex flex-col items-center justify-center space-y-4">
         <div className="h-16 w-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
@@ -241,11 +250,11 @@ export default async function CoursePage({ params }: CoursePageProps) {
     .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
     .map((sec: any) => ({
       ...sec,
-      modules: (sec.modules || [])
+      modules: (sec.modules || []).filter((m: any) => !m.workspaceRetired)
         .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
         .map((mod: any) => ({
           ...mod,
-          lessons: (mod.lessons || [])
+          lessons: (mod.lessons || []).filter((l: any) => !l.workspaceRetired)
             .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
             .map((les: any) => ({
               ...les,
@@ -254,13 +263,13 @@ export default async function CoursePage({ params }: CoursePageProps) {
         })),
     }));
 
-  const rawCourseModules = (course.modules as any[]) || [];
+  const rawCourseModules = ((course.modules as any[]) || []).filter((m: any) => !m.workspaceRetired);
   // Ensure meetingUrl is never exposed to non-enrolled / unauthenticated visitors
   const sortedModules = rawCourseModules
     .sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0))
     .map((mod: any) => ({
       ...mod,
-      lessons: (mod.lessons || []).map((les: any) => ({
+      lessons: (mod.lessons || []).filter((l: any) => !l.workspaceRetired).map((les: any) => ({
         ...les,
         meetingUrl: isEnrolled ? les.meetingUrl : null,
       })),
@@ -491,6 +500,12 @@ export default async function CoursePage({ params }: CoursePageProps) {
                 </div>
 
                 {/* Enrollment Button */}
+                {!isEnrolled && accessInfo?.revokedReason && (
+                  <p role="status" className="rounded-xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+                    {accessInfo.revokedReason === 'refunded' ? 'Access from your fully refunded purchase has ended.' : 'Access from this purchase has ended after a confirmed payment reversal.'}
+                    {' '}Your progress and course history are saved. You can enroll again or contact AirBharath support.
+                  </p>
+                )}
                 <EnrollButton
                   courseId={course.id}
                   isEnrolled={isEnrolled}
@@ -573,6 +588,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Main Left Content Area */}
           <div className="lg:col-span-8 space-y-12 sm:space-y-14">
+            <a href="#course-reviews" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary underline">Read learner reviews</a>
             {/* SECTION: Overview */}
             <section id="course-overview" className="scroll-mt-28 space-y-8">
               {/* About This Course */}
@@ -667,6 +683,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
             </section>
 
             {/* SECTION: Curriculum */}
+            {course.workspaceProjectId&&operationsEnabled()&&<Link className="inline-flex min-h-11 items-center text-sm text-primary underline" href={"/workspace/support/new?report="+course.id}>Report this course</Link>}<Suspense fallback={<p role="status">Loading learner reviews…</p>}><ReviewSection courseId={course.id} actor={session?.id??null}/></Suspense>
             <section id="course-curriculum" className="scroll-mt-28 space-y-6">
               <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xs">
                 <div className="flex items-center justify-between">

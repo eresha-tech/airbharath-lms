@@ -3,11 +3,11 @@ import Script from 'next/script';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { MembershipQuote } from '@/lib/workspace/membership/service';
-import { formatPaise } from '@/lib/workspace/membership/model';
+import { formatPaise,PLAN_TERMS,type PlanCode } from '@/lib/workspace/membership/model';
 import { waitForWorkspaceActivation } from '@/lib/workspace/payments/activation-watch';
 import { isCouponRejection } from '@/lib/workspace/membership/preview';
 
-type Receipt = { id: string; totalPaise: number; currency: string; financialState: string; activationState: string };
+type Receipt = { id: string;planCode:PlanCode;planVersionId:string; totalPaise: number; currency: string; financialState: string; activationState: string };
 type Reply = { order?: Receipt; checkout?: { keyId: string; providerOrderId: string }; error?: string; code?: string };
 type Callback = { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string };
 type Checkout = { open(): void; on(event: 'payment.failed', handler: () => void): void };
@@ -16,6 +16,7 @@ type RazorpayConstructor = new (options: { key: string; order_id: string; amount
 export function MembershipCheckout({ keyId, userId, quote, disabled, onQuoteRejected }: { keyId: string; userId: string; quote: MembershipQuote | null; disabled: boolean; onQuoteRejected?: () => void }) {
   const router = useRouter(), inFlight = useRef(false);
   const [ready, setReady] = useState(false), [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [checking, setChecking] = useState(false);
+  const [savedCheckout,setSavedCheckout]=useState<Receipt|null>(null);
   const [awaitingActivation, setAwaitingActivation] = useState(false);
   const activationCheck = useRef<AbortController | null>(null);
   const storageKey = `workspace-checkout-v1:${userId}`;
@@ -41,19 +42,21 @@ export function MembershipCheckout({ keyId, userId, quote, disabled, onQuoteReje
     if (confirmedPayment) setAwaitingActivation(true);
     setChecking(true);
     try {
-      const result = await waitForWorkspaceActivation({ signal: controller.signal, onUpdate: state => setMessage(state === 'waiting'
+      const pending=JSON.parse(sessionStorage.getItem(storageKey)||'null');
+      if(!pending?.orderId){setMessage('Start or recover your saved payment request before checking this purchase.');return;}
+      const result = await waitForWorkspaceActivation({ orderId:pending.orderId,signal: controller.signal, onUpdate: state => setMessage(state === 'waiting'
         ? 'Confirming your payment and activating your Workspace… You will be redirected automatically. Please do not pay again.'
         : 'We could not check membership yet. Retrying automatically; please do not pay again.') });
       if (result === 'ready') {
         try { sessionStorage.removeItem(storageKey); } catch { /* Verified access does not depend on browser storage. */ }
-        router.replace('/workspace/dashboard'); router.refresh();
+        router.replace(quote?.purchaseKind==='renewal'?'/workspace/member':'/workspace/dashboard'); router.refresh();
       } else if (result === 'authentication') setMessage('Please sign in again to check your membership. Your payment request is retained; do not pay again.');
       else if (result === 'timeout') setMessage('Your payment is still being verified. Check membership status again shortly; please do not pay again.');
     } finally {
       if (activationCheck.current === controller && !controller.signal.aborted) { activationCheck.current = null; setChecking(false); }
     }
-  }, [router, storageKey]);
-  async function pay() {
+  }, [router, storageKey,quote?.purchaseKind]);
+  async function pay(useSaved=false) {
     if (inFlight.current || !ready || !quote) return;
     inFlight.current = true; setBusy(true); setMessage('');
     let opened = false;
@@ -67,6 +70,10 @@ export function MembershipCheckout({ keyId, userId, quote, disabled, onQuoteReje
       if (!data.order) throw new Error('Recover this payment request before continuing.');
       const order = data.order; pending.orderId = order.id; sessionStorage.setItem(storageKey, JSON.stringify(pending));
       if (order.financialState === 'captured') { await checkAccess(true); return; }
+      if(!PLAN_TERMS[order.planCode])throw new Error('The saved plan needs review. Do not start another payment.');
+      if(useSaved&&(!savedCheckout||savedCheckout.id!==order.id||savedCheckout.totalPaise!==order.totalPaise||savedCheckout.planVersionId!==order.planVersionId))throw new Error('Reload and review the saved purchase before continuing.');
+      if(!useSaved&&(order.planCode!==quote.planCode||order.planVersionId!==quote.planVersionId||order.totalPaise!==quote.totalPaise)){setSavedCheckout(order);setMessage(`Your saved ${PLAN_TERMS[order.planCode]}-month checkout totals ${formatPaise(order.totalPaise)}. Review that original purchase before continuing; no new checkout was created.`);return;}
+      setSavedCheckout(null);
       const Constructor = (window as Window & { Razorpay?: RazorpayConstructor }).Razorpay;
       if (!Constructor || !data.checkout || data.checkout.keyId !== keyId || !/^rzp_(test|live)_[A-Za-z0-9]+$/.test(keyId) || order.currency !== 'INR') throw new Error('Checkout is unavailable. Your existing order is retained.');
       const checkout = new Constructor({ key: keyId, order_id: data.checkout.providerOrderId, amount: order.totalPaise, currency: order.currency, name: 'AirBharath Workspace', description: `${keyId.startsWith('rzp_test_') ? 'Test Mode · ' : ''}prepaid Workspace membership`,
@@ -85,6 +92,7 @@ export function MembershipCheckout({ keyId, userId, quote, disabled, onQuoteReje
     {keyId.startsWith('rzp_test_') && <p className="mb-3 text-xs font-semibold text-primary">Razorpay Test Mode · no real money</p>}
     <button type="button" disabled={disabled || busy || checking || awaitingActivation || !ready || !quote} onClick={() => void pay()} className="flex w-full items-center justify-center rounded-xl bg-primary px-5 py-4 text-sm font-semibold text-primary-foreground disabled:opacity-50">{checking ? 'Activating your Workspace…' : awaitingActivation ? 'Payment verification pending' : busy ? 'Recovering your order…' : quote ? `Pay ${formatPaise(quote.totalPaise)}` : 'Payment unavailable'}</button>
     <p className="mt-4 text-xs leading-6 text-muted-foreground">Creator access requires verified provider capture timing and normal membership fulfillment. Checkout success alone does not grant access.</p>
+    {savedCheckout&&<div role="status" className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm"><p>Recover saved {PLAN_TERMS[savedCheckout.planCode]}-month purchase · {formatPaise(savedCheckout.totalPaise)}. This continues the original order and its frozen price.</p><button type="button" disabled={busy||checking||!ready} onClick={()=>void pay(true)} className="mt-3 min-h-11 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground">Continue saved checkout · {formatPaise(savedCheckout.totalPaise)}</button></div>}
     {message && <><p role="status" className="mt-4 text-sm">{message}</p><button type="button" disabled={checking} onClick={() => void checkAccess(awaitingActivation)} className="mt-3 text-sm underline">{checking ? 'Activating…' : 'Check membership status'}</button></>}
   </div>;
 }

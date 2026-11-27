@@ -225,6 +225,132 @@
       "when": 1792014286931,
       "tag": "0031_workspace_phone_only_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793425385997,
+      "tag": "0032_workspace_course_media",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793428126930,
+      "tag": "0033_workspace_media_processing",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793687973535,
+      "tag": "0034_workspace_course_publishing",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793714956732,
+      "tag": "0035_workspace_project_artwork",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793771590465,
+      "tag": "0036_course_reviews_discovery_commerce",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793777552474,
+      "tag": "0037_workspace_self_publishing",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793874293802,
+      "tag": "0038_creator_course_settlement",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1793954888591,
+      "tag": "0039_creator_razorpayx_payouts",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1793981191153,
+      "tag": "0040_creator_analytics_paid_origin",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1793996390037,
+      "tag": "0041_workspace_launch_operations",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1794076456963,
+      "tag": "0042_mentor_preregistration",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1794209818439,
+      "tag": "0043_creator_bank_validation_prepaid_renewal",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1794286384465,
+      "tag": "0044_workspace_launch_runtime_remediation",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1794332699131,
+      "tag": "0045_academy_prospective_entitlements",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1794911899568,
+      "tag": "0046_creator_sponsored_revenue_sharing",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1795069557373,
+      "tag": "0047_sponsored_deferred_settlement",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1795521600000,
+      "tag": "0048_mentor_withdrawal_suppression",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1795608000000,
+      "tag": "0049_workspace_staging_grants",
+      "breakpoints": true
     }
   ]
 }

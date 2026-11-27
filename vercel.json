@@ -1,9 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "crons": [
-    {
-      "path": "/api/internal/workspace/reconcile",
-      "schedule": "0 0 * * *"
-    }
-  ]
+  "regions": ["sin1"]
 }

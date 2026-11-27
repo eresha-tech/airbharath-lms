@@ -1,6 +1,7 @@
+import {commercialPolicy} from '@/lib/workspace/payments/model';
 import {sanitizeWorkspaceAnalytics} from '@/lib/workspace/analytics-privacy';
 import {describe,expect,it} from 'vitest';
-import {grantCommand,grantTerm,revokeCommand,resolveComplimentaryAccess,type GrantEvidence} from '@/lib/workspace/access/model';
+import {grantCommand,grantEnvironment,grantTerm,revokeCommand,resolveComplimentaryAccess,type GrantEvidence} from '@/lib/workspace/access/model';
 import {creatorCapabilities} from '@/lib/workspace/creator/model';
 import {decodeCursor,encodeCursor,escapedSearch,listParams} from '@/lib/workspace/admin/pagination';
 const now=new Date('2026-10-13T12:00:00.000Z'),id='00000000-0000-4000-8000-000000000001';
@@ -27,3 +28,14 @@ describe('Admin pagination is bounded and cursor context cannot be mixed',()=>{
 });
 
 it.each(['/admin/workspace','/admin/workspace/access-grants/'+id,'/admin/workspace/creators/'+id,'/admin/workspace/events/'+id])('new private admin path %s masks IDs, contact search and grant/financial data',path=>{const event={uuid:'synthetic',event:'$pageview',timestamp:now,properties:{$current_url:'https://example.test'+path+'?q=private-contact&user='+id,pathname:path,$device_id:'synthetic_device_01',distinct_id:id,grantId:id,email:'private-contact',reason:'private-reason',amountPaise:1000}};const safe=sanitizeWorkspaceAnalytics(event);expect(safe).not.toBeNull();expect(JSON.stringify(safe)).not.toMatch(/private-contact|private-reason|amountPaise|grantId/);expect(JSON.stringify(safe)).not.toContain(id);expect(safe?.properties.$process_person_profile).toBe(false);expect(sanitizeWorkspaceAnalytics({...event,event:'$autocapture'})).toBeNull();});
+
+describe('Staging grants are independent authoring authorization',()=>{
+ it('recognizes the explicit staging grant environment only',()=>{expect(grantEnvironment('staging')).toBe('staging');expect(()=>grantEnvironment('preview')).toThrow('unavailable');});
+ it.each(['development','test','staging','production'])('never interchanges %s grant evidence',source=>{
+  for(const runtime of ['development','test','staging','production'])expect(creatorCapabilities(null,now,runtime,false,{...grant,environment:source}).canEditWorkspace).toBe(source===runtime);
+ });
+ it.each(['live','test'])('paid %s evidence cannot authorize staging',providerMode=>{
+  const evidence={profileStatus:'enabled' as const,providerMode,commercialPolicyVersion:commercialPolicy(providerMode as 'live'|'test'),activationState:'fulfilled' as const,membership:{startsAt:now,endsAt:new Date('2027-01-13T12:00:00.000Z'),fulfilledAt:now,accessGrantedAt:now}};
+  expect(creatorCapabilities(evidence,now,providerMode==='live'?'production':'test').canEditWorkspace).toBe(true);expect(creatorCapabilities(evidence,now,'staging').canEditWorkspace).toBe(false);
+ });
+});

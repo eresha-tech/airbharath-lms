@@ -38,6 +38,7 @@ export default function EnrollButton({
   const [enrollError, setEnrollError] = useState("");
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [pendingVerification,setPendingVerification] = useState<{razorpay_order_id:string;razorpay_payment_id:string;razorpay_signature:string}|null>(null);
 
   const router = useRouter();
 
@@ -95,8 +96,24 @@ export default function EnrollButton({
     }
   };
 
+  const confirmPayment = async (evidence: {razorpay_order_id:string;razorpay_payment_id:string;razorpay_signature:string}) => {
+    setPendingVerification(evidence);
+    setIsEnrolling(true);
+    setEnrollError("");
+    try {
+      const res=await fetch("/api/payments/razorpay/verify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(evidence)});
+      const result=await res.json();
+      if(!res.ok||!result.success) throw new Error(result.error||"Payment confirmation is pending.");
+      setPendingVerification(null);
+      router.refresh();router.push(customRedirectUrl||`/dashboard/courses/${courseId}`);
+    } catch(error) {
+      setEnrollError((error instanceof Error?error.message:"Connection failed.")+" Retry confirmation below. Your existing order will be checked before another payment.");
+    } finally {setIsEnrolling(false);}
+  };
+
   const handleEnroll = async () => {
     setEnrollError("");
+    if(pendingVerification){await confirmPayment(pendingVerification);return;}
     let activeUser = user;
     if (!activeUser) {
       const redirectToLogin = () => {
@@ -157,6 +174,13 @@ export default function EnrollButton({
         return;
       }
 
+      if(order.resumed) {
+        const recovered=await fetch("/api/payments/razorpay/recover",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId:order.id})});
+        const result=await recovered.json();
+        if(!recovered.ok){setEnrollError(result.error||"Payment status is uncertain. Please retry checking your existing order.");setIsEnrolling(false);return;}
+        if(result.success){router.refresh();router.push(customRedirectUrl||`/dashboard/courses/${courseId}`);return;}
+      }
+
       track("checkout_started", {
         course_id: courseId,
         course_title: courseTitle,
@@ -172,31 +196,8 @@ export default function EnrollButton({
         name: "Air Bharath LMS",
         description: `Enrollment for ${courseTitle}`,
         order_id: order.id,
-        handler: async function (response: any) {
-          try {
-            const verifyRes = await fetch("/api/payments/razorpay/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
-            });
-
-            const verifyData = await verifyRes.json();
-            if (verifyData.success || verifyData.message === "Success") {
-              router.refresh();
-              router.push(customRedirectUrl || `/dashboard/courses/${courseId}`);
-            } else {
-              setEnrollError(verifyData.error || "Payment verification failed.");
-              setIsEnrolling(false);
-            }
-          } catch (err) {
-            console.error("Verification error:", err);
-            setEnrollError("Network error verifying payment.");
-            setIsEnrolling(false);
-          }
+        handler: async function (response: {razorpay_order_id:string;razorpay_payment_id:string;razorpay_signature:string}) {
+          await confirmPayment(response);
         },
         modal: {
           ondismiss: function () {
@@ -313,7 +314,7 @@ export default function EnrollButton({
         ) : (
           <span className="flex items-center justify-center gap-1.5">
             <span>
-              {price === 0
+              {pendingVerification ? "Retry payment confirmation" : price === 0
                 ? "Enroll Free"
                 : `Enroll Now • ₹${finalDisplayPrice.toLocaleString("en-IN")}`}
             </span>

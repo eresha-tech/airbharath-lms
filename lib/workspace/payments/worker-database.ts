@@ -4,7 +4,7 @@ import * as schema from '@/lib/db/schema';
 import { createDatabaseClient, databaseConfiguration } from '@/lib/db/configuration';
 
 // Dedicated pool: never SET session limits on the shared LMS connection pool.
-export function createFinancialWorkerDatabase(env: Record<string, string | undefined> = process.env, applicationName: 'workspace_financial_worker' | 'workspace_refund_notice_worker' = 'workspace_financial_worker') {
+export function createFinancialWorkerDatabase(env: Record<string, string | undefined> = process.env, applicationName: 'workspace_financial_worker' | 'workspace_refund_notice_worker' | 'course_financial_worker' | 'workspace_media_worker' = 'workspace_financial_worker') {
   let options: ReturnType<typeof databaseConfiguration>;
   try { options = databaseConfiguration(env, 'worker', applicationName); }
   catch { throw new Error('worker_database_unavailable'); }

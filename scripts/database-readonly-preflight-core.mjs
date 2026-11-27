@@ -2,11 +2,12 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { queries } from './database-readonly-queries.mjs';
+import {expectedRoutines,signature,supplementalIndexes,expectedSequences,triggerDefinition,routineAttributes} from './database-catalog-expectations.mjs';
 import { safeDiagnostic } from './database-readonly-diagnostics.mjs';
 
 const sha = value => createHash('sha256').update(value).digest('hex');
-// Reviewed additive 0031: old SQL hashes unchanged; exact 32-entry chain remains pinned.
-const pinnedManifest = 'e9494753700c4df15ce57261e7431ba8d0451c1e41d46db485a7d55886f6eaf8';
+// Reviewed additive 0049 staging grants: historical SQL unchanged; exact 50-entry chain remains pinned.
+const pinnedManifest = '2c1672b43727d6aaf5821c74616bcd82602c7d3a23af544fe1c3143eb43665fe';
 const identifier = value => typeof value === 'string' && /^[A-Za-z_][A-Za-z0-9_$]{0,62}$/.test(value);
 export class PreflightError extends Error {
   constructor(code, diagnostic = null) { super(code); this.name = 'PreflightError'; this.code = code; this.diagnostic = diagnostic; }
@@ -80,13 +81,13 @@ export function preflightConfiguration(env) {
 
 export function loadReviewedSource(root = fileURLToPath(new URL('../', import.meta.url))) {
   const journal = JSON.parse(readFileSync(root + '/drizzle/meta/_journal.json', 'utf8')).entries;
-  if (journal.length !== 32 || journal.some((e, i) => e.idx !== i || !/^\d{4}_[a-z0-9_]+$/.test(e.tag) || !Number.isSafeInteger(e.when) || (i && e.when <= journal[i-1].when))) fail('preflight_source_unreviewed');
+  if (journal.length !== 50 || journal.some((e, i) => e.idx !== i || !/^\d{4}_[a-z0-9_]+$/.test(e.tag) || !Number.isSafeInteger(e.when) || (i && e.when <= journal[i-1].when))) fail('preflight_source_unreviewed');
   const migrations = journal.map(e => ({ ...e, sql: readFileSync(root + '/drizzle/' + e.tag + '.sql', 'utf8') }));
   const manifest = migrations.map(e => ({ idx: e.idx, sha256: sha(e.sql), tag: e.tag, when: e.when }));
   if (sha(JSON.stringify(manifest)) !== pinnedManifest) fail('preflight_source_unreviewed');
   const reviewedFiles = ['drizzle/meta/_journal.json','lib/db/schema.ts', ...journal.flatMap(e => ['drizzle/'+e.tag+'.sql', 'drizzle/meta/'+e.tag.slice(0,4)+'_snapshot.json'])].sort();
   const sourceFiles = reviewedFiles.map(path => ({ path, sha256: sha(readFileSync(root+'/'+path)) }));
-  if (sha(JSON.stringify(sourceFiles)) !== '2fed961b801f528b8c92c2f200d312e4abb9d95a22e1cffa40a27b289d6b9ba9') fail('preflight_source_unreviewed');
+  if (sha(JSON.stringify(sourceFiles)) !== "e7fef12e7a0f05f6f7ddb967eb84c6e513462a0924605f54e2be266609c879e9") fail('preflight_source_unreviewed');
   const snapshots = journal.map(e => JSON.parse(readFileSync(root + '/drizzle/meta/' + e.tag.slice(0,4) + '_snapshot.json', 'utf8')));
   if (snapshots.some((s, i) => s.dialect !== 'postgresql' || (i && s.prevId !== snapshots[i-1].id))) fail('preflight_snapshot_lineage_invalid');
   return { manifest, migrations, snapshots };
@@ -112,14 +113,6 @@ export function reconcileLedger(rows, source, present, populated) {
   return { state: 'MATCHED_PREFIX', installed: source.manifest.slice(0,rows.length).map(e => e.tag), pending: source.manifest.slice(rows.length).map(e => e.tag), problems: [] };
 }
 
-function expectedRoutines(migrations) {
-  const functions = new Map(), triggers = new Map();
-  for (const m of migrations) {
-    for (const match of m.sql.matchAll(/CREATE(?: OR REPLACE)? FUNCTION\s+(?:public\.)?(\w+)\(\)\s+[\s\S]*?AS\s+\$\$([\s\S]*?)\$\$/g)) functions.set(match[1], bodyHash(match[2]));
-    for (const match of m.sql.matchAll(/CREATE(?: CONSTRAINT)? TRIGGER\s+(\w+)\s+[\s\S]*?ON\s+(?:public\.)?(\w+)[\s\S]*?EXECUTE FUNCTION\s+(?:public\.)?(\w+)\(\)/g)) triggers.set(match[2] + '.' + match[1], match[3]);
-  }
-  return { functions, triggers };
-}
 const action = { a: 'no action', r: 'restrict', c: 'cascade', n: 'set null', d: 'set default' };
 const typeName = s => s?.replaceAll('"','').replace(/^public\./,'').replace(/numeric\((\d+),\s*(\d+)\)/, 'numeric($1,$2)');
 
@@ -136,7 +129,11 @@ export function assessCatalog(catalog, ledger, source) {
   }
   for (const e of catalog.enums) if (!(e.schema+'.'+e.name in snapshot.enums)) findings.push('unexpected_enum:'+e.schema+'.'+e.name);
   const tables = catalog.objects.filter(o => o.kind === 'r' || o.kind === 'p');
-  for (const o of catalog.objects) if (o.kind==='S' && !(o.schema==='drizzle' && o.name==='__drizzle_migrations_id_seq')) findings.push('unreviewed_sequence:'+o.schema+'.'+o.name);
+  const sequences=expectedSequences(prefix),extras=supplementalIndexes(prefix);
+  for(const o of catalog.objects.filter(o=>o.kind==='S'))if(!sequences.some(e=>e.schema===o.schema&&e.name===o.name))findings.push('unreviewed_sequence:'+o.schema+'.'+o.name);
+  if(catalog.sequences)for(const e of sequences){const actual=catalog.sequences.find(a=>a.schema===e.schema&&a.name===e.name);if(!actual||Object.entries(e).some(([k,v])=>actual[k]!==v))findings.push('sequence_definition_mismatch:'+e.schema+'.'+e.name);}
+  else findings.push('catalog_sequences_unavailable');
+  for(const [,table,name,definition]of extras)if(!catalog.indexes.some(i=>i.schema==='public'&&i.table===table&&i.name===name&&i.definition===definition&&i.valid&&i.ready))findings.push('supplemental_index_mismatch:'+table+'.'+name);
   for (const o of catalog.objects) if (['v','m','f'].includes(o.kind)) findings.push('unreviewed_relation:'+o.schema+'.'+o.name);
   for (const table of tables) if (!(table.schema+'.'+table.name in expected) && !(table.schema==='drizzle' && table.name==='__drizzle_migrations')) findings.push('unexpected_table:'+table.schema+'.'+table.name);
   for (const [key, table] of Object.entries(expected)) {
@@ -154,7 +151,7 @@ export function assessCatalog(catalog, ledger, source) {
       if (!actual || !actual.validated) findings.push('fk_mismatch:'+key+'.'+fk.name);
       else if (actual.name!==fk.name.slice(0,63)) findings.push('fk_name_review:'+key+'.'+actual.name);
     }
-    const knownIndexes = new Set([...Object.values(table.indexes).map(i=>i.name.slice(0,63)), ...Object.values(table.uniqueConstraints).map(c=>c.name.slice(0,63)), ...Object.values(table.compositePrimaryKeys).map(c=>c.name.slice(0,63)), (table.name+'_pkey').slice(0,63)]);
+    const knownIndexes = new Set([...extras.filter(([,t])=>t===table.name).map(([, ,name])=>name),...Object.values(table.indexes).map(i=>i.name.slice(0,63)), ...Object.values(table.uniqueConstraints).map(c=>c.name.slice(0,63)), ...Object.values(table.compositePrimaryKeys).map(c=>c.name.slice(0,63)), (table.name+'_pkey').slice(0,63)]);
     for (const i of catalog.indexes.filter(i=>i.schema+'.'+i.table===key)) if (!knownIndexes.has(i.name) || !i.valid || !i.ready) findings.push('unreviewed_or_invalid_index:'+key+'.'+i.name);
     for (const index of Object.values(table.indexes)) if (!catalog.indexes.some(i => i.schema+'.'+i.table===key && i.name===index.name.slice(0,63) && i.valid && i.ready && i.unique===index.isUnique)) findings.push('index_mismatch:'+key+'.'+index.name);
     for (const [collection,kind] of [[table.uniqueConstraints,'u'],[table.checkConstraints,'c'],[table.compositePrimaryKeys,'p']]) for (const c of Object.values(collection)) {
@@ -163,12 +160,12 @@ export function assessCatalog(catalog, ledger, source) {
     if (Object.values(table.columns).some(c => c.primaryKey) && !catalog.constraints.some(c => c.schema+'.'+c.table===key && c.type==='p' && c.validated)) findings.push('primary_key_missing:'+key);
   }
   const routines = expectedRoutines(prefix), future = expectedRoutines(source.migrations.slice(prefix.length));
-  for (const [name,hash] of routines.functions) {
-    const f = catalog.functions.find(f => f.name===name && f.arguments==='');
-    if (!f || bodyHash(f.body)!==hash || f.security_definer) findings.push('function_mismatch:'+name);
+  for (const [,expected] of routines.functions) {
+    const f=catalog.functions.find(f=>f.schema==='public'&&f.name===expected.name&&signature(f.arguments)===expected.arguments);
+    if(!f||bodyHash(f.body)!==expected.hash||f.security_definer||f.language!==expected.language||JSON.stringify(routineAttributes(f.definition))!==JSON.stringify(expected.attributes))findings.push('function_mismatch:'+expected.name+'('+expected.arguments+')');
   }
-  for (const [key,fn] of routines.triggers) if (!catalog.triggers.some(t => t.table+'.'+t.name===key && t.function===fn && t.function_schema==='public' && t.enabled==='O')) findings.push('trigger_mismatch:'+key);
-  for (const f of catalog.functions) if (!routines.functions.has(f.name)) findings.push((future.functions.has(f.name)?'pending_function_name_conflict:':'unreviewed_function:')+f.name);
+  for (const [key,e] of routines.triggers) if (!catalog.triggers.some(t => t.table+'.'+t.name===key && t.function===e.function && triggerDefinition(t.definition)===e.definition && t.type===e.type && t.deferrable===e.deferrable && t.deferred===e.deferred && t.function_schema==='public' && t.enabled==='O')) findings.push('trigger_mismatch:'+key);
+  for (const f of catalog.functions) if (!routines.functions.has(f.name+'('+signature(f.arguments)+')')) findings.push((future.functions.has(f.name+'('+signature(f.arguments)+')')?'pending_function_name_conflict:':'unreviewed_function:')+f.name);
   for (const t of catalog.triggers) if (!routines.triggers.has(t.table+'.'+t.name)) findings.push((future.triggers.has(t.table+'.'+t.name)?'pending_trigger_name_conflict:':'unreviewed_trigger:')+t.table+'.'+t.name);
   // Snapshots/normalized names do not establish complete defaults/check/index/trigger semantics.
   return { state: findings.length ? 'REVIEW_REQUIRED' : 'STRUCTURAL_MATCH_REVIEW_REQUIRED', findings: [...new Set(findings)],
@@ -206,7 +203,7 @@ export async function inspectDatabase({ env, connect, source = /** @type {Return
         if (expired) fail('preflight_deadline_exceeded');
         try {
           const rows = await tx.savepoint(sp => sp.unsafe(queries[name],parameters));
-          if (rows.length>({objects:2000,columns:10000,constraints:2000,indexes:2000,functions:1000,triggers:1000,ledger:32}[name] ?? 100)) { limitations.push(name+':catalog_limit_exceeded'); return null; }
+          if (rows.length>({objects:2000,columns:10000,constraints:2000,indexes:2000,functions:1000,triggers:1000,ledger:source.manifest.length}[name] ?? 100)) { limitations.push(name+':catalog_limit_exceeded'); return null; }
           return Array.from(rows);
         } catch (error) {
           const diagnostic = safeDiagnostic(error, name);
@@ -247,7 +244,7 @@ export async function inspectDatabase({ env, connect, source = /** @type {Return
         || !tempEvidenceValid || identity.no_temp_namespace!==true) fail('preflight_readonly_role_required');
       if (roles.temporary_objects) limitations.push('public_temp_present_unused_by_inspector');
       const catalog = {};
-      for (const name of ['schemas','objects','columns','constraints','indexes','functions','triggers','enums']) catalog[name] = await read(name);
+      for (const name of ['schemas','objects','columns','constraints','indexes','functions','triggers','enums','sequences']) catalog[name] = await read(name);
       const presence = (await read('ledgerPresence'))?.[0]?.present;
       const ordinary = name => catalog.objects?.some(o=>o.schema==='public' && o.name===name && ['r','p'].includes(o.kind) && !o.rls);
       const populated = ordinary('users') ? (await read('populated'))?.[0]?.populated : null;

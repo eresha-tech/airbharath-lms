@@ -1,0 +1,1 @@
+CREATE INDEX "orders_paid_origin_idx" ON "orders" USING btree ("user_id","course_id") WHERE "orders"."status" IN ('paid','refunded','chargeback') AND "orders"."razorpay_payment_id" IS NOT NULL AND "orders"."amount">0;

@@ -33,6 +33,7 @@ export async function POST(req: Request) {
     }
 
     await setSessionCookie({
+      authenticatedAt: Math.floor(Date.now() / 1000),
       id: res.user.id,
       phone: res.user.phone,
       fullName: res.user.fullName,

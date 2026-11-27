@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       with: { module: { columns: { courseId: true } } },
     });
 
-    if (!targetLesson?.module) {
+    if (!targetLesson?.module || targetLesson.workspaceRetired) {
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
     }
     const actualCourseId = targetLesson.module.courseId;

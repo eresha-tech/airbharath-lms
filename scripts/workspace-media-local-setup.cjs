@@ -1,0 +1,44 @@
+const fs=require('node:fs'),path=require('node:path'),{randomUUID}=require('node:crypto');
+const {localTarget}=require('./workspace-local-target.cjs');
+let stage='target';
+(async()=>{let c;try{
+ const t=await localTarget({write:true});c=t.client;
+ const {assertDestructiveDatabaseOperation}=await import('./database-safety.mjs');assertDestructiveDatabaseOperation({databaseEnv:t.env.DATABASE_ENV,databaseUrl:t.env.DATABASE_URL,acknowledgement:t.env.ALLOW_DESTRUCTIVE_DB_OPERATION});
+ if((await c`select count(*)::int n from drizzle.__drizzle_migrations`)[0].n!==38)throw Error('migration_0037_required');
+ const dir=path.join(t.root,'output/audits/workspace-phase19-local'),file=path.join(dir,'fixture.json');fs.mkdirSync(dir,{recursive:true});
+ if(fs.existsSync(file)){
+  const f=JSON.parse(fs.readFileSync(file));
+  const rows=await c`select id,role,full_name from users where id in (${f.owner},${f.adminId},${f.other})`;
+  if(rows.length!==3||rows.some(r=>!r.full_name?.startsWith('SYNTHETIC PHASE19 FOUNDER '))||rows.find(r=>r.id===f.adminId)?.role!=='admin')throw Error('fixture_identity_mismatch');
+  console.log(JSON.stringify({prepared:true,reused:true,creatorPath:`/workspace/courses/${f.draftId}/build`,adminPath:`/admin/workspace/course-builds/${f.projectId}`}));return;
+ }
+ stage='loader';
+ const schema=t.createLoader({'server-only':{}})('@/lib/db/schema'),{drizzle}=t.req('drizzle-orm/postgres-js');
+ const load=t.createLoader({'server-only':{},'@/lib/auth':{getSession:async()=>null},'@/lib/db':{db:drizzle(c,{schema})}});
+ stage='users';
+ const owner=randomUUID(),adminId=randomUUID(),other=randomUUID();
+ await c`insert into users(id,full_name,role) values(${owner},'SYNTHETIC PHASE19 FOUNDER CREATOR','student'),(${adminId},'SYNTHETIC PHASE19 FOUNDER ADMIN','admin'),(${other},'SYNTHETIC PHASE19 FOUNDER OTHER','student')`;
+ stage='eligibility';
+ const [settings]=await c`select id from workspace_eligibility_settings where is_current`,[policy]=await c`select id from workspace_policy_versions where is_current`;
+ const em=load('@/lib/workspace/eligibility/model'),parsed=em.validateSubmission({submissionKey:randomUUID(),settingsId:settings.id,policyId:policy.id,category:'pilot_flight_crew',aviationProfession:'',experienceOption:'two_years',professionalStatus:'retired',professionalStatusDetail:'',professionalProfileUrl:'https://example.com/synthetic-founder',teachingCategory:'flight_operations',courseIdea:'Synthetic founder acceptance course about aviation safety and private authoring',declarations:Object.fromEntries(Object.keys(em.DECLARATIONS).map(k=>[k,true]))});
+ if(!parsed.success)throw Error('synthetic_eligibility_invalid');await load('@/lib/workspace/eligibility/service').submitEligibility(owner,parsed.data);
+ stage='terms';
+ const terms=load('@/lib/workspace/terms/model').currentCreatorTerms();await load('@/lib/workspace/terms/service').createCreatorTermsService(load('@/lib/workspace/terms/repository').postgresCreatorTermsStore).accept(owner,{acknowledged:true},'"'+terms.contentHash+'"');
+ stage='grant';
+ const grant=await load('@/lib/workspace/access/repository').createAccessGrant(adminId,{targetUserId:owner,reason:'Synthetic local founder acceptance for Creator Workspace Phase 1.9 only',expiresAt:new Date(Date.now()+14*86400000).toISOString(),requestKey:randomUUID()});
+ stage='services';
+ const now=()=>new Date(),cr=load('@/lib/workspace/creator/repository'),rr=load('@/lib/workspace/review/repository'),br=load('@/lib/workspace/builder/repository');
+ const creator=load('@/lib/workspace/creator/service').creatorService(cr.postgresCreatorStore,'development',now),review=load('@/lib/workspace/review/service').reviewService(cr.postgresCreatorStore,rr.postgresAdminReviewStore,'development',now),builder=load('@/lib/workspace/builder/service').builderService(br.postgresBuildStore,'development',now);
+ stage='proposal';
+ const draft=await creator.create(owner,randomUUID(),{title:'Founder Test — Private Aviation Studio',category:'cabin_crew',description:'Synthetic local acceptance course for private lesson editing, multimedia upload, processing, resources and captions. This content must never be published.',targetLearner:'Synthetic founder test learner',learningOutcomes:['Create and preview a private multimedia lesson'],outline:[{title:'01 · Private Studio test',description:'Synthetic acceptance module',ordering:0}],tentativePricePaise:null});
+ stage='review';
+ const submission=await review.submit(owner,draft.id,{expectedDraftVersion:1,requestKey:randomUUID()});await review.review(adminId,submission.id,{action:'start_review',expectedStatus:'submitted',requestKey:randomUUID()});await review.review(adminId,submission.id,{action:'approve',expectedStatus:'under_review',requestKey:randomUUID()});
+ stage='builder';
+ const started=await builder.start(owner,draft.id,{approvedSubmissionId:submission.id}),tree=await builder.read(owner,draft.id),moduleId=tree.modules[0].id;
+ const result=await builder.mutate(owner,draft.id,{action:'create_lesson',moduleId,content:{title:'01 · Upload video and resources',summary:'Private synthetic content for founder testing',content:'Original plain text. Edit, save and reload this lesson before testing media.',contentFormat:'plain_text'}});
+ const lessonId=result.lessons[0].id;
+ const second=await builder.mutate(owner,draft.id,{action:'create_lesson',moduleId,content:{title:'02 · Text and Markdown',summary:'Test unsaved text and format changes',content:'This lesson starts as plain text. No learner data is associated with it.',contentFormat:'plain_text'}});
+ const f={localOnly:true,owner,adminId,other,grantId:grant.id,grantExpiresAt:grant.expiresAt,draftId:draft.id,projectId:started.project.id,moduleId,lessonId,secondLessonId:second.lessons.find(l=>l.id!==lessonId).id,createdAt:new Date().toISOString()};
+ fs.writeFileSync(file,JSON.stringify(f,null,2));
+ console.log(JSON.stringify({prepared:true,syntheticUsers:3,complimentaryGrant:true,financialOperations:0,creatorPath:`/workspace/courses/${f.draftId}/build`,adminPath:`/admin/workspace/course-builds/${f.projectId}`}));
+}finally{await c?.end({timeout:2});}})().catch(e=>{console.error('Local synthetic setup failed at '+stage+' ['+e.name+'] ('+(/^[A-Za-z0-9_]+$/.test(e.code||'')?e.code:'guard_or_fixture')+'); private details suppressed.');process.exitCode=1;});

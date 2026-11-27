@@ -1,7 +1,6 @@
 import type { CourseSummary } from './dashboard';
 import { createHash } from 'node:crypto';
 import type { SubmissionTransaction } from '../review/service';
-import { permitsDraftEdit } from '../review/model';
 import type { workspaceCourseDrafts, workspaceCreatorProfileDetails } from '@/lib/db/schema';
 import { UUID } from '../eligibility/model';
 import type { AccessEvidence } from '../activation/model';
@@ -22,7 +21,7 @@ export interface CreatorTransaction {
   update(id: string, expectedVersion: number, content: DraftContent, now: Date): Promise<Draft | null>;
   saveDetails(profileId: string, expectedVersion: number, content: ProfileContent, now: Date): Promise<ProfileDetails | null>;
 }
-export interface CreatorStore { transaction<T>(userId: string, work: (tx: CreatorTransaction) => Promise<T>): Promise<T> }
+export interface CreatorStore { transaction<T>(userId: string, work: (tx: CreatorTransaction) => Promise<T>, readOnly?: boolean): Promise<T> }
 export function creatorService(store: CreatorStore, environment: string | undefined, clock = () => new Date()) {
   async function run<T>(userId: string, edit: boolean, work: (tx: CreatorTransaction, context: CreatorContext, now: Date) => Promise<T>) {
     return store.transaction(userId, async tx => {
@@ -30,7 +29,7 @@ export function creatorService(store: CreatorStore, environment: string | undefi
       const capabilities = creatorCapabilities(context.evidence, now, environment, context.financialReview, context.grant);
       if (!(edit ? capabilities.canEditWorkspace : capabilities.canViewCreatorWorkspace) || !context.profileId) throw new CreatorError('restricted');
       return work(tx, context, now);
-    });
+    }, !edit);
   }
   return {
     overview: (userId: string, page = 1) => run(userId, false, async (tx, context, now) => {
@@ -52,7 +51,6 @@ export function creatorService(store: CreatorStore, environment: string | undefi
       const content = validateDraft(input); const expectedVersion = version(expected);
       return run(userId, true, async (tx, context) => {
         if (!await tx.draft(id)) throw new CreatorError('not_found');
-        if (!permitsDraftEdit((await tx.reviews.latest(id))?.reviewStatus)) throw new CreatorError('review_locked');
         const now = clock();
         if (!creatorCapabilities(context.evidence, now, environment, context.financialReview, context.grant).canEditWorkspace) throw new CreatorError('restricted');
         const updated = await tx.update(id, expectedVersion, content, now);

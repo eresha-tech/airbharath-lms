@@ -1,0 +1,9 @@
+import Link from 'next/link';
+import {redirect} from 'next/navigation';
+import {desc,eq,sql} from 'drizzle-orm';
+import {db} from '@/lib/db';
+import {getAuthorizedAdminSession} from '@/lib/admin-authorization';
+import {workspaceCourseProjects as projects,workspaceCourseSubmissions as sources,workspacePublicationStates as states} from '@/lib/db/schema';
+export const dynamic='force-dynamic';
+export const metadata={title:'Creator Course Moderation',robots:{index:false,follow:false}};
+export default async function Page(){if(!await getAuthorizedAdminSession())redirect('/login');const rows=await db.select({id:projects.id,title:sql<string>`coalesce(${states.metadata}->>'title',${projects.sourceSnapshot}->>'title',${sources.title})`,status:states.status,moderation:states.moderation}).from(projects).leftJoin(sources,eq(sources.id,projects.approvedSubmissionId)).leftJoin(states,eq(states.projectId,projects.id)).orderBy(desc(projects.createdAt)).limit(100);return <div className="ph-no-capture mx-auto max-w-5xl space-y-6"><h1 className="text-3xl font-bold">Creator course moderation</h1><p className="text-muted-foreground">Creators publish and price independently. Inspect courses, request corrections, manage restrictions and resolve appeals. Showing the latest 100 courses.</p><div className="divide-y rounded-2xl border bg-card">{rows.map(r=><Link key={r.id} href={`/admin/workspace/publishing/${r.id}`} className="flex flex-wrap items-center justify-between gap-3 p-5 hover:bg-muted/40"><span className="font-medium">{r.title}</span><span className="text-sm">{r.status??'draft'} · {r.moderation?.restriction??'no moderation restriction'}{r.moderation?.appeal?' · appeal submitted':''}{r.moderation?.correction?' · corrections submitted':''}</span></Link>)}{!rows.length&&<p className="p-6">No Creator courses yet.</p>}</div></div>;}
