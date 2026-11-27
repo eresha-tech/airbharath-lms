@@ -5,5 +5,6 @@ export function commerceOrigin(request:Request) {
 }
 export function commerceFailure(error:unknown) {
  if(error instanceof CommerceError) return privateJson({error:error.message},error.status);
+ console.error('[commerceFailure]', error instanceof Error ? { name: error.name, message: error.message } : error);
  return privateJson({error:'Payment confirmation is temporarily unavailable. Your order can be retried safely.'},503);
 }
