@@ -89,6 +89,7 @@ async function recover(database:typeof db,injected:RecoveryProvider|undefined,sc
   }
  }
  async function drainDisputes() {
+  if(!injected&&process.env.COURSE_DISPUTE_POLLING_ENABLED!=='true'){await database.update(runs).set({lastError:null}).where(and(eq(runs.scope,scope),eq(runs.leaseToken,token),eq(runs.lastError,'provider_or_dispute_evidence_review')));return;}
   const run=await database.query.courseFinanceRuns.findFirst({where:eq(runs.scope,scope)});
   if(ready()&&run!.disputeNextAt<=new Date())try {
    const count=3,page=await bounded.disputes.all({count,skip:run!.disputeSkip});
