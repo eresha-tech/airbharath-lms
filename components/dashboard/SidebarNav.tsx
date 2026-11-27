@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  Layers,
 } from "lucide-react";
 import {
   Tooltip,
@@ -81,6 +82,16 @@ export const studentNavGroups: NavGroup[] = [
         title: "Student Feed",
         href: "/dashboard/feed",
         icon: Newspaper,
+      },
+    ],
+  },
+  {
+    groupTitle: "Creator",
+    items: [
+      {
+        title: "Creator Workspace",
+        href: "/workspace",
+        icon: Layers,
       },
     ],
   },
