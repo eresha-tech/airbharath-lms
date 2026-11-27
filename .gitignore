@@ -62,3 +62,12 @@ fileing.md
 # Local-only Phase 1.9 founder fixtures, logs and generated sample media
 /output/audits/workspace-phase19-local/
 /output/workspace-phase19-samples/
+
+# Local audit worktrees, build artifacts, and playwright outputs (keeps already-tracked files intact)
+/output/audits/
+/output/playwright/
+
+# Local secret scratch files
+.req
+staging-neon.env
+razorpayx-sandbox.env

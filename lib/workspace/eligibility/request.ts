@@ -6,7 +6,10 @@ export function eligibilitySameOrigin(request: Request) {
   try {
     const publicUrl = process.env.NEXT_PUBLIC_BASE_URL;
     if (!publicUrl && process.env.NODE_ENV === 'production') return false;
-    return new URL(origin).origin === new URL(publicUrl || request.url).origin && origin === new URL(origin).origin;
+    const reqOrigin = new URL(origin);
+    const expected = new URL(publicUrl || request.url);
+    const stripWww = (h: string) => h.replace(/^www\./, '');
+    return origin === reqOrigin.origin && reqOrigin.protocol === expected.protocol && stripWww(reqOrigin.host) === stripWww(expected.host);
   }
   catch { return false; }
 }

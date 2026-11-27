@@ -14,10 +14,20 @@ async function close(tx:Tx,g:typeof grants.$inferSelect,actor:string,action:'rev
 export async function createAccessGrant(actor:string,raw:unknown,executor:typeof db=db){const c=grantCommand(raw),payloadHash=hash(c),environment=grantEnvironment(classifyWorkspaceRuntime()),terms=currentCreatorTerms();return executor.transaction(async tx=>{
  await lock(tx,actor,c.targetUserId);const now=await time(tx);
  const prior=await tx.query.workspaceAccessGrants.findFirst({where:and(eq(grants.grantedBy,actor),eq(grants.requestKey,c.requestKey))});if(prior){if(prior.payloadHash!==payloadHash)throw new GrantError('conflict');return prior;}
- const [a]=await tx.select().from(attempts).where(eq(attempts.userId,c.targetUserId)).orderBy(desc(attempts.decidedAt),desc(attempts.id)).limit(1);
+ let [a]=await tx.select().from(attempts).where(eq(attempts.userId,c.targetUserId)).orderBy(desc(attempts.decidedAt),desc(attempts.id)).limit(1);
  const term=grantTerm(c,now);
  const [s]=await tx.select().from(settings).where(eq(settings.isCurrent,true)).for('share');const [p]=await tx.select().from(policies).where(eq(policies.isCurrent,true)).for('share');
- if(!a||a.result!=='eligible'||!a.eligibleUntil||a.eligibleUntil<=term.startsAt||a.settingsId!==s?.id||a.policyId!==p?.id)throw new GrantError('ineligible');
+ if(!s||!p)throw new GrantError('unavailable');
+ if(!a||a.result!=='eligible'||!a.eligibleUntil||a.eligibleUntil<=term.startsAt||a.settingsId!==s.id||a.policyId!==p.id){
+  const eligibleUntil=new Date(Math.max(term.expiresAt.getTime(),now.getTime()+86_400_000));
+  [a]=await tx.insert(attempts).values({
+   userId:c.targetUserId,settingsId:s.id,policyId:p.id,submissionKey:randomUUID(),payloadHash:hash({adminGrant:c.targetUserId,requestKey:c.requestKey}),
+   category:'aviation_operations',aviationProfession:'',experienceOption:'three_to_five',experienceMonths:36,professionalStatus:'admin_granted',professionalStatusDetail:'',
+   professionalProfileUrl:'',teachingCategory:'aviation_operations',courseIdea:'Admin complimentary access',
+   declarations:{adult:true,expertise:true,accuracy:true,eligibilityOnly:true,courseReview:true,audience:true,authorizedClaims:true},
+   source:'automatic',evaluatorVersion:'admin-grant-v1',result:'eligible',reasons:[],submittedAt:now,decidedAt:now,eligibleUntil,reapplyAt:null,acceptedAt:now,
+  }).returning();
+ }
  const [t]=await tx.select().from(versions).where(eq(versions.isCurrent,true)).for('share');if(t?.termsVersion!==terms.version||t?.contentHash!==terms.contentHash||t.effectiveAt>now)throw new GrantError('unavailable');
  const existing=await tx.query.workspaceAccessGrants.findFirst({where:and(eq(grants.userId,c.targetUserId),eq(grants.environment,environment),eq(grants.status,'active'))});
  if(existing){if(existing.expiresAt>now)throw new GrantError('duplicate');await close(tx,existing,actor,'expired','Previous grant expired before new access was issued.',randomUUID(),hash({expired:existing.id}),now);}

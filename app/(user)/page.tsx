@@ -4,7 +4,7 @@ import { WorkspaceIntroduction, LearningJourney, LearningBenefits, LearningTrust
 import { FinalCTA } from '@/components/landing/FinalCTA';
 import { readPublicCatalog } from '@/lib/public/catalog';
 import { publicMetadata } from '@/lib/public/metadata';
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 export const metadata = publicMetadata('/', 'AirBharath — Practical Skills for Your Next Step', 'Explore self-paced AirBharath courses, build practical skills and discover Creator Workspace for aviation professionals.');
 export default async function Home() {
     const catalog = await readPublicCatalog();

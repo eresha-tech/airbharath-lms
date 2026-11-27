@@ -1,12 +1,12 @@
 import 'server-only';
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, desc, asc, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { courses, coupons } from '@/lib/db/schema';
 import { advertisedBundleOffer, type PublicCatalog } from './catalog-model';
 export async function readPublicCatalog(): Promise<PublicCatalog> {
     try {
         const rows = await db.query.courses.findMany({
-            where: and(eq(courses.isPublished, true),sql`(${courses.workspaceProjectId} IS NULL OR ${courses.workspaceState}='live')`,sql`${courses.workspaceState} IS DISTINCT FROM 'suspended'`), orderBy: [asc(courses.createdAt), asc(courses.id)], limit: 6,
+            where: and(eq(courses.isPublished, true),sql`(${courses.workspaceProjectId} IS NULL OR ${courses.workspaceState}='live')`,sql`${courses.workspaceState} IS DISTINCT FROM 'suspended'`), orderBy: [desc(courses.isBundle), desc(courses.createdAt), asc(courses.id)], limit: 12,
             with: { discoveryStats: true, authors: { columns: { name: true }, orderBy: (a,{asc}) => [asc(a.orderIndex),asc(a.id)], limit: 1 } },
             columns: { workspaceProjectId: true, slug: true, title: true, shortDescription: true, description: true, thumbnailUrl: true,
                 price: true, accessDays: true, isBundle: true, certificateStatus: true },
