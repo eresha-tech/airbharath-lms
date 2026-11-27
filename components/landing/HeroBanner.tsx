@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { ArrowUpRight, Compass, GraduationCap, Layers, Mic } from 'lucide-react';
+import { ArrowUpRight, GraduationCap, Layers } from 'lucide-react';
 import { PublicAction } from '@/components/public/PublicUI';
 import { EcosystemBentoGrid } from '@/components/landing/EcosystemBentoGrid';
+import { AVIATOR_LOGO_URL, CHATTERBOX_LOGO_URL } from '@/components/landing/ProductsDropdown';
 import type { PublicCourse } from '@/lib/public/catalog-model';
 
 export function HeroBanner({ featured }: { featured?: PublicCourse }) {
@@ -45,12 +46,12 @@ export function HeroBanner({ featured }: { featured?: PublicCourse }) {
           <span className="public-ecosystem-bar-label">Part of the AirBharath Ecosystem</span>
           <div className="public-ecosystem-bar-items">
             <a href="http://aviator.airbharath.in/" target="_blank" rel="noopener noreferrer">
-              <Compass size={15} aria-hidden="true" />
+              <img src={AVIATOR_LOGO_URL} alt="" width={18} height={18} className="public-ecosystem-bar-logo" aria-hidden="true" />
               <span>Aviator</span>
               <ArrowUpRight size={13} aria-hidden="true" />
             </a>
             <a href="https://chatterboxai.in/" target="_blank" rel="noopener noreferrer">
-              <Mic size={15} aria-hidden="true" />
+              <img src={CHATTERBOX_LOGO_URL} alt="" width={18} height={18} className="public-ecosystem-bar-logo" aria-hidden="true" />
               <span>Chatterbox AI</span>
               <ArrowUpRight size={13} aria-hidden="true" />
             </a>

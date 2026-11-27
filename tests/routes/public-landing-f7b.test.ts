@@ -80,7 +80,7 @@ it('renders the ecosystem bento grid without timers or carousel controls', () =>
     expect(result).toContain('href="/courses/actual%20bundle"');
     expect(result).toContain('Aviator');
     expect(result).toContain('Chatterbox AI');
-    expect(result).toContain('Captain Mentorship');
+    expect(result).toContain('1:1 Aviation Mentorship');
     expect(result).not.toMatch(/carousel|Previous featured|Next featured|Pause|Play|₹/);
     expect(readFileSync('components/landing/HeroBanner.tsx', 'utf8')).not.toMatch(/setInterval|setTimeout|useEffect|useState/);
 });

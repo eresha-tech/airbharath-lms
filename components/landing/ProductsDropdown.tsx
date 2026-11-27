@@ -58,12 +58,31 @@ export const ECOSYSTEM_PRODUCTS: readonly EcosystemProduct[] = [
   },
 ] as const;
 
+export const AVIATOR_LOGO_URL = 'https://assets.airbharath.in/aviator/aviator-logo.png';
+export const CHATTERBOX_LOGO_URL = 'https://assets.airbharath.in/chatterbox/landing-page/logo-icon.png';
+
 export function ProductIcon({ icon }: { icon: EcosystemProduct['icon'] }) {
   switch (icon) {
     case 'aviator':
-      return <Plane size={18} aria-hidden="true" />;
+      return (
+        <img
+          src={AVIATOR_LOGO_URL}
+          alt="Aviator logo"
+          width={24}
+          height={24}
+          className="public-product-logo-img"
+        />
+      );
     case 'chatterbox':
-      return <Mic size={18} aria-hidden="true" />;
+      return (
+        <img
+          src={CHATTERBOX_LOGO_URL}
+          alt="Chatterbox AI logo"
+          width={24}
+          height={24}
+          className="public-product-logo-img"
+        />
+      );
     case 'academy':
       return <GraduationCap size={18} aria-hidden="true" />;
     case 'workspace':

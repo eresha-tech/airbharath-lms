@@ -109,16 +109,12 @@
 .public-bento-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:650;padding:4px 9px;border-radius:999px;background:var(--public-tint);color:var(--public-ink);border:1px solid var(--public-line)}
 .public-bento-pill-amber{background:hsl(38 92% 50% / .14);color:hsl(38 92% 45%);border-color:hsl(38 92% 50% / .28)}
 .dark .public-bento-pill-amber{color:hsl(38 92% 65%)}
+.public-bento-pill-blue{background:hsl(221 83% 53% / .12);color:hsl(221 83% 48%);border-color:hsl(221 83% 53% / .25)}
+.dark .public-bento-pill-blue{color:hsl(221 83% 68%)}
 .public-bento-arrow{color:var(--public-muted);transition:transform .2s ease,color .2s ease}
 .public-bento-card:hover .public-bento-arrow{transform:translate(2px,-2px);color:var(--public-ink)}
 .public-bento-card-body strong{display:block;font-family:var(--font-outfit),sans-serif;font-size:18px;font-weight:650;color:var(--public-ink);line-height:1.25}
 .public-bento-card-body p{font-size:13px;line-height:1.55;color:var(--public-muted);margin-top:6px}
-.public-bento-chatterbox{background:linear-gradient(135deg,hsl(221 83% 50%),hsl(234 78% 45%));border-color:hsl(221 83% 62% / .5);color:#fff}
-.public-bento-chatterbox .public-bento-card-body strong{color:#fff}
-.public-bento-chatterbox .public-bento-card-body p{color:rgba(255,255,255,.86)}
-.public-bento-chatterbox .public-bento-arrow{color:rgba(255,255,255,.85)}
-.public-bento-chatterbox:hover .public-bento-arrow{color:#fff}
-.public-bento-pill-light{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.26)}
 .public-bento-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .public-bento-tags span{font-size:11px;font-weight:550;padding:4px 8px;border-radius:6px;background:var(--public-tint);color:var(--public-muted);border:1px solid var(--public-line)}
 
@@ -133,3 +129,23 @@
   .public-bento-grid{grid-template-columns:1fr}
   .public-ecosystem-bar{flex-direction:column;align-items:flex-start}
 }
+
+/* Brand Logos & Creative Visual Accents */
+.public-product-logo-img,.public-ecosystem-bar-logo{width:auto;height:20px;object-fit:contain;border-radius:5px;flex-shrink:0}
+.public-ecosystem-bar-logo{height:16px}
+.public-product-icon-aviator{width:54px;padding:0 6px}
+.public-product-icon-aviator .public-product-logo-img{height:16px}
+.public-bento-top-right{display:inline-flex;align-items:center;gap:8px}
+.public-bento-brand-mark{min-width:42px;height:42px;border-radius:11px;display:grid;place-items:center;flex-shrink:0;overflow:hidden}
+.public-bento-brand-mark img{width:auto;height:26px;object-fit:contain;transition:transform .25s cubic-bezier(.22,1,.36,1)}
+.public-bento-card:hover .public-bento-brand-mark img{transform:scale(1.06)}
+.public-bento-brand-aviator{padding:0 10px;background:linear-gradient(135deg,hsl(160 84% 39% / .16),hsl(195 85% 45% / .12));border:1px solid hsl(160 84% 39% / .28);box-shadow:0 6px 16px -6px hsl(160 84% 39% / .25)}
+.public-bento-brand-aviator img{height:20px}
+.public-bento-brand-chatterbox{background:linear-gradient(135deg,hsl(221 83% 53% / .14),hsl(234 78% 55% / .10));border:1px solid hsl(221 83% 53% / .25);box-shadow:0 6px 16px -6px hsl(221 83% 53% / .2)}
+.public-bento-wave{display:inline-flex;align-items:center;gap:2.5px;height:14px;padding:0 2px}
+.public-bento-wave i{display:block;width:2.5px;border-radius:999px;background:hsl(221 83% 58%);animation:public-wave-pulse 1.2s ease-in-out infinite}
+.public-bento-wave i:nth-child(1){height:6px;animation-delay:0s}
+.public-bento-wave i:nth-child(2){height:13px;animation-delay:.18s}
+.public-bento-wave i:nth-child(3){height:9px;animation-delay:.36s}
+.public-bento-wave i:nth-child(4){height:11px;animation-delay:.54s}
+@keyframes public-wave-pulse{0%,100%{transform:scaleY(.55);opacity:.65}50%{transform:scaleY(1.1);opacity:1}}

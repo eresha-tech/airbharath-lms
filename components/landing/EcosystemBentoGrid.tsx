@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { ArrowRight, ArrowUpRight, Compass, GraduationCap, Mic, ShieldCheck } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Compass, GraduationCap, ShieldCheck } from 'lucide-react';
+import { AVIATOR_LOGO_URL, CHATTERBOX_LOGO_URL } from '@/components/landing/ProductsDropdown';
 import type { PublicCourse } from '@/lib/public/catalog-model';
 
 export function EcosystemBentoGrid({ featured }: { featured?: PublicCourse }) {
@@ -15,11 +16,16 @@ export function EcosystemBentoGrid({ featured }: { featured?: PublicCourse }) {
         className="public-bento-card public-bento-aviator"
       >
         <div className="public-bento-card-top">
-          <span className="public-bento-pill">
-            <Compass size={13} aria-hidden="true" />
-            DGCA Prep
-          </span>
-          <ArrowUpRight size={16} className="public-bento-arrow" aria-hidden="true" />
+          <div className="public-bento-brand-mark public-bento-brand-aviator">
+            <img src={AVIATOR_LOGO_URL} alt="Aviator" width={28} height={28} />
+          </div>
+          <div className="public-bento-top-right">
+            <span className="public-bento-pill">
+              <Compass size={12} aria-hidden="true" />
+              DGCA Prep
+            </span>
+            <ArrowUpRight size={16} className="public-bento-arrow" aria-hidden="true" />
+          </div>
         </div>
         <div className="public-bento-card-body">
           <strong>Aviator</strong>
@@ -27,7 +33,7 @@ export function EcosystemBentoGrid({ featured }: { featured?: PublicCourse }) {
         </div>
       </a>
 
-      {/* Card 2: Chatterbox AI (Vibrant Blue Accent matching reference) */}
+      {/* Card 2: Chatterbox AI (Vibrant Blue Accent with subtle voice equalizer) */}
       <a
         href="https://chatterboxai.in/"
         target="_blank"
@@ -35,11 +41,19 @@ export function EcosystemBentoGrid({ featured }: { featured?: PublicCourse }) {
         className="public-bento-card public-bento-chatterbox"
       >
         <div className="public-bento-card-top">
-          <span className="public-bento-pill public-bento-pill-light">
-            <Mic size={13} aria-hidden="true" />
-            Voice AI
-          </span>
-          <ArrowUpRight size={16} className="public-bento-arrow" aria-hidden="true" />
+          <div className="public-bento-brand-mark public-bento-brand-chatterbox">
+            <img src={CHATTERBOX_LOGO_URL} alt="Chatterbox AI" width={28} height={28} />
+          </div>
+          <div className="public-bento-top-right">
+            <span className="public-bento-wave" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+              <i />
+            </span>
+            <span className="public-bento-pill public-bento-pill-blue">Voice AI</span>
+            <ArrowUpRight size={16} className="public-bento-arrow" aria-hidden="true" />
+          </div>
         </div>
         <div className="public-bento-card-body">
           <strong>Chatterbox AI</strong>
@@ -68,7 +82,7 @@ export function EcosystemBentoGrid({ featured }: { featured?: PublicCourse }) {
         </div>
       </Link>
 
-      {/* Card 4: 1:1 Airline Captain Mentorship */}
+      {/* Card 4: 1:1 Aviation Mentorship */}
       <Link href="/mentorship" className="public-bento-card public-bento-mentorship public-bento-wide">
         <div className="public-bento-card-top">
           <span className="public-bento-pill public-bento-pill-amber">
@@ -78,8 +92,8 @@ export function EcosystemBentoGrid({ featured }: { featured?: PublicCourse }) {
           <ArrowRight size={16} className="public-bento-arrow" aria-hidden="true" />
         </div>
         <div className="public-bento-card-body">
-          <strong>Captain Mentorship</strong>
-          <p>Direct career roadmaps &amp; checkride prep with active airline pilots and CFIs.</p>
+          <strong>1:1 Aviation Mentorship</strong>
+          <p>Direct career roadmaps, exam strategy &amp; interview prep with pilots, engineers &amp; DGCA instructors.</p>
         </div>
       </Link>
     </div>
