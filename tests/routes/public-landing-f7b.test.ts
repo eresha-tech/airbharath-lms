@@ -74,16 +74,18 @@ it('keeps hero course-first with linked published courses and the approved secon
     expect(result).not.toMatch(/₹|aria-hidden="true"[^>]*>.*Explore Program/);
     expect(readFileSync('components/landing/HeroBanner.tsx', 'utf8')).not.toMatch(/setInterval|useEffect|HERO_SLIDES/);
 });
-it('uses real fixed Masterclass artwork and destination without timers or carousel controls', () => {
+it('renders the ecosystem bento grid without timers or carousel controls', () => {
     const featured = { ...course, slug: 'actual bundle', thumbnailUrl: 'https://example.invalid/masterclass.webp' };
     const result = html(React.createElement(HeroBanner, { featured }));
-    expect(result.match(/href="\/courses\/actual%20bundle"/g)).toHaveLength(3);
-    expect(result).toContain('masterclass.webp');
+    expect(result).toContain('href="/courses/actual%20bundle"');
+    expect(result).toContain('Aviator');
+    expect(result).toContain('Chatterbox AI');
+    expect(result).toContain('Captain Mentorship');
     expect(result).not.toMatch(/carousel|Previous featured|Next featured|Pause|Play|₹/);
     expect(readFileSync('components/landing/HeroBanner.tsx', 'utf8')).not.toMatch(/setInterval|setTimeout|useEffect|useState/);
 });
 it('does not invent a featured course when the bundle is unavailable, and preserves standard-only pricing', () => {
-    expect(html(React.createElement(HeroBanner))).toContain('Choose your next learning path');
+    expect(html(React.createElement(HeroBanner))).toContain('AirBharath Academy Masterclasses');
     const result = html(React.createElement(PublicCourseCard, { course: { ...course, offerPrice: null } }));
     expect(result).not.toContain('<del>');
     expect(result).not.toContain('₹1,900');
@@ -92,7 +94,7 @@ it('does not invent a featured course when the bundle is unavailable, and preser
 it('keeps the bundle fixed even when an individual course precedes it in the published catalog', async () => {
     mocks.courses.mockResolvedValueOnce([{ ...course, slug: 'individual', title: 'Individual', isBundle: false }, { ...course, title: 'All-in-One Masterclass' }]);
     const result = html(await Home());
-    const hero = result.slice(result.indexOf('<figure'), result.indexOf('</figure>'));
+    const hero = result.slice(result.indexOf('public-bento-grid'), result.indexOf('public-ecosystem-bar'));
     expect(hero).toContain('All-in-One Masterclass');
     expect(hero).not.toContain('Individual');
 });

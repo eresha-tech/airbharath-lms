@@ -2,17 +2,18 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { Menu } from 'lucide-react';
+import { Menu, ArrowUpRight } from 'lucide-react';
 import { DarkModeToggle } from './DarkModeToggle';
 import { SearchInput } from './SearchInput';
 import { PublicBrand } from './public/PublicUI';
 import { Sheet, SheetTrigger, SheetContent, SheetTitle, SheetDescription } from './ui/sheet';
 import { AccountMenu, MobileAccountLinks } from './public/AccountMenu';
+import { ProductsDropdown, ECOSYSTEM_PRODUCTS, ProductIcon } from './landing/ProductsDropdown';
 import { completeLogoutNavigation } from '@/app/(auth)/login/actions';
 import { resetUser } from '@/lib/analytics';
 import { clearClientUser, subscribeClientUser, getClientUser, type ClientUser } from '@/lib/user-session-client';
 import './public/public.css';
-const desktopLinks = [['/courses', 'Courses'], ['/workspace', 'Workspace'], ['/mentorship', 'Mentorship'], ['/pricing', 'Course Pricing'], ['/about', 'About'], ['/contact', 'Support']] as const;
+const desktopLinks = [['/courses', 'Courses'], ['/mentorship', 'Mentorship'], ['/workspace', 'Workspace'], ['/about', 'About'], ['/contact', 'Support']] as const;
 const extraLinks = [['/workspace/pricing', 'Creator Plans'], ['/practice', 'Practice Lab'], ['/#benefits', 'Learning features'], ['/#how-it-works', 'How learning works'], ['/#certificate', 'Certificate verification'], ['/faq', 'Learner FAQ']] as const;
 export default function Header() {
     const pathname = usePathname();
@@ -60,7 +61,10 @@ export default function Header() {
     <a href="#public-content" className="public-skip">Skip to content</a>
     <div className="public-container public-header-row">
       <PublicBrand />
-      <nav className="public-header-nav" aria-label="Main navigation">{desktopLinks.map(([href, label]) => <Link ref={href === '/courses' ? coursesLink : undefined} key={href} href={href} aria-current={active(href) ? 'page' : undefined}>{label}</Link>)}</nav>
+      <nav className="public-header-nav" aria-label="Main navigation">
+        <ProductsDropdown />
+        {desktopLinks.map(([href, label]) => <Link ref={href === '/courses' ? coursesLink : undefined} key={href} href={href} aria-current={active(href) ? 'page' : undefined}>{label}</Link>)}
+      </nav>
       <div className="public-utilities">
         <DarkModeToggle />
         <div className="public-account-control">{user ? <AccountMenu busy={loggingOut} onLogout={() => void logout()} /> : <Link className="public-account" href="/login" prefetch={false}>Login</Link>}</div>
@@ -77,7 +81,24 @@ export default function Header() {
             <div data-public-search>
     <SearchInput onNavigate={() => setOpen(false)}/>
     </div>
-            <nav aria-label="Mobile navigation">{[...desktopLinks, ...extraLinks].map(([href, label]) => <Link key={href} href={href} aria-current={active(href) ? 'page' : undefined} onClick={() => setOpen(false)}>{label}</Link>)}</nav>
+            <nav aria-label="Mobile navigation">
+              <div className="public-drawer-products">
+                <p className="public-drawer-section-label">AirBharath Products</p>
+                {ECOSYSTEM_PRODUCTS.map((product) => product.external ? (
+                  <a key={product.id} href={product.href} target="_blank" rel="noopener noreferrer" className="public-drawer-product-link" onClick={() => setOpen(false)}>
+                    <ProductIcon icon={product.icon} />
+                    <span>{product.name}</span>
+                    <ArrowUpRight size={14} className="ml-auto opacity-60" aria-hidden="true" />
+                  </a>
+                ) : (
+                  <Link key={product.id} href={product.href} className="public-drawer-product-link" onClick={() => setOpen(false)}>
+                    <ProductIcon icon={product.icon} />
+                    <span>{product.name}</span>
+                  </Link>
+                ))}
+              </div>
+              {[...desktopLinks, ...extraLinks].map(([href, label]) => <Link key={href} href={href} aria-current={active(href) ? 'page' : undefined} onClick={() => setOpen(false)}>{label}</Link>)}
+            </nav>
             <div className="mt-6 grid gap-2 border-t border-border pt-5">
               {user ? <MobileAccountLinks busy={loggingOut} onLogout={() => void logout()} onNavigate={() => setOpen(false)} /> : <Link href="/login" prefetch={false} className="public-button-secondary" onClick={() => setOpen(false)}>Login</Link>}
               <Link href={workspace ? '/workspace/apply' : '/courses'} className="public-button" onClick={() => setOpen(false)}>{workspace ? 'Check Eligibility' : 'Explore Courses'}</Link>

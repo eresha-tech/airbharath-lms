@@ -66,3 +66,70 @@
   .public-hero-motion::before{animation:none}
   .public-hero-motion .public-actions>a:hover{transform:none}
 }
+
+/* Products Mega-Dropdown */
+.public-products-trigger-wrap{position:relative;display:inline-flex;align-items:center}
+.public-products-trigger{display:inline-flex;align-items:center;gap:5px;padding:10px 12px;border-radius:6px;font-size:14px;font-weight:550;color:var(--public-ink);background:transparent;border:0;cursor:pointer;white-space:nowrap;transition:background-color .15s,color .15s}
+.public-products-trigger:hover,.public-products-trigger[aria-expanded=true]{background:var(--public-tint);color:hsl(var(--brand-ink))}
+.public-products-chevron{transition:transform .2s ease}
+.public-products-chevron[data-open=true]{transform:rotate(180deg)}
+.public-products-dropdown{position:absolute;top:calc(100% + 10px);left:0;width:min(660px,calc(100vw - 32px));padding:18px;border:1px solid var(--public-line);border-radius:16px;background:var(--public-paper);box-shadow:0 24px 48px -12px hsl(var(--foreground)/.18);z-index:50;white-space:normal}
+.dark .public-products-dropdown{background:#121318;border-color:hsl(0 0% 20%);box-shadow:0 24px 48px -12px rgba(0,0,0,.65)}
+.public-products-dropdown-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 6px 12px;margin-bottom:12px;border-bottom:1px solid var(--public-line)}
+.public-products-eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:hsl(var(--brand-ink))}
+.public-products-caption{font-size:12px;color:var(--public-muted)}
+.public-products-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.public-header-nav .public-product-card,.public-product-card{display:flex;align-items:flex-start;gap:12px;min-width:0;padding:12px;border-radius:10px;border:1px solid transparent;white-space:normal;transition:background-color .15s,border-color .15s;text-decoration:none}
+.public-header-nav .public-product-card:hover,.public-product-card:hover{background:var(--public-tint);border-color:var(--public-line)}
+.public-product-icon{width:38px;height:38px;border-radius:9px;display:grid;place-items:center;flex-shrink:0}
+.public-product-icon-aviator{background:hsl(160 84% 39% / .14);color:hsl(160 84% 39%)}
+.public-product-icon-chatterbox{background:hsl(221 83% 53% / .16);color:hsl(221 83% 60%)}
+.public-product-icon-academy{background:hsl(var(--primary) / .14);color:hsl(var(--brand-ink))}
+.public-product-icon-workspace{background:hsl(38 92% 50% / .14);color:hsl(38 92% 50%)}
+.public-product-meta{min-width:0;flex:1}
+.public-product-title-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.public-product-title-row strong{font-size:14px;font-weight:650;color:var(--public-ink)}
+.public-product-badge{font-size:10px;font-weight:650;padding:2px 6px;border-radius:4px;background:var(--public-tint);color:var(--public-muted);border:1px solid var(--public-line)}
+.public-product-ext{margin-left:auto;color:var(--public-muted)}
+.public-product-meta p{font-size:12px;line-height:1.5;color:var(--public-muted);margin-top:4px;white-space:normal}
+
+.public-drawer-products{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--public-line)}
+.public-drawer-section-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--public-muted);padding:0 12px 6px}
+.public-drawer-product-link{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 12px;border-radius:6px;font-weight:550;font-size:14px}
+.public-drawer-product-link:hover{background:var(--public-tint);color:hsl(var(--brand-ink))}
+
+/* Hero Ecosystem Bento Grid & CTA refinements */
+.public-hero-creator-nudge{margin-top:16px;font-size:13px;color:var(--public-muted)}
+.public-hero-creator-nudge .public-text-link{min-height:auto;margin-left:4px;font-size:13px}
+.public-bento-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.public-bento-card{display:flex;flex-direction:column;justify-content:space-between;gap:14px;padding:20px;border-radius:16px;border:1px solid var(--public-line);background:var(--public-paper);text-decoration:none;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+.public-bento-card:hover{transform:translateY(-2px);border-color:hsl(var(--primary)/.45);box-shadow:0 12px 28px -10px hsl(var(--foreground)/.12)}
+.public-bento-wide{grid-column:1 / -1}
+.public-bento-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.public-bento-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:650;padding:4px 9px;border-radius:999px;background:var(--public-tint);color:var(--public-ink);border:1px solid var(--public-line)}
+.public-bento-pill-amber{background:hsl(38 92% 50% / .14);color:hsl(38 92% 45%);border-color:hsl(38 92% 50% / .28)}
+.dark .public-bento-pill-amber{color:hsl(38 92% 65%)}
+.public-bento-arrow{color:var(--public-muted);transition:transform .2s ease,color .2s ease}
+.public-bento-card:hover .public-bento-arrow{transform:translate(2px,-2px);color:var(--public-ink)}
+.public-bento-card-body strong{display:block;font-family:var(--font-outfit),sans-serif;font-size:18px;font-weight:650;color:var(--public-ink);line-height:1.25}
+.public-bento-card-body p{font-size:13px;line-height:1.55;color:var(--public-muted);margin-top:6px}
+.public-bento-chatterbox{background:linear-gradient(135deg,hsl(221 83% 50%),hsl(234 78% 45%));border-color:hsl(221 83% 62% / .5);color:#fff}
+.public-bento-chatterbox .public-bento-card-body strong{color:#fff}
+.public-bento-chatterbox .public-bento-card-body p{color:rgba(255,255,255,.86)}
+.public-bento-chatterbox .public-bento-arrow{color:rgba(255,255,255,.85)}
+.public-bento-chatterbox:hover .public-bento-arrow{color:#fff}
+.public-bento-pill-light{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.26)}
+.public-bento-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.public-bento-tags span{font-size:11px;font-weight:550;padding:4px 8px;border-radius:6px;background:var(--public-tint);color:var(--public-muted);border:1px solid var(--public-line)}
+
+/* Bottom Ecosystem Minimal Strip */
+.public-ecosystem-bar{margin-top:44px;padding-top:24px;border-top:1px solid var(--public-line);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.public-ecosystem-bar-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--public-muted)}
+.public-ecosystem-bar-items{display:flex;align-items:center;flex-wrap:wrap;gap:12px 24px}
+.public-ecosystem-bar-items a{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--public-muted);transition:color .15s}
+.public-ecosystem-bar-items a:hover{color:var(--public-ink)}
+
+@media(max-width:600px){
+  .public-bento-grid{grid-template-columns:1fr}
+  .public-ecosystem-bar{flex-direction:column;align-items:flex-start}
+}
